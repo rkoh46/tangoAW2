@@ -1,73 +1,105 @@
-"""BH2 M21 The Second Folder (Act V): Black Hole's eastern HQ, in the snow. Asuka + Hawke (the forced tag pair) against one Orange Star army under Max + Sami. Snow look, clear weather.
+"""BH2 M21 The East Tower (Act IV): the castle town on its sea bluff, in the rain. A free pick against one Orange Star army under Andy + Rachel; no scripted escape, a castle assault.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The shape: land edge to edge with two frozen lakes in the middle, side by side, with an isthmus between them (the third Com Tower is its heart): no coast at all. The situation: Black Hole's eastern HQ is a fortress on the lake's east shore (HQ, a base district, a port on the east lake and the
-Com Tower with the folder's papers); Max and Sami hold the west shore (HQ, bases, a port of their own). The lake holds the fleets (a Cruiser and a Submarine each) and two highways run round it, the north one under a range, the south one through woods.
-- Lanes: the north highway under the range, the south highway, the lakes for the ships each army may build.
-- Where the fight happens: the isthmus and the Com Towers (14,6) and (28,21), then the shores.
-- Properties: a village at every bend of the highways, the two HQ districts, a port on each shore of the lake, a missile silo north of the lake.
-- Threats and answers: Max's Tanks and Sami's foot soldiers -> Md Tanks and artillery on the shore; each army has a lake of its own to build ships on (the two lakes meet only at the isthmus); Orange Star fields no air.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: the castle stands on the north coast: a U of pipe wall (west wall x14, south wall y14, east wall x28) whose arms end in the sea, with three seam gates (west (14,9), south (21,14), east (28,9)),
+the keep and the East Tower (a Com Tower) inside, the castle's harbour in a bay of the north coast and the castle town's bases and cities. Black Hole lands in the south-west: its HQ, a base district and a port on the south coast.
+Andy and Rachel hold the castle with strong defenders. The castle's one open flank is the sea: only Landers carry an army round to the harbour beach, so a Lander flank is part of the plan (Black Hole's fleet starts with two).
+A river rises from a pond in the east hills, bends to the south coast and carries two bridges for the east highway.
+- Lanes: the south gate road, the west gate road, the east highway across the river, the sea flank to the harbour beach.
+- Where the fight happens: the three gates (broken seams open the wall) and the town's streets, then the keep.
+- Properties: Black Hole's district and port, the farm villages along the roads, the castle town (bases, cities), the harbour's ports, the East Tower.
+- Threats and answers: Andy's Tanks and Rachel's artillery on the wall -> Black Hole's Md Tanks, Rockets and its own artillery; the harbour's Cruisers and Submarine -> Black Hole's own. Orange Star fields no air.
 """
 import random
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, snap_coast, fix_rungs
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize
 
-W, H = 42, 28
+W, H = 42, 30
+
+
+def profile(x0, x1, lo, hi, seed):
+    rnd = random.Random(f"bh2_16/{seed}")
+    out, x, v = {}, x0, rnd.randint(lo, hi)
+    while x <= x1:
+        for _ in range(rnd.randint(3, 6)):
+            if x <= x1:
+                out[x] = v
+                x += 1
+        v = max(lo, min(hi, v + rnd.choice([-1, 1])))
+    return out
 
 
 def build():
-    m = Canvas("bh2_21", W, H)
-    # --- the frozen lake in the middle: two lobes joined by a neck (a bridge crosses it)
-    m.blob("~", 14, 14, 6, 5, seed=1, wobble=0.25); m.blob("~", 28, 13, 6, 4, seed=2, wobble=0.25)
-    m.rect("~", 18, 12, 24, 14)
-    for (x, y) in [(21, 12), (21, 13), (21, 14)]:
-        m.g[y][x] = "~"
-    S = lambda x, y: snap(m, x, y)
-    for i, (cx, cy, n, ch) in enumerate([(16, 24, 4, "f"), (22, 25, 4, "f"), (30, 4, 4, "f"), (5, 3, 4, "f"), (38, 9, 3, "^"), (3, 21, 3, "^"), (24, 4, 3, "^"), (12, 24, 3, "^"), (33, 16, 4, "f"), (9, 17, 3, "f"), (31, 11, 3, "^"), (11, 10, 3, "^"), (36, 26, 3, "^"), (20, 3, 3, "^"), (26, 25, 3, "^"), (3, 25, 3, "^"), (28, 9, 3, "^"), (12, 17, 3, "f"), (30, 17, 3, "f"), (8, 8, 4, "f"), (34, 22, 4, "f"), (8, 22, 4, "^"), (34, 6, 4, "^"), (24, 8, 3, "f"), (18, 21, 3, "^"), (3, 11, 3, "^"), (39, 18, 3, "f"), (12, 3, 3, "f"), (30, 25, 3, "f"), (6, 6, 3, "^"), (37, 24, 3, "^"), (17, 6, 3, "^"), (25, 22, 3, "^")]):
-        m.cluster(ch, cx, cy, n * 3, seed=70 + i)
-    belt(m, "^", [(3, 4), (10, 3), (18, 4), (26, 3), (36, 4)], width=1, seed=1, gaps=[(7, 3), (14, 4), (17, 4), (22, 4), (31, 3)], p=0.7); belt(m, "^", [(5, 24), (13, 25), (22, 24), (31, 25), (38, 24)], width=1, seed=2, gaps=[(9, 25), (17, 24), (26, 25), (35, 24)])
-    belt(m, "f", [(2, 9), (6, 10)], width=1, seed=3); belt(m, "f", [(2, 18), (6, 17)], width=1, seed=4); belt(m, "f", [(35, 9), (39, 10)], width=1, seed=5); belt(m, "f", [(35, 18), (39, 17)], width=1, seed=6)
-    belt(m, "f", [(10, 21), (16, 22)], width=2, seed=7); belt(m, "f", [(24, 21), (30, 22)], width=2, seed=8); belt(m, "f", [(10, 7), (14, 8)], width=1, seed=9); belt(m, "f", [(28, 6), (32, 7)], width=1, seed=10)
-    belt(m, "^", [(1, 13), (3, 16)], width=1, seed=11); belt(m, "^", [(38, 12), (40, 15)], width=1, seed=12)
+    m = Canvas("bh2_21", W, H, fill="~")
+    rnd = random.Random("bh2_16/coast")
+    T = {}
+    for x in range(W):
+        base = 8 if x <= 10 else 6 if x <= 13 else 3 if x <= 28 else 6 if x <= 31 else 9
+        T[x] = base + (rnd.choice([0, 0, 1]) if (x <= 10 or x >= 32) else 0)
+    for x in (4, 5, 6, 7):
+        T[x] = T[5]
+    for x in (35, 36, 37):
+        T[x] = T[36]
+    for x in range(W):                                               # land edge to edge: the coast is the north edge only, with the castle's headland in it
+        m.rect(".", x, T[x], x, H - 1)
+    for x in range(18, 25):                                           # the castle's harbour: a bay in the north coast
+        for y in range(T[x], T[x] + 3):
+            m.g[y][x] = "~"
+    ponds = m.lake(36, 13, 9, seed=1, river_end=(36, 14))
+    m.river([(36, 14), (36, 19), (34, 19), (34, 24), (35, 24), (35, H - 1)])
+    C = lambda x, y: (x, max(T[x] + 4, min(H - 2, y)))
+    # --- the castle wall, a U open to the north sea: it ends at the water on both arms
+    m.pipe([(14, T[14]), (14, 14), (28, 14), (28, T[28])]); m.put("Z", 14, 9).put("Z", 21, 14).put("Z", 28, 9)
+    belt(m, "^", [(8, 12), (12, 15)], width=1, seed=1); belt(m, "^", [(30, 12), (33, 8)], width=1, seed=2); belt(m, "^", [(6, 6), (11, 7)], width=1, seed=3); belt(m, "^", [(30, 18), (32, 22)], width=1, seed=4, gaps=[(31, 20)])
+    belt(m, "^", [(4, 18), (7, 20)], width=1, seed=5); belt(m, "^", [(14, 24), (19, 26)], width=1, seed=6); belt(m, "^", [(25, 22), (29, 24)], width=1, seed=7, gaps=[(27, 23)])
+    belt(m, "f", [(16, 6), (19, 8)], width=1, seed=8); belt(m, "f", [(24, 6), (26, 8)], width=1, seed=9); belt(m, "f", [(17, 18), (23, 19)], width=2, seed=10); belt(m, "f", [(4, 22), (8, 24)], width=1, seed=11)
+    belt(m, "f", [(10, 17), (13, 19)], width=1, seed=12); belt(m, "f", [(37, 18), (40, 22)], width=1, seed=13); belt(m, "f", [(30, 14), (33, 15)], width=1, seed=14); belt(m, "f", [(3, 10), (6, 11)], width=1, seed=15)
+    belt(m, "^", [(16, 23), (21, 22), (27, 24)], width=1, seed=31, gaps=[(19, 22), (24, 23)]); belt(m, "f", [(20, 26), (26, 27)], width=2, seed=32); belt(m, "^", [(12, 27), (16, 28)], width=1, seed=33); belt(m, "f", [(28, 18), (31, 21)], width=2, seed=34)
+    belt(m, "f", [(8, 25), (12, 24)], width=1, seed=35); belt(m, "^", [(34, 8), (38, 9)], width=1, seed=36)
     m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
-        "M21 The Second Folder (snow look, clear): Asuka + Hawke (forced pair, Black Hole, HQ 1 (35,14), the lake's east shore) against one Orange Star army under Max + Sami (HQ 2 (6,14), the west shore). Two frozen lakes with the isthmus (x 19..23) between. "
-        "Com Towers (14,6) and (28,21), missile silo (21,5); the isthmus's Com Tower (21,13). Player: INF4 MECH2 TANK5 MDT3 ART3 ROCK1 RECON1; Orange Star: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1."))
-    m.put("1", 35, 14).put("2", 6, 14).put("t", 14, 6).put("t", 28, 21).put("M", 21, 5)
-    m.rect(".", 20, 13, 22, 13); m.put("t", 21, 13)                              # the isthmus's Com Tower
-    PORTS = [snap_coast(m, 30, 12), snap_coast(m, 12, 15), snap_coast(m, 33, 17), snap_coast(m, 10, 10)]
-    for (x, y) in PORTS:
-        m.put("P", x, y)
-    route(m, [S(35, 13), S(32, 8), S(26, 6), S(20, 7), S(14, 8), S(8, 12), S(6, 13)], seed=1, wander=1.1)
-    route(m, [S(35, 15), S(31, 19), S(26, 21), S(20, 20), S(14, 20), S(9, 17), S(6, 15)], seed=2, wander=1.1)
-    route(m, [S(20, 8), (21, 9)], seed=3) if False else None
-    route(m, [S(21, 8), S(21, 10)], seed=4) if False else None
-    route(m, [S(PORTS[0][0], PORTS[0][1] - 1), S(31, 9)], seed=5); route(m, [S(PORTS[1][0] + 1, PORTS[1][1]), S(9, 17)], seed=6); route(m, [S(PORTS[2][0], PORTS[2][1] + 1), S(31, 19)], seed=7); route(m, [S(PORTS[3][0], PORTS[3][1] - 1), S(8, 12)], seed=8)
-    route(m, [S(14, 8), S(14, 6)], seed=9); route(m, [S(28, 20), S(28, 21)], seed=10) if False else route(m, [S(26, 21), S(28, 20)], seed=10); route(m, [S(26, 6), S(21, 6), S(21, 5)], seed=11) if False else route(m, [S(26, 6), S(22, 6)], seed=11)
-    route(m, [S(35, 13), S(37, 12)], seed=12)
-    thin_roads(m); fix_rungs(m)
-    for args in [(35, 14, "BBC"), (32, 8, "BC"), (31, 19, "BC"), (38, 14, "C"), (26, 6, "Cb"), (26, 21, "Cb"), (20, 7, "Cb"), (20, 20, "Cb"), (14, 8, "Cc"), (14, 20, "Cc"), (14, 6, "c"), (28, 21, "c"),
-                 (6, 14, "BBC"), (8, 12, "BC"), (9, 17, "BC"), (3, 14, "C"), (4, 8, "C"), (4, 20, "C"), (10, 3, "c"), (31, 3, "c"), (38, 24, "c"), (4, 25, "c"), (21, 22, "c"), (21, 6, "c"), (40, 6, "c"), (36, 3, "cc"), (39, 3, "c"), (2, 4, "c"), (40, 21, "c"), (1, 11, "c"), (17, 24, "cc"), (25, 3, "cc"), (8, 24, "c"), (34, 25, "c"), (12, 1, "c"), (1, 18, "c"), (40, 9, "c"), (3, 24, "cc"), (37, 26, "cc")]:
+        "M21 The East Tower (normal look, rain): a free pick (Black Hole, HQ 1 (8,22), the south-west) against one Orange Star army under Andy + Rachel (HQ 2 (21,9), the keep). The castle: a pipe wall (west x14, south y14, east x28, ending in the sea) with seam gates (14,9), (21,14), (28,9); "
+        "the East Tower, a Com Tower, at (21,6); the harbour bay in the north coast. A river from the pond (36,13) to the south edge, bridges (36,16), (34,21) and (35,26). A second Com Tower (10,18), missile silo (25,19). "
+        "Player: INF4 MECH2 TANK4 MDT2 ART3 ROCK1 RECON1 APC1 CR1 SUB1 LAN2; Orange Star: INF4 MECH2 TANK5 MDT3 ART4 ROCK3 RECON1 CR2 SUB1."))
+    m.put("1", 8, 22).put("2", 21, 9).put("t", 21, 6).put("t", 10, 18).put("M", 25, 19)
+    PB, PC = 6, 39
+    m.put("P", PB, T[PB]).put("p", PC, T[PC]).put("P", 19, T[19] + 3).put("P", 23, T[23] + 3)
+    route(m, [(8, 23), C(12, 21), C(17, 18), C(21, 17), (21, 15)], seed=1, wander=1.2); route(m, [(8, 21), C(9, 15), C(11, 11), (13, 9)], seed=2, wander=1.2)
+    route(m, [(15, 9), C(16, 8), (19, 8), (21, 8)], seed=3); route(m, [(21, 13), (21, 10)], seed=4); route(m, [(29, 9), C(31, 11), C(32, 15), C(32, 19)], seed=5); route(m, [(27, 9), (23, 8), (21, 8)], seed=6)
+    route(m, [C(21, 17), C(27, 20), (32, 20), (34, 21, "="), (36, 21), C(39, 18), C(40, 14)], seed=7, wander=1.2); route(m, [C(40, 14), (38, 16), (36, 16, "="), (34, 16), C(31, 14)], seed=8)
+    route(m, [(PB, T[PB] + 1), C(PB, 14), C(8, 18), (8, 21)], seed=9); route(m, [(PC, T[PC] + 1), C(PC, 12), C(39, 15), C(39, 17)], seed=10); route(m, [(19, T[19] + 4), (19, 8)], seed=11); route(m, [(23, T[23] + 4), (23, 8)], seed=12); route(m, [C(30, 26), (33, 26), (35, 26, "="), (37, 26), C(38, 28)], seed=15)
+    route(m, [(10, 18), C(11, 21)], seed=13); route(m, [C(9, 15), C(6, 9), C(5, 6)], seed=16); route(m, [C(27, 18), (25, 18)], seed=14)
+    route(m, [C(21, 17), C(22, 21), C(24, 25), C(25, 28)], seed=40)
+    thin_roads(m)
+    for args in [(8, 22, "BBC"), (11, 21, "BC"), (5, 21, "C"), (9, 15, "C"), (12, 9, "C"), (17, 18, "Cc"), (21, 17, "bc"), (27, 18, "bc"), (21, 9, "BBBC"), (17, 8, "BC"), (25, 8, "BC"), (21, 11, "CC"), (16, 11, "C"), (26, 11, "C"),
+                 (31, 11, "bc"), (33, 15, "c"), (32, 17, "c"), (38, 17, "c"), (39, 13, "cc"), (36, 21, "c"), (22, 23, "c"), (14, 22, "c"), (5, 15, "c"), (6, 9, "c"), (36, 6, "c"), (38, 28, "cc"), (30, 6, "c"), (12, 6, "c"), (4, 12, "c"), (5, 6, "cc"), (25, 28, "cc"), (3, 27, "cc"), (2, 20, "cc"), (21, 24, "c"), (37, 5, "cc")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
         except ValueError:
             pass
-    for (x, y) in ((40, 2), (1, 1), (1, 26), (40, 26)):
-        if m.g[y][x] in ".f^":
+    for (x, y) in ((36, 5),):
+        if m.g[y][x] in ".f":
             m.g[y][x] = "c"
     neutralize(m, 14)
     m.tidy()
     shore(m, 1, (1, 1, W - 2, H - 2), dirs="NS")
-    for p in PORTS:
-        for dx, dy in ((0, -1), (0, 1), (1, 0), (-1, 0), (0, -2), (0, 2), (2, 0), (-2, 0)):
-            if m.inside(p[0] + dx, p[1] + dy) and m.g[p[1] + dy][p[0] + dx] == ",":
-                m.g[p[1] + dy][p[0] + dx] = "~"
+    for (x, y) in ponds:
+        m.g[y][x] = "~"
+    for (x, y) in [(PB, T[PB] - 1), (PC, T[PC] - 1), (19, T[19] + 2), (23, T[23] + 2), (19, T[19] + 1), (23, T[23] + 1), (14, T[14] - 1), (28, T[28] - 1)]:
+        if m.g[y][x] == ",":
+            m.g[y][x] = "~"
     m.tidy()
-    for (x, y) in [(14, 13), (28, 13), (10, 14), (32, 14), (17, 16), (25, 10), (20, 17), (22, 9)]:
+    for (x, y) in [(20, 1), (23, 1), (4, 1), (35, 3), (9, 1)]:
         if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
             m.put("r", x, y)
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.spread(1, {INF: 4, MECH: 2, TANK: 5, MDT: 3, ART: 3, ROCK: 1, RECON: 1}, (30, 3, 40, 24), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 5, MECH: 3, TANK: 5, MDT: 3, ART: 3, ROCK: 2, RECON: 1}, (1, 3, 11, 24), seed=2, gap=0, avoid=av)
-    m.note("hq", 35, 14, "Black Hole's eastern HQ"); m.note("enemy_hq", 6, 14, "Max + Sami's HQ (objective)"); m.note("isthmus", 21, 13, "the isthmus between the lakes: the third Com Tower")
+    m.spread(1, {INF: 4, MECH: 2, TANK: 4, MDT: 2, ART: 3, ROCK: 1, RECON: 1, APC: 1}, (2, 17, 16, 28), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 4, MECH: 2, TANK: 5, MDT: 3, ART: 4, ROCK: 3, RECON: 1}, (15, 4, 27, 13), seed=2, gap=0, avoid=av)
+    for k_, (x, y) in zip([LAN, LAN, CR, SUB], m.sea_near(PB, 1, 4, box=(2, 0, 20, 5), deep=False)):
+        m.unit(1, k_, x, y)
+    for k_, (x, y) in zip([CR, CR, SUB], m.sea_near(21, 2, 3, box=(16, 0, 26, 6), deep=True)):
+        m.unit(2, k_, x, y)
+    m.note("hq", 8, 22, "Black Hole's HQ"); m.note("enemy_hq", 21, 9, "Andy + Rachel's HQ (objective)"); m.note("tower", 21, 6, "the East Tower (Com Tower)")
+    for n_, (x, y) in (("gate_w", (14, 9)), ("gate_s", (21, 14)), ("gate_e", (28, 9))):
+        m.note(n_, x, y, "seam gate of the castle wall")
     return m

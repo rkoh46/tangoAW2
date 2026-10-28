@@ -1,9 +1,9 @@
-"""BH2 M25 The Last Accord, both maps (development build, crate::bh2_campaign): the final mission played through, a picture at each stage (`-k bh2_m25_progression`).
+"""BH2 M30 The Last Accord, both maps (development build, crate::bh2_campaign): the final mission played through, a picture at each stage (`-k bh2_m30_progression`).
 
-Part one (bh2_25, five armies: Nell's Orange Star 1, Olaf's Blue Moon 2, Kanbei's Yellow Comet 3, Eagle's Green Earth 4, the player's Black Hole 5) is entered through its CO screen, deployed and played with real captures:
+Part one (bh2_30, five armies: Nell's Orange Star 1, Olaf's Blue Moon 2, Kanbei's Yellow Comet 3, Eagle's Green Earth 4, the player's Black Hole 5) is entered through its CO screen, deployed and played with real captures:
 a player's Infantry is put on the next HQ one capture point from done and captures it (the game's own capture, its ownership change, the held-HQ rule and the trigger lists that follow it). After each capture the harness
 reads which nation woke (its units before and after, by army), who owns each HQ, and takes the game's own full-map picture (the cursor's sweep, 16 pixels a cell; no fog). Eagle's HQ ends part one: a scene, then the win.
-Part two (bh2_25b, The Last Citadel: Aria's Orange Star against the player) is entered as the next mission: its opening scene, the full map and the capture of Aria's HQ (the campaign's victory).
+Part two (bh2_31, The Last Citadel: Aria's Orange Star against the player) is entered as the next mission: its opening scene, the full map and the capture of Aria's HQ (the campaign's victory).
 The frames are put on one sheet, labelled and with the HQs marked: m25_progression_v2.png (AW2TEST_REVIEW_DIR)."""
 
 import os
@@ -98,7 +98,7 @@ def sheet(ctx, frames, path):
     H = rows * (h + text_h) + (rows + 1) * pad + 44
     out = Image.new("RGB", (W, H), (18, 20, 28))
     d = ImageDraw.Draw(out)
-    d.text((pad, 12), "M25 The Last Accord, both maps: the whole final mission played with real captures (the game's own pictures)", fill=(255, 220, 90), font=f1)
+    d.text((pad, 12), "M30 The Last Accord, both maps: the whole final mission played with real captures (the game's own pictures)", fill=(255, 220, 90), font=f1)
     for i, ((p, info), im) in enumerate(zip(frames, ims)):
         cx, cy = i % cols, i // cols
         ox, oy = pad + cx * (w + pad), 44 + pad + cy * (h + text_h + pad)
@@ -136,9 +136,9 @@ def marks(done, nxt):
     return out
 
 
-@test(name="bh2_m25_progression", modes=("ds",))
-def bh2_m25_progression(ctx):
-    n = 25
+@test(name="bh2_m30_progression", modes=("ds",))
+def bh2_m30_progression(ctx):
+    n = 30
     e, g, d = b2.enter(ctx, n)
     w, h = d.size()
     d.leave_setup()
@@ -185,7 +185,7 @@ def bh2_m25_progression(ctx):
         prev = cur
     e.close()
     # part two: the next mission
-    e, g, d = b2.enter(ctx, 27)
+    e, g, d = b2.enter(ctx, 31)
     w, h = d.size()
     d.leave_setup()
     scene = dialogue_pic(ctx, e, d, "m25b_scene")
@@ -223,3 +223,30 @@ def bh2_m25_progression(ctx):
 
 def nation_of(a):
     return {2: "Olaf's Blue Moon", 3: "Kanbei's Yellow Comet", 4: "Eagle's Green Earth"}[a]
+
+
+@test(name="bh2_m6_towers_and_eagle", modes=("ds",))
+def bh2_m6_towers_and_eagle(ctx):
+    """M6 Forest of Spears: Black Hole captures Javier's four Com Towers with real captures; the last one makes Eagle take command of the same army (a scene, a CO change with no second HQ) and an air wing land."""
+    e, g, d = b2.enter(ctx, 6)
+    d.leave_setup()
+    a2.intro(ctx, e, d, "m6", (0,))
+    d.wait_control()
+    g._units_base = g._players_base = None
+    towers = [(25, 5), (31, 10), (28, 16), (35, 14)]
+    before = len(g.units(army=2))
+    co0 = g.player(2)["co"]
+    ctx.log(f"Javier's army {before} units, CO id {co0}")
+    for k, t in enumerate(towers):
+        capture(ctx, e, g, d, t, 1)
+        if k < len(towers) - 1:
+            settle(e, g, d)
+            ctx.eq(g.player(2)["co"], co0, f"tower {k + 1} of 4 taken: Javier still commands")
+    pic = dialogue_pic(ctx, e, d, "m6_scene")
+    settle(e, g, d)
+    ctx.eq(g.player(2)["co"], 8, "all four towers held: Eagle commands the same army")
+    after = len(g.units(army=2))
+    ctx.check(after >= before + 5, f"an air wing landed ({before} -> {after} units)")
+    ctx.check(pic is not None, "the takeover scene was shown")
+    ctx.check(not e.u8(dc.LAST_RESULT), "the mission goes on (no second HQ, no win)")
+    e.close()

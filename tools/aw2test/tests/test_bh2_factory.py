@@ -1,4 +1,4 @@
-"""BH2 M3 Iron Ledger and M14 Thirty Years of Iron (development build, crate::bh2_campaign): Black Hole's Black Factory spawns and is smart, and the volcano erupts (`-k bh2_m3_`, `-k bh2_m14_`).
+"""BH2 M3 Iron Ledger and M19 Thirty Years of Iron (development build, crate::bh2_campaign): Black Hole's Black Factory spawns and is smart, and the volcano erupts (`-k bh2_m3_`, `-k bh2_m19_`).
 
 The mission is entered through its CO screen (Asuka), the test player (aw2test.bot) plays Black Hole's army for AW2TEST_BH2_DAYS days (default 8) with the factory's full decision log on
 (TANGOAW2_BH_LOG_ALL); every spawn is written to `factory_spawn_log.txt` (in the test's folder and, with AW2TEST_REVIEW_DIR, there) with the reason the field gives for it, and the test fails when
@@ -7,7 +7,7 @@ the factory never spawns or a pick breaks the rules the owner set:
 - foot soldiers (Infantry, Mech) only to capture (a target property to reach) or to block (an enemy beside the factory);
 - indirect fire (Artillery, Rockets, Missiles) only with a safe backline (no foe near the factory, none adjacent);
 - a varied mix (at least three types in six or more spawns, no type more than 60% of them);
-- never a Piperunner, an Oozium, a Black Boat or a Carrier; ships only where the factory has a water door (M22), and then only when the field gives a reason.
+- never a Piperunner, an Oozium, a Black Boat or a Carrier; ships only where the factory has a water door (M27), and then only when the field gives a reason.
 The volcano's eruptions are read from the hazard cells' RAM (`hazard.rs`, 0x0203F708: the cells the eruption takes now, 0xFFFF ends the list): the first eruption is day 3, one each day after."""
 
 import os
@@ -127,12 +127,12 @@ def bh2_m3_factory_and_volcano(ctx):
     factory_and_volcano(ctx, 3, "Iron Ledger")
 
 
-@test(name="bh2_m14_factory_and_volcano", modes=("ds",))
-def bh2_m14_factory_and_volcano(ctx):
-    factory_and_volcano(ctx, 14, "Thirty Years of Iron")
+@test(name="bh2_m19_factory_and_volcano", modes=("ds",))
+def bh2_m19_factory_and_volcano(ctx):
+    factory_and_volcano(ctx, 19, "Thirty Years of Iron")
 
 
-@test(name="bh2_m22_factory_and_deathray", modes=("ds",))
-def bh2_m22_factory_and_deathray(ctx):
-    """M22 Von Bolt's Note: the foundry's Black Factory spawns and is smart (the same rules as M3 and M14); the Deathray stands at the top edge and hurts nobody on day 1 (the review's first-turn check, `bh2_review_m22`)."""
-    factory_and_volcano(ctx, 22, "Von Bolt's Note", volcano=False, naval=True, days=max(DAYS, 12))
+@test(name="bh2_m27_factory_and_deathray", modes=("ds",))
+def bh2_m27_factory_and_deathray(ctx):
+    """M27 Von Bolt's Note: the foundry's Black Factory spawns and is smart (the same rules as M3 and M19); the Deathray stands at the top edge and hurts nobody on day 1 (the review's first-turn check, `bh2_review_m27`)."""
+    factory_and_volcano(ctx, 27, "Von Bolt's Note", volcano=False, naval=True, days=max(DAYS, 12))

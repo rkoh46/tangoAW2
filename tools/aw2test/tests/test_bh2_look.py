@@ -1,4 +1,4 @@
-"""BH2 M26 Through the Door (development build, crate::bh2_campaign): the enemy army wears the Emerald Sun skin and nothing of Green Earth (`-k bh2_m26_look`).
+"""BH2 M32 Through the Door (development build, crate::bh2_campaign): the enemy army wears the Emerald Sun skin and nothing of Green Earth (`-k bh2_m32_look`).
 
 The mission gives Klaus + Aurelia's army the colour Green Earth as a host (`MissionDef::skin`: the skin sits on that colour, `army_skin`); the game then draws every Green Earth picture from the skin's. The test enters the mission, deploys,
 and photographs what the player sees of the enemy: the whole screen with the cursor on the enemy HQ, on an enemy base, on an enemy Infantry and on an enemy Tank (the terrain and unit panels), and the start of the enemy's own turn (its CO
@@ -29,9 +29,9 @@ def snap(ctx, e, name):
     return p
 
 
-@test(name="bh2_m26_look", modes=("ds",))
-def bh2_m26_look(ctx):
-    e, g, d = b2.enter(ctx, 26)
+@test(name="bh2_m32_look", modes=("ds",))
+def bh2_m32_look(ctx):
+    e, g, d = b2.enter(ctx, 32)
     d.leave_setup()
     a2.intro(ctx, e, d, "m26", (0,))
     d.wait_control()

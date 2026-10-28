@@ -9,7 +9,7 @@ from aw2test.harness import test
 from tests.test_bh_review import BANNER, Quiet, Sweep, blank_cells, deviations, fill_blank
 from tests.test_bh_review import unfog as _unfog
 
-NEXT_WEATHER = 0x03003FEE       # crate::ds_weather: while the forecast is rain the rain forces fog every frame (M6 is rain AND fog): the review clears it to take the fog-off picture
+NEXT_WEATHER = 0x03003FEE       # crate::ds_weather: while the forecast is rain the rain forces fog every frame (M9 is rain AND fog): the review clears it to take the fog-off picture
 
 
 def unfog(g, e):
@@ -83,7 +83,7 @@ def review(ctx, n):
         d.wait_control()
         g._units_base = g._players_base = None
         cnt2, bad2 = deviations(e, g)
-        if n == 25:                                       # (a five-army mission: Nell, the first army, moves before the player's turn: her units' fuel is spent, nothing is hit)
+        if n == 30:                                       # (a five-army mission: Nell, the first army, moves before the player's turn: her units' fuel is spent, nothing is hit)
             bad2 = [b for b in bad2 if b[4] != 'fuel']
         ctx.check(not bad2, f"M{n}: the first turn's shots hit nothing (every unit still at full HP after Deploy and the first turn start): {bad2}")
         post = sweeps(ctx, e, g, d, n, "post_", None, front_too=False)

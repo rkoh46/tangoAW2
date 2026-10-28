@@ -1,58 +1,99 @@
-"""BH2 M20 The Rail East (Act IV), front 1: the rail corridor. A free pick against Andy. (Front 2, the rail yard in the sandstorm against Hachi, is bh2_20b.)
+"""BH2 M20 Every Colour (Act IV): the Orange Star border farmland. A free pair against one Orange Star army under the tag pair Max + Sami. Normal look, clear weather.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: the heavy train with the Accord's door-seal machinery runs east along a long narrow valley between two mountain ranges: a map that is wide and short, 56 columns by 16 rows, all land and all
-hill country. The rail is the trunk road down the valley's floor, from Black Hole's landing camp in the west (HQ, a base district) through a chain of five station towns to Andy's terminus in the east (HQ, a base district). Three rivers cut the valley from the northern range to
-the southern edge through gorges and the rail crosses each on a bridge: the corridor is a string of river crossings. The ranges have passes and a ledge road on each side that the flanking columns use.
-- Lanes: the rail trunk, the north ledge road in the range, the south ledge road, the three gorges' bridges, the passes between the ledges and the valley.
-- Where the fight happens: the second and third river crossings (22,8) and (34,7) with the Com Towers (24,6) and (32,10) beside them, then the terminus.
-- Properties: a town at each station on the rail, villages on the ledges, the two HQ districts, a missile silo in a pass.
-- Threats and answers: Andy's Tanks and Md Tanks along the rail -> Black Hole's Md Tanks, Rockets and artillery behind the gorges; Orange Star fields no air here.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: a land border, not an island: wide open farmland that runs to the map's edges, with a coast on the north edge only (a strip of sea with two small harbours and reefs). Black Hole's column holds the west
+(HQ, a base district), Max and Sami the east (HQ, a base district). One long river comes down from the north coast, bends five times and leaves the map at the south edge: the border. Four bridges carry the only roads across it: a north trunk, two farm tracks and a south trunk.
+Roads are few; the country between them is big fields cut by hedgerows (thin belts of woods that run across the farmland with gates in them) and a few ridges, so the armies fight for the fields as much as the roads.
+- Lanes: the two trunk roads, the two farm tracks, the hedgerow gates, the long river's four bridgeheads; the north coast's two harbours for the fleets.
+- Where the fight happens: the second and third bridges (24,10) and (27,15) and the Com Towers (22,9) and (30,16) beside them.
+- Properties: a farm village at each bridgehead and along the trunks, the two HQ districts, two harbours, a silo in the open middle field.
+- Threats and answers: Max's Tanks and Md Tanks, Sami's foot soldiers -> Black Hole's Md Tanks, Rockets and artillery on the near bank; Orange Star fields no air, so neither army fields Anti-Air.
 """
+import random
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, fix_rungs
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize
 
-W, H = 56, 16
+W, H = 46, 26
+
+
+def profile(x0, x1, lo, hi, seed):
+    rnd = random.Random(f"bh2_15/{seed}")
+    out, x, v = {}, x0, rnd.randint(lo, hi)
+    while x <= x1:
+        for _ in range(rnd.randint(3, 6)):
+            if x <= x1:
+                out[x] = v
+                x += 1
+        v = max(lo, min(hi, v + rnd.choice([-1, 1])))
+    return out
 
 
 def build():
     m = Canvas("bh2_20", W, H)
-    # --- the ranges: mountains along the north and south, thick with passes; the valley floor between
-    belt(m, "^", [(1, 2), (10, 3), (19, 2), (28, 3), (37, 2), (46, 3), (54, 2)], width=2, seed=1, gaps=[(7, 3), (16, 2), (25, 3), (34, 3), (43, 2), (51, 3)], p=0.95)
-    belt(m, "^", [(1, 13), (10, 12), (19, 13), (28, 12), (37, 13), (46, 12), (54, 13)], width=2, seed=2, gaps=[(5, 12), (14, 13), (23, 12), (31, 13), (40, 12), (49, 13)], p=0.95)
-    belt(m, "f", [(3, 5), (9, 6)], width=1, seed=3); belt(m, "f", [(12, 9), (17, 10)], width=1, seed=4); belt(m, "f", [(26, 9), (30, 8)], width=1, seed=5); belt(m, "f", [(36, 5), (41, 6)], width=1, seed=6)
-    belt(m, "f", [(44, 9), (49, 10)], width=1, seed=7); belt(m, "f", [(19, 5), (21, 6)], width=1, seed=8); belt(m, "f", [(37, 9), (40, 10)], width=1, seed=9); belt(m, "f", [(4, 9), (7, 10)], width=1, seed=10)
-    # --- three rivers: from ponds in the northern range through gorges, across the valley to the southern edge
-    ponds = []
-    for k, (rx, jog) in enumerate(((14, 1), (28, -1), (42, 1))):
-        ponds += m.lake(rx, 1, 6, seed=k + 1, river_end=(rx, 2))
-    m.river([(14, 2), (14, 6), (15, 6), (15, H - 1)]); m.river([(28, 2), (28, 7), (27, 7), (27, H - 1)]); m.river([(42, 2), (42, 8), (43, 8), (43, H - 1)])
+    T = profile(0, W - 1, 2, 3, 1)
+    for x in (25, 26, 27):
+        T[x] = T[26]
+    for x in range(W):
+        m.rect("~", x, 0, x, T[x] - 1)
+    for (x, y) in [(10, 0), (31, 1), (40, 0)]:
+        pass
+    river = [(26, T[26]), (26, 8), (24, 8), (24, 13), (27, 13), (27, 18), (25, 18), (25, H - 1)]
+    m.river(river)
+    C = lambda x, y: (x, max(T[x] + 2, min(H - 2, y)))
+    # --- hedgerows: thin belts of woods across the farmland, with gates; ridges and woodlots between the fields
+    hedges = [[(2, 8), (9, 7), (14, 9)], [(2, 17), (8, 18), (15, 16)], [(10, 11), (12, 14), (11, 19)], [(15, 5), (20, 4), (22, 6)], [(14, 22), (19, 21), (22, 22)], [(29, 6), (35, 5), (43, 7)], [(31, 11), (37, 10), (44, 12)],
+              [(29, 21), (36, 22), (43, 20)], [(31, 16), (38, 17), (44, 16)], [(34, 7), (35, 14), (33, 19)], [(18, 12), (20, 16), (21, 20)]]
+    for i, pts in enumerate(hedges):
+        belt(m, "f", pts, width=1, seed=10 + i, gaps=[pts[1]], p=0.9)
+    for i, (cx, cy, n) in enumerate([(7, 14, 4), (16, 13, 4), (11, 5, 3), (20, 19, 4), (33, 9, 4), (39, 17, 4), (30, 14, 3), (42, 5, 3), (28, 22, 4), (6, 21, 4), (21, 5, 3), (34, 2, 2)]):
+        m.cluster("f", cx, cy, n, seed=40 + i)
+    for i, (cx, cy, n) in enumerate([(9, 11, 4), (15, 20, 3), (22, 12, 3), (35, 16, 3), (41, 8, 3), (30, 20, 3), (4, 17, 3)]):
+        m.cluster("^", cx, cy, n, seed=60 + i)
+    belt(m, "^", [(3, 3), (7, 4)], width=1, seed=1); belt(m, "^", [(38, 3), (43, 4)], width=1, seed=2); belt(m, "^", [(17, 8), (19, 10)], width=1, seed=3); belt(m, "^", [(40, 21), (43, 23)], width=1, seed=4); belt(m, "^", [(3, 22), (6, 23)], width=1, seed=5)
+    belt(m, "^", [(32, 13), (35, 12)], width=1, seed=6); belt(m, "^", [(12, 22), (15, 23)], width=1, seed=7)
     m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
-        "M20 The Rail East, front 1 (normal look, fog): a free pick (Black Hole, HQ 1 (5,8), the west) against Andy (Orange Star, HQ 2 (50,8), the terminus in the east) in a long valley (56 x 16). Three rivers from ponds in the northern range to the south edge; the rail crosses them at (14,4), (28,5) and (42,5) "
-        "(bridges at the straight reaches). Com Towers (24,6) and (32,10), missile silo (37,3). Player: INF4 MECH2 TANK5 MDT2 ART2 ROCK1 RECON1; Andy: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1."))
-    m.put("1", 5, 8).put("2", 50, 8).put("t", 24, 6).put("t", 32, 10).put("M", 37, 3)
-    route(m, [(6, 8), (10, 9), (13, 8), (14, 4, "=") if False else (13, 6), (14, 4, "=") if False else (13, 8)], seed=21) if False else None
-    rail = [(6, 8), (10, 9), (13, 8), (14, 4)] if False else None
-    # the rail: along the valley floor, bridges at the straight reaches of the rivers (river 1 x14 rows 2..6, river 2 x27 rows 7..15 and x28 rows 2..7, river 3 x43 rows 8..15 and x42 rows 2..8)
-    route(m, [(6, 8), (9, 8), (12, 8), (15, 8, "="), (18, 8), (22, 8), (26, 8), (27, 8, "="), (30, 8), (34, 8), (38, 8), (40, 9), (43, 10, "="), (46, 9), (49, 8)], seed=21, wander=0.3)
-    route(m, [(5, 9), (7, 12), (11, 11), (15, 12, "="), (19, 11), (24, 11), (27, 12, "="), (30, 11), (35, 10), (39, 11), (43, 12, "="), (47, 11), (51, 9)], seed=22, wander=1.1)
-    route(m, [(6, 7), (9, 5), (12, 5), (14, 4, "="), (17, 5), (22, 4), (26, 5), (28, 4, "="), (31, 5), (36, 5), (40, 4), (42, 4, "="), (45, 5), (49, 7)], seed=23, wander=1.1)
-    route(m, [(24, 8), (24, 6)], seed=24); route(m, [(32, 11), (32, 10)], seed=25) if False else route(m, [(31, 10), (32, 10)], seed=25); route(m, [(37, 8), (37, 4)], seed=26)
-    thin_roads(m); fix_rungs(m)
-    for args in [(5, 8, "BBC"), (9, 9, "BC"), (7, 5, "C"), (7, 12, "C"), (12, 9, "CC"), (18, 9, "Cb"), (22, 8, "Cc"), (26, 8, "bc"), (30, 9, "Cb"), (34, 8, "CC"), (38, 8, "Cb"), (41, 8, "bc"), (46, 9, "C"),
-                 (50, 8, "BBC"), (47, 6, "BC"), (47, 11, "BC"), (51, 5, "C"), (52, 11, "C"), (12, 5, "c"), (22, 4, "c"), (31, 5, "c"), (40, 4, "c"), (19, 11, "c"), (35, 10, "c"), (47, 11, "c"), (3, 4, "c"), (53, 13, "c"), (3, 12, "c")]:
+        "M20 Every Colour (normal look, clear): a free pair (Black Hole, HQ 1 (5,12), the west) against one Orange Star army under Max + Sami (HQ 2 (40,12), the east) on open farmland. The border river runs from the north coast (26,3) to the south edge (25,25), bridges (26,6), (24,10), (27,15), (25,21). "
+        "Com Towers (22,9) and (30,16), missile silo (33,12); harbours (10,3) and (36,3). Player: INF5 MECH2 TANK5 MDT2 ART3 ROCK1 RECON1 APC1 CR1 SUB1; Orange Star: INF6 MECH4 TANK6 MDT2 ART3 ROCK2 RECON1 CR1 SUB1."))
+    m.put("1", 5, 12).put("2", 40, 12).put("t", 22, 9).put("t", 30, 16).put("M", 33, 12)
+    flatT = lambda a, lo, hi: min((x for x in range(lo, hi) if T[x] == T[x - 1] == T[x + 1]), key=lambda x: abs(x - a))
+    P1, P2 = flatT(10, 3, 20), flatT(36, 30, 43)
+    m.put("P", P1, T[P1]).put("P", P2, T[P2])
+    route(m, [(6, 11), C(10, 8), C(15, 7), (24, 6), (26, 6, "="), (28, 6), C(33, 7), C(38, 9), (40, 11)], seed=21, wander=1.3)
+    route(m, [(6, 13), C(10, 15), C(14, 19), (22, 21), (25, 21, "="), (27, 21), C(33, 20), C(38, 16), (40, 13)], seed=22, wander=1.3)
+    route(m, [C(12, 12), C(18, 11), (22, 10), (24, 10, "="), (26, 10), C(30, 11), (32, 12)], seed=23, wander=1.1)
+    route(m, [C(14, 15), C(20, 15), (25, 15), (27, 15, "="), (29, 15), C(32, 15)], seed=24, wander=1.1)
+    route(m, [(P1, T[P1] + 1), C(P1, 6), C(10, 8)], seed=25); route(m, [(P2, T[P2] + 1), C(P2, 6), C(38, 9)], seed=26)
+    thin_roads(m)
+    for bx, by in [(26, 6), (24, 10), (27, 15), (25, 21)]:
+        for dx, kinds in ((-3, "c"), (3, "c")):
+            try:
+                town(m, bx + dx, by, kinds, seed=100 + bx + dx, radius=3)
+            except ValueError:
+                pass
+    for args in [(5, 12, "BBC"), (8, 15, "BC"), (4, 9, "C"), (9, 9, "BC"), (6, 18, "C"), (40, 12, "BBC"), (42, 9, "BC"), (38, 15, "BC"), (43, 13, "C"), (40, 19, "C"), (37, 9, "C"),
+                 (13, 12, "C"), (20, 15, "bc"), (30, 11, "bc"), (18, 6, "c"), (13, 20, "c"), (36, 21, "c"), (44, 6, "c"), (20, 22, "c"), (32, 4, "c"), (32, 18, "c"), (16, 17, "c"), (1, 24, "c"), (3, 4, "c"), (4, 22, "c"), (12, 24, "c"), (22, 17, "c"), (28, 9, "c"), (33, 23, "c"), (44, 24, "c"), (36, 13, "c"), (9, 5, "c"), (18, 24, "c"), (24, 3, "c"), (40, 5, "c")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
         except ValueError:
             pass
-    neutralize(m, 14)
+    neutralize(m, 13)
     m.tidy()
-    for (x, y) in ponds:
-        m.g[y][x] = "~"
+    shore(m, 1, (1, 0, W - 2, 4), dirs="S") if False else None
+    shore(m, 1, (1, 0, W - 2, 5), dirs="NS")
+    for (x, y) in [(26, T[26] - 1), (P1, T[P1] - 1), (P2, T[P2] - 1)]:
+        if m.g[y][x] == ",":
+            m.g[y][x] = "~"
     m.tidy()
+    for (x, y) in [(6, 0), (20, 0), (30, 0), (44, 0), (14, 1)]:
+        if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2) if m.inside(a, b)):
+            m.put("r", x, y)
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.spread(1, {INF: 4, MECH: 2, TANK: 5, MDT: 2, ART: 2, ROCK: 1, RECON: 1}, (2, 4, 12, 12), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 5, MECH: 3, TANK: 5, MDT: 3, ART: 3, ROCK: 2, RECON: 1}, (44, 4, 54, 12), seed=2, gap=0, avoid=av)
-    m.note("hq", 5, 8, "Black Hole's HQ"); m.note("enemy_hq", 50, 8, "Andy's HQ (objective)"); m.note("silo", 37, 3, "the missile silo in the pass")
+    m.spread(1, {INF: 5, MECH: 2, TANK: 5, MDT: 2, ART: 3, ROCK: 1, RECON: 1, APC: 1}, (2, 6, 14, 22), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 6, MECH: 4, TANK: 6, MDT: 2, ART: 3, ROCK: 2, RECON: 1}, (35, 5, 44, 22), seed=2, gap=0, avoid=av)
+    for k_, (x, y) in zip([CR, SUB], m.sea_near(P1, 0, 2, box=(2, 0, 18, T[P1] - 1), deep=False)):
+        m.unit(1, k_, x, y)
+    for k_, (x, y) in zip([CR, SUB], m.sea_near(P2, 0, 2, box=(30, 0, 44, T[P2] - 1), deep=False)):
+        m.unit(2, k_, x, y)
+    m.note("hq", 5, 12, "Black Hole's HQ"); m.note("enemy_hq", 40, 12, "Max + Sami's HQ (objective)"); m.note("silo", 33, 12, "the missile silo of the open field")
     return m

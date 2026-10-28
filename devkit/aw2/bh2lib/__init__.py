@@ -12,30 +12,35 @@ MISSIONS = {
     3: ("bh2_03", "Iron Ledger"),
     4: ("bh2_04", "Talons"),
     5: ("bh2_05", "Evergreen in Exile"),
-    6: ("bh2_06", "Paper Lanterns"),
-    7: ("bh2_07", "Comet Highway"),
-    8: ("bh2_08", "Black Lanterns"),
-    9: ("bh2_09", "The Table"),
-    10: ("bh2_10", "Two Tides"),
-    11: ("bh2_11", "Cold Wire"),
-    12: ("bh2_12", "Lot 42"),
-    13: ("bh2_13", "Whiteout Harbour"),
-    14: ("bh2_14", "Thirty Years of Iron"),
-    15: ("bh2_15", "Every Colour"),
-    16: ("bh2_16", "The East Tower"),
-    17: ("bh2_17", "Echo, Again"),
-    18: ("bh2_18", "The Door Is Open"),
-    19: ("bh2_19", "Skyfall"),
-    20: ("bh2_20", "The Rail East"),
-    21: ("bh2_21", "The Second Folder"),
-    22: ("bh2_22", "Von Bolt's Note"),
-    23: ("bh2_23", "Where the Map Ends"),
-    24: ("bh2_24", "The Gate of Colours"),
-    25: ("bh2_25", "The Last Accord"),
-    26: ("bh2_26", "Through the Door"),
-    27: ("bh2_25b", "The Last Citadel"),
+    6: ("bh2_06", "Forest of Spears"),
+    7: ("bh2_07", "Drake's Harbour"),
+    8: ("bh2_08", "Fuel Line"),
+    9: ("bh2_09", "Paper Lanterns"),
+    10: ("bh2_10", "Comet Highway"),
+    11: ("bh2_11", "Black Lanterns"),
+    12: ("bh2_12", "The Table"),
+    13: ("bh2_13", "Two Tides"),
+    14: ("bh2_14", "The Long Border"),
+    15: ("bh2_15", "Iron Gate Pass"),
+    16: ("bh2_16", "Cold Wire"),
+    17: ("bh2_17", "Lot 42"),
+    18: ("bh2_18", "Whiteout Harbour"),
+    19: ("bh2_19", "Thirty Years of Iron"),
+    20: ("bh2_20", "Every Colour"),
+    21: ("bh2_21", "The East Tower"),
+    22: ("bh2_22", "Echo, Again"),
+    23: ("bh2_23", "The Door Is Open"),
+    24: ("bh2_24", "Skyfall"),
+    25: ("bh2_25", "The Rail East"),
+    26: ("bh2_26", "The Second Folder"),
+    27: ("bh2_27", "Von Bolt's Note"),
+    28: ("bh2_28", "Where the Map Ends"),
+    29: ("bh2_29", "The Gate of Colours"),
+    30: ("bh2_30", "The Last Accord"),
+    31: ("bh2_31", "The Last Citadel"),
+    32: ("bh2_32", "Through the Door"),
 }
-FRONT2 = {4: "bh2_04b", 10: "bh2_10b", 20: "bh2_20b"}          # a two-front mission's second map
+FRONT2 = {4: "bh2_04b", 13: "bh2_13b", 25: "bh2_25b"}          # a two-front mission's second map
 
 # game colour id -> RGB (1 Orange Star, 2 Blue Moon, 3 Green Earth, 4 Yellow Comet, 5 Black Hole)
 COLOUR = {1: (240, 130, 30), 2: (60, 110, 240), 3: (50, 170, 70), 4: (240, 210, 40), 5: (140, 60, 190)}
@@ -69,11 +74,11 @@ def flags():
 
 
 def check_flags():
-    """Problems (a list of strings): a flag on the sea or outside its nation's mask. The plan: M1, M2 and M26 on Black Hole's island, M3..M5 in Green Earth, M6..M10 in Yellow Comet."""
+    """Problems (a list of strings): a flag on the sea or outside its nation's mask. The plan: M1, M2 and M32 on Black Hole's island, M3..M5 in Green Earth, M9..M13 in Yellow Comet."""
     from ..worldmaplib import tool
     m, _ = tool.load("bh2")
     out = []
-    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4, 11: 2, 12: 2, 13: 2, 14: 2, 15: 1, 16: 1, 17: 1, 18: 5, 19: 1, 20: 1, 21: 1, 22: 1, 23: 1, 24: 1, 25: 1, 27: 1}
+    home = {1: 5, 2: 5, 32: 5, 23: 5, 3: 3, 4: 3, 5: 3, 6: 3, 7: 3, 8: 3, 9: 4, 10: 4, 11: 4, 12: 4, 13: 4, 14: 3, 15: 2, 16: 2, 17: 2, 18: 2, 19: 2, 20: 1, 21: 1, 22: 1, 24: 1, 25: 1, 26: 1, 27: 1, 28: 1, 29: 1, 30: 1, 31: 1}
     seen = set()
     for mission, region, x, y in flags():
         seen.add(mission)
@@ -132,7 +137,7 @@ def feature_counts(m):
 
 def features_table(ms):
     """Markdown: one row per map and column per feature, then a coverage line (which features no map uses yet)."""
-    names = [f[0] for f in FEATURES] + [i[0] for i in INVENTIONS] + ["second HQ"]
+    names = [f[0] for f in FEATURES] + [i[0] for i in INVENTIONS] 
     counts = {m.name: feature_counts(m) for m in ms}
     used = [n for n in names if any(counts[m.name].get(n) for m in ms)]
     lines = ["| map | size | " + " | ".join(used) + " |", "|---|---|" + "---|" * len(used)]
@@ -160,7 +165,7 @@ def looks():
         wt = re.search(r"m\.weather = Weather::(\w+)", body)
         n = int(f.group(1)[4:])
         out.append((n, f.group(1), LOOK_NAMES[int(lk.group(1))] if lk else "normal", wt.group(1).lower() if wt else "clear", bool(re.search(r"m\.fog = true", body))))
-    return out
+    return sorted(out)
 
 
 def check_looks():

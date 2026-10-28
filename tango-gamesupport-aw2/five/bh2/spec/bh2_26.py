@@ -1,80 +1,73 @@
-"""BH2 M26 Through the Door (secret mission, Act V): the Emerald Sun legion lands on Black Hole's own island. A free pair against one army under Klaus + Aurelia (Emerald Sun). Normal look, clear.
+"""BH2 M26 The Second Folder (Act V): Black Hole's eastern HQ, in the snow. Asuka + Hawke (the forced tag pair) against one Orange Star army under Max + Sami. Snow look, clear weather.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md sections 4 and 4b). The shape: a diagonal strip: the home island is a band of land from the north-west corner to the south-east corner, a dozen cells wide, with the sea in the other two corners, so both coasts are long staircases with beaches.
-The situation: Black Hole holds the north-west end: its HQ, a base district, two ports on the south-west coast. Klaus's first landing holds the south-east end (his HQ, a beachhead of bases) and a long north-east coast where the legion comes ashore in waves (spawns marked on the map):
-  day 3: Cassius's cavalry (Recons and Tanks) on the north-east beach cells `mark_cav*`;
-  day 5: Aurelia's siege (Artillery, Rockets and Md Tanks) on the south-east beach cells `mark_siege*`;
-  day 7: Livia's fleet (Battleship, Cruisers, a Submarine and Landers) at sea off the north-east coast, the `mark_fleet*` cells.
-The Emerald Sun skin belongs to the enemy army (the engine applies the skin to the player's army in an Emerald Sun battle only; for BH2's enemy it is a hook: see docs/dev/bh2-maps.md).
-- Lanes: the island's spine road from the north-west to the south-east, a coast road on each side, the beaches on both coasts for the ships and Landers.
-- Where the fight happens: the middle of the strip (the Com Tower (20,14) and the missile silo (22,12)), then the depot.
-- Threats and answers: the cavalry's speed -> Black Hole's Tanks and Rockets behind the wall; the siege's range -> Recons and Fighters-free strikes by Tanks; Livia's Battleship -> Black Hole's Cruisers and Submarine and artillery on the beach.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The shape: land edge to edge with two frozen lakes in the middle, side by side, with an isthmus between them (the third Com Tower is its heart): no coast at all. The situation: Black Hole's eastern HQ is a fortress on the lake's east shore (HQ, a base district, a port on the east lake and the
+Com Tower with the folder's papers); Max and Sami hold the west shore (HQ, bases, a port of their own). The lake holds the fleets (a Cruiser and a Submarine each) and two highways run round it, the north one under a range, the south one through woods.
+- Lanes: the north highway under the range, the south highway, the lakes for the ships each army may build.
+- Where the fight happens: the isthmus and the Com Towers (14,6) and (28,21), then the shores.
+- Properties: a village at every bend of the highways, the two HQ districts, a port on each shore of the lake, a missile silo north of the lake.
+- Threats and answers: Max's Tanks and Sami's foot soldiers -> Md Tanks and artillery on the shore; each army has a lake of its own to build ships on (the two lakes meet only at the isthmus); Orange Star fields no air.
 """
+import random
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
 from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, snap_coast, fix_rungs
 
-W, H = 40, 28
-CAV = [(12, 4), (15, 6), (18, 8), (20, 11)]                      # Cassius's landing cells (day 3)
-SIEGE = [(37, 24), (35, 25), (38, 22), (33, 26)]                 # Aurelia's (day 5)
-FLEET = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)]            # Livia's ships (day 7), at sea off the north-east coast
+W, H = 42, 28
 
 
 def build():
-    m = Canvas("bh2_26", W, H, fill="~")
-    for y in range(H):
-        for x in range(W):
-            if abs(x - y * 40 / 28) <= 8.5 + (1 if (x * 7 + y * 13) % 5 == 0 else 0) - (1 if (x * 11 + y * 3) % 7 == 0 else 0):
-                m.g[y][x] = "."
+    m = Canvas("bh2_26", W, H)
+    # --- the frozen lake in the middle: two lobes joined by a neck (a bridge crosses it)
+    m.blob("~", 14, 14, 6, 5, seed=1, wobble=0.25); m.blob("~", 28, 13, 6, 4, seed=2, wobble=0.25)
+    m.rect("~", 18, 12, 24, 14)
+    for (x, y) in [(21, 12), (21, 13), (21, 14)]:
+        m.g[y][x] = "~"
     S = lambda x, y: snap(m, x, y)
-    belt(m, "^", [(4, 2), (9, 4)], width=1, seed=1); belt(m, "^", [(12, 10), (16, 8)], width=1, seed=2); belt(m, "^", [(24, 18), (28, 16)], width=1, seed=3); belt(m, "^", [(30, 22), (35, 22)], width=1, seed=4); belt(m, "^", [(3, 12), (7, 14)], width=1, seed=5)
-    belt(m, "f", [(8, 8), (13, 12)], width=1, seed=6); belt(m, "f", [(16, 15), (20, 19)], width=1, seed=7); belt(m, "f", [(27, 10), (31, 13)], width=1, seed=8); belt(m, "f", [(25, 22), (29, 24)], width=1, seed=9); belt(m, "f", [(14, 4), (17, 6)], width=1, seed=10)
-    m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
-        "M26 Through the Door (secret; normal look, clear): a free pair (Black Hole, HQ 1 (7,6), the north-west of its own island) against one army under Klaus + Aurelia (the Emerald Sun legion, HQ 2 (32,21), the south-east end). The island is a diagonal strip. "
-        "Waves: day 3 cavalry on mark_cav cells, day 5 siege on mark_siege cells, day 7 Livia's fleet on mark_fleet cells. Com Tower (20,14), missile silo (22,12). "
-        "Player: INF3 MECH1 TANK3 MDT1 ART2 RECON1 AA1 CR1 SUB1; Klaus: INF5 MECH3 TANK4 MDT2 ART2 ROCK1 RECON1 CR1 SUB1."))
-    m.put("1", 7, 6).put("2", 32, 21).put("t", 20, 14).put("M", 22, 12)
-    PORTS = [snap_coast(m, 6, 12), snap_coast(m, 12, 20)]
+    for i, (cx, cy, n, ch) in enumerate([(16, 24, 4, "f"), (22, 25, 4, "f"), (30, 4, 4, "f"), (5, 3, 4, "f"), (38, 9, 3, "^"), (3, 21, 3, "^"), (24, 4, 3, "^"), (12, 24, 3, "^"), (33, 16, 4, "f"), (9, 17, 3, "f"), (31, 11, 3, "^"), (11, 10, 3, "^"), (36, 26, 3, "^"), (20, 3, 3, "^"), (26, 25, 3, "^"), (3, 25, 3, "^"), (28, 9, 3, "^"), (12, 17, 3, "f"), (30, 17, 3, "f"), (8, 8, 4, "f"), (34, 22, 4, "f"), (8, 22, 4, "^"), (34, 6, 4, "^"), (24, 8, 3, "f"), (18, 21, 3, "^"), (3, 11, 3, "^"), (39, 18, 3, "f"), (12, 3, 3, "f"), (30, 25, 3, "f"), (6, 6, 3, "^"), (37, 24, 3, "^"), (17, 6, 3, "^"), (25, 22, 3, "^")]):
+        m.cluster(ch, cx, cy, n * 3, seed=70 + i)
+    belt(m, "^", [(3, 4), (10, 3), (18, 4), (26, 3), (36, 4)], width=1, seed=1, gaps=[(7, 3), (14, 4), (17, 4), (22, 4), (31, 3)], p=0.7); belt(m, "^", [(5, 24), (13, 25), (22, 24), (31, 25), (38, 24)], width=1, seed=2, gaps=[(9, 25), (17, 24), (26, 25), (35, 24)])
+    belt(m, "f", [(2, 9), (6, 10)], width=1, seed=3); belt(m, "f", [(2, 18), (6, 17)], width=1, seed=4); belt(m, "f", [(35, 9), (39, 10)], width=1, seed=5); belt(m, "f", [(35, 18), (39, 17)], width=1, seed=6)
+    belt(m, "f", [(10, 21), (16, 22)], width=2, seed=7); belt(m, "f", [(24, 21), (30, 22)], width=2, seed=8); belt(m, "f", [(10, 7), (14, 8)], width=1, seed=9); belt(m, "f", [(28, 6), (32, 7)], width=1, seed=10)
+    belt(m, "^", [(1, 13), (3, 16)], width=1, seed=11); belt(m, "^", [(38, 12), (40, 15)], width=1, seed=12)
+    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
+        "M26 The Second Folder (snow look, clear): Asuka + Hawke (forced pair, Black Hole, HQ 1 (35,14), the lake's east shore) against one Orange Star army under Max + Sami (HQ 2 (6,14), the west shore). Two frozen lakes with the isthmus (x 19..23) between. "
+        "Com Towers (14,6) and (28,21), missile silo (21,5); the isthmus's Com Tower (21,13). Player: INF4 MECH2 TANK5 MDT3 ART3 ROCK1 RECON1; Orange Star: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1."))
+    m.put("1", 35, 14).put("2", 6, 14).put("t", 14, 6).put("t", 28, 21).put("M", 21, 5)
+    m.rect(".", 20, 13, 22, 13); m.put("t", 21, 13)                              # the isthmus's Com Tower
+    PORTS = [snap_coast(m, 30, 12), snap_coast(m, 12, 15), snap_coast(m, 33, 17), snap_coast(m, 10, 10)]
     for (x, y) in PORTS:
         m.put("P", x, y)
-    route(m, [S(7, 7), S(11, 9), S(16, 11), S(20, 14), S(24, 16), S(29, 19), S(32, 20)], seed=1, wander=0.9)
-    route(m, [S(8, 5), S(14, 5), S(20, 8), S(26, 11), S(31, 15), S(33, 19)], seed=2, wander=0.9); route(m, [S(6, 8), S(9, 14), S(14, 18), S(20, 21), S(27, 23), S(31, 22)], seed=3, wander=0.9)
-    route(m, [S(PORTS[0][0], PORTS[0][1] - 1), S(9, 10)], seed=4); route(m, [S(PORTS[1][0], PORTS[1][1] - 1), S(14, 18)], seed=5); route(m, [S(20, 14), S(22, 12)], seed=6) if False else route(m, [S(21, 13), S(22, 13)], seed=6)
-    route(m, [S(32, 20), S(35, 23)], seed=7)
+    route(m, [S(35, 13), S(32, 8), S(26, 6), S(20, 7), S(14, 8), S(8, 12), S(6, 13)], seed=1, wander=1.1)
+    route(m, [S(35, 15), S(31, 19), S(26, 21), S(20, 20), S(14, 20), S(9, 17), S(6, 15)], seed=2, wander=1.1)
+    route(m, [S(20, 8), (21, 9)], seed=3) if False else None
+    route(m, [S(21, 8), S(21, 10)], seed=4) if False else None
+    route(m, [S(PORTS[0][0], PORTS[0][1] - 1), S(31, 9)], seed=5); route(m, [S(PORTS[1][0] + 1, PORTS[1][1]), S(9, 17)], seed=6); route(m, [S(PORTS[2][0], PORTS[2][1] + 1), S(31, 19)], seed=7); route(m, [S(PORTS[3][0], PORTS[3][1] - 1), S(8, 12)], seed=8)
+    route(m, [S(14, 8), S(14, 6)], seed=9); route(m, [S(28, 20), S(28, 21)], seed=10) if False else route(m, [S(26, 21), S(28, 20)], seed=10); route(m, [S(26, 6), S(21, 6), S(21, 5)], seed=11) if False else route(m, [S(26, 6), S(22, 6)], seed=11)
+    route(m, [S(35, 13), S(37, 12)], seed=12)
     thin_roads(m); fix_rungs(m)
-    for args in [(7, 6, "BBC"), (10, 8, "BC"), (5, 10, "BC"), (8, 12, "C"), (12, 10, "C"), (16, 11, "Cb"), (14, 5, "C"), (9, 14, "C"), (14, 18, "Cb"), (20, 14, "c"), (20, 21, "Cb"), (20, 8, "Cb"), (26, 11, "bc"), (24, 16, "bc"), (27, 23, "bc"),
-                 (32, 21, "BBBC"), (34, 18, "BC"), (29, 19, "BC"), (31, 15, "C"), (35, 23, "C"), (31, 22, "C"), (26, 6, "c"), (36, 13, "c"), (3, 3, "c"), (3, 17, "c"), (37, 27, "c"), (20, 4, "c"), (24, 24, "c")]:
+    for args in [(35, 14, "BBC"), (32, 8, "BC"), (31, 19, "BC"), (38, 14, "C"), (26, 6, "Cb"), (26, 21, "Cb"), (20, 7, "Cb"), (20, 20, "Cb"), (14, 8, "Cc"), (14, 20, "Cc"), (14, 6, "c"), (28, 21, "c"),
+                 (6, 14, "BBC"), (8, 12, "BC"), (9, 17, "BC"), (3, 14, "C"), (4, 8, "C"), (4, 20, "C"), (10, 3, "c"), (31, 3, "c"), (38, 24, "c"), (4, 25, "c"), (21, 22, "c"), (21, 6, "c"), (40, 6, "c"), (36, 3, "cc"), (39, 3, "c"), (2, 4, "c"), (40, 21, "c"), (1, 11, "c"), (17, 24, "cc"), (25, 3, "cc"), (8, 24, "c"), (34, 25, "c"), (12, 1, "c"), (1, 18, "c"), (40, 9, "c"), (3, 24, "cc"), (37, 26, "cc")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
         except ValueError:
             pass
-    for (x, y) in CAV + SIEGE:
-        if m.g[y][x] in "^fBCcbR":
-            m.g[y][x] = "."
-    neutralize(m, 13)
+    for (x, y) in ((40, 2), (1, 1), (1, 26), (40, 26)):
+        if m.g[y][x] in ".f^":
+            m.g[y][x] = "c"
+    neutralize(m, 14)
     m.tidy()
     shore(m, 1, (1, 1, W - 2, H - 2), dirs="NS")
     for p in PORTS:
         for dx, dy in ((0, -1), (0, 1), (1, 0), (-1, 0), (0, -2), (0, 2), (2, 0), (-2, 0)):
             if m.inside(p[0] + dx, p[1] + dy) and m.g[p[1] + dy][p[0] + dx] == ",":
                 m.g[p[1] + dy][p[0] + dx] = "~"
-    for (x, y) in CAV + SIEGE:
-        pass
     m.tidy()
+    for (x, y) in [(14, 13), (28, 13), (10, 14), (32, 14), (17, 16), (25, 10), (20, 17), (22, 9)]:
+        if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
+            m.put("r", x, y)
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.reserve(CAV + SIEGE + FLEET)
-    m.spread(1, {INF: 3, MECH: 1, TANK: 3, MDT: 1, ART: 2, RECON: 1, AA: 1}, (1, 1, 16, 14), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 5, MECH: 3, TANK: 4, MDT: 2, ART: 2, ROCK: 1, RECON: 1}, (26, 14, 39, 27), seed=2, gap=0, avoid=av)
-    for k_, (x, y) in zip([CR, SUB], m.sea_near(PORTS[0][0], PORTS[0][1], 2, box=(0, 8, 12, 20), deep=False)):
-        m.unit(1, k_, x, y)
-    for k_, (x, y) in zip([CR, SUB], m.sea_near(36, 12, 2, box=(30, 6, 39, 16), deep=False)):
-        m.unit(2, k_, x, y)
-    m.note("hq", 7, 6, "Black Hole's HQ"); m.note("enemy_hq", 32, 21, "Klaus + Aurelia's HQ (objective)")
-    for i, (x, y) in enumerate(CAV):
-        m.note(f"mark_cav{i + 1}", x, y, "day 3: Cassius's cavalry lands here")
-    for i, (x, y) in enumerate(SIEGE):
-        m.note(f"mark_siege{i + 1}", x, y, "day 5: Aurelia's siege lands here")
-    for i, (x, y) in enumerate(FLEET):
-        m.note(f"mark_fleet{i + 1}", x, y, "day 7: Livia's ship arrives here")
+    m.spread(1, {INF: 4, MECH: 2, TANK: 5, MDT: 3, ART: 3, ROCK: 1, RECON: 1}, (30, 3, 40, 24), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 5, MECH: 3, TANK: 5, MDT: 3, ART: 3, ROCK: 2, RECON: 1}, (1, 3, 11, 24), seed=2, gap=0, avoid=av)
+    m.note("hq", 35, 14, "Black Hole's eastern HQ"); m.note("enemy_hq", 6, 14, "Max + Sami's HQ (objective)"); m.note("isthmus", 21, 13, "the isthmus between the lakes: the third Com Tower")
     return m

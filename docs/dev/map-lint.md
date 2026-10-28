@@ -80,6 +80,7 @@ Tables found in the ROM and used:
 | MD01..MD08 | warn | the design principles (too few properties, dead corners, one narrow corridor, a base in a day-one rush's reach, nothing in the middle, open field, an uncrossed river, roads to nowhere): `docs/dev/map-design.md`; failing for the Emerald Sun maps | 17-44 | 15-78 | 0-13 | 0-19 | see map-design.md |
 | IV02 | error | BH2 maps: a unit of either army starts in an invention's firing zone (a Laser's row and column, a minicannon's four cells, a Black Cannon's cone, the Deathray's columns): the first turn's shot must hit nothing | 0 | 0 | 0 | 0 | 0 |
 | PT02 | error | BH2 maps: a port whose door is not open sea a ship can use: no open-sea (`~`) neighbour (shoal, reef, river do not count), a sealed pond under 24 cells, or a door cell with no sea beyond it (the owner's standing rule: a port touches sea it can launch into; `aw2dev maps ports --source bh2` lists every port) | 0 | 0 | 0 | 0 | 0 |
+| HQ01 | error | BH2 maps: an army has one HQ: no second HQ tile (`Q`) of the same army (the owner prefers none; each nation is its own army with its own colour and HQ) | 0 | 0 | 0 | 0 | 0 |
 | IV01 | error | BH2 maps: an invention (Deathray, Black Cannon, minicannon, Laser, Black Crystal, Black Obelisk, Black Factory) nearer to another army's HQ than to Black Hole's, or a Deathray below the top rows | 0 | 0 | 0 | 0 | 0 |
 | ES01 | error | Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line) | 0 | 0 | 0 | 0 | 0 |
 

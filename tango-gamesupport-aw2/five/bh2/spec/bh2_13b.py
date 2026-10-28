@@ -1,4 +1,4 @@
-"""BH2 M10 Two Tides (Act II), front 2: Grimm's isles on the same blasted ground (the Wasteland look, fog). A free CO pick (the player's second front) against Grimm. (Front 1 is bh2_10.)
+"""BH2 M13 Two Tides (Act II), front 2: Grimm's isles on the same blasted ground (the Wasteland look, fog). A free CO pick (the player's second front) against Grimm. (Front 1 is bh2_13.)
 
 Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4; the second front of a two-front mission is a map of its own, as BH2 M4's). The situation: a small island pinched at the waist by a tide of lava from the west and one from the
 east: Black Hole lands in the south (HQ, a base district, the road along the south coast), Grimm holds the north (HQ, a base and a ridge of mountains and ash woods in front of it). The waist between the tides is the whole
@@ -16,7 +16,7 @@ W, H = 32, 26
 
 
 def build():
-    m = Canvas("bh2_10b", W, H, fill="~")
+    m = Canvas("bh2_13b", W, H, fill="~")
     XW = [9, 5, 3, 2, 3, 5, 6, 4, 2, 2, 3, 5, 3, 2, 2, 3, 4, 6, 8, 11, 12, 13]
     XE = [24, 28, 29, 30, 30, 28, 27, 28, 29, 30, 30, 29, 29, 30, 30, 29, 27, 26, 25, 22, 20, 19]
     for y in range(1, 23):
@@ -30,7 +30,7 @@ def build():
     belt(m, "f", [(8, 6), (11, 5)], width=1, seed=7); belt(m, "f", [(18, 5), (21, 4)], width=1, seed=8); belt(m, "f", [(11, 12), (13, 11)], width=1, seed=9); belt(m, "f", [(19, 14), (21, 15)], width=1, seed=10)
     belt(m, "f", [(9, 20), (13, 19)], width=1, seed=11); belt(m, "^", [(25, 13), (28, 14)], width=1, seed=13); belt(m, "f", [(3, 17), (6, 18)], width=1, seed=14); belt(m, "f", [(25, 11), (27, 11)], width=1, seed=15); belt(m, "^", [(3, 14), (5, 16)], width=1, seed=16); belt(m, "f", [(18, 21), (21, 20)], width=1, seed=12)
     m.header(armies=2, colours=(BH, YC), objective=[1], comment=(
-        "M10 Two Tides, front 2 (Wasteland look, fog, no sea: the water is lava): a free CO pick (Black Hole, HQ 1 (15,19), the south) against Grimm (Yellow Comet, HQ 2 (16,4), the north). The waist between the tides (x 10..21, y 8..16) carries the Com Tower (16,12); "
+        "M13 Two Tides, front 2 (Wasteland look, fog, no sea: the water is lava): a free CO pick (Black Hole, HQ 1 (15,19), the south) against Grimm (Yellow Comet, HQ 2 (16,4), the north). The waist between the tides (x 10..21, y 8..16) carries the Com Tower (16,12); "
         "the silo isle (3,11) hangs on a long bridge off the west tide. Player: INF4 MECH2 TANK3 MDT1 ART2 ROCK1 RECON1; Grimm: INF3 MECH2 TANK4 MDT2 ART2 ROCK1."))
     m.put("1", 15, 19).put("2", 16, 4).put("t", 16, 12).put("M", 3, 11)
     m.bridge(6, 11, 9, 11)

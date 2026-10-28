@@ -31,10 +31,10 @@ def _bodies():
 
 
 def spawn_kinds(body, consts):
-    """[kind id] of the enemy's scripted reinforcements in a mission's code: units in its spawn calls (`UnitDef::new(2, unit::X`, `w(k, unit::X)`, `at(unit::X`, `wave(2, unit::X, &[cells])`) and in the stage lists it names (the `*_WAVE` constants of M25)."""
+    """[kind id] of the enemy's scripted reinforcements in a mission's code: units in its spawn calls (`UnitDef::new(2, unit::X`, `w(k, unit::X)`, `at(unit::X`, `wave(2, unit::X, &[cells])`) and in the stage lists it names (the `*_WAVE` constants of M30)."""
     kinds = []
     for n in re.findall(r"UnitDef::new\(2, unit::([A-Z_]+)", body):
-        kinds += [UNIT_ID[n]] * (4 if "M9_AIR" in body and n == "B_COPTER" else 5 if "M9_INF" in body and n == "INFANTRY" else 1)
+        kinds += [UNIT_ID[n]] * (4 if "M12_AIR" in body and n == "B_COPTER" else 5 if "M12_INF" in body and n == "INFANTRY" else 1)
     for n in re.findall(r"\bw\(\d+, unit::([A-Z_]+)\)", body) + re.findall(r"\bat\(unit::([A-Z_]+),", body):
         kinds.append(UNIT_ID[n])
     for n, cells in re.findall(r"wave\(2, unit::([A-Z_]+), &\[(.*?)\]", body):
@@ -117,16 +117,16 @@ def rows():
         nm = {"player_value": pv, "enemy_value": ev, "force": ev / max(pv, 1), "economy": ee / max(pe, 1), "fortified": round(min(1.0, pipes / 60), 2), "pressure": len(kinds) / 3.0}
         nm.update({"pe": pe, "ee": ee, "kinds": kinds})
         out.append((n, title, nm, esd.static_score(nm), len(sk)))
-    # the final mission is both maps (M25 part one and M27 part two) together: its row replaces M25's, summing the two maps' forces, funds and fields
-    one = next(r for r in out if r[0] == 25)
-    two = next(r for r in out if r[0] == 27)
+    # the final mission is both maps (M30 part one and M31 part two) together: its row replaces M30's, summing the two maps' forces, funds and fields
+    one = next(r for r in out if r[0] == 30)
+    two = next(r for r in out if r[0] == 31)
     a, b = one[2], two[2]
     kinds = a["kinds"] | b["kinds"]
     nm = {"player_value": a["player_value"] + b["player_value"], "enemy_value": a["enemy_value"] + b["enemy_value"], "pe": a["pe"] + b["pe"], "ee": a["ee"] + b["ee"], "fortified": max(a["fortified"], b["fortified"]), "pressure": len(kinds) / 3.0}
     nm["force"] = nm["enemy_value"] / max(nm["player_value"], 1)
     nm["economy"] = nm["ee"] / max(nm["pe"], 1)
-    out = [r for r in out if r[0] != 25]
-    out.append((25, "The Last Accord (both maps)", nm, esd.static_score(nm), one[4] + two[4]))
+    out = [r for r in out if r[0] != 30]
+    out.append((30, "The Last Accord (both maps)", nm, esd.static_score(nm), one[4] + two[4]))
     return sorted(out, key=lambda r: r[0])
 
 

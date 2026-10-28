@@ -16,40 +16,45 @@ pub static BH2: PictureSource = PictureSource::new("bh2", include_bytes!("../art
 pub const REGION_NAMES: [&str; 6] = ["Sea", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole"];
 
 /// The class of Black Hole's own island (the grey island, bottom left). It is Black Hole's from the start: [`PictureMap::conquered`] always
-/// includes it, so it is drawn in Black Hole's colours, and its missions (M1, M2, M26) never change it.
+/// includes it, so it is drawn in Black Hole's colours, and its missions (M1, M2, M32) never change it.
 pub const BLACK_HOLE_REGION: u8 = 5;
 
 /// Where each mission's flag stands on the BH2 picture: (mission number, nation class, x, y) in map pixels (docs/dev/bh2-maps.md). Every flag must lie inside
-/// its own nation's mask (`world_picture::tests::bh2_flags_lie_in_their_nation`, `aw2dev bh2 check`). M1, M2 and the secret M26 are on Black Hole's island,
-/// M3 to M5 in Green Earth's south. The rest of the campaign's flags are placed with their missions.
+/// its own nation's mask (`world_picture::tests::bh2_flags_lie_in_their_nation`, `aw2dev bh2 check`). M1, M2, M23 and the secret M32 are on Black Hole's island,
+/// M3 to M8 in Green Earth (M14, the border mission, on its edge). The rest of the campaign's flags are placed with their missions.
 pub const BH2_FLAGS: &[(u8, u8, i16, i16)] = &[
     (1, 5, 38, 204),
     (2, 5, 18, 214),
     (3, 3, 96, 173),
     (4, 3, 150, 215),
     (5, 3, 115, 140),
-    (6, 4, 203, 194),
-    (7, 4, 190, 176),
-    (8, 4, 222, 168),
-    (9, 4, 235, 92),
-    (10, 4, 222, 130),
-    (11, 2, 120, 100),
-    (12, 2, 198, 46),
-    (13, 2, 112, 76),
-    (14, 2, 168, 22),
-    (15, 1, 100, 44),
-    (16, 1, 106, 56),
-    (17, 1, 60, 48),
-    (18, 5, 28, 198),
-    (19, 1, 60, 80),
-    (20, 1, 90, 72),
-    (21, 1, 108, 36),
-    (22, 1, 44, 80),
-    (23, 1, 24, 40),
-    (24, 1, 80, 30),
-    (25, 1, 60, 60),
-    (26, 5, 30, 222),
-    (27, 1, 74, 66),
+    (6, 3, 169, 124),
+    (7, 3, 58, 136),
+    (8, 3, 130, 190),
+    (9, 4, 203, 194),
+    (10, 4, 190, 176),
+    (11, 4, 222, 168),
+    (12, 4, 235, 92),
+    (13, 4, 222, 130),
+    (14, 3, 145, 118),
+    (15, 2, 172, 100),
+    (16, 2, 120, 100),
+    (17, 2, 198, 46),
+    (18, 2, 112, 76),
+    (19, 2, 168, 22),
+    (20, 1, 100, 44),
+    (21, 1, 106, 56),
+    (22, 1, 60, 48),
+    (23, 5, 28, 198),
+    (24, 1, 60, 80),
+    (25, 1, 90, 72),
+    (26, 1, 108, 36),
+    (27, 1, 44, 80),
+    (28, 1, 24, 40),
+    (29, 1, 80, 30),
+    (30, 1, 60, 60),
+    (31, 1, 74, 66),
+    (32, 5, 30, 222),
 ];
 
 /// A converted picture, parsed on first use.
@@ -239,9 +244,9 @@ mod tests {
             assert_eq!(m.region_at(x as i32, y as i32), region, "M{mission}'s flag at ({x}, {y}) is not inside {}", REGION_NAMES[region as usize]);
             assert!(region != 0, "M{mission}'s flag is on the sea");
         }
-        // the owner's plan: M1, M2 and M26 on Black Hole's island, M3 to M5 in Green Earth, M6 to M10 in Yellow Comet, M11 to M14 in Blue Moon, M15 to M20 in Orange Star (M18 on Black Hole's own island)
+        // the owner's plan: M1, M2 and M32 on Black Hole's island, M3 to M8 in Green Earth (M14 on its border), M9 to M13 in Yellow Comet, M16 to M19 in Blue Moon, M20 to M25 in Orange Star (M23 on Black Hole's own island)
         for &(mission, region, ..) in BH2_FLAGS {
-            let want = if matches!(mission, 1 | 2 | 18 | 26) { BLACK_HOLE_REGION } else if mission >= 15 { 1 } else if mission >= 11 { 2 } else if mission >= 6 { 4 } else { 3 };
+            let want = if matches!(mission, 1 | 2 | 23 | 32) { BLACK_HOLE_REGION } else if mission >= 20 { 1 } else if mission >= 15 { 2 } else if mission == 14 { 3 } else if mission >= 9 && mission <= 13 { 4 } else if mission >= 16 { 2 } else { 3 };
             assert_eq!(region, want, "M{mission}");
         }
     }

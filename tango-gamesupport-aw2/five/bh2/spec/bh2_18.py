@@ -1,97 +1,102 @@
-"""BH2 M18 The Door Is Open (Act IV): Black Hole's harbour depot, under attack from the sea. Asuka + Crumb (the forced tag pair) against one Orange Star army under Hachi + Jake. Normal look (a wasteland look would turn the harbour into lava), clear.
+"""BH2 M18 Whiteout Harbour (Act III): Olaf's harbour town in a snowstorm and fog. Flak (forced) against Olaf: a naval and ground mix.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md sections 4 and 4b). The situation: the depot is a harbour: a bay in the south with six ports on its shores (quays), a quay district on the north shore (two rows of warehouse cities with a service road between them) and, on the west arm of the bay,
-the walled point: the depot's HQ, its base district and the yard where the crate stands, shut off from the north shore by a pipe wall from the west coast to the bay with two seam gates and a long beach on its south side. Hachi and Jake land from the sea: their Landers stand off the point's south beach, their
-Cruiser and Submarine off the east coast, and their beachhead (HQ, bases) holds the north-east shore. The land hangs from the map's top edge: a U round the bay, not an island. Black Hole's own Landers lie in the bay.
-- Scripted fight (4b): defend the depot until Crumb, a named unit (an APC called `crumb`), reaches the crate tile `mark_crate`: the crate opens and Black Hole's reserve wakes, four Neotanks on the `mark_neo*` cells in the yard. Crumb starts at the east quay (the reinforcement column) and has to get into the point:
-  by a seam gate (the wall's seams break) or across the bay in a Lander.
-- Lanes: the north shore road along the warehouse rows to the wall's gates, the bay for the Landers, the long south beach, the east arm's docks.
-- Where the fight happens: the wall's gates and the warehouse rows, the bay, then the yard.
-- Threats and answers: Hachi's and Jake's Tanks and artillery on the north shore and B Copters -> Black Hole's Anti-Air, Tanks and the Neotanks of the reserve (the defenders start outnumbered: the point's bases and ports build more); their Landers on the south beach -> the point's artillery and Black Hole's Cruiser and Submarine.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The shape: two bands of land, not two ovals: the northern land runs off the map's top edge and its south coast is a jagged fjord coast (a big fjord and a small one biting up into it); the southern land runs off the bottom edge as a broken shelf (two coves cut into it and its east end is split off as an island by a strait). The situation: Blue Moon holds the northern coast: a fjord cuts into it from the north; Olaf's harbour town stands on the shores of the channel (two ports in the bottom-right of the island, so the fleet meets the enemy within a turn), his HQ and a
+district of bases on the east lobe, a Fighter field and the fleet in the fjord. Black Hole holds a southern island across a channel of five rows with reefs: its HQ, a base district and two ports on the channel. There is no land link: the armies cross by sea, Landers on the long beaches (the continent's south coast, the island's north coast) under the cover of the fleets in the channel. A river rises from a pond in the east
+lobe's hills and reaches the channel with a bridge for the coast road. Snow: the heaviest weather the engine has, with fog.
+- Lanes: the channel and its reefs, the beaches, the fjord and the channel ports, the river's bridge on the coast road, the lobes' ridges.
+- Where the fight happens: the channel (the fleets) and the beaches, then the harbour town's ports and the coast road.
+- Properties: Black Hole's two channel ports and bases; the continent's villages along the coast road, Olaf's harbour district (two channel ports), his Fighter airport.
+- Threats and answers: Olaf's Battleship, Cruisers and Submarines -> Black Hole's own and the guns on the island's north coast; his Fighters and Copters -> Anti-Air and Copters; his Tanks and artillery on the beaches -> Md Tanks and artillery.
 """
-import random
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, fix_rungs
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, snap_coast, fix_rungs
 
-W, H = 40, 28
-NEO = [(5, 15), (7, 19), (11, 15), (11, 19)]     # the reserve's Neotanks, in the yard
-CRATE = (9, 16)                                  # the crate tile
+W, H = 40, 30
+Y_N = 13                                           # the northern land's south coast (flat in the east, where the ports are)
+Y_S = 20                                           # the southern shelf's north coast
 
 
 def build():
     m = Canvas("bh2_18", W, H, fill="~")
-    rnd = random.Random("bh2_18/coast")
-    xe = 34
-    for y in range(0, 12):
-        xe = max(31, min(36, xe + rnd.choice([-1, 0, 1])))
-        m.rect(".", 2, y, xe, y)                                       # the land hangs from the top edge: no coast in the north
-    for y in range(12, 22):
-        xe = max(31, min(36, xe + rnd.choice([-1, 0, 1])))
-        m.rect(".", 2, y, 14, y)
-        m.rect(".", 25, y, xe - (1 if y >= 20 else 0), y)
-    m.rect(".", 2, 21, 14, 21); m.rect("~", 2, 21, 3, 21)
-    for y in range(12, 22):                                       # the bay (x15..24) open to the south sea
-        m.rect("~", 15, y, 24, y)
-    # --- the walled point: a pipe wall from the west coast to the bay (y12) with two seam gates; cliffs and woods inside the point
-    m.pipe([(2, 12), (14, 12)]); m.put("Z", 6, 12).put("Z", 10, 12)
-    belt(m, "^", [(3, 14), (4, 18)], width=1, seed=1); belt(m, "^", [(12, 14), (13, 17)], width=1, seed=2); belt(m, "f", [(3, 20), (6, 20)], width=1, seed=3); belt(m, "f", [(8, 14), (11, 14)], width=1, seed=4)
-    for i, (cx, cy, n, ch) in enumerate([(6, 2, 3, "f"), (15, 3, 3, "^"), (24, 2, 3, "f"), (33, 2, 3, "^"), (18, 5, 3, "f"), (30, 10, 3, "f"), (8, 7, 3, "^")]):
-        m.cluster(ch, cx, cy, n, seed=70 + i)
-    belt(m, "f", [(18, 4), (24, 5)], width=2, seed=41); belt(m, "^", [(24, 13), (26, 17)], width=1, seed=42); belt(m, "f", [(31, 12), (33, 14)], width=1, seed=43); belt(m, "^", [(9, 8), (12, 10)], width=1, seed=44); belt(m, "f", [(2, 8), (4, 10)], width=1, seed=45)
-    belt(m, "^", [(5, 4), (10, 5)], width=1, seed=5); belt(m, "^", [(28, 4), (33, 5)], width=1, seed=6, gaps=[(30, 4)]); belt(m, "^", [(27, 14), (30, 15)], width=1, seed=7); belt(m, "f", [(14, 5), (19, 4)], width=1, seed=8)
-    belt(m, "f", [(26, 7), (30, 9)], width=1, seed=9); belt(m, "f", [(31, 15), (33, 19)], width=1, seed=10); belt(m, "^", [(3, 7), (6, 9)], width=1, seed=11); belt(m, "f", [(11, 6), (13, 9)], width=1, seed=12)
-    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
-        "M18 The Door Is Open (normal look, clear): Asuka + Crumb (forced pair, Black Hole, HQ 1 (5,17), the walled point on the bay's west arm) against one Orange Star army under Hachi + Jake (HQ 2 (31,6), the north-east beachhead). The pipe wall y12 (x2..14) has seam gates (6,12) and (10,12). "
-        "Six ports round the bay, warehouse rows on the north shore (rows 7 and 9). Scripted: Crumb (the named APC `crumb`, at the east quay (27,18)) must reach the crate tile mark_crate (9,16); then the reserve's four Neotanks appear on the mark_neo cells. "
-        "Com Tower (20,5), missile silo (22,3). Player: INF2 MECH1 TANK3 MDT1 ART2 AA1 APC1 (crumb) CR1 SUB1 LAN2; Orange Star: INF6 MECH3 TANK5 MDT2 ART3 RECON1 BCO3 CR1 SUB1 LAN2."))
-    m.put("1", 5, 17).put("2", 31, 6).put("t", 20, 5).put("M", 22, 3)
-    # the quays: ports on the bay's three shores (the north shore's are neutral)
-    for (x, y) in [(14, 15), (14, 18), (25, 15), (25, 18), (18, 11), (21, 11)]:
+    # --- the northern land: off the top edge; fjords bite up from the channel: a big one (x 16..21, up to row 5), a small one (x 3..5, up to row 8), notches in between
+    for x in range(W):
+        b = Y_N
+        if 16 <= x <= 21:
+            b = 5
+        elif 3 <= x <= 5:
+            b = 8
+        elif x in (14, 15, 22, 23):
+            b = 9
+        elif x in (9, 10, 11):
+            b = 11
+        elif x in (6, 7, 8, 12, 13):
+            b = 12
+        m.rect(".", x, 0, x, b)
+    # --- the southern shelf: off the bottom edge; two coves cut into its north coast, a strait splits its east end off as an island
+    for x in range(W):
+        t = Y_S
+        if x in (3, 4, 5):
+            t = Y_S + 2
+        elif x in (14, 15, 28, 29, 30):
+            t = Y_S + 1
+        if 28 <= x <= 29:
+            continue
+        m.rect(".", x, t, x, H - 1 if x < 28 else H - 2)
+    for x in range(10, 14):                          # cove 1 (Black Hole's west port)
+        m.rect("~", x, Y_S, x, Y_S + 3)
+    for x in range(22, 26):                          # cove 2 (Black Hole's east port)
+        m.rect("~", x, Y_S, x, Y_S + 3)
+    m.rect("~", 28, Y_S, 29, H - 1)
+    pond = m.lake(34, 5, 8, seed=1, river_end=(34, 6))                 # the river rises from a pond in the east hills and reaches the channel
+    m.river([(34, 6), (34, Y_N)])
+    belt(m, "^", [(4, 3), (10, 4), (14, 3)], width=1, seed=1, gaps=[(8, 4)]); belt(m, "^", [(24, 3), (29, 4), (36, 6)], width=1, seed=2, gaps=[(27, 3)]); belt(m, "^", [(2, 10), (6, 11)], width=1, seed=3)
+    belt(m, "^", [(24, 9), (27, 11)], width=1, seed=4); belt(m, "^", [(36, 10), (38, 12)], width=1, seed=5); belt(m, "^", [(2, 23), (8, 24)], width=1, seed=6); belt(m, "^", [(16, 23), (21, 22)], width=1, seed=7); belt(m, "^", [(30, 24), (36, 23)], width=1, seed=8)
+    belt(m, "f", [(6, 5), (12, 7)], width=1, seed=9); belt(m, "f", [(24, 6), (30, 8)], width=1, seed=10); belt(m, "f", [(7, 26), (12, 27)], width=1, seed=11); belt(m, "f", [(17, 26), (22, 27)], width=1, seed=12); belt(m, "f", [(30, 26), (37, 26)], width=1, seed=13)
+    belt(m, "f", [(14, 11), (18, 12)], width=1, seed=14); belt(m, "f", [(2, 6), (5, 7)], width=1, seed=15)
+    m.header(armies=2, colours=(BH, BM), objective=[1], comment=(
+        "M18 Whiteout Harbour (snow look, snow weather, fog): Flak (forced, Black Hole, HQ 1 (16,25), the broken shelf in the south) against Olaf (Blue Moon, HQ 2 (31,8), the east of the northern land). "
+        "A river from a pond (34,5) reaches the channel, its bridge (34,9) on the coast road. Olaf's ports (30,13) and (37,13) face the channel at the bottom-right of his land; the channel (rows 14..19) has reefs and no bridge: Landers only. Black Hole's ports sit in the two coves (11,19) and (24,19). Com Tower (10,9), missile silo (34,24) on the split-off island. "
+        "Player: INF3 MECH1 TANK3 ART2 ROCK1 RECON1 AA1 APC1 BCO2 BS1 CR2 SUB2 LAN2; Olaf: INF4 MECH2 TANK3 MDT1 ART2 ROCK1 RECON1 FTR2 BCO3 BS1 CR2 SUB1."))
+    m.put("1", 16, 25).put("2", 31, 8).put("t", 10, 9).put("M", 34, 24)
+    S = lambda x, y: snap(m, x, y)
+    PORTS = [(30, Y_N), (37, Y_N)]
+    pcs = [snap_coast(m, 11, Y_S - 1), snap_coast(m, 24, Y_S - 1)]
+    for (x, y) in PORTS + pcs:
         m.put("P", x, y)
-    # warehouse rows: two rows of cities with a service road between, along the north shore
-    for x in range(14, 30, 2):
-        m.put("C", x, 7).put("C", x, 9)
-    m.rect("R", 13, 8, 30, 8)
-    route(m, [(30, 8), (30, 11), (29, 14), (28, 18), (27, 18)], seed=1)
-    route(m, [(13, 8), (10, 10), (10, 11), (10, 11)], seed=2) if False else route(m, [(13, 8), (11, 9), (10, 11)], seed=2)
-    route(m, [(6, 11), (7, 9), (11, 8)], seed=3); route(m, [(6, 13), (7, 16), (5, 17)], seed=4); route(m, [(10, 13), (10, 16), (9, 16)], seed=5); route(m, [(7, 16), (11, 18), (13, 18), (14, 18)], seed=6)
-    route(m, [(10, 16), (13, 15), (14, 15)], seed=7); route(m, [(28, 18), (26, 15), (25, 15)], seed=8); route(m, [(27, 18), (25, 18)], seed=9); route(m, [(30, 8), (31, 7)], seed=10); route(m, [(18, 8), (18, 10), (18, 11)], seed=11)
-    route(m, [(21, 8), (21, 10), (21, 11)], seed=12); route(m, [(20, 8), (20, 5)], seed=13); route(m, [(22, 8), (22, 4)], seed=14) if False else None
+    route(m, [S(16, 24), S(19, 22), S(26, 22)], seed=41, wander=0.6); route(m, [S(16, 25), S(10, 24), S(6, 25), S(2, 26)], seed=2); route(m, [S(16, 25), S(17, 28), S(24, 27)], seed=3)
+    route(m, [pcs[0], S(pcs[0][0], pcs[0][1] + 3), S(14, 24)], seed=4); route(m, [pcs[1], S(pcs[1][0], pcs[1][1] + 3), S(21, 23)], seed=5); route(m, [S(31, 25), S(34, 24)], seed=6) if False else None
+    route(m, [S(31, 25), S(36, 25), S(34, 24)], seed=7)
+    route(m, [S(4, 10), S(10, 9), S(13, 7), S(14, 4), S(20, 3), S(26, 5), S(31, 7)], seed=8, wander=1.1)
+    route(m, [S(10, 9), S(14, 10), S(18, 12), S(24, 12), S(28, 12), S(32, 11), (34, 9, "="), S(36, 9)], seed=9) if False else route(m, [S(10, 9), S(14, 11), S(20, 12), S(26, 12), S(30, 10), (32, 9), (34, 9, "="), (36, 9), S(37, 11)], seed=9, wander=1.1)
+    route(m, [S(31, 8), S(30, 12), (30, Y_N - 1)], seed=10); route(m, [S(37, 11), (37, Y_N - 1)], seed=11); route(m, [S(10, 9), S(8, 6), S(5, 4)], seed=12)
     thin_roads(m); fix_rungs(m)
-    for args in [(5, 17, "BBC"), (8, 19, "BC"), (4, 14, "C"), (12, 17, "BC"), (31, 6, "BBBC"), (33, 9, "BC"), (28, 6, "BC"), (28, 12, "BC"), (30, 17, "bc"), (33, 12, "C"), (8, 8, "C"), (6, 6, "c"), (4, 5, "cc"), (3, 2, "c"), (8, 2, "cc"), (20, 2, "cc"), (33, 16, "c"), (16, 4, "c"), (26, 19, "c")]:
+    for args in [(16, 25, "BBC"), (11, 24, "BC"), (24, 24, "BC"), (19, 22, "C"), (6, 25, "C"), (2, 26, "c"), (21, 27, "CC"), (14, 27, "C"), (34, 24, "cc"), (36, 26, "c"), (31, 25, "bc"),
+                 (31, 8, "BBBC"), (28, 6, "BC"), (34, 4, "AB"), (30, 11, "BC"), (26, 11, "C"), (20, 12, "Cc"), (14, 11, "CC"), (10, 9, "Cc"), (4, 10, "C"), (14, 4, "C"), (22, 4, "C"), (37, 11, "c"), (12, 7, "c"), (6, 4, "cc"), (2, 2, "cc"), (37, 2, "cc"), (36, 7, "c")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
         except ValueError:
             pass
-    for (x, y) in [CRATE] + NEO:
-        if m.g[y][x] in ".fRc^":
-            m.g[y][x] = "R" if (x, y) == CRATE else "."
     neutralize(m, 13)
     m.tidy()
-    shore(m, 1, (1, 20, 16, 26), dirs="NS"); shore(m, 1, (24, 20, W - 2, 26), dirs="NS")
-    for (x, y) in [(15, 15), (15, 18), (24, 15), (24, 18), (18, 12), (21, 12)]:
+    shore(m, 1, (1, 1, W - 2, H - 2), dirs="NS")
+    for (x, y) in pond:
         m.g[y][x] = "~"
-    for (x, y) in [(14, 14), (14, 17), (25, 14), (25, 17), (15, 14)]:
-        pass
+    for p in PORTS + pcs + [(34, Y_N)]:
+        for dx, dy in ((0, -1), (0, 1), (1, 0), (-1, 0), (0, -2), (0, 2), (2, 0), (-2, 0)):
+            if m.inside(p[0] + dx, p[1] + dy) and m.g[p[1] + dy][p[0] + dx] == ",":
+                m.g[p[1] + dy][p[0] + dx] = "~"
     m.tidy()
-    for (x, y) in [(19, 24), (20, 25), (8, 25), (31, 25), (12, 1), (28, 1), (37, 12), (37, 20)]:
-        if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
-            m.put("r", x, y)
+    for (x, y) in [(6, 17), (9, 17), (12, 16), (15, 17), (17, 17), (21, 17), (24, 17), (26, 16), (28, 17), (33, 17), (35, 17), (39, 17), (13, 18), (19, 18), (32, 16), (4, 17), (22, 18), (1, 17), (38, 23), (6, 29), (20, 28), (27, 28), (8, 28)]:
+        if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2) if m.inside(a, b)):
+            m.put("r", x, y)                                                    # (reefs: ships hide in them in the fog; clear of every shore and every port's door)
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.reserve([CRATE] + NEO)
-    m.spread(1, {INF: 2, MECH: 1, TANK: 3, MDT: 1, ART: 2, AA: 1}, (2, 13, 14, 20), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 6, MECH: 3, TANK: 5, MDT: 2, ART: 3, RECON: 1, BCO: 3}, (14, 3, 34, 11), seed=2, gap=0, avoid=av)
-    m.unit(1, APC, 27, 18, name="crumb")
-    for k_, (x, y) in zip([LAN, LAN, CR, SUB], m.sea_near(19, 17, 4, box=(15, 13, 24, 21), deep=False)):
-        m.unit(1, k_, x, y)
-    for k_, (x, y) in zip([LAN, LAN], m.sea_near(8, 23, 2, box=(2, 22, 14, 26), deep=False)):
-        m.unit(2, k_, x, y)
-    for k_, (x, y) in zip([CR, SUB], m.sea_near(37, 8, 2, box=(35, 2, 39, 14), deep=False)):
-        m.unit(2, k_, x, y)
-    m.note("hq", 5, 17, "Asuka + Crumb's HQ"); m.note("enemy_hq", 31, 6, "Hachi + Jake's HQ (objective)"); m.note("mark_crate", CRATE[0], CRATE[1], "the crate tile: Crumb arriving here opens the crate")
-    for i, (x, y) in enumerate(NEO):
-        m.note(f"mark_neo{i + 1}", x, y, "reserve: a Neotank appears here")
-    m.note("gate1", 6, 12, "seam gate in the point's wall"); m.note("gate2", 10, 12, "seam gate in the point's wall")
+    m.spread(1, {INF: 3, MECH: 1, TANK: 3, ART: 2, ROCK: 1, RECON: 1, AA: 1, APC: 1, BCO: 2}, (2, 21, 27, 28), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 4, MECH: 2, TANK: 3, MDT: 1, ART: 2, ROCK: 1, RECON: 1, FTR: 2, BCO: 3}, (24, 0, 38, 12), seed=2, gap=0, avoid=av)
+    for k, (x, y) in zip([BS, CR, CR, SUB, SUB, LAN, LAN], m.sea_near(18, 17, 7, box=(8, 15, 27, 19), deep=False)):
+        m.unit(1, k, x, y)
+    for k, (x, y) in zip([BS, CR, CR, SUB], m.sea_near(33, 16, 4, box=(27, 15, 38, 18), deep=False)):
+        m.unit(2, k, x, y)
+    m.note("hq", 16, 25, "Flak's HQ"); m.note("enemy_hq", 31, 8, "Olaf's HQ (objective)"); m.note("channel", 20, 17, "the channel: Landers only")
     return m

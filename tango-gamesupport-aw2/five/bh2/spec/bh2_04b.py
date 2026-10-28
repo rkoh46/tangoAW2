@@ -1,6 +1,6 @@
 """BH2 M4 Talons (Act I), front 2: the sky. Hawke's wing against Eagle's.
 
-Design (docs/dev/map-design.md; BH1's sky-front rule, bh15b / bh_act3.rs M15): open sky and the pre-deployed air units, nothing else: no HQ, no property, no airport, no
+Design (docs/dev/map-design.md; BH1's sky-front rule, bh15b / bh_act3.rs M20): open sky and the pre-deployed air units, nothing else: no HQ, no property, no airport, no
 B Copter, no ground unit and no Anti-Air or Missiles (there is no ground to put them on). The front is won (and lost) by AW2's rout rule: every unit of one side destroyed.
 - Room: 22 x 16 cells, the two wings in loose formations 12 columns apart (not blocks): Fighters in front, Bombers behind them, the Stealths on the flanks.
 - Threats and answers: Fighters answer Bombers and Stealths, Stealths answer Fighters' fuel and Bombers' escorts; Bombers hit nothing in the air, so each wing needs its Fighters as

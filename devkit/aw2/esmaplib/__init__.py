@@ -32,6 +32,8 @@ INF, MECH, MDT, MEGA, TANK, RECON, APC, NEO, PIPER, ART, ROCK = 1, 2, 3, 4, 5, 6
 STEALTH, BBOMB, AA, MIS, FTR, BMB, BBOAT, BCO, TCO, BS, CR, LAN, SUB, CARR = 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26
 # colours
 OS, BM, GE, YC, BH = 1, 2, 3, 4, 5
+# (the maps renumbered in the 31-mission plan keep their old names as the seed of their random choices, so every approved map is drawn as before)
+SEED_NAME = {'bh2_09': 'bh2_06', 'bh2_10': 'bh2_07', 'bh2_11': 'bh2_08', 'bh2_12': 'bh2_09', 'bh2_13': 'bh2_10', 'bh2_16': 'bh2_11', 'bh2_17': 'bh2_12', 'bh2_18': 'bh2_13', 'bh2_19': 'bh2_14', 'bh2_20': 'bh2_15', 'bh2_21': 'bh2_16', 'bh2_22': 'bh2_17', 'bh2_23': 'bh2_18', 'bh2_24': 'bh2_19', 'bh2_25': 'bh2_20', 'bh2_26': 'bh2_21', 'bh2_27': 'bh2_22', 'bh2_28': 'bh2_23', 'bh2_29': 'bh2_24', 'bh2_30': 'bh2_25', 'bh2_32': 'bh2_26', 'bh2_13b': 'bh2_10b', 'bh2_25b': 'bh2_20b', 'bh2_31': 'bh2_25b'}
 INVENTION_CHARS = set("SNWELvnFVDXOM#")
 WATER = set("~r,")
 
@@ -39,6 +41,7 @@ WATER = set("~r,")
 class Canvas:
     def __init__(self, name, w, h, fill=".", campaign=None):
         self.name, self.w, self.h = name, w, h
+        self.sname = SEED_NAME.get(name, name)
         # (the campaign key: "bh2_NN" maps belong to the BH2 Campaign, the rest to Emerald Sun)
         self.campaign = campaign or ("bh2" if name.startswith("bh2_") else "es")
         self.dir = FIVE_DIR / self.campaign
@@ -117,7 +120,7 @@ class Canvas:
 
     def blob(self, ch, cx, cy, rx, ry, seed=0, wobble=0.3, only=None):
         """An organic patch: an ellipse whose edge is jittered (deterministic for `seed`)."""
-        rnd = random.Random(f"{self.name}/{seed}")
+        rnd = random.Random(f"{self.sname}/{seed}")
         for y in range(cy - ry - 2, cy + ry + 3):
             for x in range(cx - rx - 2, cx + rx + 3):
                 if not self.inside(x, y):
@@ -130,7 +133,7 @@ class Canvas:
     def meander(self, ch, a, b, seed=0, amp=2, only=None):
         """A winding line of `ch` from `a` to `b` (4-connected, so a river or a road is one piece): it heads for `b` but steps sideways now and then, up to `amp`
         cells off the straight line, giving the bends AW2's rivers and roads have. Returns its cells in order (put bridges on some of them)."""
-        rnd = random.Random(f"{self.name}/m{seed}")
+        rnd = random.Random(f"{self.sname}/m{seed}")
         (x, y), (bx, by) = a, b
         cells = [(x, y)]
         horiz = abs(bx - x) >= abs(by - y)
@@ -169,7 +172,7 @@ class Canvas:
 
     def cluster(self, ch, cx, cy, n, seed=0, only="."):
         """About `n` cells of `ch` grown outward from (cx, cy) by a random walk: an irregular wood or mountain patch with no straight edge."""
-        rnd = random.Random(f"{self.name}/c{seed}")
+        rnd = random.Random(f"{self.sname}/c{seed}")
         cells = {(cx, cy)}
         todo = [(cx, cy)]
         while len(cells) < n and todo:
@@ -188,7 +191,7 @@ class Canvas:
         """Place `kinds` ({kind: count}) for `army` inside `box` (x0, y0, x1, y1) in a loose formation instead of a block: no two units closer than `gap`
         cells (Chebyshev, 1 = never side by side on a row... 2 leaves a cell between), on ground their kind can stand on, woods and roads preferred for the
         heavy kinds. Deterministic for `seed`. Returns the cells."""
-        rnd = random.Random(f"{self.name}/u{seed}")
+        rnd = random.Random(f"{self.sname}/u{seed}")
         x0, y0, x1, y1 = box
         taken = {(u["x"], u["y"]) for u in self.u} | self.reserved
         placed = []
@@ -239,7 +242,7 @@ class Canvas:
         """A small lake of about `n` sea cells for a river to start in (AW2 has no source tile: a river starts at the map edge or in water). (cx, cy) is the cell beyond the river's
         last cell `river_end`. The map builder only draws a river mouth on a straight shore (the games' maps open their beach line for the river), so the lake has a
         flat 3-wide shore row at (cx, cy) with two rows of water behind it, and grows irregularly from there, never beside the river's last cell."""
-        rnd = random.Random(f"{self.name}/l{seed}")
+        rnd = random.Random(f"{self.sname}/l{seed}")
         ex, ey = river_end if river_end else (cx, cy + 1)
         dx, dy = cx - ex, cy - ey
         px, py = (dy, dx) if dx == 0 else (0, 1)          # (the shore row runs across the river's direction)
@@ -265,7 +268,7 @@ class Canvas:
     def ragged(self, ch="^", longest=8, seed=0):
         """Breaks every straight line of `ch` longer than `longest` (away from the map edge) into a range: every few cells one is opened to plain and its mountain moves to the
         row (or column) beside it, so the line wanders instead of marching. Deterministic for `seed`."""
-        rnd = random.Random(f"{self.name}/g{seed}")
+        rnd = random.Random(f"{self.sname}/g{seed}")
         occupied = {(u["x"], u["y"]) for u in self.u}
         keep = set("12345BCAPTQbcapt-=RI")
         for horiz in (True, False):
@@ -296,7 +299,7 @@ class Canvas:
     def desertify(self, keep=0.35, rocks=6, size=5, seed=0):
         """Dresses a map for the desert look: only `keep` of the woods stay (sparse scrub), and `rocks` outcrops of about `size` mountain cells (rock and canyon walls in the desert
         tileset) are set on open plain away from roads, properties, rivers and units. Deterministic for `seed`."""
-        rnd = random.Random(f"{self.name}/d{seed}")
+        rnd = random.Random(f"{self.sname}/d{seed}")
         for y in range(self.h):
             for x in range(self.w):
                 if self.g[y][x] == "f" and rnd.random() > keep:
@@ -315,7 +318,7 @@ class Canvas:
 
     def scatter(self, ch, box, p, seed=0, on="."):
         """`ch` on a share `p` of the cells of `box` (x0, y0, x1, y1) that hold one of `on`."""
-        rnd = random.Random(f"{self.name}/s{seed}")
+        rnd = random.Random(f"{self.sname}/s{seed}")
         x0, y0, x1, y1 = box
         for y in range(y0, y1 + 1):
             for x in range(x0, x1 + 1):
@@ -510,7 +513,7 @@ class Canvas:
     def place(self, ch, n, box, seed=0, gap=3, near="R", reach=2, on=".f", avoid=()):
         """Put `n` properties `ch` (b c a p B C A P t T ..) inside `box` (x0, y0, x1, y1): on ground in `on`, at least `gap` cells (Chebyshev) from every other property, and
         within `reach` cells (Manhattan) of a road when `near` is "R" (roads lead to what is worth taking). Deterministic for `seed`. Returns the canvas (the cells: `last_placed`)."""
-        rnd = random.Random(f"{self.name}/p{seed}")
+        rnd = random.Random(f"{self.sname}/p{seed}")
         props = set("12345BCAPTQbcapt") | INVENTION_CHARS
         have = [(x, y) for y in range(self.h) for x in range(self.w) if self.g[y][x] in props]
         taken = {(u["x"], u["y"]) for u in self.u} | set(map(tuple, avoid))
@@ -800,7 +803,7 @@ def self_river_vertical(m, x, y):
 
 def belt(m, ch, pts, width=2, seed=0, gaps=(), p=0.9, only=".f"):
     """A range or a forest belt: `ch` along the polyline `pts`, `width` cells wide with ragged edges and thinning ends; `gaps` = (x, y) passes kept open (radius 1)."""
-    rnd = random.Random(f"{m.name}/b{seed}")
+    rnd = random.Random(f"{m.sname}/b{seed}")
     path = m.path(pts)
     n = len(path)
     for i, (x, y) in enumerate(path):
@@ -821,7 +824,7 @@ def belt(m, ch, pts, width=2, seed=0, gaps=(), p=0.9, only=".f"):
 def town(m, cx, cy, kinds, seed=0, radius=2, roadside=True):
     """A town: the properties `kinds` (a string of property characters, e.g. "CCB") on free ground close to (cx, cy), each touching the road or another of the town's buildings,
     so they read as one place to fight for. If the ground is crowded the radius grows (up to +2) and then the road is no longer required. Returns the cells."""
-    rnd = random.Random(f"{m.name}/t{seed}")
+    rnd = random.Random(f"{m.sname}/t{seed}")
     keep = set("12345BCAPTQbcapt") | INVENTION_CHARS
     placed = []
     for k in kinds:

@@ -9,7 +9,7 @@ import os
 import numpy as np
 
 SIMILAR = 0.62
-APPROVED = {"bh2_01", "bh2_02", "bh2_03", "bh2_04", "bh2_05", "bh2_06", "bh2_07", "bh2_08", "bh2_09", "bh2_10", "bh2_10b"}
+APPROVED = {"bh2_01", "bh2_02", "bh2_03", "bh2_04", "bh2_05", "bh2_09", "bh2_10", "bh2_11", "bh2_12", "bh2_13", "bh2_13b"}
 SKIP = {"bh2_04b"}                      # the sky front has no land
 
 

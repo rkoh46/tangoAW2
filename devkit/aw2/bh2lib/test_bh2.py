@@ -35,11 +35,11 @@ class Specs(unittest.TestCase):
             self.assertEqual(sum(1 for u in m.u if u["hp"]), 0, f"{m.name}: deployed units start at full strength (and the map builder gives full ammo and fuel)")
 
     def test_deathray_only_in_m22_at_the_top_edge(self):
-        """The Deathray is Black Hole's alone and stands at the top edge: M22 only (IV01 checks the row)."""
+        """The Deathray is Black Hole's alone and stands at the top edge: M27 only (IV01 checks the row)."""
         for p in specs("bh2"):
             rows = load_spec(p).rows()
             has = "D" in "".join(rows)
-            self.assertEqual(has, p.stem == "bh2_22", p.stem)
+            self.assertEqual(has, p.stem == "bh2_27", p.stem)
             if has:
                 self.assertIn("D", rows[1], "the Deathray's anchor is on row 1: its footprint touches the top edge")
 
@@ -49,10 +49,10 @@ class Specs(unittest.TestCase):
         self.assertTrue(all(u["kind"] in (12, 16, 17) for u in m.u))      # Stealth, Fighter, Bomber: no B Copter, no ground, no Anti-Air
         self.assertEqual(set("".join(m.rows())), {"."})
 
-    def test_second_hqs_only_in_m5(self):
+    def test_no_map_has_a_second_hq(self):
         for p in specs("bh2"):
             n = "".join(load_spec(p).rows()).count("Q")
-            self.assertEqual(n, {"bh2_05": 1}.get(p.stem, 0), p.stem)     # (M5's held second HQ; M25's four HQs are the armies' own digit tiles now)
+            self.assertEqual(n, 0, p.stem)     # (no army has a second HQ: rule HQ01)
 
 
 class Looks(unittest.TestCase):
@@ -198,7 +198,7 @@ class Features(unittest.TestCase):
     @unittest.skipUnless(HAVE, "needs the AW2 ROM")
     def test_feature_table_lists_what_the_maps_use(self):
         table, counts, missing = bh2lib.features_table(list(bh2lib.maps().values()))
-        for need in ("Com Tower", "missile silo", "pipe seam", "Black Factory", "Laser", "minicannon", "Black Crystal", "second HQ", "airport", "port"):
+        for need in ("Com Tower", "missile silo", "pipe seam", "Black Factory", "Laser", "minicannon", "Black Crystal", "airport", "port"):
             self.assertTrue(any(c.get(need) for c in counts.values()), need)
         self.assertNotIn("Deathray", "".join(row for m in bh2lib.maps().values() for row in m.text))
 

@@ -83,7 +83,7 @@ pub fn orders_at(units: Vec<UnitDef>, player: u8, armour: u8, holders: &[(u8, u8
 /// HQ); foot soldiers get [`CAPTURE`] and indirect fire [`ATTACK`], the rest keep the HQ role (the reinforcement
 /// is the threat). `player` is the army that keeps what it has (army 1; M28's player is the fifth army).
 pub fn spawn_orders(m: &mut MissionDef) {
-    let player = if matches!(m.key, "bh28" | "bh2_25") { 5 } else { 1 };
+    let player = if matches!(m.key, "bh28" | "bh2_30") { 5 } else { 1 };
     let fix = |u: &mut UnitDef| {
         if u.army != player && u.ai == 0 && !u.freeze && u.name.is_none() {
             u.ai = match u.kind {
@@ -135,11 +135,11 @@ mod tests {
     /// The audit of the whole campaign (docs/AW2.md, "AI roles"): the computer's armies are given orders, and only a minority holds.
     #[test]
     fn every_mission_gives_the_enemy_orders_and_only_a_minority_holds() {
-        // Missions whose design holds a larger share, by name: M14's ring (frozen until day 3), M29 and M30's camp, M31's road blocks.
+        // Missions whose design holds a larger share, by name: M19's ring (frozen until day 3), M29 and M30's camp, M31's road blocks.
         const DESIGNED: [&str; 4] = ["bh14", "bh29", "bh30", "bh31"];
         let d = crate::bh_campaign::def();
         for m in &d.missions {
-            let player = if matches!(m.key, "bh28" | "bh2_25") { 5 } else { 1 };
+            let player = if matches!(m.key, "bh28" | "bh2_30") { 5 } else { 1 };
             assert!(!m.units.is_empty(), "{}: no deployment", m.key);
             let foes: Vec<&UnitDef> = m.units.iter().filter(|u| u.army != player).collect();
             let held = foes.iter().filter(|u| u.ai == 0 || u.ai == STAND || u.freeze).count();
@@ -174,7 +174,7 @@ mod tests {
     fn spawned_foot_soldiers_and_guns_have_orders() {
         let d = crate::bh_campaign::def();
         for m in &d.missions {
-            let player = if matches!(m.key, "bh28" | "bh2_25") { 5 } else { 1 };
+            let player = if matches!(m.key, "bh28" | "bh2_30") { 5 } else { 1 };
             for t in &m.triggers {
                 for a in &t.then {
                     let Action::Spawn(v) = a else { continue };

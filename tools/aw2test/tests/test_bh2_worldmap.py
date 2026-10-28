@@ -71,7 +71,7 @@ def check(ctx, n_won, tag):
     stray = [p for p in seen if p not in where]
     ctx.check(not stray, f"{tag}: every drawn flag is a BH2_FLAGS place (stray: {stray})")
     cleared = {where[p] for p, t in seen.items() if p in where and t == CLEARED_TILE}
-    want = {m for m, *_ in fl if m <= n_won and m != 26}
+    want = {m for m, *_ in fl if m <= n_won and m != 32}
     ctx.check(cleared == want, f"{tag}: the cleared flags are the won missions' (drawn {sorted(cleared)}, won {sorted(want)})")
     # nations conquered: every mission of the nation won (Black Hole's island always)
     won = lambda m: m <= n_won
@@ -90,6 +90,6 @@ def check(ctx, n_won, tag):
 
 @test(name="bh2_worldmap_flags", modes=("ds",))
 def bh2_worldmap_flags(ctx):
-    check(ctx, 24, "all")
-    check(ctx, 14, "acts1to3")
+    check(ctx, 29, "all")
+    check(ctx, 19, "acts1to3")
     check(ctx, 1, "m1")

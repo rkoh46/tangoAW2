@@ -1,13 +1,13 @@
-"""BH2 M16 The East Tower (Act IV): the castle town on its sea bluff, in the rain. A free pick against one Orange Star army under Andy + Rachel; no scripted escape, a castle assault.
+"""BH2 M16 Cold Wire (Act III): Blue Moon's snowbound border, strung with the Allies' pipe wire. Jugger (forced) against Grit. Snow look, snow weather.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: the castle stands on the north coast: a U of pipe wall (west wall x14, south wall y14, east wall x28) whose arms end in the sea, with three seam gates (west (14,9), south (21,14), east (28,9)),
-the keep and the East Tower (a Com Tower) inside, the castle's harbour in a bay of the north coast and the castle town's bases and cities. Black Hole lands in the south-west: its HQ, a base district and a port on the south coast.
-Andy and Rachel hold the castle with strong defenders. The castle's one open flank is the sea: only Landers carry an army round to the harbour beach, so a Lander flank is part of the plan (Black Hole's fleet starts with two).
-A river rises from a pond in the east hills, bends to the south coast and carries two bridges for the east highway.
-- Lanes: the south gate road, the west gate road, the east highway across the river, the sea flank to the harbour beach.
-- Where the fight happens: the three gates (broken seams open the wall) and the town's streets, then the keep.
-- Properties: Black Hole's district and port, the farm villages along the roads, the castle town (bases, cities), the harbour's ports, the East Tower.
-- Threats and answers: Andy's Tanks and Rachel's artillery on the wall -> Black Hole's Md Tanks, Rockets and its own artillery; the harbour's Cruisers and Submarine -> Black Hole's own. Orange Star fields no air.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: the Allies' supply wire runs across the border as pipelines. A west wall (x 12, from the north edge to the cliffs at y 21) shuts Black Hole's valley in the west;
+an east wall (x 29, from the cliffs at y 8 to the south edge) shuts Grit's ground in the east; a short crossbar (y 15) splits the middle box in two but for a gap beside the cliffs. The way round is the long
+zig-zag: from the west valley south round the west wall's end, up the south half of the box, through the gap, then north round the east wall's end along the northern strip. The four seam gates (two in each wall)
+are the short cuts, and a broken seam cuts the wire: Grit's guns lose the cover of the box.
+- Lanes: the zig-zag, the seam gates, the crossbar's gap, the northern strip (the long open road).
+- Where the fight happens: the box with the two Com Towers (20,10) and (20,21), the gap, and the gates in the east wall (29,12) (29,22).
+- Properties: Black Hole's valley district (a village chain on the road to the south pass), the box's neutral villages, Grit's capital and a base district behind the east wall.
+- Threats and answers: Grit's Artillery, Rockets and Missile-free guns (his indirect fire behind the wall) -> Black Hole's Md Tanks and Recons through the gates, its own Artillery and Rockets; Blue Moon fields no air, so neither army fields Anti-Air.
 """
 import random
 import sys, pathlib
@@ -18,88 +18,58 @@ from aw2.esmaplib import route, belt, town, thin_roads, neutralize
 W, H = 42, 30
 
 
-def profile(x0, x1, lo, hi, seed):
-    rnd = random.Random(f"bh2_16/{seed}")
-    out, x, v = {}, x0, rnd.randint(lo, hi)
-    while x <= x1:
-        for _ in range(rnd.randint(3, 6)):
-            if x <= x1:
-                out[x] = v
-                x += 1
-        v = max(lo, min(hi, v + rnd.choice([-1, 1])))
-    return out
-
-
 def build():
-    m = Canvas("bh2_16", W, H, fill="~")
-    rnd = random.Random("bh2_16/coast")
-    T = {}
+    m = Canvas("bh2_16", W, H)
+    # --- a frozen coast along the north and the south: ragged, with flat runs (the border's shore); the walls end in the sea
+    rnd = random.Random("bh2_11/coast")
+    T, B, t, b = {}, {}, 3, 27
     for x in range(W):
-        base = 8 if x <= 10 else 6 if x <= 13 else 3 if x <= 28 else 6 if x <= 31 else 9
-        T[x] = base + (rnd.choice([0, 0, 1]) if (x <= 10 or x >= 32) else 0)
-    for x in (4, 5, 6, 7):
-        T[x] = T[5]
-    for x in (35, 36, 37):
-        T[x] = T[36]
-    for x in range(W):                                               # land edge to edge: the coast is the north edge only, with the castle's headland in it
-        m.rect(".", x, T[x], x, H - 1)
-    for x in range(18, 25):                                           # the castle's harbour: a bay in the north coast
-        for y in range(T[x], T[x] + 3):
+        if x % 4 == 0:
+            t = max(2, min(5, t + rnd.choice([-1, 0, 1]))); b = max(25, min(28, b + rnd.choice([-1, 0, 1])))
+        T[x], B[x] = t, b
+    T[12], T[11], T[13] = 3, 3, 3
+    for x in range(W):
+        for y in range(0, T[x]):
             m.g[y][x] = "~"
-    ponds = m.lake(36, 13, 9, seed=1, river_end=(36, 14))
-    m.river([(36, 14), (36, 19), (34, 19), (34, 24), (35, 24), (35, H - 1)])
-    C = lambda x, y: (x, max(T[x] + 4, min(H - 2, y)))
-    # --- the castle wall, a U open to the north sea: it ends at the water on both arms
-    m.pipe([(14, T[14]), (14, 14), (28, 14), (28, T[28])]); m.put("Z", 14, 9).put("Z", 21, 14).put("Z", 28, 9)
-    belt(m, "^", [(8, 12), (12, 15)], width=1, seed=1); belt(m, "^", [(30, 12), (33, 8)], width=1, seed=2); belt(m, "^", [(6, 6), (11, 7)], width=1, seed=3); belt(m, "^", [(30, 18), (32, 22)], width=1, seed=4, gaps=[(31, 20)])
-    belt(m, "^", [(4, 18), (7, 20)], width=1, seed=5); belt(m, "^", [(14, 24), (19, 26)], width=1, seed=6); belt(m, "^", [(25, 22), (29, 24)], width=1, seed=7, gaps=[(27, 23)])
-    belt(m, "f", [(16, 6), (19, 8)], width=1, seed=8); belt(m, "f", [(24, 6), (26, 8)], width=1, seed=9); belt(m, "f", [(17, 18), (23, 19)], width=2, seed=10); belt(m, "f", [(4, 22), (8, 24)], width=1, seed=11)
-    belt(m, "f", [(10, 17), (13, 19)], width=1, seed=12); belt(m, "f", [(37, 18), (40, 22)], width=1, seed=13); belt(m, "f", [(30, 14), (33, 15)], width=1, seed=14); belt(m, "f", [(3, 10), (6, 11)], width=1, seed=15)
-    belt(m, "^", [(16, 23), (21, 22), (27, 24)], width=1, seed=31, gaps=[(19, 22), (24, 23)]); belt(m, "f", [(20, 26), (26, 27)], width=2, seed=32); belt(m, "^", [(12, 27), (16, 28)], width=1, seed=33); belt(m, "f", [(28, 18), (31, 21)], width=2, seed=34)
-    belt(m, "f", [(8, 25), (12, 24)], width=1, seed=35); belt(m, "^", [(34, 8), (38, 9)], width=1, seed=36)
-    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
-        "M16 The East Tower (normal look, rain): a free pick (Black Hole, HQ 1 (8,22), the south-west) against one Orange Star army under Andy + Rachel (HQ 2 (21,9), the keep). The castle: a pipe wall (west x14, south y14, east x28, ending in the sea) with seam gates (14,9), (21,14), (28,9); "
-        "the East Tower, a Com Tower, at (21,6); the harbour bay in the north coast. A river from the pond (36,13) to the south edge, bridges (36,16), (34,21) and (35,26). A second Com Tower (10,18), missile silo (25,19). "
-        "Player: INF4 MECH2 TANK4 MDT2 ART3 ROCK1 RECON1 APC1 CR1 SUB1 LAN2; Orange Star: INF4 MECH2 TANK5 MDT3 ART4 ROCK3 RECON1 CR2 SUB1."))
-    m.put("1", 8, 22).put("2", 21, 9).put("t", 21, 6).put("t", 10, 18).put("M", 25, 19)
-    PB, PC = 6, 39
-    m.put("P", PB, T[PB]).put("p", PC, T[PC]).put("P", 19, T[19] + 3).put("P", 23, T[23] + 3)
-    route(m, [(8, 23), C(12, 21), C(17, 18), C(21, 17), (21, 15)], seed=1, wander=1.2); route(m, [(8, 21), C(9, 15), C(11, 11), (13, 9)], seed=2, wander=1.2)
-    route(m, [(15, 9), C(16, 8), (19, 8), (21, 8)], seed=3); route(m, [(21, 13), (21, 10)], seed=4); route(m, [(29, 9), C(31, 11), C(32, 15), C(32, 19)], seed=5); route(m, [(27, 9), (23, 8), (21, 8)], seed=6)
-    route(m, [C(21, 17), C(27, 20), (32, 20), (34, 21, "="), (36, 21), C(39, 18), C(40, 14)], seed=7, wander=1.2); route(m, [C(40, 14), (38, 16), (36, 16, "="), (34, 16), C(31, 14)], seed=8)
-    route(m, [(PB, T[PB] + 1), C(PB, 14), C(8, 18), (8, 21)], seed=9); route(m, [(PC, T[PC] + 1), C(PC, 12), C(39, 15), C(39, 17)], seed=10); route(m, [(19, T[19] + 4), (19, 8)], seed=11); route(m, [(23, T[23] + 4), (23, 8)], seed=12); route(m, [C(30, 26), (33, 26), (35, 26, "="), (37, 26), C(38, 28)], seed=15)
-    route(m, [(10, 18), C(11, 21)], seed=13); route(m, [C(9, 15), C(6, 9), C(5, 6)], seed=16); route(m, [C(27, 18), (25, 18)], seed=14)
-    route(m, [C(21, 17), C(22, 21), C(24, 25), C(25, 28)], seed=40)
+        for y in range(B[x] + 1, H):
+            m.g[y][x] = "~"
+    C = lambda x, y: (x, max(T[x] + 1, min(B[x] - 1, y)))
+    # --- relief: the cliffs that end the walls, ranges between the lanes, snow woods
+    belt(m, "^", [(9, 21), (12, 22), (15, 21)], width=1, seed=1, gaps=[(10, 21)], p=1.0); belt(m, "^", [(27, 8), (29, 7), (32, 8)], width=1, seed=2, p=1.0)
+    belt(m, "^", [(23, 14), (23, 16)], width=1, seed=3, p=1.0); belt(m, "^", [(3, 6), (8, 5)], width=1, seed=4); belt(m, "^", [(1, 24), (6, 26)], width=1, seed=5, gaps=[(4, 25)])
+    belt(m, "^", [(15, 3), (20, 4), (25, 3)], width=1, seed=6, gaps=[(18, 3), (23, 3)]); belt(m, "^", [(33, 4), (38, 6)], width=1, seed=7); belt(m, "^", [(34, 25), (39, 27)], width=1, seed=8, gaps=[(36, 26)])
+    belt(m, "^", [(15, 25), (21, 26), (26, 27)], width=1, seed=9, gaps=[(18, 26), (24, 27)]); belt(m, "^", [(34, 12), (38, 14)], width=1, seed=10, gaps=[(36, 13)])
+    belt(m, "f", [(4, 15), (9, 17)], width=2, seed=11); belt(m, "f", [(16, 7), (22, 8)], width=1, seed=12); belt(m, "f", [(14, 18), (19, 19)], width=2, seed=13); belt(m, "f", [(24, 18), (27, 21)], width=1, seed=14)
+    belt(m, "f", [(31, 17), (35, 19)], width=2, seed=15); belt(m, "f", [(31, 3), (36, 2)], width=1, seed=16); belt(m, "f", [(2, 10), (6, 9)], width=1, seed=17); belt(m, "f", [(16, 12), (19, 13)], width=1, seed=18)
+    belt(m, "f", [(31, 23), (35, 24)], width=1, seed=19); belt(m, "f", [(4, 20), (6, 23)], width=1, seed=20)
+    # --- the wire: two walls with their seam gates and the crossbar
+    m.pipe([(12, T[12]), (12, 21)]); m.pipe([(29, 8), (29, B[29])]); m.pipe([(15, 15), (22, 15)]); m.put("^", 14, 14).put("^", 14, 15).put("^", 14, 16)
+    m.put("Z", 12, 8).put("Z", 12, 17).put("Z", 29, 12).put("Z", 29, 23)
+    m.header(armies=2, colours=(BH, BM), objective=[1], comment=(
+        "M16 Cold Wire (snow look, snow weather): Jugger (forced, Black Hole, HQ 1 (5,12), the west valley) against Grit (Blue Moon, HQ 2 (36,18), behind the east wall). West wall x12 (y0..21) with seam gates (12,8) and (12,17); "
+        "east wall x29 (y8..29) with gates (29,12) and (29,23); crossbar y15 (x15..22). Com Towers (20,10) and (20,21), missile silo (25,15). Player: INF5 MECH2 TANK5 MDT2 ART3 ROCK2 RECON1 APC1; Grit: INF5 MECH3 TANK4 MDT2 ART5 ROCK3 RECON1."))
+    m.put("1", 5, 12).put("2", 36, 18).put("t", 20, 10).put("t", 20, 21).put("M", 25, 15)
+    # --- roads that follow the land: the zig-zag (south pass, the box, the gap, the northern strip), the gates' approaches, the ring of Grit's capital
+    route(m, [C(6, 13), C(8, 17), C(11, 24), C(12, 26)], seed=1); route(m, [C(12, 26), C(17, 24), C(21, 22), C(25, 19), C(26, 15), C(26, 11), C(24, 7), C(24, 4)], seed=2)
+    route(m, [C(24, 4), C(30, 4), C(35, 6), C(37, 12), C(36, 17)], seed=3); route(m, [C(6, 12), C(9, 8), C(11, 8)], seed=4); route(m, [C(8, 17), C(11, 17)], seed=5)
+    route(m, [C(13, 8), C(17, 8), C(21, 10)], seed=6); route(m, [C(13, 17), C(17, 19), C(20, 21)], seed=7); route(m, [C(28, 12), C(26, 11)], seed=8); route(m, [C(28, 23), C(25, 20)], seed=9)
+    route(m, [C(30, 12), C(33, 15), C(36, 17)], seed=10); route(m, [C(30, 23), C(33, 21), C(36, 19)], seed=11); route(m, [C(36, 18), C(39, 22), C(39, 26)], seed=12); route(m, [C(36, 18), C(38, 9)], seed=13)
+    route(m, [C(20, 10), C(20, 5)], seed=14); route(m, [C(5, 13), C(3, 17)], seed=15)
+    route(m, [C(6, 12), C(4, 8), C(3, 6)], seed=16); route(m, [C(11, 24), C(6, 25), C(3, 25)], seed=17); route(m, [C(35, 6), C(38, 4)], seed=18); route(m, [C(37, 12), C(40, 12)], seed=19)
     thin_roads(m)
-    for args in [(8, 22, "BBC"), (11, 21, "BC"), (5, 21, "C"), (9, 15, "C"), (12, 9, "C"), (17, 18, "Cc"), (21, 17, "bc"), (27, 18, "bc"), (21, 9, "BBBC"), (17, 8, "BC"), (25, 8, "BC"), (21, 11, "CC"), (16, 11, "C"), (26, 11, "C"),
-                 (31, 11, "bc"), (33, 15, "c"), (32, 17, "c"), (38, 17, "c"), (39, 13, "cc"), (36, 21, "c"), (22, 23, "c"), (14, 22, "c"), (5, 15, "c"), (6, 9, "c"), (36, 6, "c"), (38, 28, "cc"), (30, 6, "c"), (12, 6, "c"), (4, 12, "c"), (5, 6, "cc"), (25, 28, "cc"), (3, 27, "cc"), (2, 20, "cc"), (21, 24, "c"), (37, 5, "cc")]:
-        try:
-            town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
-        except ValueError:
-            pass
-    for (x, y) in ((36, 5),):
-        if m.g[y][x] in ".f":
-            m.g[y][x] = "c"
-    neutralize(m, 14)
+    # --- towns
+    town(m, 5, 12, "BBC", seed=1); town(m, 9, 8, "BC", seed=2); town(m, 8, 17, "BC", seed=3); town(m, 3, 17, "C", seed=4); town(m, 11, 24, "CC", seed=5); town(m, 14, 26, "C", seed=6)
+    town(m, 20, 10, "Cb", seed=7); town(m, 20, 21, "Cb", seed=8); town(m, 25, 19, "Cb", seed=9); town(m, 26, 11, "bc", seed=43); town(m, 17, 8, "C", seed=11); town(m, 17, 19, "C", seed=12); town(m, 20, 5, "C", seed=13)
+    town(m, 36, 18, "BBBC", seed=14, radius=3); town(m, 33, 21, "BC", seed=15); town(m, 33, 15, "BC", seed=16); town(m, 38, 9, "BC", seed=17); town(m, 39, 24, "CC", seed=18); town(m, 31, 4, "C", seed=19)
+    town(m, 35, 6, "C", seed=20); town(m, 37, 14, "C", seed=21); town(m, 24, 25, "C", seed=22); town(m, 30, 27, "C", seed=23)
+    town(m, 3, 6, "cc", seed=31); town(m, 4, 25, "cc", seed=32); town(m, 24, 12, "c", seed=33); town(m, 22, 18, "c", seed=34); town(m, 40, 12, "cc", seed=35); town(m, 38, 4, "cc", seed=36); town(m, 40, 20, "c", seed=37); town(m, 26, 6, "c", seed=38); town(m, 16, 22, "c", seed=39)
+    neutralize(m, 13)
     m.tidy()
-    shore(m, 1, (1, 1, W - 2, H - 2), dirs="NS")
-    for (x, y) in ponds:
-        m.g[y][x] = "~"
-    for (x, y) in [(PB, T[PB] - 1), (PC, T[PC] - 1), (19, T[19] + 2), (23, T[23] + 2), (19, T[19] + 1), (23, T[23] + 1), (14, T[14] - 1), (28, T[28] - 1)]:
-        if m.g[y][x] == ",":
-            m.g[y][x] = "~"
-    m.tidy()
-    for (x, y) in [(20, 1), (23, 1), (4, 1), (35, 3), (9, 1)]:
-        if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
-            m.put("r", x, y)
+    # --- units: Black Hole in the west valley, Grit behind the east wall, a picket in the box
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.spread(1, {INF: 4, MECH: 2, TANK: 4, MDT: 2, ART: 3, ROCK: 1, RECON: 1, APC: 1}, (2, 17, 16, 28), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 4, MECH: 2, TANK: 5, MDT: 3, ART: 4, ROCK: 3, RECON: 1}, (15, 4, 27, 13), seed=2, gap=0, avoid=av)
-    for k_, (x, y) in zip([LAN, LAN, CR, SUB], m.sea_near(PB, 1, 4, box=(2, 0, 20, 5), deep=False)):
-        m.unit(1, k_, x, y)
-    for k_, (x, y) in zip([CR, CR, SUB], m.sea_near(21, 2, 3, box=(16, 0, 26, 6), deep=True)):
-        m.unit(2, k_, x, y)
-    m.note("hq", 8, 22, "Black Hole's HQ"); m.note("enemy_hq", 21, 9, "Andy + Rachel's HQ (objective)"); m.note("tower", 21, 6, "the East Tower (Com Tower)")
-    for n_, (x, y) in (("gate_w", (14, 9)), ("gate_s", (21, 14)), ("gate_e", (28, 9))):
-        m.note(n_, x, y, "seam gate of the castle wall")
+    m.spread(1, {INF: 5, MECH: 2, TANK: 5, MDT: 2, ART: 3, ROCK: 2, RECON: 1, APC: 1}, (1, 4, 11, 20), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 4, MECH: 2, TANK: 3, MDT: 2, ART: 4, ROCK: 3, RECON: 1}, (30, 9, 40, 28), seed=2, gap=0, avoid=av)
+    m.spread(2, {INF: 1, MECH: 1, TANK: 1, ART: 1}, (13, 2, 28, 28), seed=3, gap=2, avoid=av)
+    m.note("hq", 5, 12, "Jugger's HQ"); m.note("enemy_hq", 36, 18, "Grit's HQ (objective)"); m.note("gate_w1", 12, 8, "seam gate (west wall)"); m.note("gate_w2", 12, 17, "seam gate (west wall)")
+    m.note("gate_e1", 29, 12, "seam gate (east wall)"); m.note("gate_e2", 29, 23, "seam gate (east wall)")
     return m

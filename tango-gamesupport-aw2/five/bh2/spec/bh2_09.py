@@ -1,98 +1,81 @@
-"""BH2 M9 The Table (Act II): Yellow Comet's capital on its mesa. Father against daughter: Asuka (forced) against Kanbei, with Sensei at his side as the second CO of one Yellow Comet army. No time limit.
+"""BH2 M9 Paper Lanterns (Act II): a night intel raid on Sensei's B Copter fleet, on Yellow Comet's lantern islands (rain and fog, the normal look).
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md sections 4 and 4b). The situation: the island's capital stands in the north behind a pipe wall that runs from coast to coast, with three seam gates
-(west (6,12), middle (21,13), east (35,12)) and, behind it, a ridge of mountains and forest that falls to Kanbei's mesa: his HQ, a district of bases and cities, a harbour. Black Hole lands in the south: its HQ, a port,
-two Black Cannons (Black Hole's alone: `n`, firing north in a cone of ten rows) on the field in front of the wall, a Com Tower on each flank and a missile silo in the middle of the field. The cannons' cones cover the
-approach to the wall from the gates down to the guns; nobody starts in them (rule IV02). Kanbei's defence is terrain and elite units: Md Tanks, Neotanks and artillery behind the wall and the ridge.
-- Lanes: three gates in the wall (a broken seam opens one), the harbour road along the north coast (a ship's way round the wall's end), the ridge's passes behind each gate.
-- Where the fight happens: the field between the wall and the guns (the killing ground), then the seam gates, then the mesa.
-- Scripted fight (docs/BH2_CAMPAIGN.md 4b): at half strength Kanbei calls Sensei's airlift: B Copters land on the mesa's courtyard (the `mark_air*` cells) and Infantry behind the three gates (`mark_inf*`);
-  when Kanbei's last tank falls he yields (a scripted Win). The spawn cells are kept free of start units.
-- Threats and answers: Kanbei's Md Tanks and Neotanks -> the Black Cannons, Rockets, artillery and Black Hole's Md Tanks; Sensei's B Copters -> Anti-Air and Tanks; the harbour's Cruiser and Submarine -> Black Hole's own.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Asuka's raiders (a free CO pick) land from Lantern Cove, the grey island in the west (HQ, a base
+district, a port in the bay, an airstrip, a fleet of Landers and a Cruiser). Sensei holds Roost, the big island in the east: his HQ, two heliports where the B Copter fleet sits
+parked and a Cruiser and a Submarine in his two harbours. Between them lies Lantern Isle in the north (the lantern town of the title: a Com Tower, a missile silo and a village
+of neutral cities) joined by a bridge to both Cove and Roost, and Lamp Isle, a small southern island with a neutral port. The raid is won by taking Sensei's HQ.
+- Lanes: the north road (Cove, the bridge, Lantern Isle, the second bridge, Roost's north cape), the sea lane south of Lamp Isle for the Landers (long beaches on Cove's south
+  coast, Lamp Isle and Roost's south coast), the strait between Lantern Isle and Roost with its reefs for the ships.
+- Where the fight happens: Lantern Isle's lantern town (Com Tower, silo and cities) and then the heliports on Roost.
+- Properties: Cove's bases and airstrip feed the raid (Anti-Air and Copters), the three ports (Cove's bay, Lamp Isle, Roost) hold the sea; Sensei's bases and two airports are his strength.
+- Threats and answers: the B Copter fleet -> Anti-Air, Tanks and Copters from the airstrip; Sensei's Cruiser and Submarine -> the raid's Cruiser and Submarine and the Landers' escort;
+  his foot soldiers -> Tanks and artillery.
 """
-import random
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, clear_fire_lines
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize
 
-W, H = 42, 30
-AIR = [(17, 5), (25, 5), (21, 9), (13, 7)]       # the airlift's B Copters
-INF_DROP = [(6, 10), (14, 10), (21, 10), (28, 10), (35, 10)]    # and its Infantry, behind the gates
-
-
-def profile(x0, x1, lo, hi, seed):
-    rnd = random.Random(f"bh2_09/{seed}")
-    out, x, v = {}, x0, rnd.randint(lo, hi)
-    while x <= x1:
-        for _ in range(rnd.randint(3, 6)):
-            if x <= x1:
-                out[x] = v
-                x += 1
-        v = max(lo, min(hi, v + rnd.choice([-1, 1])))
-    return out
+W, H = 40, 28
 
 
 def build():
     m = Canvas("bh2_09", W, H, fill="~")
-    T = profile(1, 40, 2, 4, 1)
-    B = profile(1, 40, 26, 27, 2)
-    for x, k in ((1, 4), (2, 2), (3, 1), (38, 1), (39, 2), (40, 4)):
-        T[x] += k; B[x] -= k
-    for x in range(1, 41):
-        m.rect(".", x, T[x], x, B[x])
-    # --- the wall: a pipeline from coast to coast with three gates; the ridge behind it, the forest in front of the guns
-    m.pipe([(1, 12), (12, 12), (12, 13), (28, 13), (28, 12), (40, 12)])
-    m.put("Z", 6, 12).put("Z", 21, 13).put("Z", 35, 12)
-    belt(m, "^", [(3, 9), (10, 8), (17, 9)], width=1, seed=1, gaps=[(6, 9), (14, 9)]); belt(m, "^", [(25, 9), (32, 8), (38, 9)], width=1, seed=2, gaps=[(28, 9), (35, 9)])
-    belt(m, "^", [(9, 4), (12, 6)], width=1, seed=3); belt(m, "^", [(29, 4), (32, 6)], width=1, seed=4); belt(m, "^", [(17, 11), (25, 11)], width=1, seed=5, gaps=[(21, 11)])
-    belt(m, "f", [(4, 5), (8, 6)], width=1, seed=6); belt(m, "f", [(33, 5), (37, 6)], width=1, seed=7); belt(m, "f", [(14, 5), (16, 7)], width=1, seed=8); belt(m, "f", [(26, 5), (28, 7)], width=1, seed=9)
-    belt(m, "^", [(4, 16), (9, 17)], width=1, seed=10); belt(m, "^", [(33, 16), (38, 17)], width=1, seed=11); belt(m, "f", [(2, 21), (8, 22)], width=1, seed=12); belt(m, "f", [(34, 21), (39, 22)], width=1, seed=13)
-    belt(m, "f", [(15, 16), (19, 17)], width=1, seed=14); belt(m, "f", [(23, 16), (27, 17)], width=1, seed=15); belt(m, "^", [(1, 14), (3, 19)], width=1, seed=16); belt(m, "^", [(38, 14), (39, 19)], width=1, seed=17)
-    for i, (cx, cy, n) in enumerate([(11, 19, 3), (30, 19, 3), (21, 20, 3), (5, 24, 3), (36, 24, 3), (12, 10, 2), (30, 10, 2)]):
-        m.cluster("f", cx, cy, n, seed=40 + i)
+    # --- coasts with shape: Lantern Cove (bay on its east side, a flat north and south coast), Lantern Isle (a teardrop with a cape), Roost (ragged west, a bay), Lamp Isle
+    land_rows(m, {6: (8, 10), 7: (5, 12), 8: (3, 12), 9: (3, 11), 10: (2, 11), 11: (2, 13), 12: (3, 13), 13: (3, 10), 14: (2, 8), 15: (3, 8), 16: (3, 9), 17: (2, 11), 18: (2, 12),
+                  19: (3, 13), 20: (3, 13), 21: (5, 12), 22: (6, 12), 23: (7, 10)})
+    land_rows(m, {2: (18, 24), 3: (17, 25), 4: (16, 25), 5: (16, 25), 6: (15, 25), 7: (15, 23), 8: (16, 22), 9: (17, 21), 10: (18, 21), 11: (19, 20)})
+    land_rows(m, {6: (28, 31), 7: (28, 33), 8: (29, 35), 9: (30, 37), 10: (29, 37), 11: (27, 37), 12: (26, 37), 13: (25, 36), 14: (25, 37), 15: (27, 37), 16: (29, 36), 17: (30, 36),
+                  18: (28, 37), 19: (26, 37), 20: (25, 36), 21: (25, 35), 22: (26, 34), 23: (28, 34), 24: (29, 33)})
+    land_rows(m, {19: (16, 22), 20: (15, 23), 21: (15, 23), 22: (16, 22), 23: (17, 21)})
+    # --- reefs in the strait and east of Lamp Isle (ships go round them)
+    for (x, y) in [(23, 11), (24, 12), (22, 12), (24, 10), (12, 25), (13, 25), (30, 3), (31, 3)]:
+        m.put("r", x, y)
+    # --- relief: ridges and forest belts that make the lanes
+    belt(m, "^", [(4, 9), (9, 8)], width=1, seed=1); belt(m, "^", [(3, 19), (6, 21)], width=1, seed=2); belt(m, "^", [(17, 4), (19, 8)], width=1, seed=3, gaps=[(18, 6)])
+    belt(m, "^", [(31, 11), (35, 13)], width=1, seed=4, gaps=[(33, 12)]); belt(m, "^", [(29, 20), (34, 21)], width=1, seed=5); belt(m, "^", [(35, 17), (36, 19)], width=1, seed=6)
+    belt(m, "f", [(4, 11), (8, 13)], width=1, seed=7); belt(m, "f", [(10, 18), (12, 21)], width=1, seed=8); belt(m, "f", [(21, 3), (24, 5)], width=1, seed=9)
+    belt(m, "f", [(28, 12), (29, 15)], width=1, seed=10); belt(m, "f", [(33, 16), (35, 15)], width=1, seed=11); belt(m, "f", [(29, 8), (33, 9)], width=1, seed=12); belt(m, "f", [(27, 19), (30, 18)], width=1, seed=13)
+    belt(m, "f", [(16, 20), (21, 21)], width=1, seed=14)
     m.header(armies=2, colours=(BH, YC), objective=[1], comment=(
-        "M9 The Table: Asuka (forced, Black Hole, HQ 1 (21,24), south) against Kanbei + Sensei (one Yellow Comet army, HQ 2 (21,8), the mesa in the north). A pipe wall from coast to coast with seam gates (6,12), (21,13), (35,12). "
-        "Black Hole's Black Cannons (n) at (14,23) and (28,23) fire north across the field to the wall. Com Towers (8,17) and (34,17), missile silo (21,17); harbours (11,26) and (21,6). "
-        "Scripted: at half strength the airlift (B Copters at the mark_air cells, Infantry at the mark_inf cells); the last Yellow Comet tank falling is Kanbei's surrender. "
-        "Player: INF3 MECH3 TANK4 MDT2 ART3 ROCK2 RECON1 AA2 CR2 SUB1 LAN2; Kanbei: INF3 MECH4 TANK3 MDT5 NEO3 ART4 ROCK3 RECON1 CR1 SUB1."))
-    m.rect("~", 18, 2, 24, 5)                                      # the harbour bay
-    m.put("1", 21, 24).put("2", 21, 8).put("t", 8, 17).put("t", 34, 17).put("M", 21, 17)
-    m.put("P", 11, B[11]).put("P", 21, 6)
-    m.stamp("n", 14, 23).stamp("n", 28, 23)
-    L = lambda x, y: (x, max(T[x] + 1, min(B[x] - 1, y)))
-    # --- roads that follow the land: the three approaches to the gates, the guns' road, the harbour roads, the mesa's streets
-    route(m, [(21, 23), (21, 18), (21, 14)], seed=1); route(m, [(20, 24), (15, 20), (9, 16), (6, 14), (6, 13)], seed=2); route(m, [(22, 24), (27, 20), (33, 16), (35, 14), (35, 13)], seed=3)
-    route(m, [(21, 12), (21, 9)], seed=4); route(m, [(6, 11), (6, 10)], seed=16); route(m, [(35, 11), (35, 10)], seed=17); route(m, [(6, 11), (8, 8), (13, 7), (19, 8)], seed=5); route(m, [(35, 11), (33, 8), (28, 7), (23, 8)], seed=6)
-    route(m, [(21, 7), (21, 6)], seed=7); route(m, [(20, 24), (15, 25), (11, 25)], seed=8); route(m, [(15, 22), (15, 25)], seed=9); route(m, [(28, 22), (24, 24)], seed=10)
-    route(m, [(9, 16), (8, 17)], seed=11); route(m, [(33, 16), (34, 17)], seed=12); route(m, [(21, 17), (21, 18)], seed=13)
-    route(m, [(21, 6), (17, 6), (13, 5), (8, 5)], seed=14); route(m, [(21, 6), (25, 6), (29, 5), (34, 5)], seed=15)
-    route(m, [(9, 16), (6, 20), (4, 23)], seed=18); route(m, [(33, 16), (36, 21), (37, 24)], seed=19); route(m, [(15, 22), (10, 21), (8, 19)], seed=20); route(m, [(27, 21), (31, 21), (34, 19)], seed=21)
+        "M9 Paper Lanterns (night, rain and fog): the raid (Black Hole, free CO pick, HQ 1 (6,17), Lantern Cove in the west) against Sensei (Yellow Comet, HQ 2 (32,15), Roost in the east). "
+        "Lantern Isle (north, bridged to both): Com Tower (20,5), missile silo (22,8), neutral cities; Lamp Isle (south): a neutral port. Sensei's B Copter fleet is parked on his heliports. "
+        "Player: INF4 MECH2 TANK3 ART1 RECON1 AA2 APC1 BCO3 CR2 SUB1 LAN2; Sensei: INF6 MECH3 TANK2 ART1 ROCK1 RECON1 AA1 BCO8 CR2 SUB1 LAN1."))
+    m.put("1", 6, 17).put("2", 32, 15).put("t", 20, 5).put("M", 22, 8)
+    m.put("P", 8, 15).put("P", 31, 24).put("P", 25, 14).put("p", 23, 21)
+    # --- the two bridges of the north road; roads that follow the land
+    m.bridge(13, 7, 14, 7); m.bridge(26, 6, 27, 6)
+    route(m, [(6, 18), (5, 14), (8, 10), (11, 7), (12, 7)], seed=1); route(m, [(15, 7), (18, 6), (20, 6), (25, 6)], seed=2)
+    route(m, [(28, 6), (31, 8), (32, 13), (32, 15)], seed=3); route(m, [(6, 18), (9, 19), (12, 20)], seed=4); route(m, [(7, 15), (8, 16)], seed=5)
+    route(m, [(32, 15), (32, 20), (31, 23)], seed=6); route(m, [(32, 15), (29, 14), (26, 14)], seed=7); route(m, [(32, 15), (36, 14)], seed=8)
+    route(m, [(20, 6), (21, 8), (19, 10)], seed=9); route(m, [(18, 20), (19, 21)], seed=10)
     thin_roads(m)
-    # --- towns: Black Hole's district and harbour, the flanks' Com Tower towns, Kanbei's mesa (bases and cities), the gate towns and the north harbour
-    town(m, 21, 24, "BBC", seed=1); town(m, 17, 22, "BC", seed=2); town(m, 25, 22, "BC", seed=3); town(m, 12, 25, "C", seed=4); town(m, 8, 19, "C", seed=5); town(m, 34, 19, "C", seed=6)
-    town(m, 6, 14, "Cb", seed=7); town(m, 35, 14, "Cb", seed=8); town(m, 21, 15, "cc", seed=9); town(m, 4, 23, "cc", seed=10); town(m, 37, 24, "cc", seed=11); town(m, 6, 20, "c", seed=22); town(m, 36, 21, "c", seed=23); town(m, 11, 21, "C", seed=24); town(m, 31, 21, "C", seed=25)
-    town(m, 21, 8, "BBBC", seed=12, radius=3); town(m, 17, 7, "BC", seed=13); town(m, 25, 7, "BC", seed=14); town(m, 13, 7, "CC", seed=15); town(m, 29, 7, "CC", seed=16)
-    town(m, 21, 6, "CC", seed=17); town(m, 8, 5, "C", seed=18); town(m, 34, 5, "C", seed=19); town(m, 6, 9, "C", seed=20); town(m, 35, 9, "C", seed=21)
-    town(m, 10, 7, "C", seed=26); town(m, 31, 6, "C", seed=27); town(m, 14, 18, "c", seed=28); town(m, 28, 18, "c", seed=29); town(m, 21, 21, "C", seed=30); town(m, 17, 4, "C", seed=31)
-    neutralize(m, 13, keep=[])
+    # --- towns: the Cove's district and airstrip, the lantern town, Sensei's capital with its two heliports, the harbours
+    town(m, 6, 17, "BBC", seed=1); town(m, 4, 19, "BC", seed=2); town(m, 9, 20, "CC", seed=3); town(m, 10, 10, "AB", seed=4, radius=3); town(m, 6, 11, "C", seed=5); town(m, 9, 7, "C", seed=30)
+    town(m, 19, 4, "ccc", seed=7); town(m, 17, 7, "cc", seed=8); town(m, 22, 6, "c", seed=9)
+    town(m, 32, 15, "BBC", seed=10); town(m, 33, 11, "AB", seed=11, radius=3); town(m, 31, 19, "AB", seed=12, radius=3); town(m, 30, 8, "CC", seed=13); town(m, 29, 14, "BC", seed=14)
+    town(m, 35, 14, "C", seed=15); town(m, 31, 22, "CC", seed=16); town(m, 19, 21, "cc", seed=17); town(m, 26, 15, "C", seed=18)
+    neutralize(m, 14)
     m.tidy()
-    shore(m, 1, (1, 1, 40, 28), dirs="NS")
-    m.g[B[11] + 1][11] = "~"; m.g[5][21] = "~"
-    m.tidy()
-    # --- units: Black Hole in the south, Kanbei's elite behind the wall and on the mesa
+    for box in [(4, 5, 12, 5), (5, 24, 12, 24), (17, 1, 25, 1), (14, 18, 23, 18), (14, 24, 23, 24), (28, 5, 33, 5), (27, 25, 35, 25)]:
+        shore(m, 1, box, dirs="NS")
+    for (x, y) in [(31, 25), (8, 14), (9, 15), (25, 13), (24, 14), (24, 21)]:
+        if m.g[y][x] == ",":
+            m.g[y][x] = "~"
+    # --- units: the raid on Lantern Cove with its fleet in the bay, Sensei's army with the B Copter fleet parked on his heliports
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.reserve(AIR + INF_DROP)
-    m.spread(1, {INF: 3, MECH: 3, TANK: 4, MDT: 2, ART: 3, ROCK: 2, RECON: 1, AA: 2}, (2, 18, 39, 26), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 3, MECH: 4, TANK: 3, MDT: 5, NEO: 3, ART: 4, ROCK: 3, RECON: 1}, (3, 4, 38, 11), seed=2, gap=0, avoid=av)
-    for (x, y), k in zip(m.sea_near(11, B[11] + 2, 5, box=(4, B[11] + 1, 20, 28), deep=False), [CR, CR, SUB, LAN, LAN]):
+    air = [(x, y) for y in range(H) for x in range(W) if m.g[y][x] == "A"]
+    mine = [c for c in air if c[0] < 20]; his = [c for c in air if c[0] >= 20]
+    m.reserve(mine + his)
+    m.spread(1, {INF: 4, MECH: 2, TANK: 3, ART: 1, RECON: 1, AA: 2, APC: 1}, (2, 8, 12, 22), seed=1, gap=0, avoid=av)
+    for (x, y), k in zip(m.sea_near(9, 15, 5, box=(9, 12, 14, 18), deep=False), [LAN, LAN, CR, CR, SUB]):
         m.unit(1, k, x, y)
-    for (x, y), k in zip(m.sea_near(21, 4, 2, box=(18, 2, 24, 5), deep=False), [CR, SUB]):
+    m.spread(1, {BCO: 3}, (2, 8, 12, 22), seed=3, gap=1, avoid=av)
+    m.spread(2, {INF: 6, MECH: 3, TANK: 2, ART: 1, ROCK: 1, RECON: 1, AA: 1}, (26, 8, 37, 24), seed=2, gap=0, avoid=av)
+    for c in his:
+        m.unit(2, BCO, c[0], c[1], hold=True)
+    m.spread(2, {BCO: 8 - len(his)}, (28, 8, 37, 22), seed=4, gap=1, avoid=av)
+    for (x, y), k in zip(m.sea_near(31, 25, 3, deep=False) + m.sea_near(24, 14, 1, box=(21, 9, 24, 16), deep=False), [CR, CR, SUB, LAN]):
         m.unit(2, k, x, y)
-    clear_fire_lines(m)
-    for i, (x, y) in enumerate(AIR):
-        m.note(f"mark_air{i + 1}", x, y, "airlift: a B Copter lands here")
-    for i, (x, y) in enumerate(INF_DROP):
-        m.note(f"mark_inf{i + 1}", x, y, "airlift: Infantry lands here")
-    m.note("hq", 21, 24, "Asuka's HQ"); m.note("enemy_hq", 21, 8, "Kanbei's HQ (objective)")
+    m.note("hq", 6, 17, "Black Hole's HQ"); m.note("enemy_hq", 32, 15, "Sensei's HQ (objective)"); m.note("lanterns", 19, 4, "the lantern town: Com Tower, silo and neutral cities")
     return m

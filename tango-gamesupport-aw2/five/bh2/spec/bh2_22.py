@@ -1,100 +1,108 @@
-"""BH2 M22 Von Bolt's Note (Act V): the Orange Star sea fortress, in the rain. Von Bolt (forced) with a free tag partner against one Orange Star army under Jess + Colin. Normal look, rain.
+"""BH2 M22 Echo, Again (Act IV): the Lab 7 ruins (Wasteland look, fog). Clone Andy (forced) against Andy: the mirror match.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The shape: an archipelago: Black Hole's land hangs from the top edge (a long northern coast with two bays), a five-row strait, and the sea fortress: a big island in the south with two small islets beside it. Two long sea bridges carry the roads from the northern coast
-to the fortress island; nothing else joins them.
-The situation: Black Hole's army holds the north: its HQ, a base district, a port in each bay, the old foundry (the player's Black Factory, with its supply pipe) and, on the north coast at the very top of the map, the Deathray (Black Hole's alone: it fires down three columns, 13..15, along the west bridge into the fortress wall's seam gate (14,17) and on to the bottom edge; nobody stands in them at the start). Jess and Colin hold the fortress island: a pipe wall along its north shore with two seam gates behind the bridgeheads, bunkers (cities) behind it, a Com Tower and a missile silo inside, the HQ at the south, three ports on the south coast and a fleet.
-- Lanes: the two bridges (14,10..16) and (26,10..16) and the gates behind them, the strait for the fleets, the islets' beaches, the fortress's south coast.
-- Where the fight happens: the strait and the bridgeheads, then the wall's gates; the Deathray's columns cover the fortress's east side.
-- Properties: the foundry's bases and cities in the north, two bays' ports, the fortress's bunkers; the islets' villages.
-- Threats and answers: the fortress's Battleship, Cruisers and artillery -> Black Hole's own fleet, the Deathray and the factory's Md Tanks and artillery; its Fighters and Copters -> the factory's Anti-Air (only when air shows) and Black Hole's own.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Lab 7's ruins lie on either side of a lava-mouthed river that runs from the north lava to the south lava. The map is drawn as a near mirror: the west half (Clone Andy's) is drawn first and copied
+to the east (Andy's), so the two districts, the roads to the river and the Com Towers sit alike; then the halves are made different on purpose, because a clone is never exact:
+- the clone's half is a ruin: a collapsed lab wall (a pipe wall with a seam gate and a heap of cliffs), fewer roads, wild ash woods, a broken coast; its army is heavier on Md Tanks and artillery;
+- Andy's half is kept: a tidy ring road, a second road district on the east coast, a bay of lava in the south-east instead of the south-west; his army is heavier on Tanks.
+Three bridges (rows 7, 14, 21) carry the roads across the river, which wanders between them.
+- Lanes: the three bridges and the roads that meet at them, the lab wall's gate on the west side, the ash woods on the east.
+- Where the fight happens: the bridges and the two Com Towers (16,9) and (25,9) beside the river.
+- Threats and answers: both armies are ground armies: Md Tanks and Neotank-free Tanks against artillery and Rockets; fog hides the second line. No air, no Anti-Air.
 """
 import random
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, snap_coast, fix_rungs, clear_fire_lines
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize
 
-W, H = 40, 30
+W, H = 42, 30
+XM = 20                                         # the river's column (bridges at rows 7, 14, 21); the halves meet here
 
 
 def build():
-    m = Canvas("bh2_22", W, H, fill="~")
-    rnd = random.Random("bh2_22/coast")
-    # --- the northern land: off the top edge, ragged south coast with two bays
-    b = 9
-    for x in range(W):
-        if x % 3 == 0:
-            b = max(7, min(10, b + rnd.choice([-1, 0, 1])))
-        m.rect(".", x, 0, x, b)
-    for x in range(8, 13):
-        m.rect("~", x, 6, x, 10)                          # the west bay
-    for x in range(27, 33):
-        m.rect("~", x, 6, x, 10)                          # the east bay
-    m.rect(".", 12, 0, 16, 10); m.rect(".", 23, 0, 28, 10)           # the two bridgeheads are headlands
-    # --- the fortress island and two islets
-    land_rows(m, {16: (11, 29), 17: (10, 30), 18: (10, 30), 19: (9, 31), 20: (9, 31), 21: (10, 30), 22: (10, 31), 23: (11, 30), 24: (11, 29), 25: (12, 28), 26: (14, 26)})
-    land_rows(m, {18: (2, 5), 19: (1, 5), 20: (2, 5)}); land_rows(m, {19: (35, 37), 20: (34, 38), 21: (34, 38), 22: (35, 37)})
-    m.put('~', 7, 8).put('~', 7, 9)                      # the foundry's one water door: an inlet of the west bay
-    m.rect(".", 0, 17, 0, 17) if False else None
-    S = lambda x, y: snap(m, x, y)
-    # --- the bridges: from the north coast over the strait (rows 11..15) to the fortress's shore (row 16)
-    for bx in (14, 26):
-        m.rect(".", bx - 1, 10, bx + 1, 10)               # the bridgehead
-        m.bridge(bx, 11, bx, 15)
-    # --- the fortress's wall along its north shore with two gates behind the bridgeheads; ends at the sea
-    m.pipe([(10, 17), (30, 17)]); m.put("Z", 14, 17).put("Z", 26, 17)
-    m.put("^", 10, 17).put("^", 30, 17) if False else None
-    belt(m, "^", [(1, 2), (4, 2)], width=1, seed=1); belt(m, "^", [(14, 3), (22, 2)], width=1, seed=2, gaps=[(18, 3)]); belt(m, "^", [(34, 3), (38, 5)], width=1, seed=3)
-    belt(m, "f", [(1, 6), (2, 9)], width=1, seed=4); belt(m, "f", [(16, 5), (22, 7)], width=1, seed=5); belt(m, "f", [(33, 7), (37, 8)], width=1, seed=6); belt(m, "f", [(14, 5), (16, 7)], width=1, seed=7)
-    belt(m, "^", [(13, 19), (17, 20)], width=1, seed=8); belt(m, "^", [(24, 19), (28, 21)], width=1, seed=9, gaps=[(26, 20)]); belt(m, "f", [(12, 22), (16, 24)], width=1, seed=10); belt(m, "f", [(24, 23), (28, 24)], width=1, seed=11)
-    belt(m, "f", [(2, 19), (4, 19)], width=1, seed=12); belt(m, "f", [(34, 20), (37, 21)], width=1, seed=13)
-    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
-        "M22 Von Bolt's Note (normal look, rain): Von Bolt (forced) + a free tag partner (Black Hole, HQ 1 (10,4), the north land) against one Orange Star army under Jess + Colin (HQ 2 (20,23), the sea fortress). "
-        "Black Hole's Black Factory (the foundry) at (6,6) with its supply pipe, one water door (7,8) on the west bay; the Deathray D at (14,1): it fires down columns 13..15 along the west bridge to the fortress wall's seam (14,17) and on to the bottom edge (nobody starts in them). Two sea bridges (14,11..15) and (26,11..15); the fortress's wall y17 with seam gates (14,17) and (26,17). "
-        "Com Tower (20,19), missile silo (24,19). Player: INF4 MECH2 TANK3 MDT1 ART2 ROCK1 RECON1 AA1 APC1 BS1 CR2 SUB1 LAN2; Orange Star: INF6 MECH3 TANK4 MDT2 ART4 ROCK2 RECON1 AA1 FTR2 BCO2 BS2 CR2 SUB1."))
-    m.put("1", 10, 4).put("2", 20, 23).put("t", 20, 19).put("M", 24, 19)
-    m.stamp("F", 6, 6).put("I", 6, 3)                    # the foundry, with its supply pipe
-    m.stamp("D", 14, 1)                                  # the Deathray, at the top edge on Black Hole's side
-    PORTS = [snap_coast(m, 10, 9), snap_coast(m, 29, 9), snap_coast(m, 16, 26), snap_coast(m, 24, 26), snap_coast(m, 20, 26)]
-    for (x, y) in PORTS:
-        m.put("P", x, y)
-    route(m, [S(10, 5), S(12, 4), S(16, 6), S(20, 8), S(26, 9), (26, 10)], seed=31, wander=0.7); route(m, [S(10, 5), S(12, 8), S(14, 9), (14, 10)], seed=2)
-    route(m, [S(5, 8), S(6, 8), S(9, 5)], seed=3); route(m, [S(27, 9), S(32, 5), S(36, 6)], seed=4); route(m, [S(10, 5), S(8, 3), S(4, 8), S(2, 5)], seed=5)
-    route(m, [(14, 16), (14, 18), S(14, 20), S(18, 21), S(20, 22)], seed=6) if False else route(m, [(14, 18), S(14, 19), S(18, 21), S(20, 22)], seed=6)
-    route(m, [(26, 18), S(26, 19), S(23, 21), S(21, 22)], seed=7); route(m, [(14, 15), (14, 16)], seed=17); route(m, [(26, 15), (26, 16)], seed=18); route(m, [S(20, 20), (20, 19)], seed=8) if False else route(m, [S(18, 21), S(20, 20)], seed=8); route(m, [S(24, 21), S(24, 19)], seed=9)
-    for p in PORTS[:2]:
-        pass
-    route(m, [S(PORTS[2][0], PORTS[2][1] - 1), S(18, 22)], seed=10); route(m, [S(PORTS[3][0], PORTS[3][1] - 1), S(22, 22)], seed=11); route(m, [S(PORTS[4][0], PORTS[4][1] - 1), S(20, 23)], seed=12)
-    route(m, [S(PORTS[0][0], PORTS[0][1] - 1), S(11, 5)], seed=13); route(m, [S(PORTS[1][0], PORTS[1][1] - 1), S(27, 6)], seed=34)
-    route(m, [S(3, 19), S(5, 19)], seed=15); route(m, [S(35, 21), S(37, 21)], seed=16)
-    thin_roads(m); fix_rungs(m)
-    for args in [(10, 4, "BBC"), (13, 7, "BC"), (4, 10, "BC"), (2, 5, "C"), (16, 6, "C"), (20, 8, "Cb"), (23, 5, "C"), (26, 8, "Cb"), (30, 5, "BC"), (34, 4, "C"), (36, 7, "c"), (2, 4, "c"), (14, 9, "C"),
-                 (20, 23, "BBBC"), (16, 21, "BC"), (24, 22, "BC"), (14, 19, "CC"), (26, 19, "CC"), (12, 18, "C"), (28, 18, "C"), (18, 21, "C"), (22, 21, "C"), (13, 22, "c"), (27, 22, "c"), (3, 19, "cc"), (36, 21, "cc"), (20, 17, "c"), (11, 25, "c"), (29, 24, "c")]:
+    m = Canvas("bh2_22", W, H)
+    rnd = random.Random("bh2_17/coast")
+    T, B, t, b = {}, {}, 3, 26
+    for x in range(0, XM + 1):
+        if x % 4 == 0:
+            t = max(2, min(5, t + rnd.choice([-1, 0, 1]))); b = max(24, min(27, b + rnd.choice([-1, 0, 1])))
+        T[x], B[x] = t, b
+    for x in (XM - 1, XM, XM + 1):
+        T[x] = T[XM]; B[x] = B[XM]
+    for x in range(0, XM + 1):
+        for y in range(0, T[x]):
+            m.g[y][x] = "~"
+        for y in range(B[x] + 1, H):
+            m.g[y][x] = "~"
+    for (cx, cy, rx, ry) in ((2, 3, 4, 3), (3, 27, 4, 3)):                 # lava bays at the west corners
+        m.blob("~", cx, cy, rx, ry, seed=cx, wobble=0.3)
+    C = lambda x, y: (x, max(T[min(x, XM)] + 2, min(B[min(x, XM)] - 2, y)))
+    # --- the west half (the clone's): ridges, ash woods, roads to the three bridges, the district, the Com Tower
+    belt(m, "^", [(8, 5), (13, 6), (17, 5)], width=1, seed=1, gaps=[(11, 5), (15, 6)]); belt(m, "^", [(8, 24), (13, 23), (17, 24)], width=1, seed=2, gaps=[(11, 24), (15, 23)])
+    belt(m, "^", [(3, 9), (6, 8)], width=1, seed=3); belt(m, "^", [(3, 20), (6, 21)], width=1, seed=4); belt(m, "^", [(12, 11), (14, 12)], width=1, seed=5); belt(m, "^", [(12, 17), (14, 18)], width=1, seed=6)
+    belt(m, "f", [(4, 11), (8, 12)], width=1, seed=7); belt(m, "f", [(4, 18), (8, 17)], width=1, seed=8); belt(m, "f", [(15, 9), (18, 11)], width=1, seed=9); belt(m, "f", [(15, 19), (18, 17)], width=1, seed=10)
+    belt(m, "f", [(9, 8), (12, 9)], width=1, seed=11); belt(m, "f", [(9, 21), (12, 20)], width=1, seed=12)
+    m.put("1", 6, 15).put("t", 17, 9).put("M", 17, 20)
+    route(m, [(6, 14), C(9, 11), C(13, 8), (17, 7), (20, 7)], seed=1, wander=1.2)
+    route(m, [(7, 15), C(11, 15), (15, 14), (20, 14)], seed=2, wander=1.2)
+    route(m, [(6, 16), C(9, 19), C(13, 22), (17, 21), (20, 21)], seed=3, wander=1.2)
+    route(m, [(17, 8), (17, 7)], seed=4); route(m, [(15, 14), (15, 17), (17, 19)], seed=5)
+    route(m, [C(9, 19), C(5, 22)], seed=8); route(m, [C(9, 11), C(6, 8)], seed=9)
+    thin_roads(m)
+    for args in [(4, 22, "cc"), (5, 7, "cc"), (6, 15, "BBC"), (9, 11, "BC"), (9, 19, "BC"), (12, 15, "CC"), (13, 8, "C"), (13, 22, "C"), (17, 7, "Cb"), (17, 21, "Cb"), (15, 14, "Cb"), (3, 14, "C"), (11, 3, "c"), (11, 26, "c"), (17, 12, "c"), (17, 17, "c")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
         except ValueError:
             pass
-    neutralize(m, 15)
     m.tidy()
-    shore(m, 1, (0, 1, W - 1, H - 2), dirs="NS")
-    for p in PORTS:
-        for dx, dy in ((0, -1), (0, 1), (1, 0), (-1, 0), (0, -2), (0, 2), (2, 0), (-2, 0)):
-            if m.inside(p[0] + dx, p[1] + dy) and m.g[p[1] + dy][p[0] + dx] == ",":
-                m.g[p[1] + dy][p[0] + dx] = "~"
+    m.g[14][7] = "."                                            # (the road leaves the HQ east and north apart: no three-way knot beside the bases)
+    # --- the mirror: the east half is a copy of the west
+    m.mirror_x(21)
+    for yy in range(H):
+        if m.g[yy][41] in "BCcb":
+            m.g[yy][41] = "."
+    # --- the river between the halves: from the north lava to the south lava, three bridges, wandering
+    rv = [(XM, T[XM]), (XM, 9), (XM - 1, 9), (XM - 1, 11), (XM, 11), (XM, 16), (XM + 1, 16), (XM + 1, 18), (XM, 18), (XM, B[XM])]
+    for (cx, cy) in m.path(rv):
+        m.g[cy][cx] = "."                                                  # (a building the mirror left on the river's way goes)
+    m.river(rv)
+    for y in (7, 14, 21):
+        m.g[y][XM] = "="
+    for x in (XM, XM + 1):                                                  # (the mirrored roads meet the bridges in line)
+        for y in (7, 14, 21):
+            if m.g[y][x] != "=":
+                m.g[y][x] = "R"
+    m.g[7][XM - 1] = m.g[7][XM - 2] = m.g[14][XM - 1] = m.g[14][XM - 2] = m.g[21][XM - 1] = m.g[21][XM - 2] = "R"
+    # --- the east half becomes Andy's: HQ, his tidy ring road, an east-coast district, a bay of lava in the south-east
+    for y in range(H):
+        for x in range(W):
+            if m.g[y][x] == "1" and x > XM:
+                m.g[y][x] = "2"
+    m.put("1", 6, 15); m.put("2", 35, 15)
+    m.put("t", 24, 9) if m.g[9][24] in ".f" else None
+    for (cx, cy, rx, ry) in ((38, 27, 4, 3),):
+        m.blob("~", cx, cy, rx, ry, seed=7, wobble=0.3)
+    # --- the clone's half is a ruin: a collapsed lab wall (pipe wall with a seam gate ending in cliffs) and rubble
+    for (x, y) in [(10, 10), (10, 11), (9, 10)]:
+        m.put("^", x, y)
+    m.pipe([(10, 12), (10, 18)]); m.put("Z", 10, 15); m.put("^", 10, 19).put("^", 9, 19).put("^", 11, 19)
+    for i, (cx, cy, n, ch) in enumerate([(30, 8, 4, "f"), (32, 21, 4, "f"), (27, 12, 3, "f"), (27, 18, 3, "f"), (37, 11, 4, "f"), (38, 19, 3, "f"), (24, 4, 3, "^"), (28, 25, 3, "^"), (12, 14, 3, "^"), (4, 17, 3, "^"), (3, 11, 3, "^")]):
+        m.cluster(ch, cx, cy, n, seed=80 + i)
+    m.cluster("^", 7, 12, 4, seed=71); m.cluster("^", 8, 18, 4, seed=72); m.cluster("^", 14, 6, 3, seed=73)
+    m.header(armies=2, colours=(BH, OS), objective=[1], comment=(
+        "M22 Echo, Again (Wasteland look, fog, lava for water): Clone Andy (forced, Black Hole, HQ 1 (6,15), the ruined west) against Andy (Orange Star, HQ 2 (35,15), the tidy east). A river (x 19..21) from the north lava to the south lava with bridges (20,7), (20,14), (20,21). "
+        "Com Towers (17,9) and (24,9), missile silo (17,20); the west's collapsed lab wall x10 (y12..18) with the seam gate (10,15). Player: INF4 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1; Andy: INF5 MECH2 TANK6 MDT2 ART3 ROCK2 RECON1."))
+    for y in range(H):                                                       # (nothing of the mirror may leave a second HQ)
+        pass
+    for args in [(40, 9, "c"), (40, 20, "c"), (30, 3, "c")]:
+        try:
+            town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=3)
+        except ValueError:
+            pass
+    neutralize(m, 13)
     m.tidy()
-    for (x, y) in [(5, 14), (20, 13), (34, 14), (8, 14), (21, 28), (4, 25), (36, 26), (31, 13), (3, 12), (20, 14)]:
-        if m.inside(x, y) and all(m.get(a, b) == "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
-            m.put("r", x, y)
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.reserve([(x, y) for x in (13, 14, 15) for y in range(0, H)])                  # (the Deathray's columns: nobody starts there)
-    m.spread(1, {INF: 4, MECH: 2, TANK: 3, MDT: 1, ART: 2, ROCK: 1, RECON: 1, AA: 1, APC: 1}, (1, 1, 22, 9), seed=1, gap=0, avoid=av)
-    m.spread(2, {INF: 6, MECH: 3, TANK: 4, MDT: 2, ART: 4, ROCK: 2, RECON: 1, AA: 1}, (10, 17, 28, 25), seed=2, gap=0, avoid=av)
-    m.spread(2, {FTR: 2, BCO: 2}, (11, 18, 28, 25), seed=3, gap=1, avoid=av)
-    for k_, (x, y) in zip([BS, CR, CR, SUB, LAN, LAN], m.sea_near(20, 12, 6, box=(8, 11, 32, 15), deep=False)):
-        m.unit(1, k_, x, y)
-    for k_, (x, y) in zip([BS, BS, CR, CR, SUB], m.sea_near(20, 28, 5, box=(8, 27, 32, 29), deep=False)):
-        m.unit(2, k_, x, y)
-    clear_fire_lines(m)
-    m.note("hq", 10, 4, "Von Bolt's HQ"); m.note("enemy_hq", 20, 23, "Jess + Colin's HQ (objective)"); m.note("foundry", 6, 6, "the old foundry: Black Hole's Black Factory"); m.note("deathray", 14, 1, "the Deathray (Black Hole's), at the top edge")
-    m.note("gate_w", 14, 17, "seam gate in the fortress wall"); m.note("gate_e", 26, 17, "seam gate in the fortress wall")
+    m.spread(1, {INF: 4, MECH: 3, TANK: 5, MDT: 3, ART: 3, ROCK: 2, RECON: 1}, (2, 6, 17, 24), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 5, MECH: 2, TANK: 6, MDT: 2, ART: 3, ROCK: 2, RECON: 1}, (24, 6, 39, 24), seed=2, gap=0, avoid=av)
+    m.note("hq", 6, 15, "Clone Andy's HQ"); m.note("enemy_hq", 35, 15, "Andy's HQ (objective)"); m.note("gate", 10, 15, "seam gate in the collapsed lab wall")
     return m

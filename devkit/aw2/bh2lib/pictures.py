@@ -9,13 +9,13 @@ from ..maplint.render import COL, UNIT_INITIAL, font
 from ..maplint.terrain import terrain, PROP_KIND
 from . import COLOUR, COLOUR_NAME, FRONT2, MISSIONS, flags, maps
 
-ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain"), 3: (11, 14, "Iron North"), 4: (15, 20, "The Accord Breaks"), 5: (21, 27, "Succession")}           # act -> (first mission, last mission, title)
+ACTS = {1: (1, 8, "Landfall"), 2: (9, 13, "Comet Chain"), 3: (14, 19, "Iron North"), 4: (20, 25, "The Accord Breaks"), 5: (26, 32, "Succession")}           # act -> (first mission, last mission, title)
 ROMAN = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
 FRONT2_LABEL = {4: "front 2 (sky)", 10: "front 2 (Grimm's isles)", 20: "front 2 (the rail yard)"}
 
 CELL = 22
 DASH = "—"
-VISION = {1: 2, 2: 2, 3: 3, 4: 3, 5: 3, 6: 5, 7: 2, 8: 3, 9: 3, 10: 3, 11: 3, 12: 4, 13: 4, 14: 3, 15: 4, 16: 5, 17: 4, 18: 3, 19: 3, 20: 3, 21: 3, 22: 5, 23: 2, 24: 5, 26: 4}
+VISION = {1: 2, 2: 2, 3: 3, 4: 3, 5: 3, 9: 5, 10: 2, 11: 3, 12: 3, 13: 3, 16: 3, 17: 4, 18: 4, 19: 3, 20: 4, 21: 5, 22: 4, 23: 3, 24: 3, 25: 3, 26: 3, 27: 5, 28: 2, 29: 5, 32: 4}
 PROP_HINT = {"H": "HQ", "B": "base", "C": "city", "A": "airport", "P": "port", "T": "Com Tower"}
 
 
@@ -168,7 +168,7 @@ def draw(m, mission, title, fog=False, cell=CELL, subtitle=""):
     return img
 
 
-def write_all(out_dir, with_fog=(1, 6, 10, 12, 13, 17, 20)):
+def write_all(out_dir, with_fog=(1, 9, 13, 17, 18, 22, 25)):
     """m01.png .. (full map, fog OFF, labelled), the fog views listed in `with_fog`, one contact sheet an act (`act1_sheet.png`, `act2_sheet.png`). Returns the paths."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -264,7 +264,7 @@ def world_flags(out, act=None):
         base = base.crop(box)
     canvas = Image.new("RGB", (base.size[0], base.size[1] + 50), (22, 22, 28))
     canvas.paste(base, (0, 50))
-    title = f"BH2 world map {DASH} flags of M1 to M5 (M26 secret)" if not act else f"BH2 world map {DASH} flags of M{ACTS[act][0]} to M{ACTS[act][1]} (Act {ROMAN[act]})"
+    title = f"BH2 world map {DASH} flags of M1 to M31 (M32 secret)" if not act else f"BH2 world map {DASH} flags of M{ACTS[act][0]} to M{ACTS[act][1]} (Act {ROMAN[act]})"
     ImageDraw.Draw(canvas).text((10, 10), title, fill=(250, 235, 120), font=_title_font(24))
     canvas.save(out)
     return out

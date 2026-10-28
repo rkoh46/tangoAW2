@@ -60,6 +60,7 @@ RULES = {
     "PP04": ("warn", "a pipe seam that changes nothing when broken: it neither joins two parts of the map nor shortens the way between the HQs by at least 6 cells"),
     "IV02": ("error", "BH2 maps: a unit of either army stands in an invention's firing zone at the start (a Laser's row and column, a minicannon's four cells, a Black Cannon's cone, the Deathray's columns): the first turn's shot must hit nothing"),
     "PT02": ("error", "BH2 maps: a port whose door is not open sea a ship can use: it touches no sea cell (shoal and reef are not water for ships), or its sea is a sealed pond, or the way out of its door is walled by reef"),
+    "HQ01": ("error", "BH2 maps: an army has one HQ: a second HQ tile (Q) of the same army is a held take-over HQ, which the owner would rather not have: give each army its own colour and HQ instead"),
     "PT01": ("error", "a port that leads nowhere: no navigable sea beside it (lava is not navigable), or a sea body too small for ships (a lake of a few cells)"),
     "DQ12": ("warn", "a long straight line of mountains away from the map edge: a drawn wall, not a range"),
     "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
@@ -757,6 +758,13 @@ def pipelines(G):
 SEA_MIN = 12
 
 
+def one_hq(G):
+    """HQ01 (BH2 maps): no army has two HQs (no `Q` tile)."""
+    if G.m.source != "bh2":
+        return []
+    return [Problem("HQ01", x, y, "a second HQ of the same army (Q): one HQ per army") for x, y in G.cells("Q")]
+
+
 def ports(G):
     """PT01: every port (own or neutral) touches navigable sea of a body of 12 or more cells (AW2's smallest is 23, Dual Strike's 16), so a ship built there can leave. On a wasteland map
     (Dual Strike's look 3) the water is drawn as lava, which no ship sails: a port there leads nowhere."""
@@ -889,7 +897,7 @@ def design_checks(G):
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, design_checks]
+CHECKS = [one_hq, river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, design_checks]
 
 
 def lint(m, only=None):
