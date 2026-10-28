@@ -699,125 +699,152 @@ fn bh2_24() -> MissionDef {
     m
 }
 
-/// M25's stage HQs (the map's `Q` tiles): Nell's `2` at (8,10) is the first line; the others are held until the last.
-const M25_NELL: (u8, u8) = (8, 10);
+/// M25's four HQs (the map's tiles `1`..`4`): Nell's at (8,8) is the first line; the others are held until the last. The player (Black Hole) is the fifth army.
+const M25_NELL: (u8, u8) = (8, 8);
 const M25_OLAF: (u8, u8) = (24, 6);
 const M25_KANBEI: (u8, u8) = (39, 6);
 const M25_EAGLE: (u8, u8) = (38, 20);
-const M25_ARIA: (u8, u8) = (22, 21);
-/// Aria's CO id: the new Orange Star commander (the `aria` branch's id 93: not merged here, so a placeholder CO takes her place; replace this constant when it lands).
+/// Aria's CO id: the new Orange Star commander of part two (the `aria` branch's id 93: not merged here, so a placeholder CO takes her place; replace this constant when it lands).
 const ARIA_CO: u8 = co::MAX;
 
-/// Each stage's fresh troops (cells in the stage's zone, free of start units): (kind, cell).
-const OLAF_WAVE: [(u8, (u8, u8)); 18] = [
-    (unit::MD_TANK, (15, 5)),
-    (unit::MD_TANK, (15, 8)),
-    (unit::NEOTANK, (17, 13)),
-    (unit::ROCKETS, (18, 0)),
-    (unit::MD_TANK, (21, 0)),
-    (unit::ARTILLERY, (21, 13)),
-    (unit::MD_TANK, (24, 11)),
-    (unit::MECH, (24, 13)),
-    (unit::NEOTANK, (25, 0)),
-    (unit::ROCKETS, (25, 6)),
-    (unit::INFANTRY, (27, 1)),
-    (unit::NEOTANK, (27, 13)),
-    (unit::MD_TANK, (30, 1)),
-    (unit::ARTILLERY, (30, 13)),
-    // Olaf's fleet on the riverland's lakes
-    (unit::BATTLESHIP, (18, 5)),
-    (unit::CRUISER, (28, 5)),
-    (unit::CRUISER, (19, 7)),
-    (unit::SUB, (29, 9)),
+/// Each nation's troops land when the stage before it falls (cells in its zone, free of start units): (kind, cell). The nation's army is present from the start
+/// (a few units holding round its HQ) and owns nothing but the HQ, so it cannot build until then.
+const OLAF_WAVE: [(u8, (u8, u8)); 21] = [
+    (unit::MD_TANK, (24, 9)),
+    (unit::MD_TANK, (17, 6)),
+    (unit::MD_TANK, (18, 10)),
+    (unit::MD_TANK, (16, 5)),
+    (unit::NEOTANK, (30, 4)),
+    (unit::NEOTANK, (23, 7)),
+    (unit::NEOTANK, (17, 3)),
+    (unit::MEGATANK, (19, 1)),
+    (unit::ARTILLERY, (20, 12)),
+    (unit::ARTILLERY, (22, 13)),
+    (unit::ARTILLERY, (17, 1)),
+    (unit::ROCKETS, (16, 4)),
+    (unit::ROCKETS, (20, 10)),
+    (unit::ROCKETS, (16, 11)),
+    (unit::MISSILES, (26, 13)),
+    (unit::INFANTRY, (28, 3)),
+    (unit::INFANTRY, (21, 13)),
+    (unit::INFANTRY, (18, 13)),
+    (unit::MECH, (22, 2)),
+    (unit::CRUISER, (19, 4)),
+    (unit::SUB, (25, 2)),
 ];
-const KANBEI_WAVE: [(u8, (u8, u8)); 9] = [
-    (unit::NEOTANK, (36, 8)),
-    (unit::MEGATANK, (37, 5)),
-    (unit::MD_TANK, (39, 7)),
-    (unit::NEOTANK, (40, 5)),
-    (unit::MEGATANK, (41, 7)),
-    (unit::MD_TANK, (33, 13)),
-    (unit::ARTILLERY, (34, 10)),
-    (unit::NEOTANK, (39, 10)),
-    (unit::MEGATANK, (39, 12)),
+const KANBEI_WAVE: [(u8, (u8, u8)); 16] = [
+    (unit::NEOTANK, (38, 6)),
+    (unit::NEOTANK, (39, 1)),
+    (unit::NEOTANK, (33, 11)),
+    (unit::NEOTANK, (43, 8)),
+    (unit::MEGATANK, (39, 9)),
+    (unit::MEGATANK, (36, 5)),
+    (unit::MEGATANK, (44, 10)),
+    (unit::MEGATANK, (38, 5)),
+    (unit::MD_TANK, (39, 3)),
+    (unit::MD_TANK, (37, 11)),
+    (unit::MD_TANK, (44, 9)),
+    (unit::ARTILLERY, (37, 3)),
+    (unit::ARTILLERY, (32, 6)),
+    (unit::ROCKETS, (32, 8)),
+    (unit::ROCKETS, (45, 13)),
+    (unit::MISSILES, (42, 3)),
 ];
-const EAGLE_WAVE: [(u8, (u8, u8)); 11] = [
-    (unit::FIGHTER, (32, 22)),
-    (unit::FIGHTER, (32, 25)),
-    (unit::BOMBER, (34, 19)),
-    (unit::STEALTH, (37, 20)),
-    (unit::FIGHTER, (38, 23)),
-    (unit::BOMBER, (40, 20)),
-    (unit::B_COPTER, (41, 15)),
-    (unit::STEALTH, (42, 18)),
-    (unit::FIGHTER, (43, 16)),
-    (unit::BOMBER, (44, 19)),
-    (unit::B_COPTER, (45, 15)),
-];
-const ARIA_WAVE: [(u8, (u8, u8)); 8] = [
-    (unit::NEOTANK, (15, 17)),
-    (unit::MD_TANK, (15, 19)),
-    (unit::MEGATANK, (13, 22)),
-    (unit::ROCKETS, (20, 27)),
-    (unit::NEOTANK, (21, 22)),
-    (unit::FIGHTER, (22, 27)),
-    (unit::MD_TANK, (23, 22)),
-    (unit::ARTILLERY, (25, 26)),
+const EAGLE_WAVE: [(u8, (u8, u8)); 16] = [
+    (unit::FIGHTER, (44, 20)),
+    (unit::FIGHTER, (40, 23)),
+    (unit::FIGHTER, (43, 17)),
+    (unit::FIGHTER, (44, 23)),
+    (unit::FIGHTER, (42, 21)),
+    (unit::FIGHTER, (33, 23)),
+    (unit::BOMBER, (44, 21)),
+    (unit::BOMBER, (35, 23)),
+    (unit::BOMBER, (33, 24)),
+    (unit::BOMBER, (38, 18)),
+    (unit::B_COPTER, (40, 21)),
+    (unit::B_COPTER, (38, 15)),
+    (unit::STEALTH, (33, 15)),
+    (unit::STEALTH, (38, 21)),
+    (unit::STEALTH, (45, 14)),
+    (unit::STEALTH, (42, 20)),
 ];
 
-fn stage(list: &[(u8, (u8, u8))]) -> Action {
-    Action::Spawn(list.iter().map(|&(k, (x, y))| UnitDef::new(2, k, x, y).attack()).collect())
+fn stage(army: u8, list: &[(u8, (u8, u8))]) -> Action {
+    Action::Spawn(list.iter().map(|&(k, (x, y))| UnitDef::new(army, k, x, y).attack()).collect())
 }
 
+/// The player (the fifth army) holds this HQ.
 fn owned(c: (u8, u8)) -> Cond {
-    Cond::OwnerAt { x: c.0, y: c.1, army: 1 }
+    Cond::OwnerAt { x: c.0, y: c.1, army: 5 }
 }
 
-/// The next line: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the same army goes on
-/// under the next commander with fresh troops and funds.
-fn takeover(hq: (u8, u8), before: &[(u8, u8)], co_next: u8, funds: i32, wave: &[(u8, (u8, u8))], room: fn(&mut Core)) -> Trigger {
+/// The next nation wakes: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the nation `army`'s troops land and
+/// it gets its funds. The fallen nations stay on the map and fight on.
+fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
     let mut all = vec![owned(hq)];
     all.extend(before.iter().map(|&c| owned(c)));
-    Trigger::new(
-        When::AfterAction,
-        Cond::All(all),
-        vec![
-            Action::TakeOver {
-                army: 2,
-                co: co_next,
-                meter_pct: 40,
-            },
-            Action::AddFunds { army: 2, funds },
-            Action::Custom(room), // (the old line's farthest units retire, so the whole wave fits under the 50-unit cap)
-            stage(wave),
-        ],
-    )
+    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::AddFunds { army, funds }, stage(army, wave)])
 }
 
-/// M25 The Last Accord: the final mission, a gauntlet. Asuka + a free partner; Nell, then Olaf, Kanbei, Eagle and Aria take the same army over from a new HQ each time a line breaks; no time limit, no Black Hole inventions on the Allied side.
+/// M25 The Last Accord, part one: the final mission's first map. Asuka + a free partner (Black Hole, the fifth army) against the four nations of the Accord, each an army of its own colour: Nell's Orange Star
+/// (army 1), then Olaf's Blue Moon (2), Kanbei's Yellow Comet (3) and Eagle's Green Earth (4), allied. Each later nation is present but dormant (a few holding units round its HQ, no property but the HQ) until
+/// the HQ before it falls; Eagle's HQ ends part one (a scene, then the win) and part two (Aria's citadel, `bh2_25b`) follows. No time limit, no Black Hole inventions on the Allied side.
 fn bh2_25() -> MissionDef {
     let mut m = MissionDef::new("bh2_25", "The Last Accord");
-    m.objective = "Break Nell's line, then Olaf's, Kanbei's and Eagle's, and take Aria's HQ.";
+    m.objective = "Break Nell's line, then Olaf's, Kanbei's and Eagle's.";
     m.map = MapSrc::Built("bh2_25");
     m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(crate::co_new::ASUKA)).funds(30000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(30000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).team(1).funds(40000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(0),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1).funds(0),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(30000),
     ];
-    m.units = deployment("bh2_25");
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("bh2_25"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
     m.rank_days = 40;
     m.held_hq = Some(M25_NELL);
     m.held_more = vec![M25_OLAF, M25_KANBEI, M25_EAGLE];
     m.triggers = vec![
-        takeover(M25_NELL, &[], co::OLAF, 20000, &OLAF_WAVE, |c| make_room(c, 2, OLAF_WAVE.len(), M25_OLAF)),
-        takeover(M25_OLAF, &[M25_NELL], co::KANBEI, 22000, &KANBEI_WAVE, |c| make_room(c, 2, KANBEI_WAVE.len(), M25_KANBEI)),
-        takeover(M25_KANBEI, &[M25_NELL, M25_OLAF], co::EAGLE, 24000, &EAGLE_WAVE, |c| make_room(c, 2, EAGLE_WAVE.len(), M25_EAGLE)),
-        takeover(M25_EAGLE, &[M25_NELL, M25_OLAF, M25_KANBEI], ARIA_CO, 30000, &ARIA_WAVE, |c| make_room(c, 2, ARIA_WAVE.len(), M25_ARIA)),
-        // Aria's HQ is the last: its capture wins
-        after(Cond::All(vec![owned(M25_ARIA), owned(M25_EAGLE)]), vec![Action::Win]),
+        wake(M25_NELL, &[], 2, 70000, &OLAF_WAVE),
+        wake(M25_OLAF, &[M25_NELL], 3, 70000, &KANBEI_WAVE),
+        wake(M25_KANBEI, &[M25_NELL, M25_OLAF], 4, 70000, &EAGLE_WAVE),
+        // Eagle's HQ is the last of part one: a scene, then the win (part two follows)
+        after(
+            Cond::All(vec![owned(M25_EAGLE), owned(M25_KANBEI), owned(M25_OLAF), owned(M25_NELL)]),
+            vec![
+                Action::Scene(Scene::new(vec![
+                    Line::say(co::EAGLE, "The Accord's last wing is down. We held the sky as long as we could."),
+                    Line::say(ARIA_CO, "Then it is mine to hold. Let them come to the citadel."),
+                ])),
+                Action::Win,
+            ],
+        ),
     ];
     m.flag = flag(25);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_24"]);
+    m
+}
+
+/// M25 part two, The Last Citadel: the final mission's second map. Aria (Orange Star), a revived army of brand-new full-strength units, holds a fortress on a plateau of high ground; Asuka + a free partner
+/// come over the Aisne's bridges and up the passes. Capturing her HQ or routing her army wins the campaign.
+fn bh2_25b() -> MissionDef {
+    let mut m = MissionDef::new("bh2_25b", "The Last Citadel");
+    m.objective = "Cross the Aisne, climb the passes and take Aria's HQ.";
+    m.map = MapSrc::Built("bh2_25b");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(crate::co_new::ASUKA)).funds(30000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(ARIA_CO)).funds(90000),
+    ];
+    m.units = deployment("bh2_25b");
+    m.rank_days = 40;
+    m.intro = Scene::new(vec![
+        Line::say(ARIA_CO, "Every unit here is new, and every one is mine. The Accord does not end at the lakes."),
+        Line::say(crate::co_new::ASUKA, "Then we take it from the top, one pass at a time."),
+    ]);
+    m.flag = flag(27);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_25"]);
     m
 }
 
@@ -883,6 +910,7 @@ pub fn def() -> CampaignDef {
         bh2_24(),
         bh2_25(),
         bh2_26(),
+        bh2_25b(),
     ];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
@@ -892,7 +920,7 @@ pub fn def() -> CampaignDef {
         prologue_song: None,
         credits: Vec::new(),
         missions,
-        final_mission: "bh2_25",
+        final_mission: "bh2_25b",
         bonds: Vec::new(),
         extra_bonds: 0,
         secret_mission: "bh2_26",
@@ -917,7 +945,7 @@ mod tests {
     #[test]
     fn act_one_has_five_missions_and_a_second_front_for_m4() {
         let d = def();
-        assert_eq!(d.missions.len(), 26);
+        assert_eq!(d.missions.len(), 27);
         assert!(d.missions[3].front2.as_ref().is_some_and(|f| f.sky));
         assert!(d.missions[4].held_hq.is_some());
     }
@@ -969,8 +997,8 @@ mod tests {
     #[test]
     fn act_five_has_the_gauntlet_the_waves_and_the_secret() {
         let d = def();
-        assert!(d.missions[20..].iter().map(|m| m.key).eq(["bh2_21", "bh2_22", "bh2_23", "bh2_24", "bh2_25", "bh2_26"]));
-        assert_eq!(d.final_mission, "bh2_25");
+        assert!(d.missions[20..].iter().map(|m| m.key).eq(["bh2_21", "bh2_22", "bh2_23", "bh2_24", "bh2_25", "bh2_26", "bh2_25b"]));
+        assert_eq!(d.final_mission, "bh2_25b");
         assert_eq!(d.secret_mission, "bh2_26");
         // M22: the player's factory; M23: waves and the day-10 win, no day limit; M24: three armies; M25: four held HQs and five triggers (four takeovers and the win), no day limit
         assert!(d.missions[21].factory.len() == 14);
@@ -978,7 +1006,8 @@ mod tests {
         assert_eq!(d.missions[22].day_limit, 0);
         assert_eq!(d.missions[23].armies.len(), 3);
         assert!(d.missions[24].held_hq.is_some() && d.missions[24].held_more.len() == 3);
-        assert_eq!(d.missions[24].triggers.len(), 5);
+        assert_eq!(d.missions[24].triggers.len(), 4);
+        assert_eq!(d.missions[24].armies.len(), 5);
         assert_eq!(d.missions[24].day_limit, 0);
         assert_eq!(d.missions[25].triggers.len(), 3);
     }
@@ -998,11 +1027,11 @@ mod tests {
         free("bh2_26", &M26_CAV, false);
         free("bh2_26", &M26_SIEGE, false);
         free("bh2_26", &M26_FLEET, true);
-        for w in [&OLAF_WAVE[..], &KANBEI_WAVE[..], &EAGLE_WAVE[..], &ARIA_WAVE[..]] {
+        for w in [&OLAF_WAVE[..], &KANBEI_WAVE[..], &EAGLE_WAVE[..]] {
             free("bh2_25", &w.iter().map(|&(_, c)| c).collect::<Vec<_>>(), false);
         }
         let hq = |c: (u8, u8)| c;
-        assert_eq!([hq(M25_NELL), M25_OLAF, M25_KANBEI, M25_EAGLE, M25_ARIA], [(8, 10), (24, 6), (39, 6), (38, 20), (22, 21)]);
+        assert_eq!([hq(M25_NELL), M25_OLAF, M25_KANBEI, M25_EAGLE], [(8, 8), (24, 6), (39, 6), (38, 20)]);
     }
 
     /// M9's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.

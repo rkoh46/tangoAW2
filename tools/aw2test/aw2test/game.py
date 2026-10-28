@@ -357,7 +357,7 @@ class Game:
         e = self.e
         raw = e.read(self.units_base, ram.UNIT_SIZE * 256)
         # Five armies (tangoAW2's five.rs): 51 slots an army, else 64.
-        per = 51 if e.u8(ram.FIVE_ON) == 1 else 64
+        per = 51 if e.u8(ram.FIVE_ON) in (1, 2) else 64      # (1 a Versus five-army game, 2 a custom campaign's five-army mission)
         out = []
         for uid in range(256):
             r = raw[ram.UNIT_SIZE * uid: ram.UNIT_SIZE * (uid + 1)]

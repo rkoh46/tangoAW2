@@ -49,6 +49,9 @@ def funds_of(body):
     """(player funds, enemy funds) from the ArmyDefs, plus the funds takeovers add to the enemy."""
     f = [int(x) for x in re.findall(r"\.funds\((\d+)\)", body)]
     add = sum(int(x) for x in re.findall(r"takeover\([A-Z0-9_]+, [A-Za-z:_0-9]+, (\d+),", body)) + sum(int(x) for x in re.findall(r"AddFunds \{\s*army: 2,\s*funds: (\d+)", body))
+    add += sum(int(x) for x in re.findall(r"wake\([A-Z0-9_]+, &\[[^\]]*\], \d, (\d+),", body))
+    if len(f) == 5:                                   # (a five-army mission: the player is the fifth)
+        return f[4], sum(f[:4]) + add
     return f[0] if f else 0, sum(f[1:]) + add
 
 
@@ -95,13 +98,14 @@ def rows():
             units, owned, pp, n_armies = nums[mp]
             if not units:
                 continue
-            pv += sum(COST.get(k, 0) * c for k, c in units.get(1, {}).items())
-            for a in range(2, n_armies + 1):
+            me = 5 if n_armies == 5 else 1                    # (a five-army mission's player is the fifth army)
+            pv += sum(COST.get(k, 0) * c for k, c in units.get(me, {}).items())
+            for a in [a for a in range(1, n_armies + 1) if a != me and (n_armies == 5 or a != 1)]:
                 ev += sum(COST.get(k, 0) * c for k, c in units.get(a, {}).items())
                 for k in units.get(a, {}):
                     kinds.add("air" if k in (16, 17, 19, 20) else "sea" if k in (21, 22, 23, 24, 26) else "ground")
-            owned_p += owned.get(1, 0)
-            owned_e += sum(owned.get(a, 0) for a in range(2, n_armies + 1))
+            owned_p += owned.get(me, 0)
+            owned_e += sum(owned.get(a, 0) for a in range(1, n_armies + 1) if a != me and (n_armies == 5 or a != 1))
             pipes += pp
         body = bodies.get(name, "")
         sk = spawn_kinds(body, consts)
@@ -111,8 +115,19 @@ def rows():
         pf, ef = funds_of(body)
         pe, ee = pf + 10 * owned_p * 1000, ef + 10 * owned_e * 1000
         nm = {"player_value": pv, "enemy_value": ev, "force": ev / max(pv, 1), "economy": ee / max(pe, 1), "fortified": round(min(1.0, pipes / 60), 2), "pressure": len(kinds) / 3.0}
+        nm.update({"pe": pe, "ee": ee, "kinds": kinds})
         out.append((n, title, nm, esd.static_score(nm), len(sk)))
-    return out
+    # the final mission is both maps (M25 part one and M27 part two) together: its row replaces M25's, summing the two maps' forces, funds and fields
+    one = next(r for r in out if r[0] == 25)
+    two = next(r for r in out if r[0] == 27)
+    a, b = one[2], two[2]
+    kinds = a["kinds"] | b["kinds"]
+    nm = {"player_value": a["player_value"] + b["player_value"], "enemy_value": a["enemy_value"] + b["enemy_value"], "pe": a["pe"] + b["pe"], "ee": a["ee"] + b["ee"], "fortified": max(a["fortified"], b["fortified"]), "pressure": len(kinds) / 3.0}
+    nm["force"] = nm["enemy_value"] / max(nm["player_value"], 1)
+    nm["economy"] = nm["ee"] / max(nm["pe"], 1)
+    out = [r for r in out if r[0] != 25]
+    out.append((25, "The Last Accord (both maps)", nm, esd.static_score(nm), one[4] + two[4]))
+    return sorted(out, key=lambda r: r[0])
 
 
 def report():

@@ -152,6 +152,7 @@ These apply to all 26 missions, not just Act I:
 | 24 | Desert | Clear |
 | 25 | Normal (citadel), huge, no fog | Clear, then weather with each commander (Olaf's snow) |
 | 26 | Desert (Black Hole's island) | Clear |
+| 27 (part two of the final mission) | Normal (the Citadel), no fog | Clear |
 
 ## 5. Ending and credits
 

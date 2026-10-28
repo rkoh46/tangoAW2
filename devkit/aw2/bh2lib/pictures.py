@@ -9,7 +9,7 @@ from ..maplint.render import COL, UNIT_INITIAL, font
 from ..maplint.terrain import terrain, PROP_KIND
 from . import COLOUR, COLOUR_NAME, FRONT2, MISSIONS, flags, maps
 
-ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain"), 3: (11, 14, "Iron North"), 4: (15, 20, "The Accord Breaks"), 5: (21, 26, "Succession")}           # act -> (first mission, last mission, title)
+ACTS = {1: (1, 5, "Landfall"), 2: (6, 10, "Comet Chain"), 3: (11, 14, "Iron North"), 4: (15, 20, "The Accord Breaks"), 5: (21, 27, "Succession")}           # act -> (first mission, last mission, title)
 ROMAN = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
 FRONT2_LABEL = {4: "front 2 (sky)", 10: "front 2 (Grimm's isles)", 20: "front 2 (the rail yard)"}
 

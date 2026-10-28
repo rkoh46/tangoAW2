@@ -49,6 +49,7 @@ pub const BH2_FLAGS: &[(u8, u8, i16, i16)] = &[
     (24, 1, 80, 30),
     (25, 1, 60, 60),
     (26, 5, 30, 222),
+    (27, 1, 74, 66),
 ];
 
 /// A converted picture, parsed on first use.

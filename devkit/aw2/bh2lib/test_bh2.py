@@ -49,10 +49,10 @@ class Specs(unittest.TestCase):
         self.assertTrue(all(u["kind"] in (12, 16, 17) for u in m.u))      # Stealth, Fighter, Bomber: no B Copter, no ground, no Anti-Air
         self.assertEqual(set("".join(m.rows())), {"."})
 
-    def test_second_hqs_only_in_m5_and_m25(self):
+    def test_second_hqs_only_in_m5(self):
         for p in specs("bh2"):
             n = "".join(load_spec(p).rows()).count("Q")
-            self.assertEqual(n, {"bh2_05": 1, "bh2_25": 4}.get(p.stem, 0), p.stem)     # (M5's held second HQ; M25's four stage HQs)
+            self.assertEqual(n, {"bh2_05": 1}.get(p.stem, 0), p.stem)     # (M5's held second HQ; M25's four HQs are the armies' own digit tiles now)
 
 
 class Looks(unittest.TestCase):
