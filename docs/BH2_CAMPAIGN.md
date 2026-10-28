@@ -40,7 +40,7 @@ BH1 ended with Andy's broadcast: **"ALL COLOURS EAST. THE FENCE IS DOWN. BUILD A
 
 **Black Hole: Asuka leads in every mission.** The other twelve all get story missions as her second front, her tag partner, or a solo detachment she commands by radio:
 - Sturm, Von Bolt, Hawke, Koal, Kindle, Jugger, Flak, Lash, Adder, Clone Andy and Crumb.
-- Sturm is not playable until the end. You face him in M25. He is playable in Free Play afterwards.
+- Sturm commands in the prologue and leaves through the door in M23. He is not playable in BH2's story missions; he is in Free Play afterwards.
 
 **The Allies, all 18 present:** Andy, Max, Sami, Nell, Hachi, Jake, Rachel, Olaf, Grit, Colin, Sasha, Kanbei, Sensei, Grimm, Eagle, Drake, Jess and Javier.
 
@@ -76,26 +76,24 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 19 | Skyfall | Orange Star skies and coast | Adder (detachment) | Rachel + Jake | Air superiority. The Allies' answer to it is real. |
 | 20 | The Rail East | Orange Star rail corridor | Front 1: Asuka. Front 2: Koal | Front 1: Andy. Front 2: Hachi | **2F #3.** Capture the heavy train with the door-seal machinery. Ends Act IV. |
 | **Act V** | **Succession** | | | | |
-| 21 | The Second Folder | Black Hole's eastern HQ | Asuka + Hawke (Tag) | Max + Sami | Hawke and Asuka find they planned the same thing. A storm front gathers in the west. |
-| 22 | Von Bolt's Note | Orange Star sea fortress | Asuka + Von Bolt (Tag) | Sami + Nell | The sealed note is opened. **BF**: Nell's fortress is strong enough to take it. |
-| 23 | Where the Map Ends | The Obelisk, west | Asuka + Kindle (Tag) | Sturm's storm vanguard (a Black Hole army, Lash in command) | Sturm opens the door. Black Hole splits, and the loyalist army attacks. |
-| 24 | The Last Accord | Orange Star capital (5 armies) | Asuka + a free partner | Nell, Andy, Hachi and Eagle (1v4) | The Allies make their stand. Victory brings a truce: the door threatens everyone. **Unlocks M26.** |
-| 25 | **Storm Unbound** | The Obelisk plateau, a huge map | Asuka + a free partner | **Sturm** + Von Bolt's storm-Black Hole, no time limit | **The final mission.** Sturm with every invention: **Deathray at the top edge**, Black Cannons, Lasers, minicannons, Crystals, the Obelisk and his own **BF**. The storm keeps the weather changing. Crumb's key must reach the door, your second objective. |
-| **Secret 26** | **Through the Door** | Past the map: the edge of Emerald Sun's land | Asuka + a free pick | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
+| 21 | The Second Folder | Black Hole's eastern HQ | Asuka + Hawke (Tag) | Max + Sami | Hawke and Asuka find they planned the same thing. |
+| 22 | Von Bolt's Note | Orange Star sea fortress | Asuka + Von Bolt (Tag) | Jess + Colin | The sealed note is opened. **BF**, against a fortress strong enough to take it. |
+| 23 | Where the Map Ends | The Obelisk, west | Asuka + Crumb (Tag) | Drake + Grit (an Allied strike force to destroy the Obelisk) | Crumb's key opens the door. Sturm walks through it into the storm, leaving Black Hole to Asuka: "Hold my world." You hold the Obelisk until the storm passes (a day limit). Sturm is gone, not beaten: an open hook. |
+| 24 | The Gate of Colours | Orange Star's outer capital | Asuka + a free partner | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M26.** |
+| 25 | **The Last Accord** | The Accord's citadel, a huge map | Asuka + a free partner | **Gauntlet: Nell, then Olaf, Kanbei and Eagle** | **The final mission**, scripted like BH1's Nell-to-Andy takeover but longer, with no time limit. Nell holds the citadel. As you break each line, fresh armies arrive and the next CO takes command from a new HQ: Olaf's Blue Moon with snow, Kanbei's Yellow Comet elite, then Eagle's air fleet. The captured door-seal machinery is the **Deathray at the top of the map**, now in Allied hands. Black Cannons, Lasers and minicannons guard the walls. Every wave is strong enough to stand up to them. |
+| **Secret 26** | **Through the Door** | Past the map: the edge of Emerald Sun's land | Asuka + a free pick | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
 
 **Counts**
 - Two-front missions: 3 (M4, M10, M20).
-- Factory missions:
-  - your Black Factory: M3, M14 and M22;
-  - the enemy's: M25.
+- Factory missions: your Black Factory in M3, M14 and M22; the Allies' captured inventions in M25.
 - Inventions: in about 12 missions.
-- Deathray: M25 only, at the top of the map.
+- Deathray: M25 only, at the top of the map (Allied-held).
 - Forced CO picks: about 12, the rest free.
-- Day limits: only where the clock is the mission (M2, M7, M16, M20).
+- Day limits: only where the clock is the mission (M2, M7, M16, M20, M23).
 
 ## 5. Ending and credits
 
-- **Epilogue after M25.** The door is shut with Crumb's key. Sturm is **sealed beyond it, not killed**: an open door for the future. Asuka leads Black Hole with Hawke as Marshal, and "Succession" ends with Hawke kneeling to the army, not the person. Nell and Andy sign a truce with Black Hole, the first new Accord in thirty years. Crumb keeps Gerald and the key.
+- **Epilogue after M25.** Eagle is the last to fall. Nell surrenders the Accord's seal to Asuka, not to Sturm. Asuka leads Black Hole and the world, with Hawke as Marshal; "Succession" ends with Hawke kneeling to the army, not the person. Crumb keeps Gerald and the key, and the door hums, closed but not locked. Sturm is somewhere past it.
 - **Separate credits sequence.** A full staff roll with its own music, cast by army, and a last page.
 - **Secret epilogue after M26.** Emerald Sun's legion halts at the edge of the map. Klaus: "The sun does not set. It waits." This links to the Emerald Sun Campaign.
 
@@ -111,15 +109,15 @@ Every scene has a song (the kit's lint enforces it). The music plan:
 
 The new songs follow the AW2 Black Hole style the music kit now measures, with lettered sketches first.
 
-## 7. World map
+## 7. World map (decided)
 
-There is no AW1 map in your ROMs (AW2 and DS only), and the engine draws only the AW2 and Omega Land maps. I suggest building the AW1 map from your picture: a new world-map type that takes it as the base and fits it to the GBA screen in AW2's palette, with region flags and mission markers. That matters because I don't draw art. If you have a cleaner picture or a real AW1 world-map screenshot, I'd use that instead.
+The owner's AW1-style picture is imported pixel by pixel as a new interactive world map. That means a new world-map type in the engine: the picture in GBA colours, region flags per nation, mission markers and the cursor, as AW2's map works. No AW1 ROM is needed.
 
-## 8. Questions for review
+## 8. Decisions (owner, 2026-10-28)
 
-1. **Final boss.** Is **Sturm** right as the final enemy? He'd be sealed through the door, not killed, with "Succession" resolved. The alternative is the full Allied Accord, all colours, in M25, with Sturm only as the story behind it.
-2. **Lore.** Are the answers in section 2 right for you: Hobb as the Obelisk's builder and Crumb's grandfather, Sturm coming through the door, all four nations secretly feeding the project?
-3. **The Allies after M24.** A truce with Black Hole against Sturm, or does Black Hole simply win? Should they fight beside you in M25 as an allied army (a 3-army map)?
-4. **World map.** Use your picture as the base, or do you have a better one?
-5. **New music.** Three new songs: Door motif, Storm Unbound and the credits. Is that the right amount?
-6. **Your new CO.** You mentioned in October that you might add another CO of your own for BH2. Is that still planned, and where should they come in?
+1. **The final enemy is not Sturm.** M25 is a scripted gauntlet: Nell, then Olaf, Kanbei and Eagle take over in turn, with growing reinforcements. It works like BH1's Nell-to-Andy takeover.
+2. **The lore answers in section 2 are approved.**
+3. **No truce against Sturm.** He leaves through the door in M23.
+4. **The owner's picture is the world map**, imported pixel by pixel.
+5. **Three new songs (Door motif, final battle, credits):** sketches first, for the owner to listen to.
+6. **The owner's new CO:** concepts are offered for the owner to choose from.
