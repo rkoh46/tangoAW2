@@ -78,3 +78,12 @@ class Repeat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class QuietWindows(unittest.TestCase):
+    def test_a_powers_quote_box_before_the_act_is_not_a_leak(self):
+        from . import check
+        w = check.quiet_windows([{"what": "power", "ms": 100_000}, {"what": "attack", "ms": 50_000}, {"what": "build", "ms": 10_000}])
+        self.assertIn((100_000 - check.POWER_QUOTE_MS, 102_500), w)
+        self.assertIn((47_500, 52_500), w)
+        self.assertEqual(len(w), 2, "building is not allowed on a waiting window")
