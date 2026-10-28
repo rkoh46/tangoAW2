@@ -120,3 +120,32 @@ def features_table(ms):
     lines.append("")
     lines.append("Every feature on at least one map: " + ("yes" if not missing else "no; unused so far: " + ", ".join(missing)))
     return "\n".join(lines), counts, missing
+
+
+# ------------------------------------------------------------------ looks and weather (the owner's rule: vary them, neighbouring missions never look alike)
+
+LOOK_NAMES = {0: "normal", 1: "snow", 2: "desert", 3: "wasteland"}
+
+
+def looks():
+    """[(mission number, key, look name, weather name, fog)] read from `bh2_campaign.rs` (`m.look`, `m.weather`, `m.fog`), in mission order."""
+    text = (SRC / "bh2_campaign.rs").read_text()
+    fns = list(re.finditer(r"^fn (bh2_\d\d)\(\) -> MissionDef \{", text, re.M))
+    out = []
+    for i, f in enumerate(fns):
+        body = text[f.start(): fns[i + 1].start() if i + 1 < len(fns) else len(text)]
+        lk = re.search(r"m\.look = (\d)", body)
+        wt = re.search(r"m\.weather = Weather::(\w+)", body)
+        n = int(f.group(1)[4:])
+        out.append((n, f.group(1), LOOK_NAMES[int(lk.group(1))] if lk else "normal", wt.group(1).lower() if wt else "clear", bool(re.search(r"m\.fog = true", body))))
+    return out
+
+
+def check_looks():
+    """Warnings (strings): two consecutive missions with the same look, weather and fog."""
+    rows = looks()
+    out = []
+    for a, b in zip(rows, rows[1:]):
+        if a[2:] == b[2:]:
+            out.append(f"M{a[0]} and M{b[0]} look alike: both {a[2]}, {a[3]}{', fog' if a[4] else ''}")
+    return out

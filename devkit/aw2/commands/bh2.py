@@ -57,5 +57,10 @@ def check(a):
     problems = bh2lib.check_flags()
     for p in problems:
         util.say(f"PROBLEM: {p}")
-    util.say("bh2 check: " + ("flags clean" if not problems else f"{len(problems)} problem(s)"))
+    for n, key, look, weather, fog in bh2lib.looks():
+        util.say(f"M{n} {key}: look {look}, weather {weather}{', fog' if fog else ''}")
+    warns = bh2lib.check_looks()
+    for w in warns:
+        util.say(f"WARNING: {w}")
+    util.say("bh2 check: " + ("flags clean" if not problems else f"{len(problems)} problem(s)") + (f", {len(warns)} look warning(s)" if warns else ", looks vary"))
     return 1 if problems else 0

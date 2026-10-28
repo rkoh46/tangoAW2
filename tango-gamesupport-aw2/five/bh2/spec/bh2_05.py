@@ -1,66 +1,75 @@
-"""BH2 M5 Evergreen in Exile (Act I): the Allied exile capital, a big map. Sturm and Asuka (the forced pair "Perfect Intel") against Eagle and Javier.
+"""BH2 M5 Evergreen in Exile (Act I): the Allied exile capital on blasted ground (the Wasteland look). Sturm and Asuka (the forced pair "Perfect Intel") against Eagle and Javier.
 
-Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Black Hole lands in the south-west (HQ, two ports, a ring of bases, two Black Crystals that
-heal its army); the Allies hold the north-east: Javier's capital HQ behind a pipe wall, and, behind it, the airport district with a second HQ (`Q`, as BH1's M30 has one):
-when the capital's HQ falls, Eagle takes command from there with a fresh air-heavy army. One Allied army (army 2); the second HQ is held (it defeats nobody).
-The Allied side is built big for the strong pair: 8 bases, 4 airports, many cities, 42 units pre-deployed.
-- Lanes: three east-west roads (north y8, middle y16, south y24) and three north-south roads (x8, x23, x37) over the river, with a bridge each; a river with four bends from
-  the north edge to the south sea. The capital's pipe wall (x25 from the mountains to y13, then y13 to the massif) has two seam gates: the north road's (25,8) and the south road's
-  (29,13); the open way is the long road x37 up the east edge to the capital's south-east gate (34..39, 13).
-- Where the fight happens: the two Com Towers (17,12) and (25,20) either side of the river, the neutral airport and bases in the centre, the bridges, then the two gates.
-- Threats and answers: the Allies' Fighters, Bombers and Copters -> Anti-Air and Missiles in Black Hole's army and the ones its bases build; their Tanks and Rockets -> Md Tanks,
-  Neotank and artillery.
+Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Black Hole breaks out of the south-west ruins (HQ, a ring of bases, two Black Crystals that heal its army). The Allies hold
+the blasted heart of the map: Javier's capital HQ on a plateau ringed by cliffs, and behind it, in the north-east corner, Eagle's airport district: a pocket walled by two pipelines with a seam
+gate each, with a second HQ (`Q`, as BH1's M30 has one): when the capital's HQ falls, Eagle takes command from there with a fresh air-heavy army. One Allied army (army 2); the second HQ is held (it defeats nobody).
+The Allied side is built big for the strong pair: bases, four airports, 42 units pre-deployed. The map is all land (the wasteland's water is lava: no sea, no ports, no river).
+- Lanes: the ruined approach (a broken highway along a canyon: two cliff ranges with passes, the valley between them the direct road to the capital's south gate), the north-west route over the old
+  ruins to the capital's west gate, the south-east route round the canyon's end through the ruined works to the airport district's south seam gate (34,9).
+- Where the fight happens: the two Com Towers (9,12) in the north-west ruins and (31,22) in the south-east works, the canyon's passes, the capital's two gates, then the pocket's seam gates (30,5) and (34,9).
+- Threats and answers: the Allies' Fighters, Bombers and Copters (the pocket's airports build more) -> Anti-Air and Missiles in Black Hole's army and the ones its bases build; their Tanks and Rockets
+  -> Md Tanks, Neotank and artillery; the pocket's walls are pipelines: Black Hole's artillery and tanks break a seam.
 """
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize, clear_fire_lines
 
 W, H = 40, 32
 
 
 def build():
     m = Canvas("bh2_05", W, H)
-    m.rect("~", 0, 29, 39, 31)
-    # --- roads (the river, bridges and pipes are laid over them)
-    m.road([(2, 24), (37, 24)]); m.road([(2, 16), (38, 16)]); m.road([(3, 8), (24, 8)]); m.road([(26, 8), (38, 8)])
-    m.road([(8, 4), (8, 24)]); m.road([(23, 3), (23, 24)]); m.road([(37, 8), (37, 24)]); m.road([(29, 14), (29, 24)]); m.road([(29, 2), (29, 12)])
-    m.road([(8, 12), (17, 12)]); m.road([(23, 20), (25, 20)]); m.road([(30, 4), (38, 4)]); m.road([(33, 4), (33, 8)]); m.road([(5, 20), (5, 24)])
-    m.road([(14, 16), (14, 12)]); m.road([(31, 16), (31, 20)])
-    # --- relief
-    m.cluster("^", 25, 1, 7, seed=1); m.cluster("^", 33, 13, 8, seed=2); m.cluster("^", 3, 4, 14, seed=3); m.cluster("^", 12, 3, 10, seed=4); m.cluster("^", 36, 11, 8, seed=5)
-    m.cluster("^", 12, 20, 10, seed=6); m.cluster("^", 28, 27, 9, seed=7); m.cluster("^", 3, 12, 8, seed=8); m.cluster("^", 17, 24, 6, seed=9); m.cluster("^", 33, 20, 8, seed=10)
-    m.cluster("^", 16, 5, 7, seed=11); m.cluster("^", 38, 28, 4, seed=12); m.cluster("^", 6, 1, 6, seed=14); m.cluster("^", 38, 22, 5, seed=15); m.cluster("^", 27, 12, 5, seed=13)
-    for i, (cx, cy, n) in enumerate([(6, 6, 9), (15, 9, 8), (11, 14, 8), (26, 5, 8), (31, 6, 8), (36, 2, 6), (17, 17, 8), (27, 17, 8), (22, 14, 6), (35, 17, 7), (6, 18, 8),
-                                     (14, 27, 7), (4, 27, 6), (33, 26, 8), (38, 20, 6), (20, 27, 6), (10, 9, 5), (31, 22, 6), (20, 3, 6), (9, 22, 6), (26, 22, 6), (2, 21, 5), (2, 1, 6), (9, 1, 5), (14, 1, 4), (38, 14, 6), (35, 23, 6), (33, 28, 5), (9, 26, 5), (26, 26, 5), (38, 8, 4), (24, 11, 4)]):
-        m.cluster("f", cx, cy, n, seed=30 + i)
-    m.scatter("f", (0, 0, 39, 28), 0.035, seed=5)
-    # --- the river: source at the north edge, four bends, mouth in the south sea
-    m.river([(18, 0), (18, 6), (19, 6), (19, 18), (21, 18), (21, 28)])
-    m.bridge(19, 8).bridge(19, 16).bridge(21, 24)
-    # --- the capital's pipe wall: x25 from the mountains down to y13, then y13 east to the massif; the seams are the gates on the north and south roads
-    m.rect("^", 24, 2, 26, 2)
-    m.pipe([(25, 3), (25, 13)]); m.pipe([(25, 13), (32, 13)]); m.put("Z", 25, 8); m.put("Z", 29, 13)
+    # --- the canyon: two cliff ranges with passes, the valley between them the ruined approach; the capital's cliff ring; the cliffs round the pocket
+    belt(m, "^", [(7, 20), (12, 17), (18, 13), (21, 10)], width=1, seed=1, gaps=[(12, 17), (17, 14)], p=1.0)
+    belt(m, "^", [(11, 27), (17, 24), (24, 19), (28, 15)], width=1, seed=2, gaps=[(16, 25), (23, 20)], p=1.0)
+    belt(m, "^", [(21, 4), (30, 4)], width=1, seed=3, gaps=[(25, 4)], p=1.0); belt(m, "^", [(21, 5), (21, 12)], width=1, seed=4, gaps=[(21, 9)], p=1.0)
+    belt(m, "^", [(21, 13), (30, 13)], width=1, seed=5, gaps=[(26, 13)], p=1.0); belt(m, "^", [(30, 10), (30, 13)], width=1, seed=6, p=1.0)
+    belt(m, "^", [(31, 11), (38, 12)], width=1, seed=7, gaps=[(36, 12)]); belt(m, "^", [(2, 12), (3, 18)], width=1, seed=8); belt(m, "^", [(1, 4), (6, 2)], width=2, seed=9, gaps=[(4, 3)])
+    belt(m, "^", [(12, 2), (18, 3)], width=1, seed=10); belt(m, "^", [(26, 21), (33, 20)], width=1, seed=11, gaps=[(29, 20)]); belt(m, "^", [(34, 26), (38, 22)], width=1, seed=12)
+    belt(m, "^", [(18, 29), (26, 30)], width=1, seed=13); belt(m, "^", [(14, 9), (17, 8)], width=1, seed=14)
+    for i, (cx, cy, n) in enumerate([(12, 12, 3), (24, 24, 3), (8, 8, 3), (35, 16, 3), (16, 28, 2)]):
+        m.cluster("f", cx, cy, n, seed=40 + i)                              # (dead trees: the wasteland look draws few)
+    for i, (cx, cy, n) in enumerate([(9, 16, 7), (16, 10, 6), (24, 23, 7), (14, 14, 5), (33, 16, 7), (10, 5, 6), (28, 28, 6), (2, 28, 4), (36, 28, 6), (20, 27, 5), (5, 17, 5),
+                                     (18, 21, 5), (36, 21, 5), (13, 30, 4), (27, 17, 4), (16, 3, 4), (8, 23, 3)]):
+        m.cluster("^", cx, cy, n, seed=60 + i)                              # (rubble heaps and slag: the wasteland's broken ground)
+    for i, (cx, cy, n) in enumerate([(7, 10, 4), (22, 19, 4), (31, 27, 4), (4, 21, 3), (15, 26, 3), (33, 12, 3), (11, 9, 3), (38, 17, 3), (26, 4, 2)]):
+        m.cluster("f", cx, cy, n, seed=80 + i)
+    # --- the pocket's pipe walls: x30 from the north edge to y9, then y9 east to the map edge; the seams (30,5) and (34,9) are its gates
+    m.pipe([(30, 0), (30, 9)]); m.pipe([(30, 9), (39, 9)]); m.put("Z", 30, 5); m.put("Z", 34, 9)
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
-        "M5 Evergreen in Exile: Black Hole (HQ 1 (5,24), the forced pair Sturm + Asuka) against the Allied army 2 (Javier's HQ 2 (30,10); Eagle takes over from the second HQ Q (36,3) in the airport district when it falls: "
-        "a held second HQ as in BH1's M30). Com Towers (17,12) and (25,20). Pipe wall with seams (25,8) and (29,13); the open way is the east road x37. Black Crystals by Black Hole's HQ. "
-        "Player: INF7 MECH4 TANK5 MDT2 NEO1 ART3 ROCK1 AA2 MIS1 RECON1 APC2; Allies: INF8 MECH4 TANK6 MDT3 ART4 ROCK2 AA3 MIS2 RECON2 APC1 FTR3 BMB2 BCO2."))
-    m.put("1", 5, 24).put("2", 30, 10).put("Q", 36, 3)
-    m.puts("P", [(7, 28), (14, 28)]).puts("t", [(17, 12), (25, 20)])
-    m.place("B", 4, (1, 17, 14, 27), seed=1, gap=3).place("C", 7, (1, 14, 14, 27), seed=2, gap=2, reach=3)
-    m.stamp("X", 3, 22).stamp("X", 7, 22)
-    m.place("A", 4, (30, 0, 39, 7), seed=3, gap=3, reach=3).place("B", 3, (30, 0, 39, 7), seed=4, gap=2, reach=3).place("B", 4, (26, 6, 38, 12), seed=5, gap=3, reach=3)
-    m.place("C", 8, (26, 0, 39, 12), seed=6, gap=2, reach=3)
-    m.place("a", 1, (14, 10, 24, 22), seed=7, gap=4, reach=3).place("b", 4, (12, 6, 26, 26), seed=8, gap=4)
-    m.place("c", 6, (0, 0, 14, 13), seed=9, gap=3, reach=3).place("c", 4, (14, 0, 24, 14), seed=10, gap=3, reach=3).place("c", 6, (14, 14, 26, 27), seed=11, gap=3, reach=3)
-    m.place("c", 5, (26, 14, 39, 28), seed=12, gap=3, reach=3).place("c", 2, (0, 14, 14, 20), seed=13, gap=2, reach=3)
-    m.put("c", 2, 2)
+        "M5 Evergreen in Exile (Wasteland look, no sea): Black Hole (HQ 1 (5,27), the forced pair Sturm + Asuka) against the Allied army 2 (Javier's HQ 2 (25,9) in the cliff-ringed capital; Eagle takes over from the second HQ Q (36,3) "
+        "in the airport district, a pocket walled by pipelines with seam gates (30,5) and (34,9), when it falls: a held second HQ as in BH1's M30). Com Towers (9,12) and (31,22). The ruined approach: the canyon valley's highway "
+        "to the capital's south gate (26,13). Black Crystals by Black Hole's HQ. Player: INF7 MECH4 TANK5 MDT2 NEO1 ART3 ROCK1 AA2 MIS1 RECON1 APC2; Allies: INF8 MECH4 TANK6 MDT3 ART4 ROCK2 AA3 MIS2 RECON2 APC1 FTR3 BMB2 BCO2."))
+    m.put("1", 5, 27).put("2", 25, 9).put("Q", 36, 3).puts("t", [(9, 12), (31, 22)])
+    m.stamp("X", 3, 25).stamp("X", 8, 25)
+    # --- roads: the broken highway up the canyon, the north-west route over the ruins, the south-east route to the pocket's south gate, the capital's streets and the pocket's
+    route(m, [(7, 27), (10, 24), (14, 21), (18, 18), (22, 15), (26, 14), (26, 12)], seed=1)
+    route(m, [(5, 25), (4, 19), (5, 13), (8, 8), (14, 6), (20, 7), (21, 9), (24, 9)], seed=2)
+    route(m, [(8, 28), (17, 29), (25, 27), (32, 25), (36, 19), (36, 14), (36, 12), (34, 10)], seed=3)
+    route(m, [(26, 12), (26, 9), (25, 8)], seed=4); route(m, [(25, 9), (28, 8), (29, 5)], seed=5); route(m, [(34, 8), (36, 5), (36, 4), (38, 4)], seed=6); route(m, [(31, 5), (34, 5), (36, 4)], seed=7)
+    route(m, [(5, 13), (8, 12), (9, 13)], seed=8); route(m, [(32, 25), (31, 23)], seed=9); route(m, [(14, 21), (10, 17), (8, 14), (8, 12)], seed=10)
+    route(m, [(18, 29), (18, 31)], seed=11); route(m, [(26, 14), (30, 16), (32, 18), (34, 22), (32, 25)], seed=12)
+    thin_roads(m)
+    # --- towns: Black Hole's ruins district, the ruined villages (neutral), the capital, the airport district
+    town(m, 6, 26, "BBC", seed=1); town(m, 4, 24, "BC", seed=2); town(m, 8, 27, "BC", seed=3); town(m, 7, 22, "Ca", seed=4, radius=3)
+    town(m, 9, 12, "CCb", seed=5, radius=3); town(m, 5, 13, "CC", seed=6); town(m, 8, 8, "CC", seed=7); town(m, 14, 6, "CCb", seed=8); town(m, 18, 6, "C", seed=9)
+    town(m, 14, 21, "CC", seed=10); town(m, 19, 17, "Cb", seed=11); town(m, 24, 15, "CC", seed=12); town(m, 10, 24, "C", seed=13); town(m, 17, 29, "CC", seed=14)
+    town(m, 24, 9, "BCC", seed=15, radius=3); town(m, 27, 7, "BC", seed=16); town(m, 27, 11, "BC", seed=17); town(m, 23, 6, "C", seed=18); town(m, 28, 9, "C", seed=19)
+    town(m, 34, 3, "AAB", seed=20, radius=3); town(m, 37, 6, "AAB", seed=21, radius=3); town(m, 33, 7, "CC", seed=22); town(m, 36, 1, "C", seed=23)
+    town(m, 31, 22, "CCb", seed=24, radius=3); town(m, 36, 17, "CC", seed=25); town(m, 33, 25, "BC", seed=26); town(m, 25, 27, "CC", seed=27); town(m, 36, 13, "C", seed=28)
+    route(m, [(36, 19), (38, 24), (37, 29)], seed=14); town(m, 37, 27, "CC", seed=30)
+    route(m, [(5, 13), (4, 8), (4, 4)], seed=13); town(m, 4, 5, "CC", seed=29)
+    neutralize(m, 13)
     m.tidy()
-    shore(m, 1, (0, 29, 6, 29), dirs="NS"); shore(m, 1, (8, 29, 13, 29), dirs="NS"); shore(m, 1, (15, 29, 20, 29), dirs="NS"); shore(m, 1, (22, 29, 38, 29), dirs="NS")
     # --- units
-    m.spread(1, {INF: 7, MECH: 4, TANK: 5, MDT: 2, NEO: 1, ART: 3, ROCK: 1, AA: 2, MIS: 1, RECON: 1, APC: 2}, (2, 17, 14, 27), seed=1, gap=0, avoid="~r=-^IZ#X")
-    m.spread(2, {INF: 8, MECH: 4, TANK: 6, MDT: 3, ART: 4, ROCK: 2, AA: 3, MIS: 2, RECON: 2, APC: 1}, (26, 0, 39, 12), seed=2, gap=0, hold=False, avoid="~r=-^IZ#X12345QBCPTbcpt")
-    m.spread(2, {FTR: 3, BMB: 2, BCO: 2}, (30, 0, 39, 7), seed=3, gap=0, avoid="~r=-^IZ#X12345QBCPTbcpt")
-    m.note("hq", 5, 24, "Black Hole's HQ"); m.note("enemy_hq", 30, 10, "the capital's HQ (objective 1)")
+    av = "~r=-^IZ#X12345QBCPTbcpt"
+    m.spread(1, {INF: 7, MECH: 4, TANK: 5, MDT: 2, NEO: 1, ART: 3, ROCK: 1, AA: 2, MIS: 1, RECON: 1, APC: 2}, (2, 21, 13, 30), seed=1, gap=0, avoid=av)
+    m.spread(2, {INF: 4, MECH: 2, TANK: 3, MDT: 2, ART: 3, AA: 2, MIS: 1, RECON: 1}, (22, 5, 29, 12), seed=2, gap=0, avoid=av)          # the capital
+    m.spread(2, {INF: 3, MECH: 1, TANK: 2, ROCK: 1, RECON: 1}, (12, 3, 20, 10), seed=4, gap=1, avoid=av)                                  # the north-west ruins
+    m.spread(2, {INF: 1, MECH: 1, TANK: 1, MDT: 1, ART: 1, AA: 1, MIS: 1, ROCK: 1, APC: 1}, (20, 14, 33, 22), seed=5, gap=1, avoid=av)    # the canyon's head
+    m.spread(2, {FTR: 3, BMB: 2, BCO: 2}, (31, 0, 39, 8), seed=3, gap=0, avoid=av)
+    m.note("hq", 5, 27, "Black Hole's HQ"); m.note("enemy_hq", 25, 9, "the capital's HQ (objective 1)")
     m.note("mark_hq2", 36, 3, "second HQ: Eagle takes over here")
-    m.note("gate_n", 25, 8, "seam gate (north road)"); m.note("gate_s", 29, 13, "seam gate (south road)")
+    m.note("gate_w", 30, 5, "seam gate (the pocket's west wall)"); m.note("gate_s", 34, 9, "seam gate (the pocket's south wall)")
     return m

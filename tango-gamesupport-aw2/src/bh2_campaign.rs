@@ -8,7 +8,7 @@
 use mgba::core::Core;
 
 use crate::campaign_model::Model;
-use crate::campaign_model::SendRule;
+use crate::campaign_model::{ring, SendRule, VolcanoDef};
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_campaign::{after, deployment, wave};
 
@@ -50,7 +50,7 @@ fn flag(mission: u8) -> (i16, i16) {
 }
 
 /// The cell of Allied M5's second HQ (the map's `Q`) and of the capital's HQ.
-const M5_HQ: (u8, u8) = (30, 10);
+const M5_HQ: (u8, u8) = (25, 9);
 const M5_HQ2: (u8, u8) = (36, 3);
 /// M2's crate truck destination: the quay's port.
 const M2_QUAY: (u8, u8) = (26, 19);
@@ -113,6 +113,24 @@ fn bh2_02() -> MissionDef {
     m
 }
 
+/// Factory table of M3 (day, the three doors' slots; 0 none): ground units mostly, a Md Tank and an Anti-Air slot for the days the Fighters come.
+const F3: [(u8, [u8; 3]); 14] = [
+    (2, [0, unit::TANK, 0]),
+    (3, [unit::INFANTRY, 0, unit::INFANTRY]),
+    (4, [0, unit::MD_TANK, 0]),
+    (5, [unit::TANK, 0, unit::TANK]),
+    (6, [0, unit::ARTILLERY, 0]),
+    (7, [unit::MECH, 0, unit::MECH]),
+    (8, [0, unit::MD_TANK, unit::ANTI_AIR]),
+    (9, [unit::TANK, 0, unit::TANK]),
+    (10, [unit::INFANTRY, unit::MD_TANK, unit::INFANTRY]),
+    (11, [0, unit::TANK, 0]),
+    (12, [unit::MECH, 0, unit::ROCKETS]),
+    (13, [0, unit::MD_TANK, 0]),
+    (14, [unit::TANK, 0, unit::TANK]),
+    (16, [unit::INFANTRY, unit::MD_TANK, unit::ANTI_AIR]),
+];
+
 /// M3 Iron Ledger: a free pick, with Black Hole's Black Factory, against one Green Earth army under the tag pair Javier + Jess.
 fn bh2_03() -> MissionDef {
     let mut m = MissionDef::new("bh2_03", "Iron Ledger");
@@ -124,6 +142,12 @@ fn bh2_03() -> MissionDef {
     ];
     m.units = deployment("bh2_03");
     m.rank_days = 16;
+    m.look = 2; // the Desert look
+                // Black Hole's Black Factory (the foundry): its schedule by day, three doors (the units are the slots' price caps: the smart spawner, `bh_factory` / `bh_smart`,
+                // chooses what each slot builds from the field: Anti-Air and Fighters only against air, foot soldiers for captures, indirects behind a safe line, a varied mix)
+    m.factory = F3.to_vec();
+    // Mount Ember (the volcano in the middle of the map): from day 3 it erupts every day on 3 of the 28 cells of the ring road round it (5 HP, any army's units, never below 1).
+    m.volcano = Some(VolcanoDef::new(3, 1, 5, &ring(19, 10, 26, 17)).per_eruption(3));
     m.flag = flag(3);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_02"]);
@@ -181,7 +205,8 @@ fn bh2_05() -> MissionDef {
     ];
     m.units = deployment("bh2_05");
     m.rank_days = 22;
-    // One Allied army throughout: the capital's HQ is held (its capture defeats nobody); Eagle takes the same army over from the airport district's `Q`.
+    m.look = 3; // the Wasteland look: the exile capital stands on blasted ground
+                // One Allied army throughout: the capital's HQ is held (its capture defeats nobody); Eagle takes the same army over from the airport district's `Q`.
     m.held_hq = Some(M5_HQ);
     m.triggers = vec![
         Trigger::new(

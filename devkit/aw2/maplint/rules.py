@@ -58,6 +58,8 @@ RULES = {
     "AR03": ("error", "a silo or an airport that no army's infantry can reach, or an airport whose footprint is wrong"),
     "PP03": ("warn", "a pipeline that is a stub: an end hanging in open terrain (a pipeline ends at the map edge, the sea, mountains or a building) or fewer than 6 cells"),
     "PP04": ("warn", "a pipe seam that changes nothing when broken: it neither joins two parts of the map nor shortens the way between the HQs by at least 6 cells"),
+    "IV02": ("error", "BH2 maps: a unit of either army stands in an invention's firing zone at the start (a Laser's row and column, a minicannon's four cells, a Black Cannon's cone, the Deathray's columns): the first turn's shot must hit nothing"),
+    "PT02": ("error", "BH2 maps: a port whose door is not open sea a ship can use: it touches no sea cell (shoal and reef are not water for ships), or its sea is a sealed pond, or the way out of its door is walled by reef"),
     "PT01": ("error", "a port that leads nowhere: no navigable sea beside it (lava is not navigable), or a sea body too small for ships (a lake of a few cells)"),
     "DQ12": ("warn", "a long straight line of mountains away from the map edge: a drawn wall, not a range"),
     "DQ11": ("warn", "a map meant to be fair (Versus, or a `fair` line) with unequal properties per army"),
@@ -786,6 +788,73 @@ def ports(G):
     return out
 
 
+SHIP_SEA_MIN = 24
+
+
+def ship_bodies(G):
+    """{cell: size} of every body of open sea (`~` only, 4-connected: a ship cannot enter shoal or reef)."""
+    body = {}
+    for y in range(G.h):
+        for x in range(G.w):
+            if G.g[y][x] == "~" and (x, y) not in body:
+                comp, todo = {(x, y)}, [(x, y)]
+                while todo:
+                    a, b = todo.pop()
+                    for dx, dy in D4:
+                        c = (a + dx, b + dy)
+                        if c not in comp and G.at(*c) == "~":
+                            comp.add(c)
+                            todo.append(c)
+                for c in comp:
+                    body[c] = len(comp)
+    return body
+
+
+def day_one_fire(G):
+    """IV02 (BH2 maps): nothing is hit on day 1 (docs/AW2.md "Start of the battle": a unit starts out of every structure's reach). The zones are `maplint/zones.py`; a unit that a mission spawns
+    later is that mission's own affair."""
+    if G.m.source != "bh2" or not G.m.text:
+        return []
+    from . import zones
+    zs = zones.zones_of(G.m.text)
+    out = []
+    for u in G.m.units or []:
+        hit = zs.get((u["x"], u["y"]))
+        if hit:
+            ch, x, y = hit[0]
+            out.append(Problem("IV02", u["x"], u["y"], f"a {_unit_name(u['kind'])} of army {u['army']} starts in the firing zone of the invention {ch!r} at ({x}, {y}): it would be hit on day 1"))
+    return out
+
+
+def _unit_name(kind):
+    return _bh().UNIT_NAMES.get(kind, f"unit {kind}")
+
+
+def port_doors(G):
+    """The BH2 port rule PT02 (the owner's standing rule: a port must touch sea it can launch into): each port has at least one open-sea neighbour (`~`: not shoal, not reef, not a river) whose
+    body of open sea is at least SHIP_SEA_MIN cells and that has a second free sea cell beyond it (the way out is not a single cell a reef plugs), and the body is the one the enemy ports and
+    coasts share or the map edge's: a ship built there reaches open water."""
+    if G.m.source != "bh2":
+        return []
+    out = []
+    body = ship_bodies(G)
+    edge = {c for c, _ in body.items() if c[0] in (0, G.w - 1) or c[1] in (0, G.h - 1)}
+    for x, y in G.cells("Pp"):
+        doors = [(x + dx, y + dy) for dx, dy in D4 if G.at(x + dx, y + dy) == "~"]
+        if not doors:
+            out.append(Problem("PT02", x, y, "the port touches no open sea (shoal, reef, river or land all round): a ship built here cannot launch"))
+            continue
+        best = max(doors, key=lambda c: body.get(c, 0))
+        size = body.get(best, 0)
+        if size < SHIP_SEA_MIN:
+            out.append(Problem("PT02", x, y, f"the port's sea is a pond of {size} cells (at least {SHIP_SEA_MIN}): ships built here are sealed in"))
+            continue
+        onward = [(best[0] + dx, best[1] + dy) for dx, dy in D4 if G.at(best[0] + dx, best[1] + dy) == "~" and (best[0] + dx, best[1] + dy) != (x, y)]
+        if not onward:
+            out.append(Problem("PT02", x, y, "the port's door cell has no sea beyond it (a reef or shoal plugs it)"))
+    return out
+
+
 def armies(G):
     """AR01 / AR02: every army its own colour, at most one HQ each."""
     out = []
@@ -820,7 +889,7 @@ def design_checks(G):
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
-CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, design_checks]
+CHECKS = [river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, design_checks]
 
 
 def lint(m, only=None):

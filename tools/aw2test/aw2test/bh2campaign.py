@@ -54,9 +54,9 @@ class Bh2Campaign(BhCampaign):
             raise NavError("the BH2 Campaign did not start (is TANGOAW2_BH2_CAMPAIGN set?)")
 
 
-def boot(ctx, n, env=None):
-    """A console continued in the BH2 Campaign with missions 1..n-1 won, the cursor on mission n."""
-    e = Emu(save=paths.base_save(), ds=ctx.ds, env=dict(ENV, **(env or {})))
+def boot(ctx, n, env=None, save=None):
+    """A console continued in the BH2 Campaign with missions 1..n-1 won, the cursor on mission n. `save`: a copy of its own (the factory's log is named after it)."""
+    e = Emu(save=save or paths.base_save(), ds=ctx.ds, env=dict(ENV, **(env or {})))
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = Bh2Campaign(g)
@@ -66,11 +66,11 @@ def boot(ctx, n, env=None):
     return e, g, d
 
 
-def enter(ctx, n):
+def enter(ctx, n, env=None, save=None):
     """Mission n entered through its CO screens: a mission with picks stands in its Setup phase; a fixed one is let play out its opening. Returns (emu, game, driver)."""
     from . import bhact2 as a2
     picks = PICKS.get(n, [])
-    e, g, d = boot(ctx, n)
+    e, g, d = boot(ctx, n, env=env, save=save)
     d.wait_world_map()
     if picks:
         a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)

@@ -45,7 +45,7 @@ def register(sub):
     a.add_argument("--sheet", metavar="FILE", help="also one sheet of every changed map, before beside after, half size")
     a.set_defaults(fn=compare)
     a = ms.add_parser("ports", help="every port of the maps (map, army, cell, the sea beside it) with its status (PT01): a table")
-    a.add_argument("--source", default="all", choices=["bh", "es", "versus", "all"])
+    a.add_argument("--source", default="all", choices=["bh", "es", "bh2", "versus", "all"])
     a.set_defaults(fn=ports_table)
     a = ms.add_parser("render-check", help="the game's own pictures of maps against the drawings the games use for river, shoal, bridge and coast tiles (RN01)")
     a.add_argument("--source", default="es", choices=["es", "bh", "bh2", "versus"], help="the maps to check (their pictures: --pictures)")
@@ -249,10 +249,10 @@ def ports_table(a):
     """The port audit: one row per port of the ES, BH and Versus maps: map, owner (army digit, N neutral), cell, the sea body beside it, and OK or the PT01 finding."""
     load, rules, render = _lib()
     rows, bad = [], 0
-    for s in (["bh", "es", "versus"] if a.source == "all" else [a.source]):
+    for s in (["bh", "es", "bh2", "versus"] if a.source == "all" else [a.source]):
         for m in _maps(load, s):
             G = rules.Grid(m)
-            hits = {(p.x, p.y): p.msg for p in rules.lint(m, {"PT01"})}
+            hits = {(p.x, p.y): p.rule + " " + p.msg for p in rules.lint(m, {"PT01", "PT02"})}
             lava = load.look_of(m.name) == 3
             for x, y in G.cells("Pp"):
                 owner = G.T.owner(G.t[y][x])

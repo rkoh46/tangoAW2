@@ -548,11 +548,16 @@ class Canvas:
     def stamp(self, ch, x, y):
         """An invention at its anchor: `F` Black Factory (anchor on the footprint's third row: a 3 x 4 block from (x-1, y-2)), `v n D O` 3 x 3 centred on (x, y), single tiles
         `S N W E L X`. The rest of a footprint is `#`. Inventions are Black Hole's alone (rule IV01)."""
-        box = {"F": (x - 1, y - 2, x + 1, y + 1)}.get(ch, (x - 1, y - 1, x + 1, y + 1) if ch in "vnDO" else (x, y, x, y))
+        box = {"F": (x - 1, y - 2, x + 1, y + 1), "V": (x - 1, y - 2, x + 2, y + 1)}.get(ch, (x - 1, y - 1, x + 1, y + 1) if ch in "vnDO" else (x, y, x, y))
         for yy in range(box[1], box[3] + 1):
             for xx in range(box[0], box[2] + 1):
                 self.put("#", xx, yy)
         self.put(ch, x, y)
+        if ch == "V":                       # (the games' volcano stands inside a one-cell wall of mountains: nothing else joins its rim tiles)
+            for yy in range(y - 3, y + 3):
+                for xx in range(x - 2, x + 4):
+                    if self.inside(xx, yy) and self.g[yy][xx] not in "#V":
+                        self.g[yy][xx] = "^"
         return self
 
     def patch(self, x, y, rows):
@@ -685,3 +690,220 @@ def shore(m, depth, box, land=".", dirs="NESW"):
                     nxt.append((a, b))
         frontier = nxt
     return m
+
+
+# ---- designed-looking maps: roads that follow the land, ranges and belts, towns (the BH2 quality pass) ----
+
+def _h(seed, x, y):
+    """A deterministic 0..1 noise of a cell."""
+    v = (x * 73856093) ^ (y * 19349663) ^ (seed * 83492791)
+    v = (v ^ (v >> 13)) * 1274126177 & 0xFFFFFFFF
+    return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
+
+
+ROAD_COST = {".": 1.0, "f": 2.4, "^": 14.0, "R": 0.35, ",": 99, "~": 99, "r": 99, "-": 99, "=": 0.4, "I": 99, "Z": 99, "#": 99, "M": 99, "V": 99}
+
+
+def route(m, pts, seed=0, wander=0.9, cost=None):
+    """A road through the waypoints `pts` that follows the land: each leg is the cheapest 4-connected path over plain (1), wood (2.4, the road clears it), mountain (14: it goes round),
+    existing road (0.35: roads share their trunk), with a per-cell noise that makes it bend. Nothing crosses a river, the sea or a shoal except at a bridge: a waypoint `(x, y, "=")`
+    is a bridge cell, the road reaches the cells either side of it in a straight line and the bridge is put there (the river is drawn first). Properties are never paved over."""
+    import heapq
+    cost = dict(ROAD_COST, **(cost or {}))
+    keep = set("12345BCAPTQbcapt") | INVENTION_CHARS
+    bridges, directs = [], set()
+    reserved = m.__dict__.setdefault("road_reserved", {})      # (the straight approaches of bridges: no other road joins there)
+    wp = []
+    near = set()
+    for p in pts:                                 # (a plain waypoint on a bridge's straight approach is dropped: the road reaches it in line)
+        if len(p) == 3:
+            v_ = self_river_vertical(m, p[0], p[1])
+            near |= {(p[0] + (k if v_ else 0), p[1] + (0 if v_ else k)) for k in (-2, -1, 1, 2)}
+    pts = [p for p in pts if len(p) == 3 or tuple(p) not in near]
+    for p in pts:
+        if len(p) == 3:
+            x, y = p[0], p[1]
+            vertical = self_river_vertical(m, x, y)
+            d = (1, 0) if vertical else (0, 1)
+            a2, a, b, b2 = [(x + d[0] * k, y + d[1] * k) for k in (-2, -1, 1, 2)]
+            ref = wp[-1] if wp else next((tuple(q) for q in pts if len(q) == 2), (x, y))     # (the road comes from the previous waypoint: it meets the near end first)
+            if abs(ref[0] - b2[0]) + abs(ref[1] - b2[1]) < abs(ref[0] - a2[0]) + abs(ref[1] - a2[1]):
+                a2, a, b, b2 = b2, b, a, a2
+            wp += [a2, a, b, b2]                 # (the bridge's approach is straight for two cells each side: the games' bridge joins)
+            directs |= {(a2, a), (a, b), (b, b2)}
+            for c_ in (a2, a, b, b2, (x, y)):
+                reserved[c_] = "h" if vertical else "v"
+            bridges.append((x, y))
+        else:
+            wp.append(tuple(p))
+    cells = []
+    for i in range(len(wp) - 1):
+        a, b = wp[i], wp[i + 1]
+        if (a, b) in directs:
+            cells += [a, b]
+            continue
+        dist = {a: 0.0}
+        prev = {}
+        pq = [(0.0, a)]
+        while pq:
+            d, c = heapq.heappop(pq)
+            if c == b:
+                break
+            if d > dist.get(c, 1e18):
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (c[0] + dx, c[1] + dy)
+                if not m.inside(*n):
+                    continue
+                ch = m.g[n[1]][n[0]]
+                axis = "h" if dx else "v"
+                if (n in reserved and n != b and n != a and reserved[n] != axis) or (c in reserved and c != a and reserved[c] != axis):
+                    continue                   # (a bridge's approach is entered and left in line, never joined from the side)
+                if n != b and ch in keep:
+                    k = 6.0                    # (round a building, through it only if it must)
+                else:
+                    k = cost.get(ch, 3.0)
+                if k >= 99:
+                    continue
+                if ch != "R" and n != b and any(m.get(n[0] + ex, n[1] + ey) in "R=" and (n[0] + ex, n[1] + ey) != c for ex, ey in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    k += 3.0                   # (a road does not run beside another: it joins it or keeps away)
+                nd = d + k * (1 + wander * _h(seed, n[0], n[1]))
+                if nd < dist.get(n, 1e18):
+                    dist[n] = nd
+                    prev[n] = c
+                    heapq.heappush(pq, (nd, n))
+        if b not in prev and a != b:
+            raise ValueError(f"{m.name}: no road from {a} to {b}")
+        leg = [b]
+        while leg[-1] != a:
+            leg.append(prev[leg[-1]])
+        cells += leg[::-1]
+    for x, y in cells:
+        if m.g[y][x] not in keep and m.g[y][x] not in "-=IZ#MV~,r":
+            m.g[y][x] = "R"
+    for bx, by in bridges:
+        m.g[by][bx] = "="
+    return m
+
+
+def self_river_vertical(m, x, y):
+    """True when the river through (x, y) runs north-south (a road crosses it east-west)."""
+    return m.get(x, y - 1) in "-=~," or m.get(x, y + 1) in "-=~,"
+
+
+def belt(m, ch, pts, width=2, seed=0, gaps=(), p=0.9, only=".f"):
+    """A range or a forest belt: `ch` along the polyline `pts`, `width` cells wide with ragged edges and thinning ends; `gaps` = (x, y) passes kept open (radius 1)."""
+    rnd = random.Random(f"{m.name}/b{seed}")
+    path = m.path(pts)
+    n = len(path)
+    for i, (x, y) in enumerate(path):
+        taper = min(1.0, 0.45 + 2.2 * min(i, n - 1 - i) / max(n, 1))
+        for dx in range(-width, width + 1):
+            for dy in range(-width, width + 1):
+                X, Y = x + dx, y + dy
+                if not m.inside(X, Y) or m.g[Y][X] not in only:
+                    continue
+                if any(abs(X - gx) <= 1 and abs(Y - gy) <= 1 for gx, gy in gaps):
+                    continue
+                d = (abs(dx) + abs(dy)) / (width + 1)
+                if rnd.random() < p * taper * (1.0 - 0.75 * d) ** 1.4 + 0.02:
+                    m.g[Y][X] = ch
+    return m
+
+
+def town(m, cx, cy, kinds, seed=0, radius=2, roadside=True):
+    """A town: the properties `kinds` (a string of property characters, e.g. "CCB") on free ground close to (cx, cy), each touching the road or another of the town's buildings,
+    so they read as one place to fight for. If the ground is crowded the radius grows (up to +2) and then the road is no longer required. Returns the cells."""
+    rnd = random.Random(f"{m.name}/t{seed}")
+    keep = set("12345BCAPTQbcapt") | INVENTION_CHARS
+    placed = []
+    for k in kinds:
+        c = None
+        for r, road in ((radius, roadside), (radius + 1, roadside), (radius + 2, roadside), (radius + 2, False)):
+            cand = []
+            for y in range(cy - r, cy + r + 1):
+                for x in range(cx - r, cx + r + 1):
+                    if not m.inside(x, y) or m.g[y][x] not in ".f" or abs(x - cx) + abs(y - cy) > r + 1:
+                        continue
+                    nb = [m.get(x + a, y + b) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+                    touch = any(ch in "R=" for ch in nb) if road else True
+                    touch = touch or any((x + a, y + b) in placed for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)))
+                    if not touch:
+                        continue
+                    if any(max(abs(x - a), abs(y - b)) < 2 and (a, b) not in placed and m.g[b][a] in keep for a in range(x - 1, x + 2) for b in range(y - 1, y + 2) if m.inside(a, b)):
+                        continue
+                    cand.append((x, y))
+            if cand:
+                c = rnd.choice(cand)
+                break
+        if c is None:
+            raise ValueError(f"{m.name}: no room for a town at ({cx}, {cy}) ({kinds!r})")
+        m.g[c[1]][c[0]] = k
+        placed.append(c)
+    return placed
+
+
+def thin_roads(m):
+    """Routed roads can merge into 2 x 2 blocks of road, which no AW2 map draws (a broken join): one cell of each block goes back to plain, the three that stay are an L (still connected)."""
+    for _ in range(200):
+        done = True
+        for y in range(m.h - 1):
+            for x in range(m.w - 1):
+                blk = [(x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)]
+                if all(m.g[b][a] == "R" for a, b in blk):
+                    def other(c):
+                        return sum(1 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if m.get(c[0] + dx, c[1] + dy) in "R=" and (c[0] + dx, c[1] + dy) not in blk)
+                    c = min(blk, key=lambda c: (other(c), -(c[0] + c[1])))
+                    m.g[c[1]][c[0]] = "."
+                    done = False
+        if done:
+            break
+    return m
+
+
+def neutralize(m, near=14, keep=()):
+    """Properties (B C A P) farther than `near` cells (Manhattan) from the HQ they would belong to (the nearest HQ digit) become neutral (lower case): an army starts with its own
+    district, the villages out in the field are there to be taken."""
+    hqs = [(x, y) for y in range(m.h) for x in range(m.w) if m.g[y][x] in "12345"]
+    if not hqs:
+        return m
+    keep = set(map(tuple, keep))
+    for y in range(m.h):
+        for x in range(m.w):
+            if m.g[y][x] in "BCAP" and (x, y) not in keep:
+                if min(abs(x - a) + abs(y - b) for a, b in hqs) > near:
+                    m.g[y][x] = m.g[y][x].lower()
+    return m
+
+
+def clear_fire_lines(m):
+    """Moves every unit that starts in an invention's firing zone (`maplint/zones.py`: a Laser's row and column, a minicannon's four cells ...) to the nearest free cell outside every zone that its kind can
+    stand on (rule IV02: nothing may be hit on day 1). Returns the number moved."""
+    from ..maplint import zones
+    zs = zones.zones_of(m.rows())
+    sea_kinds = {BBOAT, BS, CR, LAN, SUB, CARR}
+    air_kinds = {STEALTH, FTR, BMB, BCO, TCO}
+    moved = 0
+    for u in m.u:
+        if (u["x"], u["y"]) not in zs:
+            continue
+        taken = {(v["x"], v["y"]) for v in m.u}
+        best = None
+        for r in range(1, 12):
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    if max(abs(dx), abs(dy)) != r:
+                        continue
+                    x, y = u["x"] + dx, u["y"] + dy
+                    if not m.inside(x, y) or (x, y) in zs or (x, y) in taken:
+                        continue
+                    c = m.g[y][x]
+                    ok = (c == "~") if u["kind"] in sea_kinds else (c in ".fR" if u["kind"] in air_kinds | {INF, MECH} else c in ".R")
+                    if ok and (best is None or abs(dx) + abs(dy) < best[0]):
+                        best = (abs(dx) + abs(dy), x, y)
+            if best:
+                break
+        if best:
+            u["x"], u["y"] = best[1], best[2]
+            moved += 1
+    return moved

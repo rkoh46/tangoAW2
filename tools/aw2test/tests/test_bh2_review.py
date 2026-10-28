@@ -62,11 +62,13 @@ def review(ctx, n):
     setup = bool(b2.PICKS.get(n))
     ctx.log(f"M{n}: map {w}x{h}")
     pre = sweeps(ctx, e, g, d, n, "", BANNER if setup else None)
-    if setup and any(blank_cells(p) for p in pre.values()):
+    if setup:
         d.leave_setup()
         a2.intro(ctx, e, d, f"m{n}", (0,))
         d.wait_control()
         g._units_base = g._players_base = None
+        cnt2, bad2 = deviations(e, g)
+        ctx.check(not bad2, f"M{n}: the first turn's shots hit nothing (every unit still at full HP after Deploy and the first turn start): {bad2}")
         post = sweeps(ctx, e, g, d, n, "post_", None, front_too=False)
         for view, p in pre.items():
             fill_blank(p, post.get(view))

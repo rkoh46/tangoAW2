@@ -50,6 +50,16 @@ class Specs(unittest.TestCase):
             self.assertEqual(n, 1 if p.stem == "bh2_05" else 0, p.stem)
 
 
+class Looks(unittest.TestCase):
+    def test_act_one_looks_and_weather(self):
+        got = {n: (look, weather, fog) for n, _, look, weather, fog in bh2lib.looks()}
+        self.assertEqual(got[1], ("normal", "clear", True))       # M1: normal with fog
+        self.assertEqual(got[2][0], "normal"); self.assertEqual(got[3][0], "desert"); self.assertEqual(got[4][0], "normal"); self.assertEqual(got[5][0], "wasteland")
+
+    def test_neighbouring_missions_do_not_look_alike(self):
+        self.assertEqual(bh2lib.check_looks(), [])
+
+
 class Flags(unittest.TestCase):
     def test_flags_on_land_inside_their_nation(self):
         self.assertEqual(bh2lib.check_flags(), [])
@@ -97,6 +107,33 @@ class Lint(unittest.TestCase):
         rows[8] = "..........."; rows[2] = ".L........."      # beside Black Hole's HQ
         m = load.MapData("t", "bh2", mappy.tiles(dict(meta, rows=rows), edge), units=[], text=rows, meta=dict(meta, rows=rows))
         self.assertFalse([p for p in self.rules.lint(m) if p.rule == "IV01"])
+
+    def _port_map(self, rows):
+        from aw2.maplint import load
+        mappy, _, _ = load._five()
+        meta = {"name": "t", "rows": rows, "armies": 2, "colours": [5, 3], "units": {}, "tab": 3, "wasteland": False}
+        edge = mappy.sea_edges(load.rom_bytes())
+        return load.MapData("t", "bh2", mappy.tiles(meta, edge), units=[], text=rows, meta=meta)
+
+    def test_an_inland_port_is_an_error(self):
+        """The owner's standing rule: a port touches sea a ship can launch into. A port with land all round fails PT01 / PT02 in a bh2 map; the same port on open sea passes."""
+        inland = ["1.............", "..............", "..............", ".....P........", "..............", "..............", "..............", ".............2",
+                  "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~"]
+        bad = {p.rule for p in self.rules.lint(self._port_map(inland))}
+        self.assertTrue({"PT01", "PT02"} <= bad, bad)
+        coast = ["1.............", "..............", "..............", "..............", "..............", "..............", "....P.........", ".............2",
+                 "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~"]
+        coast[7] = ".............2"
+        # (the port's row is the last land row but one: put it on the shore line instead)
+        coast[6], coast[7] = "..............", "....P........2"
+        ok = {p.rule for p in self.rules.lint(self._port_map(coast))}
+        self.assertEqual(ok & {"PT01", "PT02"}, set(), ok)
+
+    def test_a_pond_port_is_an_error(self):
+        pond = ["1.............", "..............", "..............", "..............", "..~~~~~.......", "..P~~~~.......", "..~~~~~.......", "..............", ".............2",
+                "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~"]
+        bad = {p.rule for p in self.rules.lint(self._port_map(pond))}
+        self.assertIn("PT02", bad)
 
     def test_landers_have_a_beach(self):
         """A Lander test: every Lander of M1 and M4 stands on sea that touches a shoal or port its army can reach (RC04 / DQ10 are quiet)."""
