@@ -6,7 +6,15 @@ from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2
 from aw2test import stitch
 from aw2test.harness import test
-from tests.test_bh_review import BANNER, Quiet, Sweep, blank_cells, deviations, fill_blank, unfog
+from tests.test_bh_review import BANNER, Quiet, Sweep, blank_cells, deviations, fill_blank
+from tests.test_bh_review import unfog as _unfog
+
+NEXT_WEATHER = 0x03003FEE       # crate::ds_weather: while the forecast is rain the rain forces fog every frame (M6 is rain AND fog): the review clears it to take the fog-off picture
+
+
+def unfog(g, e):
+    e.w8(NEXT_WEATHER, 0)
+    _unfog(g, e)
 
 
 def save(ctx, path, n, view):
@@ -34,22 +42,29 @@ def sweeps(ctx, e, g, d, n, tag, exclude, front_too=True):
     if n in b2.FOG:
         out["fogon"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}fogon", w, h, exclude=exclude)
         unfog(g, e)
+        ctx.log(f"M{n} {tag}: fog byte after unfog {e.u8(0x03003FCD)}")
         home(g, e)
         out["fogoff"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}fogoff", w, h, exclude=exclude)
     else:
         out["full"] = stitch.stitch(Sweep(ctx), g, f"m{n}_{tag}full", w, h, exclude=exclude)
     if n in b2.FRONT2 and front_too:
         from aw2test import twofront as tf
-        try:
-            ctx.require(tf.look_at_other_front(e, g), f"M{n}: the other front is shown")
-            w2, h2 = d.size()
-            g.goto(0, 0)
-            out["front2"] = stitch.stitch(Quiet(ctx), g, f"m{n}_{tag}front2", w2, h2, exclude=exclude)
-            ctx.require(tf.come_back(e, g), f"M{n}: back from the other front")
-        except Exception as ex:
-            if not tag:
-                raise
-            ctx.log(f"M{n}: the second front after Deploy could not be shown ({ex})")
+        views = (("front2fog", False), ("front2", True)) if n in b2.FOG else (("front2", False),)
+        for view, lift in views:
+            try:
+                ctx.require(tf.look_at_other_front(e, g), f"M{n}: the other front is shown")
+                if lift:                              # (the second front's own fog: lifted for the full-map picture)
+                    e.w8(NEXT_WEATHER, 0)
+                    e.w8(0x03003FCD, 0)
+                    e.wait(30)
+                w2, h2 = d.size()
+                g.goto(0, 0)
+                out[view] = stitch.stitch(Quiet(ctx), g, f"m{n}_{tag}{view}", w2, h2, exclude=exclude)
+                ctx.require(tf.come_back(e, g), f"M{n}: back from the other front")
+            except Exception as ex:
+                if not tag:
+                    raise
+                ctx.log(f"M{n}: the second front after Deploy could not be shown ({ex})")
     return out
 
 
@@ -72,6 +87,10 @@ def review(ctx, n):
         post = sweeps(ctx, e, g, d, n, "post_", None, front_too=False)
         for view, p in pre.items():
             fill_blank(p, post.get(view))
+        if n in b2.FOG and n not in b2.FRONT2:      # (a fogged mission with a Setup phase: Deploy lifts the Setup view; take the fog-off picture after it)
+            for view in ("fogoff",):
+                if post.get(view):
+                    pre[view] = post[view]
     for view, p in pre.items():
         save(ctx, p, n, view)
     e.close()

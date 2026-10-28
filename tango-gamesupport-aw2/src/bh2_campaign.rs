@@ -235,9 +235,144 @@ fn bh2_05() -> MissionDef {
     m
 }
 
+/// M6 Paper Lanterns: a free pick, a night intel raid on Sensei's B Copter fleet (rain and fog, the normal look).
+fn bh2_06() -> MissionDef {
+    let mut m = MissionDef::new("bh2_06", "Paper Lanterns");
+    m.objective = "Raid Roost, destroy Sensei's B Copter fleet and take his HQ.";
+    m.map = MapSrc::Built("bh2_06");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(8000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).funds(12000),
+    ];
+    m.units = deployment("bh2_06");
+    m.fog = true;
+    m.weather = Weather::Rain; // night rain over the lantern islands
+    m.rank_days = 14;
+    m.flag = flag(6);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_05"]);
+    m
+}
+
+/// M7 Comet Highway: the forced tag pair Koal + Kindle against one Yellow Comet army under the pair Grimm + Sensei; a straight battle along the river bridges (desert, sandstorm).
+fn bh2_07() -> MissionDef {
+    let mut m = MissionDef::new("bh2_07", "Comet Highway");
+    m.objective = "Cross the four rivers and take the Yellow Comet HQ.";
+    m.map = MapSrc::Built("bh2_07");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(co::KOAL, co::KINDLE)).funds(12000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::GRIMM, co::SENSEI)).funds(18000),
+    ];
+    m.units = deployment("bh2_07");
+    m.look = 2; // the Desert look
+    m.weather = Weather::Sandstorm;
+    m.rank_days = 14;
+    m.flag = flag(7);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_06"]);
+    m
+}
+
+/// M8 Black Lanterns: a free pick with Black Crystals that heal, against Grimm's big army (rain; the plan's clear weather is rain so that M8 and M9, both the normal look, differ).
+fn bh2_08() -> MissionDef {
+    let mut m = MissionDef::new("bh2_08", "Black Lanterns");
+    m.objective = "Hold the crystals' line and take Grimm's HQ across the river.";
+    m.map = MapSrc::Built("bh2_08");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(10000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::GRIMM)).funds(24000),
+    ];
+    m.units = deployment("bh2_08");
+    m.weather = Weather::Rain;
+    m.rank_days = 16;
+    m.flag = flag(8);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_07"]);
+    m
+}
+
+/// M9's half strength: Kanbei's army has lost half of the units it started with (28 on the map).
+const M9_HALF: u8 = 14;
+/// The airlift's B Copters (the map's `mark_air` cells) and Infantry (its `mark_inf` cells).
+const M9_AIR: [(u8, u8); 4] = [(17, 5), (25, 5), (21, 9), (13, 7)];
+const M9_INF: [(u8, u8); 5] = [(6, 10), (14, 10), (21, 10), (28, 10), (35, 10)];
+
+/// Kanbei has no tank left (Tank, Md Tank, Neotank, Megatank): he yields.
+fn m9_no_tanks(core: &mut Core) -> bool {
+    units_of(core, 2)
+        .iter()
+        .all(|u| !matches!(u.1, unit::TANK | unit::MD_TANK | unit::NEOTANK | unit::MEGATANK))
+}
+
+/// M9 The Table: Asuka (forced) against Kanbei + Sensei at the capital. No time limit. Scripted: Sensei's airlift at half strength, Kanbei's surrender with his last tank.
+fn bh2_09() -> MissionDef {
+    let mut m = MissionDef::new("bh2_09", "The Table");
+    m.objective = "Break Kanbei's wall and take the capital's HQ.";
+    m.map = MapSrc::Built("bh2_09");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(crate::co_new::ASUKA)).funds(15000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::KANBEI, co::SENSEI)).funds(20000),
+    ];
+    m.units = deployment("bh2_09");
+    m.rank_days = 20;
+    let mut airlift: Vec<UnitDef> = M9_AIR.iter().map(|&(x, y)| UnitDef::new(2, unit::B_COPTER, x, y).attack()).collect();
+    airlift.extend(M9_INF.iter().map(|&(x, y)| UnitDef::new(2, unit::INFANTRY, x, y).attack()));
+    m.triggers = vec![
+        // at half strength Kanbei calls Sensei's airlift
+        Trigger::new(When::AfterAction, Cond::ArmyUnitsAtMost { army: 2, n: M9_HALF }, vec![Action::Spawn(airlift)]),
+        // his last tank falls: he yields the field
+        after(Cond::Custom(m9_no_tanks), vec![Action::Win]),
+    ];
+    m.flag = flag(9);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_08"]);
+    m
+}
+
+/// M10 Two Tides: two fronts. Front 1, Asuka (forced) against Kanbei's last stand; front 2, a free pick against Grimm (Wasteland look, fog, lava for water).
+fn bh2_10() -> MissionDef {
+    let mut m = MissionDef::new("bh2_10", "Two Tides");
+    m.objective = "Take Kanbei's HQ; the second front takes Grimm's.";
+    m.map = MapSrc::Built("bh2_10");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(crate::co_new::ASUKA)).funds(10000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).funds(18000),
+    ];
+    m.units = deployment("bh2_10");
+    m.look = 3; // the Wasteland look: the tides are lava
+    m.fog = true;
+    m.rank_days = 18;
+    m.front2 = Some(FrontDef {
+        map: MapSrc::Built("bh2_10b"),
+        props: Vec::new(),
+        structures: Vec::new(),
+        units: crate::bh_ai::built_units("bh2_10b"),
+        cos: [CoSpec::Pick, CoSpec::Fixed(co::GRIMM), CoSpec::None, CoSpec::None],
+        send: SendRule::Ground,
+        sky: false,
+        weather: Weather::Clear,
+        fog: true,
+    });
+    m.flag = flag(10);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_09"]);
+    m
+}
+
 /// The campaign.
 pub fn def() -> CampaignDef {
-    let mut missions = vec![bh2_01(), bh2_02(), bh2_03(), bh2_04(), bh2_05()];
+    let mut missions = vec![
+        bh2_01(),
+        bh2_02(),
+        bh2_03(),
+        bh2_04(),
+        bh2_05(),
+        bh2_06(),
+        bh2_07(),
+        bh2_08(),
+        bh2_09(),
+        bh2_10(),
+    ];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
         source: SOURCE,
@@ -246,7 +381,7 @@ pub fn def() -> CampaignDef {
         prologue_song: None,
         credits: Vec::new(),
         missions,
-        final_mission: "bh2_05",
+        final_mission: "bh2_10",
         bonds: Vec::new(),
         extra_bonds: 0,
         secret_mission: "",
@@ -271,9 +406,32 @@ mod tests {
     #[test]
     fn act_one_has_five_missions_and_a_second_front_for_m4() {
         let d = def();
-        assert_eq!(d.missions.len(), 5);
+        assert_eq!(d.missions.len(), 10);
         assert!(d.missions[3].front2.as_ref().is_some_and(|f| f.sky));
         assert!(d.missions[4].held_hq.is_some());
+    }
+
+    #[test]
+    fn act_two_has_five_missions_and_a_second_front_for_m10() {
+        let d = def();
+        assert!(d.missions[5..].iter().map(|m| m.key).eq(["bh2_06", "bh2_07", "bh2_08", "bh2_09", "bh2_10"]));
+        let f = d.missions[9].front2.as_ref().expect("M10's second front");
+        assert!(!f.sky && matches!(f.map, MapSrc::Built("bh2_10b")));
+        assert_eq!(d.missions[9].look, 3);
+        // M9's scripted fight: the airlift at half strength, the surrender; M9 has no time limit
+        assert_eq!(d.missions[8].triggers.len(), 2);
+        assert_eq!(d.missions[8].day_limit, 0);
+    }
+
+    /// M9's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.
+    #[test]
+    fn m9_airlift_cells_are_free_and_half_is_half() {
+        let m = built_map("bh2_09").expect("bh2_09");
+        let kanbei = m.units.iter().filter(|u| u.army == 2).count();
+        assert_eq!(M9_HALF as usize * 2, kanbei, "M9_HALF is half of Kanbei's {kanbei} starting units");
+        for &(x, y) in M9_AIR.iter().chain(M9_INF.iter()) {
+            assert!(!m.units.iter().any(|u| (u.x, u.y) == (x, y)), "a unit starts on the airlift cell ({x}, {y})");
+        }
     }
 
     #[test]
