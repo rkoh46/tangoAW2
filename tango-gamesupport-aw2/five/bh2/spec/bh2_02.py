@@ -1,13 +1,13 @@
 """BH2 M2 The Quartermaster's Crate (Act I): Black Hole's depot convoy on its home island.
 
 Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Asuka and Crumb hold the depot in the west with its HQ and two bases; the crate
-truck (a named APC, `crate`) stands in the yard. It must reach the quay's port (26,19) in the south-east before the day limit. Jess's raiders come down from
+truck (a named APC, `crate`) stands in the yard. It must reach the depot town (26,19) at the far end of the main road in the south-east before the day limit. Jess's raiders come down from
 the north-east (her HQ and bases) and hold the east road.
 - Lanes: three roads that follow the land, each with its own bridge over the river: the north road (bridge (15,5)), the middle road (the halfway bridge (15,9)) and
-  the south road (bridge (16,16)). The south road is the escape route: longer, through woods and hills, and it joins the quay road below Jess's reach.
+  the south road (bridge (16,16)). The south road is the escape route: longer, through woods and hills, and it joins the goal road below Jess's reach.
 - Where the fight happens: the halfway bridge and the Com Tower in the central massif (20,12), reached by a spur road: whoever holds it hits harder; then the
-  east road x26 down to the quay.
-- Properties: the depot's bases build the escorts; villages every few cells on the three roads; the quay's port is neutral: the objective (the crate's destination), not a prize; about half the villages are neutral on both sides, so each army has capturing to do.
+  east road x26 down to the depot town.
+- Properties: the depot's bases build the escorts; villages every few cells on the three roads; the depot town (26,19) is a small cluster of neutral cities: the crate's destination; about half the villages are neutral on both sides, so each army has capturing to do.
 - Threats and answers: Jess has no ships or aircraft (so no Anti-Air for anyone): her Tanks and Recon rush the truck -> Black Hole's Tanks, Mechs and artillery
   in the middle, Infantry screens on the bridges; she can bring Tanks by the north road -> the escort has a second line on the south road.
 """
@@ -21,15 +21,14 @@ W, H = 30, 22
 
 def build():
     m = Canvas("bh2_02", W, H)
-    m.rect("~", 0, 20, 29, 21)
-    # --- the river first (roads are routed around it and over it at three chosen bridges): source at the north edge, two bends, mouth in the south sea
-    m.river([(14, 0), (14, 4), (15, 4), (15, 12), (16, 12), (16, 19)])
+    # --- the river first (roads are routed around it and over it at three chosen bridges): source at the north edge, two bends, out at the south edge
+    m.river([(14, 0), (14, 4), (15, 4), (15, 12), (16, 12), (16, 21)])
     # --- relief: ranges and belts that shape the lanes, plain left open between them
     m.blob("^", 20, 12, 3, 2, seed=3, wobble=0.25, only=".")                                  # the central massif around the Com Tower
     belt(m, "^", [(19, 1), (23, 2), (28, 3)], width=1, seed=1, gaps=[(26, 2)])               # Jess's northern ridge
     belt(m, "^", [(28, 4), (28, 8)], width=1, seed=2)
     belt(m, "^", [(1, 2), (5, 3), (9, 1)], width=2, seed=3, gaps=[(5, 3)])                   # the north-west range, a pass at (5,3)
-    belt(m, "^", [(2, 19), (7, 18), (12, 19)], width=1, seed=4, gaps=[(8, 18)])              # the southern hills below the south road
+    belt(m, "^", [(2, 19), (7, 18), (12, 19)], width=1, seed=4, gaps=[(8, 18)]); belt(m, "^", [(1, 21), (6, 20), (11, 21)], width=1, seed=14, gaps=[(8, 20)]); belt(m, "f", [(18, 20), (22, 21)], width=1, seed=15); belt(m, "^", [(28, 19), (28, 21)], width=1, seed=16)              # the southern hills below the south road
     belt(m, "^", [(18, 18), (22, 19), (27, 18)], width=1, seed=5, gaps=[(23, 19)])
     belt(m, "f", [(1, 6), (6, 6), (11, 7)], width=1, seed=6)                                   # the forest belt between the depot and the north road
     belt(m, "f", [(17, 2), (18, 6)], width=2, seed=7)                                          # the east-bank forest
@@ -38,15 +37,15 @@ def build():
     belt(m, "f", [(2, 15), (4, 17)], width=1, seed=10)
     for i, (cx, cy, n) in enumerate([(9, 11, 3), (21, 6, 4), (14, 14, 3), (25, 12, 4), (6, 3, 3), (14, 19, 3)]):
         m.cluster("f", cx, cy, n, seed=20 + i)
-    # --- the towns: the depot (Black Hole), the bridgeheads, the east towns, the quay, Jess's fort
+    # --- the towns: the depot (Black Hole), the bridgeheads, the east towns, the goal depot town, Jess's fort
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
-        "M2 The Quartermaster's Crate: the crate truck (named APC `crate`, (6,12)) must reach the quay's port (26,19) in the south-east; a day limit is allowed (escort). Black Hole's HQ 1 (3,12) in the depot, "
+        "M2 The Quartermaster's Crate: the crate truck (named APC `crate`, (6,12)) must reach the depot town's goal tile (26,19) in the south-east; a day limit is allowed (escort). Black Hole's HQ 1 (3,12) in the depot, "
         "Jess's HQ 2 (25,3). Three roads that follow the land: north (bridge (15,5)), middle (the halfway bridge (15,9)), south (bridge (16,16), the escape route); the east road to the quay. Com Tower (20,12) in the central massif. "
         "Player: Asuka + Crumb (forced tag), INF4 MECH2 TANK3 ART1 RECON1 APC(crate). Enemy (Jess): INF6 MECH3 TANK4 RECON2 ART2."))
-    m.put("1", 3, 12).put("2", 25, 3).put("t", 20, 12).put("p", 26, 19)
+    m.put("1", 3, 12).put("2", 25, 3).put("t", 20, 12).puts("c", [(26, 19), (25, 20), (27, 20), (26, 21)])        # the depot town at the end of the road: the goal tile is (26,19)
     m.puts("B", [(5, 10), (5, 14)]).puts("C", [(4, 9), (4, 15), (2, 11)])                        # the depot's district
     m.puts("B", [(23, 4), (27, 5)]).puts("C", [(24, 2), (27, 3), (22, 3)])                       # Jess's fort
-    # --- roads that follow the land: one main road from the depot over the halfway bridge (15,9) to the quay, a south branch over the escape bridge (16,16), a north branch to Jess's fort and
+    # --- roads that follow the land: one main road from the depot over the halfway bridge (15,9) to the depot town, a south branch over the escape bridge (16,16), a north branch to Jess's fort and
     # the Com Tower's spur; open country between them (bridges at (15,9) and (16,16))
     route(m, [(6, 12), (8, 11), (10, 9), (13, 9), (15, 9, "="), (20, 8), (25, 10), (26, 14), (26, 18)], seed=1, wander=0.5)
     route(m, [(8, 12), (9, 15), (13, 16), (16, 16, "="), (20, 17), (25, 17)], seed=2, wander=0.5)
@@ -66,7 +65,7 @@ def build():
     m.note("hq", 3, 12, "Black Hole's HQ in the depot")
     m.note("enemy_hq", 25, 3, "Jess's HQ (objective if the crate is lost)")
     m.note("crate", 6, 12, "the crate truck (APC, named crate) starts here")
-    m.note("quay", 26, 19, "the quay's port: the crate's destination")
+    m.note("goal", 26, 19, "the depot town: the crate's destination (goal tile)")
     m.note("halfway", 15, 9, "the halfway bridge on the middle road")
     m.note("escape", 16, 16, "the south road's bridge: the escape route")
     m.tidy()

@@ -250,3 +250,23 @@ def bh2_m6_towers_and_eagle(ctx):
     ctx.check(pic is not None, "the takeover scene was shown")
     ctx.check(not e.u8(dc.LAST_RESULT), "the mission goes on (no second HQ, no win)")
     e.close()
+
+
+@test(name="bh2_m2_crate_reaches_the_depot", modes=("ds",))
+def bh2_m2_crate_reaches_the_depot(ctx):
+    """M2 The Quartermaster's Crate: the crate truck (Black Hole's APC) on the depot town's goal tile (26,19) wins the mission after the next action (no port: the goal is a city tile on land)."""
+    e, g, d = b2.enter(ctx, 2)
+    g._units_base = g._players_base = None
+    apc = next(u for u in g.units(army=1) if u["type"] == 7)
+    inf = next(u for u in g.units(army=1) if u["type"] == 1)
+    d.place_unit(apc, 26, 19)
+    e.wait(4)
+    ctx.eq(g.terrain_class(26, 19) & 0x1F != 0, True, "the goal tile is land with a property")
+    g.wait_unit(inf["x"], inf["y"])
+    for _ in range(40):
+        if e.u8(dc.LAST_RESULT) or not d.in_battle():
+            break
+        e.press("A", 4)
+        e.wait(30)
+    ctx.check(bool(e.u8(dc.LAST_RESULT)) or not d.in_battle(), "the crate on the goal tile wins the mission")
+    e.close()

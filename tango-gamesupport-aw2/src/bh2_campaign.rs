@@ -49,8 +49,8 @@ fn flag(mission: u8) -> (i16, i16) {
         .map_or((0, 0), |f| (f.2, f.3))
 }
 
-/// M2's crate truck destination: the quay's port.
-const M2_QUAY: (u8, u8) = (26, 19);
+/// M2's crate truck destination: the goal tile of the depot town at the end of the main road.
+const M2_GOAL: (u8, u8) = (26, 19);
 
 fn beaten(enemy: u8, hq: (u8, u8)) -> Cond {
     Cond::Any(vec![
@@ -81,10 +81,10 @@ fn bh2_01() -> MissionDef {
     m
 }
 
-/// M2 The Quartermaster's Crate: Asuka + Crumb (forced pair), the crate truck must reach the quay.
+/// M2 The Quartermaster's Crate: Asuka + Crumb (forced pair), the crate truck must reach the depot town.
 fn bh2_02() -> MissionDef {
     let mut m = MissionDef::new("bh2_02", "The Quartermaster's Crate");
-    m.objective = "Bring the crate truck to the quay before day 14.";
+    m.objective = "Bring the crate truck to the depot town at the end of the road before day 14.";
     m.map = MapSrc::Built("bh2_02");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(crate::co_new::ASUKA, co::CRUMB)).funds(4000),
@@ -97,8 +97,8 @@ fn bh2_02() -> MissionDef {
         after(
             Cond::UnitAt {
                 name: "crate",
-                x: M2_QUAY.0,
-                y: M2_QUAY.1,
+                x: M2_GOAL.0,
+                y: M2_GOAL.1,
             },
             vec![Action::Win],
         ),
@@ -1183,6 +1183,6 @@ mod tests {
     fn m2_crate_is_where_the_mission_says() {
         let m = built_map("bh2_02").expect("bh2_02");
         let c = m.units.iter().find(|u| u.name == "crate").expect("crate");
-        assert!(M2_QUAY.0 > c.x);
+        assert!(M2_GOAL.0 > c.x);
     }
 }
