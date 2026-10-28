@@ -10,7 +10,7 @@ hq = "black_hole"
 
 full_name = "Asuka"
 theme = "own:asuka"
-bio = "Once an Allied intelligence officer, she took the name Asuka on joining Black Hole, and a power beyond her old self. Hit: Data Miss: Surprises"
+bio = "Kanbei's daughter. She defected to Black Hole, took a new name and leads its invasion. Hit: Secrets Miss: Surprises"
 luck = [20, 20, 20]          # Nell's day-to-day maximum roll (her powers: 60 and 100; Asuka's keep 20)
 bad_luck = [0, 0, 0]
 movement = "sturm"           # every terrain costs 1 for her ground units (his row's charts)
@@ -18,7 +18,7 @@ stars = { cop = 3, scop = 9 }                 # Eagle's meter (3 / 9 in AW2's an
 
 [d2d]
 name = "Black Insight"
-text = "Black Insight: +5% attack and defence, vision +1, HP hidden, enemy cover 1 star lower, good luck, every terrain costs 1."
+text = "Firepower and defense rise by 5%, and vision by 1. Her HP is hidden, enemy cover drops 1 star, luck is good and terrain costs 1."
 mods = [ { units = "all", attack = 5, defence = 5 } ]
 vision = 1
 hidden_hp = true
@@ -26,7 +26,7 @@ terrain_cut = 1
 
 [cop]
 name = "Dark Intel"
-text = "Vision +2, sees into woods and reefs; cover 2 stars lower. Mine regain 1 HP; the enemy loses 1 HP and half its ammo and fuel."
+text = "All units recover 1 HP; enemies lose 1 HP and half their ammo and fuel. Vision +2, cover -2 stars."
 mods = []
 halve_enemy_ammo_fuel = true
 vision = 2
@@ -37,7 +37,7 @@ quote = ["I have read your", "every move. Observe."]
 
 [scop]
 name = "Event Horizon"
-text = "As Dark Intel, and my units strike first; cover 3 stars lower. Mine regain 2 HP; the enemy loses 2 HP and half its ammo and fuel."
+text = "All units recover 2 HP; enemies lose 2 HP and half their ammo and fuel. Cover -3 stars; her units strike first."
 mods = []
 halve_enemy_ammo_fuel = true
 vision = 2

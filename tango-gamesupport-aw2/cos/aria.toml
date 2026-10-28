@@ -10,7 +10,7 @@ hq = "default"
 full_name = "Aria"
 # Placeholder: Nell's song until her own is ready (branch bh2music, tango-gamesupport-aw2/music/bh2/aria.m4t, "Last Accord"); then `theme = "own:aria"` and a row in es_music::SOURCES.
 theme = "co:nell"
-bio = "Nell's sister, and Commander of the New Accord. She rebuilt the Allied army from the ground up and never leaves a soldier to stand alone. Hit: Teamwork Miss: Going it alone"
+bio = "Nell's twin and head of the New Accord. Fiery and relentless, she rallied the beaten Allies. Hit: Comebacks Miss: Retreat"
 luck = [10, 10, 10]          # the game's own (Andy's row): she has no luck or movement trait
 # Only a Super Power, like Dual Strike's Von Bolt: no CO Power (no Power entry in the menu, no COP stars, the AI never tries one). The Super Power costs 7 stars.
 stars = { cop = 0, scop = 7 }

@@ -70,8 +70,8 @@ pub const NAME: &[u8] = b"Crumb";
 /// the page has six lines of 103 pixels. (The design's longer bio, `docs/
 /// BH_CAMPAIGN.md` 4.7c, is the campaign's story and did not read as a CO
 /// description.)
-pub const BIO: &[u8] = b"A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied.\rHit: Biscuits\rMiss: Being left behind";
-pub const DAY_TO_DAY: &[u8] = b"My foot soldiers are sturdy, and anyone on a city or base gets fed.";
+pub const BIO: &[u8] = b"Pvt. Pip \"Crumb\" Hobb, promoted by Sturm. Keeps troops fed, with a biscuit named Gerald.\rHit: Biscuits\rMiss: Being left behind";
+pub const DAY_TO_DAY: &[u8] = b"Infantry and Mech have 10% more firepower and defense. Units on his cities and bases are resupplied.";
 pub const COP_PAGE: &[u8] =
     b"Restores 1 HP to all units and fully resupplies them. Infantry and Mech move 1 space more.";
 pub const SCOP_PAGE: &[u8] =

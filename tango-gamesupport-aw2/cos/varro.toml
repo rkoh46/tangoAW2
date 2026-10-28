@@ -5,25 +5,25 @@ army = "aurea"
 role = "Consul of Aurea, the boss of the Emerald Sun Campaign"
 theme = "co:hawke"
 luck = [10, 10, 20]
-bio = "Consul of Aurea and Klaus's old patron. He found the legions their money and never asked where it came from."
+bio = "Imperator of the Emerald Sun and Klaus's old patron. Grand and ruthless. Hit: Patronage Miss: Being refused"
 stars = { cop = 4, scop = 8 }
 # Roman: the Emerald Sun HQ, drawn in his own army's building colours (the skin's HQ picture takes the army's palette).
 hq = "emerald_sun"
 
 [d2d]
 name = "Imperator"
-text = "My legions are better paid, better armed and better fed than any in the world."
+text = "All units are better paid, better armed and better fed. Firepower and defense rise by 15%."
 mods = [ { units = "all", attack = 15, defence = 15 } ]
 
 [cop]
 name = "Edict"
-text = "All units attack 25% harder and take 15% less damage on top, and move 1 space more."
+text = "Firepower rises by 25% and defense by 15% more, and unit movement increases by 1 space."
 mods = [ { units = "all", attack = 25, defence = 15, move = 1 } ]
 quote = ["By the Consul's authority,", "the Senate decrees..."]
 
 [scop]
 name = "Sol Invictus"
-text = "All units attack 45% harder and take 30% less damage, move 1 space more and recover 2 HP."
+text = "Restores 2 HP to all units. Firepower rises by 45% and defense by 30%, and movement increases by 1 space."
 mods = [ { units = "all", attack = 45, defence = 30, move = 1 } ]
 heal = 2
 quote = ["Sol Invictus! The sun", "does not set on Aurea!"]

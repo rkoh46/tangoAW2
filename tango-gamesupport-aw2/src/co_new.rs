@@ -117,7 +117,7 @@ const CRUMB_BASE: u8 = 2;
 pub const CLONE_ANDY_NAME: &[u8] = b"Clone Andy";
 /// His CO page's bio, **tangoAW2's own**, in AW2's terse voice (Dual Strike
 /// has none for the clone): wrapped to the page like Dual Strike's.
-pub const CLONE_ANDY_BIO: &[u8] = b"Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up";
+pub const CLONE_ANDY_BIO: &[u8] = b"Black Hole's copy of Andy. Cheerful, obedient, a little uncanny. Hit: Orders Miss: Giving up";
 /// His numbers (`cos/cloneandy.toml`), on every unit: day to day ("Andy's own") +2% firepower and
 /// +2% defence, at every power level; Hyper Repair nothing of its own; Hyper Upgrade +30% firepower
 /// and +20% defence, no move (Andy's gives +1). Every power's +10% firepower ([`crate::co_roster::stat`]) and +10%
@@ -139,9 +139,9 @@ pub fn clone_andy_bonus(mode: u8, field: usize) -> i32 {
 }
 /// His CO page's day to day and CO Power, tangoAW2's own (the Super Power's is Andy's).
 pub const CLONE_ANDY_D2D: &[u8] =
-    b"Andy, copied and tuned a little. All units have 2% more firepower and 2% more defence.";
-pub const CLONE_ANDY_COP: &[u8] = b"Restores two HP to all units. Firepower and defence rise by 10%.";
-pub const CLONE_ANDY_SCOP: &[u8] = b"Restores four HP to all units. Firepower rises by 40% and defence by 30%.";
+    b"A tuned copy of Andy. Firepower and defense of all units rise by 2%.";
+pub const CLONE_ANDY_COP: &[u8] = b"Restores 2 HP to all units. Firepower and defense rise by 10%.";
+pub const CLONE_ANDY_SCOP: &[u8] = b"Restores 4 HP to all units. Firepower rises by 40% and defense by 30%.";
 
 pub fn is_new(co: u8) -> bool {
     (FIRST..=CRUMB).contains(&co) || crate::es_co::is_es(co) || co == ASUKA || co == ARIA

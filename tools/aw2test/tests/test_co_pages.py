@@ -48,3 +48,29 @@ def new_co_texts_all_point_at_strings(ctx):
             if 0x08000000 <= p < 0x08800000:
                 s = b"".join(g.e.read(p + i, 16) for i in range(0, 256, 16))
                 ctx.check(0 in s, f"{co} text {w} is a string (ends within 256 bytes)")
+
+
+# tangoAW2's own COs: their pages (bio, day to day, CO Power, Super Power) are the review sheet's "CO pages" row (`aw2dev co sheet pages`) and must show their whole text.
+OWN = ["aria", "asuka", "klaus", "aurelia", "cassius", "livia", "varro", "crumb", "cloneandy"]
+
+
+def make_own(co):
+    def fn(ctx):
+        from aw2test import coverify as cv, cospec
+        m = ctx.map()
+        m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
+        g = ctx.start(m, [cospec.IDS.get(co, co), "andy"], env=cv.ENV)
+        g.open_map_menu()
+        g.choose("CO", g.MAP_MENU)
+        g.e.wait(90)
+        ctx.shot(g, "page1")
+        for k in (2, 3, 4):
+            g.e.press("DOWN", 6)
+            g.e.wait(60)
+            ctx.shot(g, f"page{k}")
+    fn.__name__ = f"co_pages_own_{co}"
+    test(modes=("ds",))(fn)
+
+
+for co in OWN:
+    make_own(co)

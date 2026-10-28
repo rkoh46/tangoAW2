@@ -1847,7 +1847,7 @@ mod tests {
         );
         assert_eq!(f.width("A"), 5);
         let before = fallbacks();
-        for co in (0..19u8).chain(72..81) {
+        for co in (0..19u8).chain(72..83).chain([86, 87, 88, 89, 90, 92, 93]) {
             let v = view_for(None, None, co);
             for page in 0..3 {
                 let cv = compose(&v, page).unwrap();
