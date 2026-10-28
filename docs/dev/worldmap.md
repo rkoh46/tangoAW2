@@ -21,6 +21,7 @@ Budgets (BH2): 768 / 768 tiles, 9 / 9 palettes, 15 / 15 colours, 32 x 32 cells (
 - The picture's tiles, tilemap and palette go where Omega Land's go (`ds_worldmap::install`, marked `MAGIC + 1`); BG1 (AW2's sea) is off as on Omega Land. The camera and cursor stop at the picture's edges (`dims`: 256 x 256 scrolls 16 x 96).
 - **Conquest** (`ds_worldmap::picture_conquest`): a nation is conquered when it has missions (by the place of their flags, `PictureMap::region_at`) and all are won. Its tagged entries are written
   in the ROM image's palette (the screen copies it, so fades work) and, with the map up, in the palette buffer and palette RAM. Won missions keep a starred flag as on Omega Land.
+- **Black Hole's own island** (class 5, the grey island bottom left; the owner's design, 2026-10-28) is Black Hole's from the start: `PictureMap::conquered` always includes its bit, so it is drawn in Black Hole's colours and its missions (M1, M2, secret M26) never change it. Mission flags: `world_picture::BH2_FLAGS` (checked by `world_picture::tests::bh2_flags_lie_in_their_nation` and `aw2dev bh2 check`, docs/dev/bh2-maps.md).
 - **Dev aid** `TANGOAW2_BH_WORLDMAP=bh2` (docs/dev/env-aids.md): the BH Campaign on this map, mission i on the picture's flag place i.
 
 ## Tools and tests

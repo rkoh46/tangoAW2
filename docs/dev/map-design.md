@@ -175,3 +175,27 @@ M5 and M14 lose 3 instead of 5: one more would take them under MD01's 5 properti
 - Tile joins the games never draw (TJ01, learned from AW2's maps) bite most on rivers and roads: a river's horizontal run must come from a bend that turns east from the
   north (a river going east, then south, then east again is fine; one going west and then south is not); a road bend or T-junction right under a north-south bridge,
   and two parallel roads side by side, are joins AW2 never has; a volcano stands among mountains (its rim beside plain is not a join of the games).
+
+## BH2 Campaign: what we learned from a wide sample of AWBW maps
+The owner asked for AWBW's whole range, not only the top-rated maps. Sample: the 44 ranked maps above (23 Hall of Fame, 20 S/A four-player, measured with `aw2dev maps study`) plus 64 ordinary community maps
+fetched from id windows 48000..100000 (all ranks and none: themed, fog, naval, fortress, joke and blank test maps; the search form needs a login, so ids were sampled one request at a time with a pause; the grids and pictures
+stay in a scratchpad, nothing is copied). Among the ordinary maps 8 to 17 of 64 trip each MD rule (dead corners, nothing in the middle, open fields, uncrossed rivers, roads to nowhere): the lint is the guard against what the unranked maps do.
+Shares below are of the 44 ranked maps, the ordinary set in brackets. Used as inspiration only.
+1. **Com Towers** are in 36 of 44 maps (52% of the ordinary ones), about 2 a map, in mirrored pairs on the flanks of the middle (median 0.46 of the way from the centre to the corner), always beside a road or a cluster of cities. A tower is a prize you must hold,
+   not a corner pickup: BH2 puts two on the contested ground either side of M3's and M5's river, and one inside M2's massif behind a spur road.
+2. **Missile silos** appear in 30 of 44 (44%): in the neutral middle ground away from the HQs (median 0.56 from the centre), a reward for the flank push; on island maps on the islet in the strait (M1's farm silo, M4's islet).
+3. **Pipes and seams** are in 23 of 44 (41%), seams in 15: the good ones are walls with one or two gated seams where a road runs into the seam, the wall ending in mountains, sea or the map edge, and a long open way round. The failure mode in the ordinary set is a closed fortress ring with
+   no gate. M3 and M5 follow the good pattern: the road meets the seam, and the open road round the massif is longer by 6+ cells (PP04).
+4. **Bases sit behind the front**: the first enemy base is about 18 cells from your HQ (5 infantry days) in the ranked 2-player maps; forward bases are neutral and few (2 to 6, 66% of the ordinary maps have some). BH2: each side's bases ring its own HQ, neutral bases stand in the middle.
+5. **Property mix**: 10 to 14 properties per 100 land cells, spacing about 3, 70% cities, 14% bases, 5% airports, ports only on a sea map: our MD01 and `Canvas.place`.
+6. **The middle is contested**: all the ranked maps and 83% of the ordinary ones have neutral production or cities in the middle (MD05).
+7. **Roads guide the play**: two or three roads cross the middle, short spur roads end at what is worth taking (tower, silo, port), and every road over a river has a bridge (median 3.8 river cells per bridge).
+8. **Islands and beaches**: AWBW's beaches are two or three cells wide (beach share median 0.32 of the coast, 0.68 on the fog naval maps), ports sit on islets with a village and a road, reefs are scattered. AW2's tile set has one-cell beaches and long runs only on north- and south-facing coasts,
+   so BH2's islands face their beaches north and south and run them for 8 to 12 cells (rule TJ01/TJ02 refuses the rest).
+9. **Fog maps** are littered with villages along coasts and roads (vision for whoever holds them), small islets halfway, the HQs 16 or more cells apart: M1 follows.
+10. **Terrain mix**: plain 24 to 40%, wood 8 to 16%, mountain 0 to 21%; mountains as ridges at chokes and around fortresses, woods beside property clusters.
+11. **Fortress and campaign-style maps** wall the HQ with a ring and two or three gates, production just outside: M5's capital behind its pipe wall, the airport district (with the second HQ) behind the capital.
+12. **Rich maps** (the 6000-fund four-player ones) have 14 to 15 properties per 100 land and more airports: M3's and M5's enemy gets bases, airports and funds to match the player's Black Factory and strong pair.
+13. **Air**: airports are 1 or 2 a side plus a neutral one (58% of the ordinary maps have one): an army fields Anti-Air only where the enemy has or can capture an airport.
+14. **Symmetry**: 41 of 44 ranked maps mirror; the campaign's maps are asymmetric on purpose, so fairness is kept in density per side, not in shape.
+15. **Sky and joke maps** show what not to do: blank grids, no terrain, all-property fields; the sky front is the one legitimate blank (open air with air units only).

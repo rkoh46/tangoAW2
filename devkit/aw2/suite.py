@@ -97,7 +97,7 @@ def run(jobs=3, only=None, keep=False):
         if not cfg.aw2_rom().exists():
             return []
         res = []
-        for src in ("bh", "versus", "es"):
+        for src in ("bh", "versus", "es", "bh2"):
             r = subprocess.run([sys.executable, str(cfg.DEVKIT / "aw2dev"), "maps", "lint", "--source", src, "--no-png"], capture_output=True, text=True)
             if r.returncode:
                 res.append(f"FAIL maps lint {src}\n" + "\n".join(l for l in r.stdout.splitlines() if "error" in l)[:600])
