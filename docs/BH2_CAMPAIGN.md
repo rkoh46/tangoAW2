@@ -55,13 +55,13 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 1 | Black Insight | Ashen Shelf | Asuka | Drake | Fog. Teaches Asuka's intel. Naval landing on reachable beaches. |
 | 2 | The Quartermaster's Crate | Ashen Shelf depot | Asuka + Crumb (Tag) | Jess | Defend the depot convoy; the crate travels with you. |
 | 3 | Iron Ledger | Green Earth south | Asuka, Von Bolt in support | Javier + Jess | **BF**: you seize an old Accord foundry. The ledger and its symbol are found. |
-| 4 | Talons | Green Earth sea and sky | Front 1: Asuka. Front 2: Hawke | Front 1: Drake. Front 2: Eagle | **2F #1.** Hawke vs Eagle in a sky front. Lasers and minicannons on the island. |
+| 4 | Talons | Green Earth sea and sky | Front 1: Asuka. Front 2: Hawke | Front 1: Drake. Front 2: Eagle | **2F #1.** Hawke vs Eagle in a sky front. Your Lasers and minicannons hold the island. |
 | 5 | Evergreen in Exile | Green Earth's exile capital | Asuka + a free pick | Eagle + Javier | Big map. Ends Act I. Allied war room afterwards. |
 | **Act II** | **Comet Chain** | Yellow Comet's eastern islands | | | |
 | 6 | Paper Lanterns | Yellow Comet night islands | Asuka | Sensei | Rain and fog. Night intel raid on the B Copter fleet. |
 | 7 | Comet Highway | Yellow Comet's long island | Koal + Kindle (detachment, Tag) | Grimm + Sensei | A road race across a chain of bridges. |
 | 8 | Black Lanterns | Yellow Comet coast | Asuka | Grimm | **Black Crystals** heal you; Grimm must be strong enough to break them. |
-| 9 | The Table | Yellow Comet capital | Asuka (forced) | Kanbei + Sensei | Father vs daughter, no time limit. Black Cannons on Kanbei's walls. |
+| 9 | The Table | Yellow Comet capital | Asuka (forced) | Kanbei + Sensei | Father vs daughter, no time limit. Your Black Cannons shell Kanbei's walls from your side; his defence is terrain and elite units. |
 | 10 | Two Tides | Yellow Comet's split isles | Front 1: Asuka. Front 2: Flak | Front 1: Kanbei. Front 2: Grimm | **2F #2.** Kanbei's last stand with honour. Ends Act II. |
 | **Act III** | **Iron North** | Blue Moon (snow) | | | |
 | 11 | Cold Wire | Blue Moon border | Jugger (detachment) | Grit | Snow. Cut the Allied wire on a pipe network with seams. |
