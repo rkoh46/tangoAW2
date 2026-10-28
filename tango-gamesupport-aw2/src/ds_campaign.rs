@@ -215,6 +215,21 @@ pub fn held_hq(core: &Core) -> Option<(u8, u8)> {
         .flatten()
 }
 
+/// The skin an army of the battle on now wears: (army 1-based, skin index), for a custom campaign's mission that names one.
+pub fn mission_skin(core: &Core) -> Option<(u8, usize)> {
+    if !active(core) || is_ds(core) || !in_battle(core) {
+        return None;
+    }
+    campaign(core)?
+        .model
+        .custom
+        .as_ref()?
+        .skin_army
+        .get(mission(core) as usize)
+        .copied()
+        .flatten()
+}
+
 /// Whether (x, y) is one of the mission's held HQs (the first, or one of the gauntlet's further stage HQs).
 pub fn is_held_hq(core: &Core, x: u8, y: u8) -> bool {
     if held_hq(core) == Some((x, y)) {

@@ -101,6 +101,8 @@ pub struct Custom {
     pub held_hq: Vec<Option<(u8, u8)>>,
     /// Per mission: more held HQs (a gauntlet's stage HQs: the same rule as [`Self::held_hq`]).
     pub held_more: Vec<Vec<(u8, u8)>>,
+    /// Per mission: a skin an army wears ([`crate::custom_campaign::MissionDef::skin`]).
+    pub skin_army: Vec<Option<(u8, usize)>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,

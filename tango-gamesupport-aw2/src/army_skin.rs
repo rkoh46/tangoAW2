@@ -956,7 +956,26 @@ pub fn sync(core: &mut Core) {
     if let Some(c) = campaign {
         set_host_of(core, 0, c);
     }
-    let versus = crate::pvp::in_versus(core) || campaign.is_some();
+    // A custom campaign's mission may name a skin for one of its armies (BH2's M26: the Emerald Sun legion is the enemy): it takes that army's colour.
+    let enemy = crate::ds_campaign::mission_skin(core).filter(|_| crate::pvp::in_battle(core)).and_then(|(army, skin)| {
+        let c = core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1);
+        (1..=5).contains(&c).then_some((skin, c))
+    });
+    match enemy {
+        Some((skin, c)) => set_host_of(core, skin, c),
+        // (leaving the battle: the skin comes off with the host cleared)
+        None if campaign.is_none() && !crate::pvp::in_versus(core) => {
+            if crate::ds_campaign::active(core) {
+                for i in 0..MAX_SKINS {
+                    if host_of(core, i) != 0 {
+                        set_host_of(core, i, 0);
+                    }
+                }
+            }
+        }
+        None => {}
+    }
+    let versus = crate::pvp::in_versus(core) || campaign.is_some() || enemy.is_some();
     for colour in 1..=5u8 {
         let want = if versus { skin_on(core, colour) } else { None };
         let have = applied_on(core, colour);

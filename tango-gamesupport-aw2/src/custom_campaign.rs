@@ -872,6 +872,9 @@ pub struct MissionDef {
     pub held_hq: Option<(u8, u8)>,
     /// More held HQs (a gauntlet's stage HQs: every one but the last is held; BH2's M25).
     pub held_more: Vec<(u8, u8)>,
+    /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
+    /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
+    pub skin: Option<(u8, usize)>,
 }
 
 /// A named unit (of the mission's deployment, or spawned with a name by an
@@ -991,6 +994,7 @@ impl MissionDef {
             jams: Vec::new(),
             held_hq: None,
             held_more: Vec::new(),
+            skin: None,
         }
     }
 }
@@ -1784,6 +1788,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
+        skin_army: def.missions.iter().map(|m| m.skin).collect(),
         secret: if def.secret_mission.is_empty() {
             None
         } else {

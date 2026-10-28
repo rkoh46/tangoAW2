@@ -34,9 +34,14 @@ class Specs(unittest.TestCase):
                 self.assertLessEqual(sum(1 for u in m.u if u["army"] == a), 50, f"{m.name} army {a}")
             self.assertEqual(sum(1 for u in m.u if u["hp"]), 0, f"{m.name}: deployed units start at full strength (and the map builder gives full ammo and fuel)")
 
-    def test_no_deathray_in_act_one(self):
+    def test_deathray_only_in_m22_at_the_top_edge(self):
+        """The Deathray is Black Hole's alone and stands at the top edge: M22 only (IV01 checks the row)."""
         for p in specs("bh2"):
-            self.assertNotIn("D", "".join(load_spec(p).rows()), p.stem)
+            rows = load_spec(p).rows()
+            has = "D" in "".join(rows)
+            self.assertEqual(has, p.stem == "bh2_22", p.stem)
+            if has:
+                self.assertIn("D", rows[1], "the Deathray's anchor is on row 1: its footprint touches the top edge")
 
     def test_sky_front_is_air_only_and_has_no_property(self):
         m = load_spec(BH2_DIR / "spec" / "bh2_04b.py")
@@ -44,10 +49,10 @@ class Specs(unittest.TestCase):
         self.assertTrue(all(u["kind"] in (12, 16, 17) for u in m.u))      # Stealth, Fighter, Bomber: no B Copter, no ground, no Anti-Air
         self.assertEqual(set("".join(m.rows())), {"."})
 
-    def test_one_second_hq_in_m5_and_none_elsewhere(self):
+    def test_second_hqs_only_in_m5_and_m25(self):
         for p in specs("bh2"):
             n = "".join(load_spec(p).rows()).count("Q")
-            self.assertEqual(n, 1 if p.stem == "bh2_05" else 0, p.stem)
+            self.assertEqual(n, {"bh2_05": 1, "bh2_25": 4}.get(p.stem, 0), p.stem)     # (M5's held second HQ; M25's four stage HQs)
 
 
 class Looks(unittest.TestCase):

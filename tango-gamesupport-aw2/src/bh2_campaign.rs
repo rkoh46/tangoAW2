@@ -699,85 +699,88 @@ fn bh2_24() -> MissionDef {
     m
 }
 
-/// M25's stage HQs (the map's `Q` tiles): Nell's `2` at (22,12) is the first line; the others are held until the last.
-const M25_NELL: (u8, u8) = (22, 12);
-const M25_OLAF: (u8, u8) = (34, 12);
-const M25_KANBEI: (u8, u8) = (45, 12);
-const M25_EAGLE: (u8, u8) = (54, 12);
-const M25_ARIA: (u8, u8) = (61, 12);
+/// M25's stage HQs (the map's `Q` tiles): Nell's `2` at (8,10) is the first line; the others are held until the last.
+const M25_NELL: (u8, u8) = (8, 10);
+const M25_OLAF: (u8, u8) = (24, 6);
+const M25_KANBEI: (u8, u8) = (39, 6);
+const M25_EAGLE: (u8, u8) = (38, 20);
+const M25_ARIA: (u8, u8) = (22, 21);
 /// Aria's CO id: the new Orange Star commander (the `aria` branch's id 93: not merged here, so a placeholder CO takes her place; replace this constant when it lands).
 const ARIA_CO: u8 = co::MAX;
 
-/// Each stage's fresh troops (cells in the stage's room, free of start units): (kind, cell).
-const OLAF_WAVE: [(u8, (u8, u8)); 14] = [
-    (unit::MD_TANK, (30, 8)),
-    (unit::MD_TANK, (30, 10)),
-    (unit::NEOTANK, (31, 13)),
-    (unit::ROCKETS, (32, 15)),
-    (unit::MD_TANK, (33, 7)),
-    (unit::ARTILLERY, (34, 13)),
-    (unit::MD_TANK, (34, 16)),
-    (unit::MECH, (34, 18)),
-    (unit::NEOTANK, (35, 9)),
-    (unit::ROCKETS, (35, 11)),
-    (unit::INFANTRY, (36, 14)),
-    (unit::NEOTANK, (37, 18)),
-    (unit::MD_TANK, (38, 10)),
-    (unit::ARTILLERY, (38, 14)),
+/// Each stage's fresh troops (cells in the stage's zone, free of start units): (kind, cell).
+const OLAF_WAVE: [(u8, (u8, u8)); 18] = [
+    (unit::MD_TANK, (16, 5)),
+    (unit::MD_TANK, (16, 8)),
+    (unit::NEOTANK, (17, 13)),
+    (unit::ROCKETS, (18, 0)),
+    (unit::MD_TANK, (21, 0)),
+    (unit::ARTILLERY, (21, 13)),
+    (unit::MD_TANK, (24, 11)),
+    (unit::MECH, (24, 13)),
+    (unit::NEOTANK, (25, 0)),
+    (unit::ROCKETS, (25, 6)),
+    (unit::INFANTRY, (27, 1)),
+    (unit::NEOTANK, (27, 13)),
+    (unit::MD_TANK, (30, 1)),
+    (unit::ARTILLERY, (31, 13)),
+    // Olaf's fleet on the riverland's lakes
+    (unit::BATTLESHIP, (18, 5)),
+    (unit::CRUISER, (29, 5)),
+    (unit::CRUISER, (19, 7)),
+    (unit::SUB, (29, 9)),
 ];
-const KANBEI_WAVE: [(u8, (u8, u8)); 14] = [
-    (unit::NEOTANK, (42, 8)),
-    (unit::MEGATANK, (42, 13)),
-    (unit::MD_TANK, (43, 11)),
-    (unit::NEOTANK, (43, 17)),
-    (unit::MEGATANK, (44, 7)),
-    (unit::MD_TANK, (44, 14)),
-    (unit::ARTILLERY, (45, 18)),
-    (unit::NEOTANK, (46, 11)),
-    (unit::MD_TANK, (46, 14)),
-    (unit::ROCKETS, (47, 7)),
-    (unit::NEOTANK, (47, 18)),
-    (unit::MEGATANK, (48, 10)),
-    (unit::MD_TANK, (48, 12)),
-    (unit::ARTILLERY, (48, 14)),
+const KANBEI_WAVE: [(u8, (u8, u8)); 9] = [
+    (unit::NEOTANK, (36, 8)),
+    (unit::MEGATANK, (37, 5)),
+    (unit::MD_TANK, (39, 7)),
+    (unit::NEOTANK, (40, 5)),
+    (unit::MEGATANK, (41, 7)),
+    (unit::MD_TANK, (33, 13)),
+    (unit::ARTILLERY, (34, 10)),
+    (unit::NEOTANK, (39, 10)),
+    (unit::MEGATANK, (39, 12)),
 ];
 const EAGLE_WAVE: [(u8, (u8, u8)); 11] = [
-    (unit::FIGHTER, (52, 8)),
-    (unit::FIGHTER, (52, 13)),
-    (unit::BOMBER, (52, 15)),
-    (unit::STEALTH, (52, 17)),
-    (unit::FIGHTER, (53, 11)),
-    (unit::BOMBER, (54, 9)),
-    (unit::B_COPTER, (54, 17)),
-    (unit::STEALTH, (55, 7)),
-    (unit::FIGHTER, (55, 11)),
-    (unit::BOMBER, (55, 13)),
-    (unit::B_COPTER, (55, 15)),
+    (unit::FIGHTER, (32, 22)),
+    (unit::FIGHTER, (32, 25)),
+    (unit::BOMBER, (34, 19)),
+    (unit::STEALTH, (37, 20)),
+    (unit::FIGHTER, (38, 23)),
+    (unit::BOMBER, (40, 20)),
+    (unit::B_COPTER, (41, 15)),
+    (unit::STEALTH, (42, 18)),
+    (unit::FIGHTER, (43, 16)),
+    (unit::BOMBER, (44, 19)),
+    (unit::B_COPTER, (45, 15)),
 ];
 const ARIA_WAVE: [(u8, (u8, u8)); 8] = [
-    (unit::NEOTANK, (60, 7)),
-    (unit::MD_TANK, (60, 10)),
-    (unit::MEGATANK, (60, 12)),
-    (unit::ROCKETS, (60, 18)),
-    (unit::NEOTANK, (61, 14)),
-    (unit::FIGHTER, (62, 11)),
-    (unit::MD_TANK, (63, 13)),
-    (unit::ARTILLERY, (63, 15)),
+    (unit::NEOTANK, (15, 17)),
+    (unit::MD_TANK, (15, 19)),
+    (unit::MEGATANK, (15, 22)),
+    (unit::ROCKETS, (20, 27)),
+    (unit::NEOTANK, (21, 22)),
+    (unit::FIGHTER, (22, 27)),
+    (unit::MD_TANK, (23, 22)),
+    (unit::ARTILLERY, (25, 26)),
 ];
 
 fn stage(list: &[(u8, (u8, u8))]) -> Action {
     Action::Spawn(list.iter().map(|&(k, (x, y))| UnitDef::new(2, k, x, y).attack()).collect())
 }
 
-/// The next line: when the player holds this stage's HQ, the same army goes on under the next commander with fresh troops and funds.
-fn takeover(hq: (u8, u8), co_next: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
+fn owned(c: (u8, u8)) -> Cond {
+    Cond::OwnerAt { x: c.0, y: c.1, army: 1 }
+}
+
+/// The next line: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the same army goes on
+/// under the next commander with fresh troops and funds.
+fn takeover(hq: (u8, u8), before: &[(u8, u8)], co_next: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
+    let mut all = vec![owned(hq)];
+    all.extend(before.iter().map(|&c| owned(c)));
     Trigger::new(
         When::AfterAction,
-        Cond::OwnerAt {
-            x: hq.0,
-            y: hq.1,
-            army: 1,
-        },
+        Cond::All(all),
         vec![
             Action::TakeOver {
                 army: 2,
@@ -805,19 +808,12 @@ fn bh2_25() -> MissionDef {
     m.held_hq = Some(M25_NELL);
     m.held_more = vec![M25_OLAF, M25_KANBEI, M25_EAGLE];
     m.triggers = vec![
-        takeover(M25_NELL, co::OLAF, 20000, &OLAF_WAVE),
-        takeover(M25_OLAF, co::KANBEI, 22000, &KANBEI_WAVE),
-        takeover(M25_KANBEI, co::EAGLE, 24000, &EAGLE_WAVE),
-        takeover(M25_EAGLE, ARIA_CO, 30000, &ARIA_WAVE),
+        takeover(M25_NELL, &[], co::OLAF, 20000, &OLAF_WAVE),
+        takeover(M25_OLAF, &[M25_NELL], co::KANBEI, 22000, &KANBEI_WAVE),
+        takeover(M25_KANBEI, &[M25_NELL, M25_OLAF], co::EAGLE, 24000, &EAGLE_WAVE),
+        takeover(M25_EAGLE, &[M25_NELL, M25_OLAF, M25_KANBEI], ARIA_CO, 30000, &ARIA_WAVE),
         // Aria's HQ is the last: its capture wins
-        after(
-            Cond::OwnerAt {
-                x: M25_ARIA.0,
-                y: M25_ARIA.1,
-                army: 1,
-            },
-            vec![Action::Win],
-        ),
+        after(Cond::All(vec![owned(M25_ARIA), owned(M25_EAGLE)]), vec![Action::Win]),
     ];
     m.flag = flag(25);
     m.stars = 3;
@@ -840,6 +836,7 @@ fn bh2_26() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(crate::es_co::KLAUS, crate::es_co::AURELIA)).funds(22000),
     ];
     m.units = deployment("bh2_26");
+    m.skin = Some((2, 0)); // the legion wears the Emerald Sun skin (skin 0), on the colour the mission gives army 2
     m.rank_days = 20;
     let at = |kind: u8, c: (u8, u8)| UnitDef::new(2, kind, c.0, c.1).attack();
     m.triggers = vec![
@@ -1004,7 +1001,7 @@ mod tests {
             free("bh2_25", &w.iter().map(|&(_, c)| c).collect::<Vec<_>>(), false);
         }
         let hq = |c: (u8, u8)| c;
-        assert_eq!([hq(M25_NELL), M25_OLAF, M25_KANBEI, M25_EAGLE, M25_ARIA], [(22, 12), (34, 12), (45, 12), (54, 12), (61, 12)]);
+        assert_eq!([hq(M25_NELL), M25_OLAF, M25_KANBEI, M25_EAGLE, M25_ARIA], [(8, 10), (24, 6), (39, 6), (38, 20), (22, 21)]);
     }
 
     /// M9's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.
