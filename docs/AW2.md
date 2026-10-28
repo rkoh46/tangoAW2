@@ -2530,6 +2530,8 @@ region on its own mission ids only). Progression: each mission's `requires`
 `ds_campaign::available` returns the missions whose requirement holds and
 that are not won, and the reveal flow shows the ones a win opens.
 
+**A picture world map** (`WorldArt::Picture`, `world_picture.rs`, docs/dev/worldmap.md): a campaign can instead draw the map screen on a converted picture (the BH2 Campaign's: 256 x 256, nine palettes, a region mask per nation); a nation whose missions are all won is drawn in Black Hole's colours. Today only `TANGOAW2_BH_WORLDMAP=bh2` plays the BH Campaign on it.
+
 **Roster and unlocks.** `CampaignDef::roster` lists (AW2 CO id, open at the
 start) in unlock order: Sturm (open), Von Bolt, Hawke, Kindle, Koal,
 Jugger, Flak, Lash, Adder, Clone Andy, Sonja (the secret mission's recruit; Free Play only in effect), Crumb (index 11, the last of

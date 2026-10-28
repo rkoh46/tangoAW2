@@ -150,7 +150,7 @@ fn spec(core: &Core) -> &'static crate::campaign_model::Source {
 
 /// The session is the DS Campaign's.
 pub fn art(core: &Core) -> crate::campaign_model::WorldArt {
-    spec(core).art
+    spec(core).world_art()
 }
 
 pub fn is_ds(core: &Core) -> bool {
@@ -617,7 +617,7 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let start_proc = built.add(&start_proc_script(save));
             let seen = built.add_magic(data::Magic::Flow(FLOW_PROLOGUE_SEEN));
             // (AW2's own map only: Omega Land's prologue is the narration pictures on the map)
-            let start_new_proc = if src.art == crate::campaign_model::WorldArt::Aw2 && built.story.prologue != 0 {
+            let start_new_proc = if src.world_art() != crate::campaign_model::WorldArt::OmegaLand && built.story.prologue != 0 {
                 built.add(&start_new_proc_script(save, seen))
             } else {
                 0
@@ -625,7 +625,7 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let map_script = built.add(&map_script(
                 prologue,
                 save,
-                src.art == crate::campaign_model::WorldArt::OmegaLand,
+                src.world_art() == crate::campaign_model::WorldArt::OmegaLand,
             ));
             let credits_start = built.add_magic(data::Magic::Flow(FLOW_CREDITS_START));
             let credits_running = built.add_magic(data::Magic::Flow(FLOW_CREDITS_RUNNING));

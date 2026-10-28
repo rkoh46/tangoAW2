@@ -1,0 +1,59 @@
+# The BH2 Campaign's world map: the owner's AW1-style picture (bh2_world.jpg, the project owner's own art, committed with their
+# permission) converted to GBA background tiles by `aw2dev worldmap convert bh2` (docs/dev/worldmap.md).
+name = "bh2"
+source = "bh2_world.jpg"
+# Source pixels kept (the picture has a dark strip along its bottom edge).
+crop = [0, 0, 1233, 1231]
+# The map's size in GBA pixels (a multiple of 8, at most 512 x 256: the map layer). The picture is square: 256 x 256 keeps its shape.
+size = [256, 256]
+output = "tango-gamesupport-aw2/art/worldmap/bh2_world.bin"
+
+# The nations, tag 1..5 (tag 0 is the sea). `seeds` are source pixels with each class's typical colour (sea first).
+[regions]
+names = ["Sea", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Ashen Shelf"]
+seeds = [[60, 600], [100, 200], [450, 480], [500, 900], [1100, 600], [120, 1000]]
+# Parts of the picture that are not land (the compass), in source pixels (x0, y0, x1, y1): always sea.
+sea_boxes = [[1140, 20, 1233, 200]]
+
+# The nine map palettes (BG palette 6..14, 15 colours each: slot 0 is transparent). Each lists how many entries it gives each tag
+# (S = sea, then the nations by tag number); a palette's land entries are the ones conquest re-tints.
+[[palette]]
+S = 15
+[[palette]]
+S = 4
+1 = 11
+[[palette]]
+S = 4
+2 = 11
+[[palette]]
+S = 4
+3 = 11
+[[palette]]
+S = 4
+4 = 11
+[[palette]]
+S = 4
+5 = 11
+[[palette]]
+S = 1
+1 = 7
+2 = 7
+[[palette]]
+S = 1
+2 = 7
+3 = 7
+[[palette]]
+S = 4
+3 = 11
+like = 3
+
+# Conquest: a re-tinted region keeps the picture's light and dark but takes Black Hole's colours: lightness 150..240 maps dark -> light.
+[tint]
+dark = [58, 44, 78]
+light = [158, 134, 178]
+lo = 150
+hi = 240
+
+# Dummy flag places for the dev aid (TANGOAW2_BH_WORLDMAP): how many per nation, spread over the land.
+[slots]
+counts = [7, 7, 10, 5, 2]

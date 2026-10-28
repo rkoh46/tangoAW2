@@ -58,6 +58,10 @@ const TABLE_OWNER: u32 = BASE + 0xB904;
 /// Omega Land's art is in place (a custom campaign's session writes only
 /// the tables).
 const ART_MARK: u32 = BASE + 0xB908;
+/// A picture map: the nations conquered (a bit each) that its palette in the ROM image is drawn with, and whether that is known.
+const CONQUEST_MARK: u32 = BASE + 0xB90C;
+/// The set the live palette (buffer and palette RAM) shows.
+const CONQUEST_LIVE: u32 = BASE + 0xB90D;
 #[cfg(test)]
 pub(crate) const END: u32 = BASE + 0x10000;
 
@@ -94,11 +98,11 @@ const MAP_HEIGHT: i32 = 240;
 /// #0xC0` / `#0x60`, then `movs rN` of the limit). On the DS map they stop
 /// at Dual Strike's picture's edges ([`MAP_WIDTH`], [`MAP_HEIGHT`]): the
 /// value is clamped here and the game's test skipped.
-const CAMERA_CLAMPS: [(u32, u32, usize, i32); 4] = [
-    (0x0807_4C0A, 0x0807_4C10, 2, MAP_WIDTH - 240),
-    (0x0807_4C4A, 0x0807_4C50, 2, MAP_HEIGHT - 160),
-    (0x0807_4C68, 0x0807_4C6E, 0, MAP_WIDTH - 240),
-    (0x0807_4C7C, 0x0807_4C82, 0, MAP_HEIGHT - 160),
+const CAMERA_CLAMPS: [(u32, u32, usize, bool); 4] = [
+    (0x0807_4C0A, 0x0807_4C10, 2, true),
+    (0x0807_4C4A, 0x0807_4C50, 2, false),
+    (0x0807_4C68, 0x0807_4C6E, 0, true),
+    (0x0807_4C7C, 0x0807_4C82, 0, false),
 ];
 /// AW2's cursor moves (`sub_08076CAC` across, `sub_08076D68` up and down,
 /// delta in r4): the cursor's map position may not pass 415 x 239 (`cmp r1`
@@ -113,30 +117,45 @@ const CAMERA_Y_TEST: (u32, u32, u32) = (0x0807_6DBA, 0x0807_6DBE, 0x0807_6DD2);
 /// The session is on Dual Strike's Omega Land (the art and the camera
 /// limits below are its; AW2's own map keeps AW2's).
 pub fn omega(core: &Core) -> bool {
-    crate::ds_campaign::active(core) && crate::ds_campaign::art(core) == crate::campaign_model::WorldArt::OmegaLand
+    dims(core).is_some()
+}
+
+/// The size of the map layer's picture when the session draws its own (Omega Land's or a picture's), else None (AW2's own 432 x 256).
+fn dims(core: &Core) -> Option<(i32, i32)> {
+    if !crate::ds_campaign::active(core) {
+        return None;
+    }
+    art_dims(crate::ds_campaign::art(core))
+}
+
+fn art_dims(art: crate::campaign_model::WorldArt) -> Option<(i32, i32)> {
+    use crate::campaign_model::WorldArt;
+    match art {
+        WorldArt::OmegaLand => Some((MAP_WIDTH, MAP_HEIGHT)),
+        WorldArt::Picture(p) => Some((p.map().width as i32, p.map().height as i32)),
+        WorldArt::Aw2 => None,
+    }
 }
 
 fn cursor_x_limit(core: &mut Core) {
-    if omega(core) {
-        core.gba_mut().cpu_mut().set_gpr(0, MAP_WIDTH - 17);
+    if let Some((w, _)) = dims(core) {
+        core.gba_mut().cpu_mut().set_gpr(0, w - 17);
     }
 }
 /// `cmp r1, #limit` then a branch when r1 is past it (`bgt` signed, `bhi`
 /// unsigned): with the DS map's limit instead.
-fn limit_test(core: &mut Core, (_, within, past): (u32, u32, u32), limit: i32, unsigned: bool) {
-    if !omega(core) {
-        return;
-    }
+fn limit_test(core: &mut Core, (_, within, past): (u32, u32, u32), limit: impl Fn(i32, i32) -> i32, unsigned: bool) {
+    let Some((w, h)) = dims(core) else { return };
+    let limit = limit(w, h);
     let cpu = core.gba_mut().cpu_mut();
     let v = cpu.gpr(1);
     let over = if unsigned { v as u32 > limit as u32 } else { v > limit };
     cpu.set_thumb_pc(if over { past } else { within });
 }
 
-fn camera_clamp(core: &mut Core, past: u32, reg: usize, max: i32) {
-    if !omega(core) {
-        return;
-    }
+fn camera_clamp(core: &mut Core, past: u32, reg: usize, horizontal: bool) {
+    let Some((w, h)) = dims(core) else { return };
+    let max = if horizontal { w - 240 } else { h - 160 }.max(0);
     let cpu = core.gba_mut().cpu_mut();
     let v = cpu.gpr(reg);
     if v > max {
@@ -576,19 +595,32 @@ pub fn install(
     info_texts: &[u16],
 ) -> bool {
     let after_win = &model.built.story.after_win;
-    let omega_art = model.source.art == crate::campaign_model::WorldArt::OmegaLand;
+    let art = model.source.world_art();
     if installed(core) && core.raw_read_8(TABLE_OWNER, -1) == source as u8 + 1 {
         return true;
     }
-    if omega_art && core.raw_read_32(ART_MARK, -1) != MAGIC {
-        let Some(w) = world_map() else { return false };
-        let tiles = crate::lz77::compress(&w.tiles);
-        let map = crate::lz77::compress(&w.tilemap);
+    // The art in place is marked: Omega Land's (MAGIC), a picture's (MAGIC + 1), so another campaign's choice rewrites it.
+    let art_mark = match art {
+        crate::campaign_model::WorldArt::OmegaLand => MAGIC,
+        crate::campaign_model::WorldArt::Picture(_) => MAGIC + 1,
+        crate::campaign_model::WorldArt::Aw2 => 0,
+    };
+    if art_mark != 0 && core.raw_read_32(ART_MARK, -1) != art_mark {
+        let (tiles_raw, tilemap_raw, palette_raw) = match art.picture() {
+            Some(p) => (p.tiles.clone(), p.tilemap(), p.palette_bytes(0)),
+            None => {
+                let Some(w) = world_map() else { return false };
+                (w.tiles.clone(), w.tilemap.clone(), w.palette.clone())
+            }
+        };
+        let tiles = crate::lz77::compress(&tiles_raw);
+        let map = crate::lz77::compress(&tilemap_raw);
         assert!(TILES + tiles.len() as u32 <= TILEMAP && TILEMAP + map.len() as u32 <= PALETTE);
         core.raw_write_range(TILES, -1, &tiles);
         core.raw_write_range(TILEMAP, -1, &map);
-        core.raw_write_range(PALETTE, -1, &w.palette);
-        core.raw_write_32(ART_MARK, -1, MAGIC);
+        core.raw_write_range(PALETTE, -1, &palette_raw);
+        core.raw_write_32(ART_MARK, -1, art_mark);
+        core.raw_write_8(CONQUEST_MARK, -1, 0);
     }
     // The missions.
     // (a custom campaign's own points, on either art; the DS Campaign's are Dual Strike's)
@@ -693,8 +725,8 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
     }
     let pick = |ds: u32, aw2: u32| if session { ds } else { aw2 };
     // (the art: Omega Land's in a DS Campaign session, AW2's otherwise)
-    let omega_art = session && crate::ds_campaign::art(core) == crate::campaign_model::WorldArt::OmegaLand;
-    let art = |ds: u32, aw2: u32| if omega_art { ds } else { aw2 };
+    let own_art = session && art_dims(crate::ds_campaign::art(core)).is_some();
+    let art = |ds: u32, aw2: u32| if own_art { ds } else { aw2 };
     for at in TILES_POOLS {
         set32(core, at, art(TILES, AW2_TILES));
     }
@@ -732,8 +764,8 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
         }
         // The map's tiles past AW2's 704 lie where BG1's tilemap is, which
         // the screen's setup writes too: they are put back.
-        if let Some(w) = world_map() {
-            let ours = &w.tiles[(704 * 32).min(w.tiles.len())..];
+        if let Some(tiles) = layer_tiles(core) {
+            let ours = &tiles[(704 * 32).min(tiles.len())..];
             if !ours.is_empty() {
                 let mut now = vec![0u8; ours.len()];
                 core.raw_read_range(BG1_TILEMAP, -1, &mut now);
@@ -742,10 +774,50 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
                 }
             }
         }
+        picture_conquest(core, true);
+    } else if session {
+        picture_conquest(core, false);
+        if core.raw_read_8(BG1_HIDDEN, -1) == 1 {
+            core.raw_write_16(DISP_CT, -1, d | BG1_ON);
+            core.raw_write_8(BG1_HIDDEN, -1, 0);
+        }
     } else if core.raw_read_8(BG1_HIDDEN, -1) == 1 {
         // Off the map, BG1 is the next screen's (the mission card's): on.
         core.raw_write_16(DISP_CT, -1, d | BG1_ON);
         core.raw_write_8(BG1_HIDDEN, -1, 0);
+    }
+}
+
+/// The tiles of the map layer the session draws (Omega Land's or the picture's).
+fn layer_tiles(core: &Core) -> Option<&'static [u8]> {
+    match crate::ds_campaign::art(core) {
+        crate::campaign_model::WorldArt::Picture(p) => Some(&p.map().tiles),
+        crate::campaign_model::WorldArt::OmegaLand => world_map().map(|w| &w.tiles[..]),
+        crate::campaign_model::WorldArt::Aw2 => None,
+    }
+}
+
+/// A picture map in a session: the nations conquered (every mission whose flag lies in one is won) are drawn as Black Hole's. The palette
+/// in the ROM image (the map screen copies it when it is built, so a fade works on it) is rewritten when the set changes; with the map
+/// up (`live`) the palette buffer and palette RAM too.
+fn picture_conquest(core: &mut Core, live: bool) {
+    let Some(p) = crate::ds_campaign::art(core).picture() else { return };
+    let pts = points(core);
+    let won = (0..pts.len())
+        .map(|m| core.raw_read_8(S_FLAGS + m as u32, -1) & CLEARED != 0)
+        .collect::<Vec<_>>();
+    let now = p.conquered(&pts, |m| won[m]);
+    let known = core.raw_read_8(CONQUEST_MARK, -1);
+    if known != now {
+        core.raw_write_range(PALETTE, -1, &p.palette_bytes(now));
+        core.raw_write_8(CONQUEST_MARK, -1, now);
+    }
+    if !live {
+        core.raw_write_8(CONQUEST_LIVE, -1, now);
+    }
+    if live && (known != now || core.raw_read_8(CONQUEST_LIVE, -1) != now) {
+        write_palettes(core, 0xC0, &p.palette_bytes(now));
+        core.raw_write_8(CONQUEST_LIVE, -1, now);
     }
 }
 
@@ -877,10 +949,17 @@ pub fn restore_map(core: &mut Core) {
         // screen's setup below).
         return restore_aw2_map(core);
     }
-    let Some(w) = world_map() else { return };
-    core.raw_write_range(BG3_CHARS, -1, &w.tiles);
-    core.raw_write_range(BG3_MAP, -1, &w.tilemap);
-    write_palettes(core, 0xC0, &w.palette);
+    if let Some(p) = crate::ds_campaign::art(core).picture() {
+        core.raw_write_range(BG3_CHARS, -1, &p.tiles);
+        core.raw_write_range(BG3_MAP, -1, &p.tilemap());
+        let now = core.raw_read_8(CONQUEST_MARK, -1);
+        write_palettes(core, 0xC0, &p.palette_bytes(now));
+    } else {
+        let Some(w) = world_map() else { return };
+        core.raw_write_range(BG3_CHARS, -1, &w.tiles);
+        core.raw_write_range(BG3_MAP, -1, &w.tilemap);
+        write_palettes(core, 0xC0, &w.palette);
+    }
     let (x, y) = (core.raw_read_16(S_CAMERA_X, -1), core.raw_read_16(S_CAMERA_Y, -1));
     core.raw_write_16(BG3_SCROLL_X, -1, x);
     core.raw_write_16(BG3_SCROLL_Y, -1, y);
@@ -930,10 +1009,9 @@ pub fn point_at(core: &mut Core, m: u8) {
     let (x, y) = points(core).get(m as usize).copied().unwrap_or((240, 120));
     // (AW2's picture is 432 x 256: its camera stops at 192 x 96)
     // (by the campaign's source, not `omega`: Continue places the cursor before the session is marked active, and a flag past x = 432 needs Omega Land's camera)
-    let (max_x, max_y) = if crate::ds_campaign::art(core) == crate::campaign_model::WorldArt::OmegaLand {
-        (MAP_WIDTH - 240, MAP_HEIGHT - 160)
-    } else {
-        (192, 96)
+    let (max_x, max_y) = match art_dims(crate::ds_campaign::art(core)) {
+        Some((w, h)) => ((w - 240).max(0), (h - 160).max(0)),
+        None => (192, 96),
     };
     let cam_x = (x as i32 - 120).clamp(0, max_x);
     let cam_y = (y as i32 - 80).clamp(0, max_y);
@@ -1065,21 +1143,21 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (PROFILE_SERIALIZED, Box::new(profile_serialized)),
         (PANEL_ARMY_COLOUR, Box::new(panel_army)),
     ];
-    for (at, past, reg, max) in CAMERA_CLAMPS {
-        t.push((at, Box::new(move |core: &mut Core| camera_clamp(core, past, reg, max))));
+    for (at, past, reg, horizontal) in CAMERA_CLAMPS {
+        t.push((at, Box::new(move |core: &mut Core| camera_clamp(core, past, reg, horizontal))));
     }
     t.push((CURSOR_X_LIMIT, Box::new(cursor_x_limit)));
     t.push((
         CAMERA_X_TEST.0,
-        Box::new(|core: &mut Core| limit_test(core, CAMERA_X_TEST, MAP_WIDTH - 240, false)),
+        Box::new(|core: &mut Core| limit_test(core, CAMERA_X_TEST, |w, _| w - 240, false)),
     ));
     t.push((
         CURSOR_Y_TEST.0,
-        Box::new(|core: &mut Core| limit_test(core, CURSOR_Y_TEST, MAP_HEIGHT - 17, true)),
+        Box::new(|core: &mut Core| limit_test(core, CURSOR_Y_TEST, |_, h| h - 17, true)),
     ));
     t.push((
         CAMERA_Y_TEST.0,
-        Box::new(|core: &mut Core| limit_test(core, CAMERA_Y_TEST, MAP_HEIGHT - 160, false)),
+        Box::new(|core: &mut Core| limit_test(core, CAMERA_Y_TEST, |_, h| h - 160, false)),
     ));
     t
 }

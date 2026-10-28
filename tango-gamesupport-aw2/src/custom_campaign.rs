@@ -1605,7 +1605,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     };
     let mut cx = Compiler {
         core,
-        art: source.art,
+        art: source.world_art(),
         built,
         next_text: TEXT_FIRST,
         marks: Vec::new(),
@@ -1660,7 +1660,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     }
     // Story: prologue pages, scenes after wins, the staff roll.
     let mut story = Story::default();
-    let map_song = crate::campaign_music::world_map_song(source.art == WorldArt::OmegaLand);
+    let map_song = crate::campaign_music::world_map_song(source.world_art() == WorldArt::OmegaLand);
     story.prologue = prologue_script(&mut cx, &def.prologue, def.prologue_song)?;
     for (i, m) in def.missions.iter().enumerate() {
         if !m.after.is_empty() {
@@ -1670,7 +1670,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         }
     }
     cx.built.story = story;
-    let pictures = if SOURCES[def.source].art == WorldArt::OmegaLand && def.prologue.iter().any(|p| p.picture.is_some())
+    let pictures = if SOURCES[def.source].world_art() == WorldArt::OmegaLand && def.prologue.iter().any(|p| p.picture.is_some())
     {
         crate::ds_story_art::narration_pictures()
     } else {
@@ -1740,11 +1740,22 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         points: def
             .missions
             .iter()
-            .map(|m| MapPoint {
-                x: m.flag.0,
-                y: m.flag.1,
-                style: m.style,
-                stars: m.stars,
+            .enumerate()
+            .map(|(i, m)| {
+                // (a picture world map: the picture's own flag places, in order)
+                let flag = match cx.art.picture() {
+                    Some(p) if !p.slots.is_empty() => {
+                        let s = p.slots[i % p.slots.len()];
+                        (s.1, s.2)
+                    }
+                    _ => m.flag,
+                };
+                MapPoint {
+                    x: flag.0,
+                    y: flag.1,
+                    style: m.style,
+                    stars: m.stars,
+                }
             })
             .collect(),
         requires,

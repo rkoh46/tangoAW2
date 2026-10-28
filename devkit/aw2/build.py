@@ -64,6 +64,9 @@ def test(args):
         for mod in ("aw2.esmaplib.test_esmaplib", "aw2.eslib.test_eslib"):
             r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", mod], cwd=cfg.DEVKIT, check=False)
             rc |= r.returncode
+        # the picture world map kit's tests (conversion stable, budgets, regions cover the land, conquest tint, no ROM needed)
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.worldmaplib.test_worldmap"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         # the music kit's tests (the M4A reader, the song compiler's bytes read back by it, pitch / loop-seam / level analysis, the rules)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.musiclib.test_musiclib"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode

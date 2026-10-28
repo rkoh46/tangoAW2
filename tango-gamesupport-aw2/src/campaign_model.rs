@@ -242,6 +242,28 @@ pub enum WorldArt {
     OmegaLand,
     /// AW2's own Wars World map.
     Aw2,
+    /// A picture converted to the map layer's tiles ([`crate::world_picture`]): AW2's map screen and flow on the picture's art, regions
+    /// re-tinted by conquest.
+    Picture(&'static crate::world_picture::PictureSource),
+}
+
+impl WorldArt {
+    /// The picture's map, for a picture world map.
+    pub fn picture(self) -> Option<&'static crate::world_picture::PictureMap> {
+        match self {
+            WorldArt::Picture(p) => Some(p.map()),
+            _ => None,
+        }
+    }
+}
+
+/// The development aid `TANGOAW2_BH_WORLDMAP=<name>` (docs/dev/env-aids.md): the BH Campaign plays on a picture world map in place of AW2's,
+/// its missions' flags on the picture's dummy flag places.
+pub fn dev_picture() -> Option<&'static crate::world_picture::PictureSource> {
+    match std::env::var("TANGOAW2_BH_WORLDMAP").ok().as_deref() {
+        Some("bh2") => Some(&crate::world_picture::BH2),
+        _ => None,
+    }
 }
 
 /// Where campaigns come from.
@@ -264,6 +286,16 @@ pub struct Source {
     pub art: WorldArt,
     /// It has a Hard Campaign (Normal / Hard on New).
     pub has_hard: bool,
+}
+
+impl Source {
+    /// The art its world map is drawn on (the BH Campaign's can be a picture: [`dev_picture`]).
+    pub fn world_art(&self) -> WorldArt {
+        match (self.progress_magic == 0x4342_5741, dev_picture()) {
+            (true, Some(p)) => WorldArt::Picture(p),
+            _ => self.art,
+        }
+    }
 }
 
 /// A rule that jumped to game code itself (the caller returns nothing).

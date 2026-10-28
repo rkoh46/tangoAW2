@@ -82,6 +82,7 @@ pub mod ds_units;
 pub mod ds_versus;
 pub mod ds_weather;
 pub mod ds_worldmap;
+pub mod world_picture;
 pub mod es_act1;
 pub mod es_act2;
 pub mod es_act3;
