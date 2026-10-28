@@ -94,7 +94,7 @@ def find_on(shot, co, need=0.93, patches=2, pic="face_normal"):
 # The Teams screen keeps the P1 card's place in this list at 0x02017C6C (found by diffing EWRAM while UP walked the list): the walk presses UP or DOWN until it is on the CO, so a press
 # a busy machine drops or doubles does not matter.
 # The game's own list of the Teams screen is at TEAMS_ORDER (CO ids, 0xFF-ended): the CO's place in it is read from there, since each new CO stands after the one it takes after.
-ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81, "varro": 90, "asuka": 92, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
+ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81, "varro": 90, "asuka": 92, "aria": 93, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
 TEAMS_ORDER = 0x0203FE80
 TEAMS_CURSOR = 0x02017C6C
 TEAMS_LEN = 34
@@ -187,14 +187,16 @@ def _photograph(co, out_dir):
         # the power's cut-in shows the large figure: fill the meter, open the map menu on Power
         base = int.from_bytes(bytes.fromhex(d.peek(0x08499598, 4)["hex"]), "little")
         cost = d.state(["armies"])["armies"][0]["power_cost"]
-        d.poke(base + 0x3C + 0x20, (cost * 2 + 100).to_bytes(4, "little").hex())
+        # (a CO with no CO Power, Aria as Sturm, has no cost to read: the meter goes past any Super Power's, and the menu's Super entry is the one used)
+        want = "power" if cost else "super"
+        d.poke(base + 0x3C + 0x20, ((cost * 2 + 100) if cost else 9000 * 10 * 2).to_bytes(4, "little").hex())
         time.sleep(0.5)
         d.press("A", 3)
         d.wait_until({"screen": "map_menu"}, 8)
         rows = [r["text"] for r in d.state(["menu"])["menu"].get("rows", [])]
         util.say(f"{co}: map menu rows {rows}")
         for _ in range(12):
-            if (d.state(["menu"])["menu"].get("item") or "").lower().startswith("power"):
+            if (d.state(["menu"])["menu"].get("item") or "").lower().startswith(want):
                 break
             d.press("DOWN")
         d.press("A")
@@ -208,7 +210,8 @@ def _photograph(co, out_dir):
         except FileNotFoundError:
             own = None          # no committed picture to match (a recolour of another CO's art, e.g. Clone Andy): the cut-in frame is the one with the most dark pixels (outline, uniform)
         best, quote, quote_n, cands = None, None, 0, []
-        for k in range(26):
+        frames = 26 if cost else 56          # (a Super Power alone: its quote and the flames come before the figure)
+        for k in range(frames):
             p = out / f"{co}_power{k}.png"
             app.shot(p)
             im = np.array(Image.open(p).convert("RGB"))
@@ -220,8 +223,10 @@ def _photograph(co, out_dir):
             if red > 0.03:
                 cands.append((n, p))
             box = (im[124:152, 70:230].min(2) > 205).mean()       # the dialogue box's cream band at the foot
-            if red < 0.07 and box > 0.9:
-                quote = p          # (the last such frame: the text is typed out by then)
+            if k < 26 and red < 0.07 and 0.9 < box < 0.995:
+                ink = int((im[124:152, 70:230].max(2) < 120).sum())      # the text typed so far: the frame with the most is the finished box
+                if ink >= quote_n:
+                    quote, quote_n = p, ink
             time.sleep(0.12)
         import shutil
         if cands:
@@ -232,7 +237,7 @@ def _photograph(co, out_dir):
             shutil.copy(best, out / f"{co}_figure.png")
         if quote:
             shutil.copy(quote, out / f"{co}_dialogue.png")
-        for k in range(26):
+        for k in range(frames):
             if not os.environ.get("AW2DEV_KEEP_FRAMES"):
                 (out / f"{co}_power{k}.png").unlink(missing_ok=True)
         util.say(f"{co}: the power's large figure " + ("is on " + best.name if best else "was not seen"))

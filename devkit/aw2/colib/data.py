@@ -36,14 +36,15 @@ def problems(cos, tags, ref=None):
     out = []
     p = lambda co, m: out.append(f"{co}: {m}")
     for co, d in cos.items():
+        nocop = d.get("stars", {}).get("cop") == 0      # a CO with only a Super Power (AW2's Sturm, Dual Strike's Von Bolt, Aria): no [cop] section
         for k in ("id", "name", "army", "role", "stars", "d2d", "cop", "scop", "bio", "theme"):
-            if k not in d:
+            if k not in d and not (nocop and k == "cop"):
                 p(co, f"missing {k}")
         if d.get("id") != co:
             p(co, "id differs from the file name")
         st = d.get("stars", {})
-        if not (1 <= st.get("cop", 0) <= 5 and st.get("cop", 0) < st.get("scop", 0) <= 10):
-            p(co, f"stars {st}: a CO Power costs 1..5 and the Super Power (in all) more, at most 10")
+        if not ((1 <= st.get("cop", 0) <= 5 or nocop) and st.get("cop", 0) < st.get("scop", 0) <= 10):
+            p(co, f"stars {st}: a CO Power costs 1..5 (0: none, like Sturm) and the Super Power (in all) more, at most 10")
         for sect in ("d2d", "cop", "scop"):
             s = d.get(sect, {})
             for k in ("name", "text"):

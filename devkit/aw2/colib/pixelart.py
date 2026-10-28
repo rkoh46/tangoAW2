@@ -50,17 +50,45 @@ def refine(g, period, edge0):
     return float(coef[0]), float(coef[1])
 
 
-def detect_grid(rgb):
-    """rgb: h x w x 3. -> (px, ox, py, oy): the cell size and the first cell edge, per axis."""
+def flatten_checker(rgb, l_min=80.0, c_max=10.0, seeds=()):
+    """A picture whose "transparent" background is a checkerboard baked into the JPEG (light grey and white squares): every light, nearly colourless pixel connected to the picture's border
+    through such pixels becomes plain white, so the squares' 13 px edges do not take part in the grid detection and the background cut sees one flat colour. Pixels enclosed by the figure (the shirt, an eye
+    white) are never reached: the figure's own outline ring separates them. `seeds` = [[x, y], ...] (picture pixels): a pocket of the checkerboard enclosed by the figure (between an arm and the body) is flooded
+    from a point inside it, found by looking. -> rgb with the background white."""
+    from collections import deque
+    from . import importer as I
+    lab = I.to_lab(rgb.astype(float))
+    like = (lab[..., 0] > l_min) & (np.hypot(lab[..., 1], lab[..., 2]) < c_max)
+    h, w = like.shape
+    out = np.zeros((h, w), bool)
+    st = [(y, x) for y in range(h) for x in (0, w - 1) if like[y, x]] + [(y, x) for x in range(w) for y in (0, h - 1) if like[y, x]]
+    st += [(int(y), int(x)) for x, y in seeds if like[int(y), int(x)]]
+    for p in st:
+        out[p] = True
+    dq = deque(st)
+    while dq:
+        y, x = dq.pop()
+        for yy, xx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+            if 0 <= yy < h and 0 <= xx < w and not out[yy, xx] and like[yy, xx]:
+                out[yy, xx] = True
+                dq.append((yy, xx))
+    flat = rgb.copy()
+    flat[out] = 255
+    return flat
+
+
+def detect_grid(rgb, hint=None):
+    """rgb: h x w x 3. -> (px, ox, py, oy): the cell size and the first cell edge, per axis. `hint` = (px, py): the periods to search around (a picture whose edge profile's strongest period is a
+    harmonic of the cell, found by looking; the fine search and the line fit are the same)."""
     a = rgb.astype(float)
     gx = np.abs(np.diff(a, axis=1)).sum(2).sum(0)
     gy = np.abs(np.diff(a, axis=0)).sum(2).sum(1)
     # coarse: FFT for the period, then a fine search around it
     out = []
-    for g in (gx, gy):
+    for n, g in enumerate((gx, gy)):
         f = np.abs(np.fft.rfft((g - g.mean()) * np.hanning(len(g))))
         cand = [(len(g) / i, f[i]) for i in range(1, len(f)) if 3 <= len(g) / i <= 16]
-        p0 = max(cand, key=lambda t: t[1])[0]
+        p0 = hint[n] if hint else max(cand, key=lambda t: t[1])[0]
         best = (-1, None, None)
         for period in np.arange(p0 - 0.12, p0 + 0.12, 0.002):
             for phase in np.arange(0, period, 0.1):
@@ -337,11 +365,37 @@ def drop_orphan_outline(a):
 def styled(spec, path):
     from . import importer as I
     img = np.array(Image.open(path).convert("RGB"))
-    grid = detect_grid(img)
+    if spec.get("checker"):
+        img = flatten_checker(img, float(spec.get("checker_l", 80.0)), float(spec.get("checker_c", 10.0)), spec.get("checker_seeds", ()))
+    grid = detect_grid(img, spec.get("grid_hint"))
     nat = native(img, grid)
     if spec.get("flip"):
         nat = nat[:, ::-1].copy()
-    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0), hole_min=spec.get("hole_min", 0), hole_tol=spec.get("hole_tolerance", 14.0), peel=spec.get("peel", 0), fringe_mode=spec.get("fringe"), light_l=spec.get("fringe_l", 75.0), light_c=spec.get("fringe_c", 12.0))
+    late = bool(spec.get("fringe_skip") or spec.get("bg_seeds"))      # a pocket is cleared before the fringe step, so the pocket's own fringe goes with it
+    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0), hole_min=spec.get("hole_min", 0), hole_tol=spec.get("hole_tolerance", 14.0), peel=spec.get("peel", 0), fringe_mode=None if late else spec.get("fringe"), light_l=spec.get("fringe_l", 75.0), light_c=spec.get("fringe_c", 12.0))
+    fg0 = fg.copy()
+    for sx, sy in spec.get("bg_seeds", ()):
+        # a pocket of background enclosed by the figure (between her arm and coat): flood from a native cell inside it over the cells within `bg_tolerance` of the background colour
+        near = np.abs(nat - bg).max(2) < spec.get("bg_tolerance", 9.0)
+        st = [(sy, sx)] if near[sy, sx] else []
+        while st:
+            y, x = st.pop()
+            if not fg[y, x]:
+                continue
+            fg[y, x] = False
+            for yy, xx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= yy < fg.shape[0] and 0 <= xx < fg.shape[1] and fg[yy, xx] and near[yy, xx]:
+                    st.append((yy, xx))
+    for x0_, y0_, x1_, y1_ in spec.get("erase", ()):
+        fg[y0_:y1_ + 1, x0_:x1_ + 1] = False      # background elements that are not the figure (Aria's smoke wisps): native cells, inclusive
+    if late and spec.get("fringe") == "light":
+        fg = remove_light_fringe(nat, fg, spec.get("fringe_l", 75.0), spec.get("fringe_c", 12.0))
+    if spec.get("fringe_skip"):
+        # cells the light-fringe growth must not take (her cigarette's white paper, light and colourless by nature): restored
+        keep = np.zeros_like(fg)
+        for x0_, y0_, x1_, y1_ in spec["fringe_skip"]:
+            keep[y0_:y1_ + 1, x0_:x1_ + 1] = True
+        fg = fg | (fg0 & keep)
     fg = keep_main(fg)
     S = int(spec.get("large_scale", 2))        # cells to output pixels: 2 for the 5 px-cell pictures, 1 for a picture whose head is more than 30 cells
     fw, fh = 128 // S, 160 // S
@@ -380,7 +434,14 @@ def styled(spec, path):
     pal16 = [(0, 0, 0)] + pal[:14] + [pal[14]]
     ex = lambda a, sl: np.kron(a[sl], np.ones((S, S), np.uint8))
     L = ex(full, fr)
-    nface = drop_orphan_outline(full[mu])
+    fullm = full
+    if spec.get("mug_erase"):
+        # the faces leave out what is not the face but falls inside the square (her cigarette's ember at the mug's lower left corner): cells set to background in the faces' own copy, their outline redrawn
+        fgm = fg.copy()
+        for x0_, y0_, x1_, y1_ in spec["mug_erase"]:
+            fgm[y0_ + P:y1_ + P + 1, x0_ + P:x1_ + P + 1] = False
+        fullm = ring(fgm, quantise(nat, fgm, pal[:14], spec.get("match", "luma")), diagonal=bool(spec.get("outline_diagonal")))
+    nface = drop_orphan_outline(fullm[mu])
     face = np.kron(nface, np.ones((MS, MS), np.uint8))
     im = I.Imported()
     im.spec = spec
@@ -429,12 +490,18 @@ def _expression_picture(path, kind):
 def describe(path, flip=False, out=None):
     """The grid, the native size and the figure's box of a pixel-art picture; with `out`, a debug picture of the native cells (mirrored if `flip`) with every tenth cell numbered. -> text."""
     from PIL import ImageDraw
+    import tomllib
+    from pathlib import Path
+    side = Path(path).with_suffix(".toml")
+    spec = tomllib.loads(side.read_text()) if side.exists() else {}      # the framing file beside it: `checker`, `grid_hint`, `bg_tolerance`
     img = np.array(Image.open(path).convert("RGB"))
-    grid = detect_grid(img)
+    if spec.get("checker"):
+        img = flatten_checker(img, float(spec.get("checker_l", 80.0)), float(spec.get("checker_c", 10.0)), spec.get("checker_seeds", ()))
+    grid = detect_grid(img, spec.get("grid_hint"))
     nat = native(img, grid)
     if flip:
         nat = nat[:, ::-1].copy()
-    fg, bg = cut_background(nat)
+    fg, bg = cut_background(nat, spec.get("bg_tolerance", 9.0), hole_min=spec.get("hole_min", 0), fringe_mode=spec.get("fringe"), light_l=spec.get("fringe_l", 75.0), light_c=spec.get("fringe_c", 12.0))
     fg = keep_main(fg)
     ys, xs = np.where(fg)
     if out:
