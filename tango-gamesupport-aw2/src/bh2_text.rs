@@ -539,13 +539,13 @@ mod tests {
     }
 
     /// The story scenes (a mission's intro, victory, the scenes on the world map after it, the prologue and epilogue pages) all name a song: AW2 plays one under every one of
-    /// its own (docs/dev/campaign-scenes.md). Only the mid-battle scenes (`mNN_dayN` and the scripted ones inside a battle) keep the battle's music.
+    /// its own (docs/dev/campaign-scenes.md). Only the mid-battle scenes (`mNN_dayN`, `mNN_front2_won/lost`) keep the battle's music.
     #[test]
     fn every_story_scene_has_a_song() {
         let b = book();
         let needs = |k: &str| {
             !k.split_once('_').is_some_and(|(m, rest)| {
-                m.len() == 3 && m.starts_with('m') && (rest.starts_with("day") || rest.starts_with("in_"))
+                m.len() == 3 && m.starts_with('m') && (rest.starts_with("day") || rest.starts_with("in_") || rest.starts_with("front2_"))
             })
         };
         let missing: Vec<&String> = b

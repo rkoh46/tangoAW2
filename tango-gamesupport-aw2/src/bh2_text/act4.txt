@@ -423,14 +423,21 @@ JAKE: Yo, pretty boy! Wanna dance?
 ADDER: Pretty boy? Kneel before Adder.
 RACHEL: Rule six: a pilot is only / as brave as his fuel.
 ADDER: Fuel is for ordinary men, my / dear. I run on adoration.
+JAKE: Yo, you run on hairspray!
+ADDER: Hairspray, you tank-driving brute, / is a delicate mist of ambition.
+RACHEL: Jake, don't engage. Rule one: / do not answer the pilot.
+JAKE: Rule one is boring, Rach!
+KINDLE: Darling Adder! I hear they / gave you a sky. Try not to scorch it.
+ADDER: Kindle! Madam! Go and light a / candle in someone else's wing.
 ASUKA: Adder. They will answer your / sky. Be careful.
 ADDER: Careful? Darling General, I am / never careful. I am photographed.
 HAWKE: Adder. Your angles, please. / Orange Star has real anti-air.
-ADDER: Marshal, I am delighted to / be criticised by a gentleman.
-JAKE: Yo, he's talkin' to himself!
-ADDER: I am talking to my audience. / Say hello, audience.
-RACHEL: Rule one: do not answer / the pilot.
-JAKE: Rule one is boring!
+ADDER: Marshal, I am delighted to be / criticised by a gentleman.
+RACHEL: By the book: hold the coast. / The beach is ours. The sky is not.
+JAKE: Nah, Rach. The sky is nobody's. / Yo, flak crews, pick a target!
+RACHEL: ...Rule seven. A flak net / hides in plain sight.
+ADDER: Is that a hint, my dear?
+RACHEL: It's a rule. Don't fly low / over the sandbags.
 
 == m24_day5
 RACHEL: Flak net online! By the / book, all batteries fire!
@@ -453,9 +460,15 @@ RACHEL: ...Commander Asuka. My / sister left the tower.
 ASUKA: Your sister is safe, Rachel. / Both are.
 RACHEL: ...Both. Thank you. That / was not in the book either.
 ASUKA: The book is short.
+RACHEL: Rule eight. It's new. "When / the enemy keeps her word, say so."
+ASUKA: I accept the rule.
 HAWKE: Adder. The cape survived?
 ADDER: Marshal, the cape is the / only survivor of the war.
-HAWKE: Excellent. Hold that thought.
+KINDLE: Darling Adder! Wonderful! / You flew like a firework. A damp one.
+ADDER: Kindle! Madam! One day, I / shall be more fabulous than you.
+KINDLE: Darling, you have been / saying that for years.
+ADDER: Today it was true.
+KINDLE: ...Today it was a little true.
 
 == m24_map
 @SONG enemy1
@@ -589,3 +602,27 @@ HACHI: A last stand! Kid, I'll hold / the market. Free of charge.
 ARIA: Build anew. It starts in the / citadel.
 NELL: Aria. I'm so proud of you.
 ARIA: Don't be proud, Nell. Be / angry. For both of us.
+
+== m24_day3
+JAKE: Yo, pretty boy! Your wing's / low! Wanna land?
+ADDER: Wing? Madam, it's called a / formation. It is deliberate!
+JAKE: It's wobbly, bro!
+ADDER: I shall have you know, I / wobble on purpose.
+RACHEL: Jake. Focus.
+JAKE: I'm focused! On his hair!
+
+== m20_day4
+MAX: Sami! I'm the hammer! You're / the wall!
+SAMI: Roger. You're the hammer, I'm / the wall. Please stop hitting the wall.
+MAX: It's a friendly wall!
+SAMI: Roger, it's friendly. It still / hurts, Max.
+MAX: ...Sorry.
+SAMI: Apology accepted. Now hit them.
+
+== m23_day2
+JAKE: Yo, Hachi, what's in the / crate, for real?
+HACHI: Something worth Aria's whole / budget, kid. That's all I know.
+JAKE: Cool. Cool cool cool. Got any / grenades?
+HACHI: Discount grenade. "As is". / Seven coins.
+JAKE: Yo, it's got a tag. It says / "as is"!
+HACHI: Everything's as is, kid. It's / a clearance rack.

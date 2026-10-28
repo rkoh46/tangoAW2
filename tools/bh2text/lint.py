@@ -28,13 +28,13 @@ CO_NAMES = {
 }
 OTHER_NAMES = {"LEGIONARY", "NARRATION", "CRUMB", "MORTAR", "WICK", "SOLDIER", "SOLDIER OS", "SOLDIER BM", "SOLDIER GE", "SOLDIER YC", "[CO]", "[CO2]"}
 ROSTER = ["STURM", "VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE ANDY", "SONJA", "CRUMB CO"]
-NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL", "ASUKA", "SONJA", "AURELIA"}
+NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL", "ASUKA", "SONJA", "KLAUS", "LIVIA"}
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)
 
 # the songs a scene may name (`@SONG`): the roles of src/campaign_music.rs NAMED, `aw2:<id>`, `co:<name>`
 SONG_NAMES = set(re.findall(r'^\s*\(\s*"(\w+)",\s*Track::', open(os.path.join(SRC, "campaign_music.rs")).read(), re.M))
 # scenes that must have one: the story scenes (intro, victory, the world map's), not the mid-battle day triggers
-NEEDS_SONG = re.compile(r"(?!m\d\d_(day|in_)).*")      # every scene but the mid-battle ones (mNN_dayN, mNN_in_*) has a song
+NEEDS_SONG = re.compile(r"(?!m\d\d_(day|in_|front2_)).*")      # every scene but the mid-battle ones (mNN_dayN, mNN_front2_*) has a song
 songs = set()
 OWN_SONGS = {"own:door", "own:credits", "own:aria"}     # BH2's own songs (branches bh2music / aria, not merged: bh2_text.rs OWN_SONGS)
 
@@ -130,7 +130,7 @@ def lint_file(name, errors, warns, counts):
                 errors.append(f"{where}: {w}px > {LIMIT}: {ln!r}")
         # voice (warnings)
         plain = text.replace(" / ", " ")
-        if who == "STURM" or (who in ("[CO]", "[CO2]") and False):
+        if who in ("STURM", "KLAUS") or (who in ("[CO]", "[CO2]") and False):
             if "!" in plain:
                 warns.append(f"{where}: Sturm shouts: {plain!r}")
         if who in NO_CONTRACTIONS and CONTRACTION.search(plain):

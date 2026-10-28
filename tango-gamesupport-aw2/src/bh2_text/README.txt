@@ -22,6 +22,6 @@ Groups:       @IF STURM, HAWKE       rows shown only when the player leads Sturm
               [CO] outside a group is said, for each CO of the pool, by that CO.
 Runs of boxes by one speaker are merged into one text by the compiler and equal texts share an id (budget: 3,072 text ids).
 Songs:        @SONG name (campaign_music NAMED roles, aw2:<id>, co:<name>) or own:door / own:credits / own:aria, BH2's three songs (branches bh2music, aria; bh2_text.rs OWN_SONGS holds
-              temporary stand-ins until they are merged). Every scene has one except the mid-battle ones (mNN_dayN, mNN_in_*), which keep the battle's music.
+              temporary stand-ins until they are merged). Every scene has one except the mid-battle ones (mNN_dayN, mNN_front2_*), which keep the battle's music.
 Files:        story (prologue), act1..act5 (the missions, M1-M31 in the final numbering), ending (epilogue, secret mission M32), credits (the staff roll: == HEADING [| secret], then rows of 21 characters).
 Pools:        the scenes of a free pick name the pool in the header: ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY (Sturm is a pick only in M5, which is forced).

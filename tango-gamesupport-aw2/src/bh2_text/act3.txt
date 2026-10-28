@@ -4,6 +4,14 @@
 
 == m14_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:grit
+NARRATION: Blue Moon's palace, a day / earlier. A long hall of ice and ledgers.
+OLAF: Blue Moon has read the ledger! / Blue Moon is OUTRAGED! Again!
+SASHA: Olaf. Outrage is not a policy. / Colin, close the window.
+COLIN: Y-yes, Sis! It's... it's very / cold outside. And in. Everywhere.
+OLAF: The border will hold! Grit holds / the rail! Javier holds the other!
+SASHA: Green Earth's knight and our / long gun. A strange pair.
+COLIN: S-Sis? What if she comes for / the lab island? What do we tell her?
+SASHA: Nothing, Colin. We tell her / nothing. It is the first rule of trade.
 NARRATION: Blue Moon's border. Snow to / the horizon. One railway crosses it.
 NARRATION: The Iron Road. Green Earth's / exiles and Blue Moon hold it together.
 JAVIER: Hark! Behold the Long Border! / A line of honour upon the snow!
@@ -195,6 +203,14 @@ JUGGER: SNIPER GRIT. YOUR LINE IS / 94 PERCENT PREDICTABLE.
 GRIT: And the other six?
 JUGGER: QUERY. WHAT IS THE OTHER SIX.
 GRIT: Patience, tin fella. Ayup.
+
+== m16_day9
+GRIT: Tin fella. I got a question. / Why do you talk in capitals?
+JUGGER: CLARIFICATION: I TALK IN / VOLUME. QUERY: IS IT TOO MUCH.
+GRIT: Nope. Reckon it's honest. / Most folks whisper their lies.
+JUGGER: LOGGED. HONESTY: WORTH A / VOLUME. WISH: TO HAVE SAID IT FIRST.
+GRIT: Ayup. Next round's on me. / If either of us is left standing.
+JUGGER: AFFIRMATIVE. I WILL BRING / THE SOUP. FLAK MADE EXTRA.
 
 == m16_wire
 @SONG co:jugger
@@ -513,3 +529,20 @@ GRIT: Hold. Hold the book. Don't / read it to the world yet.
 HACHI: Grit's right. If one nation / reads it first, the rest will riot.
 ANDY: Then we free Nell. She signs / first. She can speak first.
 NARRATION: Far off, a gavel taps once, / on the cushion of the empty chair.
+
+== m18_day8
+CRUMB CO: Flak! It's Crumb! Please / don't eat the harbour!
+FLAK: Crumb! Crumb is a food name! / Flak happy! Flak not eat harbour!
+OLAF: Who is this Crumb? A tiny / voice on the Black Hole band?
+FLAK: Crumb friend. Crumb small. / Crumb good.
+OLAF: Ha! A brute with a small / friend! I like it. Continue!
+CRUMB CO: Flak, I made stew! It's in / the second boat!
+FLAK: Stew! Flak go! After win!
+
+== m17_day8
+COLIN: S-Sis! The Obelisk is aiming / at the pier! Where I'm standing!
+SASHA: Then stand elsewhere, Colin. / Politely.
+LASH: Hi, Colin! I'm aiming at / your pier! Don't take it personally!
+COLIN: I-it's very personal! It's / MY pier!
+LASH: Heehee! I like him! Can I / keep him?
+SASHA: You may not keep my brother.

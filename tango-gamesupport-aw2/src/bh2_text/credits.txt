@@ -1,4 +1,130 @@
-== PLACE
-x
-== SECRET | secret
-y
+# BH2 Campaign: the staff roll (rows of at most 21 characters). "== HEADING" starts a page, "== HEADING | secret" a page shown only after the secret mission.
+
+== BH2 CAMPAIGN
+A tangoAW2 story
+The Auditor's war
+
+== THE AUDITOR
+ASUKA
+Who read it all
+SONJA
+Who stayed a name
+
+== THE CAST
+STURM
+The Founder
+VON BOLT
+The Ledger
+
+== THE CAST
+HAWKE
+The Chair
+KOAL
+The Road
+
+== THE CAST
+KINDLE
+The Stage
+JUGGER
+The Directive
+
+== THE CAST
+FLAK
+The Appetite
+LASH
+The Experiment
+
+== THE CAST
+ADDER
+The Profile
+CLONE ANDY
+The Name
+
+== ALSO STARRING
+CMDR. PIP "CRUMB"
+HOBB
+GERALD
+The Biscuit
+
+== ALSO STARRING
+SGT. MORTAR
+PVT. WICK
+DENNIS
+INTEREST THE ROOSTER
+
+== ORANGE STAR
+NELL, ARIA
+ANDY, MAX, SAMI
+HACHI, JAKE, RACHEL
+
+== BLUE MOON
+OLAF, SASHA
+COLIN, GRIT
+
+== GREEN EARTH
+JESS, EAGLE
+DRAKE, JAVIER
+
+== YELLOW COMET
+KANBEI, SENSEI
+GRIMM
+
+== THE NATIONS
+Orange Star
+Blue Moon
+Green Earth
+Yellow Comet
+
+== THE LEGION | secret
+KLAUS, AURELIA
+CASSIUS, LIVIA
+The sun does not set.
+It waits.
+
+== ORIGINAL GAMES
+Intelligent Systems
+Nintendo
+Advance Wars 2:
+Black Hole Rising
+Advance Wars:
+Dual Strike
+
+== WITH THANKS
+With thanks and
+respect.
+
+== RESEARCH
+Xenesis and the
+Wars World News
+community
+
+== RESEARCH
+The aw2bhr
+decompilation:
+Eebit, npiriou,
+Mad-Man-Dan,
+Veslyquix
+
+== EMULATION
+endrift (mGBA)
+Arisotura (melonDS)
+weenie, GreigaMaster
+and everyone in the
+Tango credits
+
+== SPECIAL THANKS
+Playtesting:
+the tangoAW2
+players
+
+== NOTICE
+Advance Wars is a
+trademark of
+Nintendo. tangoAW2
+is not affiliated
+with Nintendo or
+Intelligent Systems.
+
+== THE END
+The door is closed.
+Not locked.

@@ -86,10 +86,12 @@ CRUMB CO(s): I wasn't going to, Sergeant. / ...I only said hello.
 ASUKA: Commander. The quay is a / long way by road. Fourteen days.
 ASUKA: The ships sail then. With the / crate, or without. I prefer with.
 CRUMB CO: Ma'am, why does everybody / want it? It's just a crate.
-ASUKA: It is not just anything. A / man's name is on it. Mine is not.
+ASUKA: It is not just anything. Three / watch lists say so. So does the hum.
+WICK: Is it all right if I ask / what happens when we run out of road?
+MORTAR: We make some. Quietly.
 JESS: Black Hole convoy! This is the / Green Earth Coastal Watch!
 JESS: You carry an item on three / watch lists. Stop the truck.
-ASUKA: Commander Jess. You came / a long way for a box.
+ASUKA: Commander Jess. You came a / long way for a box.
 JESS: I came for a consignee. HOBB, P. / Thirty years of customs forms.
 JESS: I signed some of them. As a / junior officer. I never saw the goods.
 JESS: I mean to see them now.
@@ -99,6 +101,8 @@ ASUKA: I find warrants slow.
 JESS: Tanks first. Paperwork after. / I do not apologise for the order.
 CRUMB CO: Ma'am? She seems nice.
 ASUKA: She is. That is why she is / dangerous. Move the truck.
+MORTAR: Crumb. Hold the crate. Wick, / keep your head down.
+WICK: Is it all right if I keep / it very, very down?
 
 == m02_day5
 JESS: Watch, forward! The crate is / in the second truck! Cut it off!
@@ -156,6 +160,16 @@ STURM: Do.
 
 == m03_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:asuka
+NARRATION: The fleet's war table. Charts, / cold tea, and a rooster on a map.
+VON BOLT: Kehh... a foundry! A shut, / cold, cheap foundry! Mine by lunch!
+ASUKA: Colonel. First pick of the / vault inside. Second of the furnaces.
+VON BOLT: First pick?! Of the VAULT? / She spoils me! Interest, note it!
+JUGGER: ARRIVAL: LOGGED. TARGET: / FOUNDRY. QUERY: IS IT AWAKE.
+LASH: It's asleep! I can wake it! / Last one I woke was named Dennis!
+CRUMB CO: Dennis wore a bucket hat, / ma'am! He was very polite!
+ASUKA: I remember. Doctor, wake this / one carefully.
+LASH: Carefully! Always! Heehee!
+MORTAR: Ma'am. That was not a promise. / That was a sound.
 NARRATION: Green Earth, the south. The / Calder Foundry, shut by the Accord.
 NARRATION: Mount Calder smokes behind / it. The furnaces are cold.
 ASUKA: Thirty years ago the Accord / sealed this foundry. Its books are
@@ -250,8 +264,11 @@ ASUKA: That is the question. And / I mean to turn it.
 CRUMB CO: Sergeant, the crate hummed / when she read the ledger.
 MORTAR: Crumb. It hums at everything.
 CRUMB CO(s): Not like that. It hummed / her voice. Like a bell.
-WICK: Is it all right if I'm scared / of a box?
-MORTAR: Yes. Be scared of boxes.
+KINDLE: Darlings, the volcano was / divine. Who lit it?
+LASH: Nobody! It does that! But I / wish I'd taken the credit!
+VON BOLT: First pick of the vault! / Kehh-heh! Where is the gold?
+JUGGER: VAULT CONTENTS: ONE LEDGER. / ONE BOX OF PENCILS. NO GOLD.
+VON BOLT: ...Pencils? Pencils are / second pick. Fine. I'll take them.
 ASUKA: Commander Hobb. The crate / answers to Lord Sturm.
 ASUKA: It listens to you. I would / like to know the difference.
 CRUMB CO: Me too, ma'am. Gerald does / not know. He is very quiet.
@@ -415,9 +432,14 @@ ASUKA: He never does. It is how / you know.
 @SONG enemy1
 WICK: Is it all right if I say / it was not a battle?
 WICK: It was a weather report. / Everyone just lost.
-MORTAR: Wick. Say that out loud again, / and the General hears.
+MORTAR: Wick. Say that again, and / the General hears.
 ASUKA: The General has heard. And / agrees, Private. It was weather.
 ASUKA: Now we must be the climate.
+VON BOLT: Evergreen's treasury! The / harbour ledgers! Second pick!
+JUGGER: EXILE CAPITAL: FALLEN. NEW / CAPITAL: WE ARE. QUERY: WHERE.
+KINDLE: Darlings, a capital with / balconies! Hand me the nearest!
+FLAK: Flak ate exile's feast. Good / feast. Flak sorry. Not sorry.
+CLONE ANDY: Okay! Another flag! I'm / collecting! One for each name!
 
 # ---------------------------------------------------------------- M6 Forest of Spears (FREE; enemy Javier, then Eagle takes command when the Com Towers fall)
 
@@ -493,8 +515,13 @@ MORTAR: The towers will take a week / to cool. Wick, count the wire.
 WICK: Is it all right if I count / out loud? I count better aloud.
 MORTAR: ...Fine. Count out loud.
 WICK: One. Two. ...Sergeant, one / of them is humming.
-MORTAR: Which one?
-WICK: The one next to the crate.
+LASH: Ooh! Which one? Lemme see! / Heehee! It hums in B-flat!
+ADDER: Doctor, you are standing in / my light. Move your toys.
+LASH: You are standing in my / toys, Mr Hair!
+KOAL: Both of you are standing on / my road. Move.
+ASUKA: Wick. Which one hums?
+WICK: The one next to the crate, ma'am.
+ASUKA: Of course it is.
 
 # ---------------------------------------------------------------- M7 Drake's Harbour (FREE; enemy Drake)
 
@@ -568,8 +595,10 @@ DRAKE: And tell Jess I'm sorry. She / hates being the last one told.
 CRUMB CO: Sergeant! Captain Drake / gave me three ginger biscuits!
 MORTAR: Crumb. He surrendered.
 CRUMB CO: He said it was a thank-you / for the sea. Gerald ate half.
-MORTAR: Biscuits do not eat.
-CRUMB CO(s): ...Gerald was hungry.
+FLAK: Flak ate half. Gerald ate / other half. Fair.
+KINDLE: Darling, a boardwalk! A / balcony! I claim the best one!
+ADDER: The best one is mine, madam. / The light is kinder to a profile.
+KINDLE: Darling, the light is kinder / to a PERSON.
 WICK: Is it all right if I think / he is a lovely man?
 MORTAR: He is. That is why we won.
 
@@ -594,6 +623,11 @@ KOAL: I paved two thousand miles. / Nobody ever put a sign on it.
 JESS: It was a good road. I drove / it. That is why this hurts.
 KOAL: Then do not hold the seam.
 JESS: I cannot hold anything else.
+JESS: Koal. You know what a border / is? It is a promise a road breaks.
+KOAL: A border is a road that / stopped. I broke nothing.
+JESS: You broke the Fuel Line. In / advance. I can hear the wrench.
+KOAL: That is the wind in the pipe. / I have not touched it. Yet.
+KOAL: Hold your seams, Commander. I / will respect every one. Until I do not.
 
 == m08_day5
 JESS: Seam three! Seal it! I won't / let them drain the Line!
@@ -626,6 +660,8 @@ CRUMB CO: It hums when the sea gets / loud. I think it hates the sea.
 MORTAR: Crumb is right. The depot has / walls two metres thick.
 ASUKA: Granted, Commander. But you / go with it. I want it watched.
 CRUMB CO(h): Yes, ma'am! Gerald will / keep the crate company!
+KOAL: Mind the stairs. A crate that / hums is a crate that shifts.
+CRUMB CO: Thank you, Mr Koal! I will / mind the lane!
 WICK: Is it all right if I come? / I'm scared of the dark.
 MORTAR: Wick. Lights are on.
 WICK: ...It's scared of the dark. / I'm scared of its being scared.
