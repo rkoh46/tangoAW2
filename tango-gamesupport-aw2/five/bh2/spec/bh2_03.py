@@ -1,8 +1,8 @@
 """BH2 M3 Iron Ledger (Act I): Black Hole seizes an old Accord foundry in Green Earth's south.
 
 Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Black Hole holds the south-west corner: its HQ, a port on the south shore and the
-old Accord foundry, a Black Factory that is Black Hole's from the first turn. Javier (the Accord's engineer) holds the north-east plateau behind a pipe wall with
-his HQ, two airports and a ring of bases; Jess holds the east. The map is big because the factory's output is huge and the enemy needs room to answer it: they
+old Accord foundry, a Black Factory that is Black Hole's from the first turn. One Green Earth army under the tag pair Javier (the Accord's engineer) and Jess holds the north-east plateau behind a
+pipe wall (HQ, two airports, a ring of bases) and the east (her command post, a base). The map is big because the factory's output is huge and the enemy needs room to answer it: they
 get real production (bases, cities, airports), funds and strong units.
 - Lanes: three east-west roads (north y5, middle y14, south y23) each bridged over the river; three north-south roads (x8, x24, x33). The pipe wall (x27, from the
   north edge to the mountain massif) shuts the plateau: the north road meets its seam (27,5) like a gate. Break the seam (Black Hole's artillery or tanks)
@@ -11,7 +11,7 @@ get real production (bases, cities, airports), funds and strong units.
   plateau gate and the east road.
 - Properties: the foundry's two side buildings (neutral villages beside it), bases for the player; the enemy's bases ring the plateau and the east; villages every
   three cells on the roads; neutral bases in the centre.
-- Threats and answers: Javier's Fighters and Copter -> the player's Anti-Air (the factory builds it), Jess's Tanks and Rockets -> Md Tanks and artillery of the factory.
+- Threats and answers: the army's Fighters and Copter -> the player's Anti-Air (the factory builds it), its Tanks and Rockets -> Md Tanks and artillery of the factory.
 """
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
@@ -46,11 +46,9 @@ def build():
     m.pipe([(27, 0), (27, 9)]); m.put("Z", 27, 5)
     # --- the foundry (Black Hole's Black Factory) with its supply pipe
     m.stamp("F", 11, 20).put("I", 11, 17)
-    m.header(armies=3, colours=(BH, GE, BM), team=[1, 2, 2], objective=[1], comment=(
-        "M3 Iron Ledger: Black Hole (HQ 1 (4,21)) holds the old Accord foundry, a Black Factory at (11,20) on its side. Javier (HQ 2 (32,4), Green Earth, plateau behind a pipe wall x27 with the seam (27,5)) and "
-        "Jess (HQ 3 (34,20), Blue Moon colour, the east) are allies. Com Towers (20,9) and (20,19). Player: a free CO pick. Player: INF5 MECH3 TANK4 MDT1 ART2 RECON1 AA2 APC1; Javier INF6 MECH3 TANK4 MDT2 ART3 AA2 RECON1 FTR2 BCO1; "
-        "Jess INF6 MECH3 TANK5 MDT1 ART2 ROCKETS2 RECON2 AA1."))
-    m.put("1", 4, 21).put("2", 32, 4).put("3", 34, 20)
+    m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
+        "M3 Iron Ledger: Black Hole (HQ 1 (4,21)) holds the old Accord foundry, a Black Factory at (11,20) on its side. The enemy is one Green Earth army 2 led by the tag pair Javier + Jess (HQ 2 (32,4), plateau behind a pipe wall x27 with the seam (27,5); Jess's command post, a base, in the east at (34,20)). Com Towers (20,9) and (20,19). Player: a free CO pick. Player: INF5 MECH3 TANK4 MDT1 ART2 RECON1 AA2 APC1; the enemy army (46 units): INF12 MECH6 TANK9 MDT3 ART5 ROCKETS2 AA3 RECON3 FTR2 BCO1."))
+    m.put("1", 4, 21).put("2", 32, 4).put("B", 34, 20)
     m.put("P", 6, 26)
     m.puts("c", [(9, 17), (13, 24)]).put("t", 20, 9).put("t", 20, 19)
     m.place("B", 3, (1, 17, 14, 25), seed=1, gap=3).place("C", 5, (1, 15, 14, 25), seed=2, gap=2, reach=3)
@@ -65,9 +63,9 @@ def build():
     # --- units
     m.spread(1, {INF: 5, MECH: 3, TANK: 4, MDT: 1, ART: 2, RECON: 1, AA: 2, APC: 1}, (2, 15, 14, 26), seed=1, gap=0)
     m.spread(2, {INF: 6, MECH: 3, TANK: 4, MDT: 2, ART: 3, AA: 2, RECON: 1, FTR: 2, BCO: 1}, (28, 0, 38, 12), seed=2, gap=0)
-    m.spread(3, {INF: 6, MECH: 3, TANK: 5, MDT: 1, ART: 2, ROCK: 2, RECON: 2, AA: 1}, (28, 15, 38, 26), seed=3, gap=0)
+    m.spread(2, {INF: 6, MECH: 3, TANK: 5, MDT: 1, ART: 2, ROCK: 2, RECON: 2, AA: 1}, (28, 15, 38, 26), seed=3, gap=0)
     m.note("hq", 4, 21, "Black Hole's HQ")
-    m.note("enemy_hq", 32, 4, "Javier's HQ (objective)"); m.note("enemy_hq2", 34, 20, "Jess's HQ (objective)")
+    m.note("enemy_hq", 32, 4, "the enemy's HQ (objective): Javier's, on the plateau"); m.note("jess_post", 34, 20, "Jess's command post (a base) in the east")
     m.note("foundry", 11, 20, "the old Accord foundry: Black Hole's Black Factory")
     m.note("gate", 27, 5, "pipe seam: the plateau's gate")
     return m

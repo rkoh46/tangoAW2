@@ -58,8 +58,8 @@ def build():
     shore(m, 1, (0, 29, 6, 29), dirs="NS"); shore(m, 1, (8, 29, 13, 29), dirs="NS"); shore(m, 1, (15, 29, 20, 29), dirs="NS"); shore(m, 1, (22, 29, 38, 29), dirs="NS")
     # --- units
     m.spread(1, {INF: 7, MECH: 4, TANK: 5, MDT: 2, NEO: 1, ART: 3, ROCK: 1, AA: 2, MIS: 1, RECON: 1, APC: 2}, (2, 17, 14, 27), seed=1, gap=0, avoid="~r=-^IZ#X")
-    m.spread(2, {INF: 8, MECH: 4, TANK: 6, MDT: 3, ART: 4, ROCK: 2, AA: 3, MIS: 2, RECON: 2, APC: 1}, (26, 0, 39, 12), seed=2, gap=0, hold=False)
-    m.spread(2, {FTR: 3, BMB: 2, BCO: 2}, (30, 0, 39, 7), seed=3, gap=0)
+    m.spread(2, {INF: 8, MECH: 4, TANK: 6, MDT: 3, ART: 4, ROCK: 2, AA: 3, MIS: 2, RECON: 2, APC: 1}, (26, 0, 39, 12), seed=2, gap=0, hold=False, avoid="~r=-^IZ#X12345QBCPTbcpt")
+    m.spread(2, {FTR: 3, BMB: 2, BCO: 2}, (30, 0, 39, 7), seed=3, gap=0, avoid="~r=-^IZ#X12345QBCPTbcpt")
     m.note("hq", 5, 24, "Black Hole's HQ"); m.note("enemy_hq", 30, 10, "the capital's HQ (objective 1)")
     m.note("mark_hq2", 36, 3, "second HQ: Eagle takes over here")
     m.note("gate_n", 25, 8, "seam gate (north road)"); m.note("gate_s", 29, 13, "seam gate (south road)")

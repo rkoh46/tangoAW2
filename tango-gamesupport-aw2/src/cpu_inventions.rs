@@ -121,7 +121,7 @@ pub fn owner(core: &Core) -> Option<u32> {
         return None;
     }
     let ok = if crate::ds_campaign::active(core) {
-        crate::ds_campaign::source(core) == BH_SOURCE
+        matches!(crate::ds_campaign::source(core), BH_SOURCE | crate::bh2_campaign::SOURCE)
     } else {
         crate::pvp::in_versus(core)
     };

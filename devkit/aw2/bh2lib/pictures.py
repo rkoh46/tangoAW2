@@ -246,3 +246,54 @@ def world_flags(out):
     ImageDraw.Draw(canvas).text((10, 10), f"BH2 world map {DASH} flags of M1 to M5 (M26 secret)", fill=(250, 235, 120), font=_title_font(24))
     canvas.save(out)
     return out
+
+
+# ------------------------------------------------------------------ the game's own pictures
+
+def _labelled(im, text, scale, size):
+    im = im.resize((im.width * scale, im.height * scale), Image.NEAREST) if scale != 1 else im
+    bar = size + 16
+    out = Image.new("RGB", (max(im.width, 40 * size // 2 + 16), im.height + bar), (20, 20, 28))
+    out.paste(im, (0, bar))
+    ImageDraw.Draw(out).text((8, 6), text, fill=(250, 235, 120), font=_title_font(size))
+    return out
+
+
+def game_sheets(raw, out, scale=3):
+    """From the harness's pictures of the game itself (`aw2dev maps boot --campaign bh2`: m<N>_full / fogon / fogoff / front2.png, 16 pixels a cell) the review set: `m0N.png`
+    (the full map, fog off, "MISSION N - Title" burned in), `m01_fog.png`, `m04_front2.png` and `act1_game_sheet.png`. Returns the paths."""
+    raw, out = Path(raw), Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    paths, tiles = [], []
+    for n, (name, title) in sorted(MISSIONS.items()):
+        main = next((raw / f"m{n}_{v}.png" for v in ("full", "fogoff") if (raw / f"m{n}_{v}.png").exists()), None)
+        if main is None:
+            continue
+        im = Image.open(main).convert("RGB")
+        big = _labelled(im, f"MISSION {n} {DASH} {title}" + ("  (front 1)" if n in FRONT2 else "") + "  (the game's own picture, fog off)", scale, 26)
+        p = out / f"m{n:02d}.png"
+        big.save(p); paths.append(p)
+        tiles.append(_labelled(im, f"MISSION {n} {DASH} {title}" + ("  (front 1)" if n in FRONT2 else ""), 1, 15))
+        for view, fname, label in (("fogon", f"m{n:02d}_fog.png", "fog of war: the player's view"), ("front2", f"m{n:02d}_front2.png", "front 2, the sky")):
+            f = raw / f"m{n}_{view}.png"
+            if f.exists():
+                im2 = Image.open(f).convert("RGB")
+                q = out / fname
+                _labelled(im2, f"MISSION {n} {DASH} {title}  ({label})", scale, 26).save(q); paths.append(q)
+                tiles.append(_labelled(im2, f"MISSION {n} {DASH} {title}  ({label})", 1, 15))
+    if tiles:
+        cols = 2
+        rows = [tiles[i:i + cols] for i in range(0, len(tiles), cols)]
+        W = sum(max(t.width for t in col) for col in zip(*[r + [Image.new("RGB", (1, 1))] * (cols - len(r)) for r in rows])) + 8 * (cols + 1)
+        H = sum(max(t.height for t in r) + 8 for r in rows) + 60
+        sheet = Image.new("RGB", (W, H), (12, 12, 16))
+        ImageDraw.Draw(sheet).text((10, 8), f"BH2 Campaign {DASH} Act I (the game's own pictures)", fill=(250, 235, 120), font=_title_font(30))
+        y = 52
+        for r in rows:
+            x = 8
+            for t in r:
+                sheet.paste(t, (x, y)); x += max(t.width, 360) + 8
+            y += max(t.height for t in r) + 8
+        sp = out / "act1_game_sheet.png"
+        sheet.save(sp); paths.append(sp)
+    return paths

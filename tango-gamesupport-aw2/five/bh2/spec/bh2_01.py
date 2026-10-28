@@ -34,11 +34,11 @@ G = [
     "~~.f.R..f. f.f.R.f... ..-.R..f~~",   # 12
     "~~~.fR.f.. ..f.R...f. ..-.R.f~~~",   # 13
     "~~~~~~~~~~ ~~~~~~~~~~ ~~~~~~~~~~",   # 14
-    "~~~~~~~~~~ ~~~~~~~~~~ ~~~~~~~~~~",   # 15
-    "~~~~~~~~~~ ~~~~~~~~~~ ~~~~~~~~~~",   # 16
-    "~~~~~~~~~~ ~~~.f.~~~~ ~~~~~~~~~~",   # 17
-    "~~~~~~~~~~ ~~~...~~~~ ~~~~~~~~~~",   # 18
-    "~~~~~~~~~~ ~~~...~~~~ ~~~~~~~~~~",   # 19
+    "~~~~~~~~~~ ~~~.f.~~~~ ~~~~~~~~~~",   # 15
+    "~~~~~~~~~~ ~~~...~~~~ ~~~~~~~~~~",   # 16
+    "~~~~~~~~~~ ~~~...~~~~ ~~~~~~~~~~",   # 17
+    "~~~~~~~~~~ ~~~~~~~~~~ ~~~~~~~~~~",   # 18
+    "~~~~~~~~~~ ~~~~~~~~~~ ~~~~~~~~~~",   # 19
     "~~~~~~~~~~ ~~~~~~~~~~ ~~~~~~~~~~",   # 20
     "~~~~~.f~.. f..fR..f.. ..~..~~~~~",   # 21
     "~~~f..f... f..fR..f.. ....f..~~~",   # 22
@@ -60,17 +60,16 @@ def build():
     m.g[5][21] = "-"
     # the beaches: long, two to three cells deep (Landers load and unload on any cell of them)
     shore(m, 1, (3, 14, 11, 17)); shore(m, 1, (19, 14, 27, 17))
-    shore(m, 1, (12, 16, 16, 20)); shore(m, 1, (9, 20, 19, 20))
-    m.rect("~", 13, 16, 15, 16)          # (no beach on the islet's north side: the strait stays open water for the ships)
+    shore(m, 1, (12, 15, 16, 17)); shore(m, 1, (9, 20, 19, 20))
     m.put("r", 9, 18).put("r", 10, 18).put("r", 10, 19).put("r", 19, 18).put("r", 20, 18).put("r", 19, 19)     # reefs off the islet
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
         "M1 Black Insight (fog): Black Hole's home island (south) against Drake on Halyard Isle (north). Take Drake's HQ 2 (14,3) in the fort. Beaches: the west strand x3..11 and "
-        "the east strand x19..27 (rows 14..17, shoal strip one cell wide and long, AW2 draws no wider), the islet strand around (14,18). Roads: west x5, headland x14, east x24 (bridges over the river x22). Neutral port (15,13), "
+        "the east strand x19..27 (rows 14..17, shoal strip one cell wide and long, AW2 draws no wider), the islet strand around (14,16). Roads: west x5, headland x14, east x24 (bridges over the river x22). Neutral port (15,13), "
         "neutral base (6,10) and (23,10), missile silo (26,6). Player: Asuka (forced), LAN4 CR2 INF4 MECH2 TANK2 RECON1 APC1 ART1. Enemy (Drake): INF8 MECH2 TANK3 ART2 RECON1 CR2 SUB1."))
     # --- properties
     m.put("2", 14, 3)
     m.puts("C", [(12, 2), (16, 2), (9, 6), (19, 6)]).put("B", 14, 4)
-    m.puts("c", [(4, 6), (8, 10), (3, 12), (13, 12), (16, 12), (26, 5), (25, 3), (3, 9), (20, 10), (26, 12), (14, 18), (10, 3)]).puts("b", [(6, 10), (23, 10)]).put("p", 15, 13)
+    m.puts("c", [(4, 6), (8, 10), (3, 12), (13, 12), (16, 12), (26, 5), (25, 3), (3, 9), (20, 10), (26, 12), (14, 16), (10, 3)]).puts("b", [(6, 10), (23, 10)]).put("p", 15, 13)
     m.put("M", 26, 8)
     m.put("1", 14, 24).puts("P", [(7, 22), (22, 22)]).puts("B", [(11, 24), (17, 24)]).puts("C", [(6, 24), (21, 24), (10, 26), (18, 26), (13, 22), (4, 25), (25, 25)])
     m.tidy()
@@ -84,5 +83,5 @@ def build():
     m.units(2, CR, [(6, 18), (22, 17)]).unit(2, SUB, 11, 18)
     m.note("hq", 14, 24, "Black Hole's HQ on the home island")
     m.note("enemy_hq", 14, 3, "Drake's HQ in the fort (objective)")
-    m.note("strand_w", 6, 15, "west strand"); m.note("strand_e", 23, 15, "east strand"); m.note("islet", 14, 18, "the islet village between the channels")
+    m.note("strand_w", 6, 15, "west strand"); m.note("strand_e", 23, 15, "east strand"); m.note("islet", 14, 16, "the islet village between the channels")
     return m

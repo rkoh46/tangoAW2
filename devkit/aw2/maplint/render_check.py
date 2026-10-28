@@ -16,9 +16,14 @@ CLASSES = set("-=,~")
 
 def picture_for(dirs, name):
     """The picture file of map `name` (es05 -> m5_full.png, bh12 -> m12_full.png) in the first of `dirs` that has it."""
-    n = int(re.sub(r"\D", "", name))
+    if name.startswith("bh2_"):
+        # (the BH2 Campaign: bh2_01 -> m1_full.png; a second front, bh2_04b, -> m4_front2.png)
+        n = int(name[4:6])
+        views = ("front2",) if name[6:] == "b" else ("full", "fogoff")
+    else:
+        n, views = int(re.sub(r"\D", "", name)), ("full", "fogoff")
     for d in dirs:
-        for view in ("full", "fogoff"):
+        for view in views:
             p = Path(d) / f"m{n}_{view}.png"
             if p.exists():
                 return p

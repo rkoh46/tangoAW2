@@ -63,7 +63,8 @@ def register(sub):
     a = ms.add_parser("features", help="which properties, terrain and inventions each map of a campaign uses (coverage table)")
     a.add_argument("--campaign", default="bh2", choices=["bh2", "es", "bh"])
     a.set_defaults(fn=features)
-    a = ms.add_parser("boot", help="enter BH missions in the offline harness and keep the map pictures")
+    a = ms.add_parser("boot", help="enter BH (or BH2) missions in the offline harness and keep the game's own map pictures")
+    a.add_argument("--campaign", default="bh", choices=["bh", "bh2"], help="bh2: the development build of the BH2 Campaign (TANGOAW2_BH2_CAMPAIGN): m<N>_full / fogon / fogoff / front2 pictures, then labelled by `aw2dev bh2 sheets`")
     a.add_argument("--mission", nargs="*", type=int)
     a.add_argument("--out")
     a.set_defaults(fn=boot)
@@ -307,12 +308,13 @@ def features(a):
 
 def boot(a):
     tests = cfg.REPO / "tools" / "aw2test" / "run.py"
-    out = Path(a.out) if a.out else cfg.work("maps", "boot")
+    out = Path(a.out) if a.out else (cfg.work("campaign", "bh2", "review_raw") if a.campaign == "bh2" else cfg.work("maps", "boot"))
     out.mkdir(parents=True, exist_ok=True)
     _bases()
     env = dict(os.environ, AW2TEST_REVIEW_DIR=str(out))
     rc = 0
-    keys = [f"bh_review_m{n}$" for n in a.mission] if a.mission else ["bh_review_m"]
+    prefix = "bh2_review_m" if a.campaign == "bh2" else "bh_review_m"
+    keys = [f"{prefix}{n}$" for n in a.mission] if a.mission else [prefix]
     for k in keys:
         r = subprocess.run([sys.executable, str(tests), "-k", k], env=env, cwd=cfg.REPO)
         rc = rc or r.returncode

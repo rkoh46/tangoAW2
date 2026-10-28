@@ -193,6 +193,7 @@ pub fn coming(core: &Core) -> Vec<&'static Coming> {
     COMING
         .iter()
         .filter(|c| !(c.label == "EMERALD SUN" && crate::es_campaign::available(core)))
+        .filter(|c| !(c.label == "BH2 CAMPAIGN" && crate::bh2_campaign::available(core)))
         .collect()
 }
 

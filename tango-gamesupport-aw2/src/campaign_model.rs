@@ -302,7 +302,7 @@ impl Source {
 pub const TAIL_CALLED: u32 = u32::MAX;
 
 /// The sources, in the sub-menu's order (after AW2's own campaign).
-pub static SOURCES: [Source; 3] = [
+pub static SOURCES: [Source; 4] = [
     Source {
         label: "DS CAMPAIGN",
         available: crate::ds_weather::is_on,
@@ -334,6 +334,18 @@ pub static SOURCES: [Source; 3] = [
         mid_slot: 12, // (shared with the BH Campaign's: a saved mission names its campaign, `suspend::source_tag`)
         progress_magic: 0x4345_5741, // "AWEC"
         art: WorldArt::OmegaLand,
+        has_hard: false,
+    },
+    // The BH2 Campaign, development build (`TANGOAW2_BH2_CAMPAIGN`): its own record in Flash slot 10, a saved mission in the shared slot 12; the picture world map.
+    Source {
+        label: "BH2 CAMPAIGN",
+        available: crate::bh2_campaign::available,
+        load: crate::bh2_campaign::load,
+        rules: crate::custom_campaign::rules,
+        save_slot: 10,
+        mid_slot: 12,
+        progress_magic: 0x3242_5741, // "AWB2"
+        art: WorldArt::Picture(&crate::world_picture::BH2),
         has_hard: false,
     },
 ];

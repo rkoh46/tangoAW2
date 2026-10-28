@@ -397,6 +397,7 @@ pub fn built_map(name: &str) -> Option<&'static BuiltMap> {
     crate::bh_map_data::MAPS
         .iter()
         .chain(crate::es_map_data::MAPS.iter())
+        .chain(crate::bh2_map_data::MAPS.iter())
         .find(|m| m.name == name)
 }
 

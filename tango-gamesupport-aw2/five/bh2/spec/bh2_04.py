@@ -22,13 +22,13 @@ W, H = 36, 26
 def build():
     m = Canvas("bh2_04", W, H, fill="~")
     # --- coasts
-    land_rows(m, {6: (3, 13), 7: (2, 14), 8: (2, 14), 9: (2, 14), 10: (2, 14), 11: (2, 14), 12: (2, 14), 13: (2, 14), 14: (2, 14), 15: (2, 14), 16: (2, 14), 17: (2, 14),
-                  18: (2, 14), 19: (2, 14), 20: (3, 13)})                                                                      # Black Hole's island (flat north and south coasts: the beaches)
-    land_rows(m, {10: (17, 21), 11: (17, 21), 12: (17, 21), 13: (17, 21), 14: (17, 21), 15: (17, 21)})                                    # the islet
-    land_rows(m, {2: (25, 33), 3: (24, 34), 4: (24, 34), 5: (24, 34), 6: (24, 34), 7: (24, 34), 8: (24, 34), 9: (24, 34), 10: (24, 34), 11: (24, 34), 12: (24, 34),
-                  13: (24, 34), 14: (24, 34), 15: (24, 34), 16: (24, 34), 17: (24, 34), 18: (25, 33)})                                  # Drake's island
-    land_rows(m, {3: (16, 20), 4: (16, 20), 5: (16, 20)})                                                                              # the north islet
-    land_rows(m, {20: (17, 22), 21: (17, 22), 22: (17, 22), 23: (18, 22)})                                                             # the south islet
+    land_rows(m, {6: (4, 13), 7: (3, 14), 8: (2, 14), 9: (3, 14), 10: (2, 14), 11: (2, 14), 12: (3, 14), 13: (2, 14), 14: (2, 14), 15: (3, 14), 16: (2, 14), 17: (2, 14),
+                  18: (3, 14), 19: (2, 13), 20: (4, 12)})                                                                      # Black Hole's island (flat north and south coasts: the beaches; a ragged west)
+    land_rows(m, {10: (18, 21), 11: (17, 21), 12: (17, 21), 13: (17, 21), 14: (17, 21), 15: (17, 20)})                                    # the islet
+    land_rows(m, {2: (25, 33), 3: (24, 34), 4: (25, 34), 5: (24, 33), 6: (24, 34), 7: (25, 34), 8: (24, 34), 9: (25, 33), 10: (24, 34), 11: (24, 34), 12: (25, 34),
+                  13: (24, 34), 14: (25, 33), 15: (24, 34), 16: (25, 34), 17: (24, 33), 18: (26, 33)})                                  # Drake's island (a ragged west and east)
+    land_rows(m, {3: (17, 20), 4: (16, 20), 5: (16, 19)})                                                                              # the north islet
+    land_rows(m, {20: (18, 22), 21: (17, 22), 22: (17, 21), 23: (18, 22)})                                                             # the south islet
     # --- roads: the home island's ring and its spurs, the islet's, Drake's island's, the small islands'
     m.road([(5, 9), (12, 9), (12, 17), (5, 17), (5, 9)]); m.road([(8, 17), (8, 20)]); m.road([(8, 9), (8, 7)]); m.road([(12, 13), (14, 13)]); m.road([(5, 13), (2, 13)])
     m.road([(18, 12), (20, 12)]); m.road([(19, 10), (19, 14)])
@@ -63,7 +63,7 @@ def build():
     for (x, y), k in zip(m.sea_near(7, 22, 3) + m.sea_near(13, 22, 3), [CR, CR, BS, BS, CR, SUB]):
         m.unit(1, k, x, y)
     m.unit(1, SUB, *m.sea_near(1, 18, 1)[0]); m.units(1, LAN, m.sea_near(10, 22, 3, box=(2, 21, 14, 24), deep=False))
-    m.spread(1, {INF: 5, MECH: 3, TANK: 3, ART: 3, AA: 2, RECON: 1, APC: 1}, (2, 8, 14, 19), seed=1, gap=0)
+    m.spread(1, {INF: 5, MECH: 3, TANK: 3, ART: 3, AA: 2, RECON: 1, APC: 1}, (2, 8, 14, 19), seed=1, gap=0, avoid="~r=-^IZ#LSNWEXvnFDO")
     # --- Drake: his fleet in the strait and off his ports, the army on his island, Fighters at the airport
     for (x, y), k in zip(m.sea_near(22, 8, 3) + m.sea_near(27, 20, 3), [BS, BS, CR, CR, BS, CR]):
         m.unit(2, k, x, y)

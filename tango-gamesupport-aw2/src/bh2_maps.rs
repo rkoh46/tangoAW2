@@ -11,7 +11,10 @@ mod tests {
     #[test]
     fn act_one_maps_are_built() {
         for name in ACT1 {
-            assert!(MAPS.iter().any(|m| m.name == name), "{name} is missing from bh2_map_data.rs (run `aw2dev maps gen --campaign bh2`)");
+            assert!(
+                MAPS.iter().any(|m| m.name == name),
+                "{name} is missing from bh2_map_data.rs (run `aw2dev maps gen --campaign bh2`)"
+            );
         }
     }
 
@@ -19,10 +22,20 @@ mod tests {
     fn maps_fit_the_games_limits() {
         for m in MAPS {
             let (w, h) = (m.width as usize, m.height as usize);
-            assert!(w <= 64 && h <= 40 && w * h <= 1288, "{}: {w}x{h} is past the map limits (64 x 40, 1288 cells)", m.name);
+            assert!(
+                w <= 64 && h <= 40 && w * h <= 1288,
+                "{}: {w}x{h} is past the map limits (64 x 40, 1288 cells)",
+                m.name
+            );
             assert_eq!(m.tiles.len(), w * h, "{}", m.name);
             for u in m.units {
-                assert!((u.x as usize) < w && (u.y as usize) < h, "{}: a unit off the map at ({}, {})", m.name, u.x, u.y);
+                assert!(
+                    (u.x as usize) < w && (u.y as usize) < h,
+                    "{}: a unit off the map at ({}, {})",
+                    m.name,
+                    u.x,
+                    u.y
+                );
                 assert!(u.army >= 1 && u.army <= m.armies, "{}: army {}", m.name, u.army);
             }
         }
@@ -49,6 +62,9 @@ mod tests {
     fn the_sky_front_is_air_only() {
         let m = MAPS.iter().find(|m| m.name == "bh2_04b").expect("bh2_04b");
         // Stealth 12, Fighter 16, Bomber 17: no ground unit, no Copter, no Anti-Air
-        assert!(m.units.iter().all(|u| matches!(u.kind, 12 | 16 | 17)), "the sky front holds only Fighters, Bombers and Stealths");
+        assert!(
+            m.units.iter().all(|u| matches!(u.kind, 12 | 16 | 17)),
+            "the sky front holds only Fighters, Bombers and Stealths"
+        );
     }
 }

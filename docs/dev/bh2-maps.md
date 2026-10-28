@@ -24,6 +24,8 @@ the ROM is read at run time for tile choices and the lint.
 | `aw2dev maps features --campaign bh2` (or `aw2dev bh2 features`) | which properties, terrain and inventions each map uses; what no map uses yet |
 | `aw2dev maps render-check --source bh2 [--pictures DIR]` | RN01 on the game's own pictures of the maps (wired in; the pictures exist once the missions are in the game: `aw2dev campaign sheets` / `maps boot` for BH2 come with the campaign registration) |
 | `aw2dev bh2 pictures [--out DIR]` | `m01.png`.. (the full map, fog off, every unit, labelled), `m01_fog.png` (the player's view), `act1_sheet.png`, `worldmap_flags.png`; `MISSION N - Title` burned in |
+| `aw2dev maps boot --campaign bh2 [--mission N ..]` | the missions entered in the offline harness (dev flag), the game's own whole-map pictures into `devkit/work/campaign/bh2/review_raw` |
+| `aw2dev bh2 sheets [--out DIR]` | those pictures labelled "MISSION N - Title": `m01.png`.., `m01_fog.png`, `m04_front2.png`, `act1_game_sheet.png` |
 | `aw2dev bh2 check` | every mission flag on the picture world map lies on land inside its nation |
 
 ## The owner's rules, and where each is enforced
@@ -44,11 +46,26 @@ the ROM is read at run time for tile choices and the lint.
 |---|---|---|---|---|
 | 1 Black Insight | bh2_01 | 30 x 28 | Black Hole (forced Asuka) vs Drake (Green Earth); fog | home island south, Halyard Isle north; the west and east strands (long shoal beaches), an islet in the strait, river with mouth on the east strand, missile silo, neutral port |
 | 2 The Quartermaster's Crate | bh2_02 | 30 x 22 | Black Hole (forced Asuka + Crumb) vs Jess | depot west, quay (port) south-east; the crate truck is the named APC `crate`; three east-west roads (north, the halfway bridge on the middle road, the south escape road), Com Tower in the central massif |
-| 3 Iron Ledger | bh2_03 | 40 x 30 | Black Hole (free pick) vs Javier (Green Earth) + Jess (Blue Moon colour), allied | Black Factory on Black Hole's side by its HQ, Javier's plateau behind a pipe wall with a seam gate, two Com Towers on the middle ground, airports (Javier), beaches on the south coast, river with bends |
+| 3 Iron Ledger | bh2_03 | 40 x 30 | Black Hole (free pick) vs one Green Earth army led by the tag pair Javier + Jess (46 units, one HQ; Jess's command post is a base in the east) | Black Factory on Black Hole's side by its HQ, Javier's plateau behind a pipe wall with a seam gate, two Com Towers on the middle ground, airports (Javier), beaches on the south coast, river with bends |
 | 4 Talons | bh2_04 + bh2_04b | 36 x 26 and 22 x 16 | front 1: Black Hole (free pick) vs Drake; front 2: Hawke (forced) vs Eagle | archipelago: Black Hole's Lasers and minicannons on its fortress island, an islet with a neutral port and a missile silo, beaches north and south; the sky front is open air with 11 against 13 aircraft |
 | 5 Evergreen in Exile | bh2_05 | 40 x 32 | Black Hole (forced Sturm + Asuka) vs the Allies (Javier, then Eagle from the second HQ) | 4 airports, 15 bases, a pipe wall with two seam gates and the long open east road, two Com Towers either side of the river, Black Crystals by Black Hole's HQ; a held second HQ `Q` in the airport district |
 
 (The sizes and counts in `aw2dev bh2 features` are the live numbers.)
+
+## The development build: BH2 in the game (`bh2_campaign.rs`)
+The five missions exist as minimal `MissionDef`s in `tango-gamesupport-aw2/src/bh2_campaign.rs` so the maps can be entered in the real game and photographed. It is **dev only**: `TANGOAW2_BH2_CAMPAIGN=1` (the harness sets it
+for its consoles; `bh2_campaign::available`) adds the fourth `Source` ("BH2 CAMPAIGN", `SOURCES[3]`, progress magic `AWB2`) to the Campaign chooser (row 4 after the Emerald Sun entry) and removes the "Coming soon" placeholder; without the variable
+nothing shows. The world map is the picture (`WorldArt::Picture(&BH2)`), the flags `world_picture::BH2_FLAGS`.
+- Armies and COs (the design table): M1 forced Asuka vs Drake, fog; M2 forced Asuka + Crumb vs Jess, day limit 14, the named APC `crate` must reach the quay (26,19), `UnitGone` loses; M3 a free pick vs one Green Earth army under the tag pair
+  Javier + Jess (one HQ: an army has one), the Black Factory on the map; M4 front 1 a free pick vs Drake, front 2 (`bh2_04b`, sky, BH1's M15 rule: `SendRule::Air`, `sky`, role 4) forced Hawke vs Eagle; M5 forced Sturm + Asuka
+  vs Javier with `held_hq` (30,10) and the second HQ `Q` (36,3): when the capital's HQ falls Eagle takes the same army over (`Action::TakeOver`, +10000 funds, two Fighters), the match is won on the second HQ. No dialogue, music or unlocks yet.
+- **Flash slot budget.** Flash is 16 sectors; with every slot in use (AW2's profile and slots 2..9, the BH record 13, the BH / Emerald Sun / BH2 mission saved halfway 12, the DS pair 14 and 15, Emerald Sun's 11) 14 are held
+  and a write needs two free (a new copy and a new profile). A BH2 record in its own sector makes 15: with every other slot in use a write would fail. The development build uses **slot 10** for its record and shares **slot 12** for a
+  mission saved halfway (the saved mission byte's top bits tell the campaign, `suspend::source_tag`: source 3 = `0x60`). Before BH2 ships, its record must not take a sector of its own: fold it into the BH Campaign's slot 13
+  payload (0x120 bytes, with room) or Emerald Sun's slot 11, tagged by campaign, as the saved missions share 12. Nothing in the dev build is written unless the variable is set.
+- **Pictures from the game.** `aw2dev maps boot --campaign bh2 [--mission N ..]` enters each mission in the offline harness (`tools/aw2test/tests/test_bh2_review.py`, driver `aw2test/bh2campaign.py`) and stitches the whole map from the cursor's sweep
+  (16 pixels a cell: the real tiles) into `devkit/work/campaign/bh2/review_raw/m<N>_full | fogon | fogoff | front2.png` (M1 fogged and unfogged, M4 front 2); `aw2dev bh2 sheets` labels them "MISSION N - Title" and makes
+  `act1_game_sheet.png`; `aw2dev maps render-check --source bh2` (RN01) compares each tile of those pictures with the games' drawings (reference: the BH Campaign's pictures from `aw2dev maps boot`).
 
 ## World-map flags
 `world_picture::BH2_FLAGS` (Rust) names each mission's flag place on the picture world map: M1 (38, 204), M2 (18, 214) and the secret M26 (30, 222) on **Black Hole's own island** (the grey island, bottom left),
