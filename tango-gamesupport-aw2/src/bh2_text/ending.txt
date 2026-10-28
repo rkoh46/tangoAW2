@@ -32,6 +32,10 @@ SENSEI: Old men forget, you know. / Mostly. Sometimes the right things.
 @SONG ending1
 JAKE: Yo, I never saw so many / sad people smile at once.
 RACHEL: By the book, that's allowed.
+OLAF: Blue Moon salutes! With snow! / Olaf brought a great deal of snow!
+SASHA: Olaf. It is a ceremony. Not / a weather event.
+COLIN: I-I think the snow is lovely, / Sis.
+SASHA: ...It is rather lovely.
 VON BOLT: Kehh-heh! Everything / accounted! In the black! Second pick!
 KOAL: One road. Five borders gone. / One camber.
 KINDLE: To me, darlings. And to the / audience, I suppose. Applause?
@@ -170,6 +174,16 @@ KLAUS: The depot holds. The shore / holds. ...So do we.
 ASUKA: Legate Klaus. Enough. Both / armies are standing. Neither wins.
 KLAUS: I know. Prefect Cassius has / lost three horses and his temper.
 CASSIUS: Two horses! The third / sulked!
+FLAK: Flak sorry. Flak ate horse's / oats. Oats good.
+CASSIUS: You ate my horse's OATS?! / ...Were they good oats?
+FLAK: Best oats. Flak thanks horse.
+CASSIUS: ...I like this man. I hate / that I like him.
+AURELIA: Your Doctor built a catapult / out of a typewriter, Legate.
+LASH: It had good bones! Heehee! / It threw a very small anvil!
+AURELIA: It threw it eleven paces. / I am almost jealous.
+LIVIA: Marshal. Your ledgers are / meticulous. I should like to read them.
+HAWKE: Quaestor. Mine are for the army. / Yours are for the Senate. Exchange?
+LIVIA: ...Terms accepted.
 KLAUS: Commander Asuka. I will ask / once. Who is Hobb?
 CRUMB CO: Me, sir! And my grandpa! / He built a door. Then they erased him.
 CRUMB CO: He left a reserve. In the / depot. I think he fed you, too.
@@ -181,6 +195,8 @@ CRUMB CO: Sir. That's what we do. / Hobbs.
 KLAUS: ...Commander Hobb. I owe your / family a debt. I have no coin.
 LIVIA: I do. We shall discuss terms.
 ASUKA: Legate. The door is closed, not / locked. You may leave when you wish.
+HAWKE: Legate. You fought for a shore / you did not choose. I record respect.
+KLAUS: Marshal. We honour discipline. / It is the only currency we trust.
 KLAUS: We shall not leave yet. We / will camp at the edge of your map.
 KLAUS: We will watch. And we will / ask. Politely. For the rest.
 ASUKA: I look forward to being asked.

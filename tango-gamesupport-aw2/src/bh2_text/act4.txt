@@ -292,6 +292,13 @@ MORTAR: It is the fog.
 
 == m23_pre | ASUKA
 @SONG co:hachi
+NARRATION: Orange Star's camp, a night / earlier. A map, a lamp, a hard voice.
+ARIA: The Lab 7 binder says the key / is in a crate. The crate is at the depot.
+ARIA: Hachi, you buy things. Buy this. / Jake, you break things. Break this.
+HACHI: Kid, everything's for sale. I / just need a price.
+ARIA: Anything. Bring me the key, / or bring me the boy. Alive.
+JAKE: Yo, Aria, what if the boy / doesn't wanna come?
+ARIA: Then ask him nicely. Once. / I don't ask twice.
 NARRATION: Black Hole's island. The / depot. Night. Orange Star at the wall.
 MORTAR: Ma'am. Two armies on the north / road. Hachi's. And Jake's.
 WICK: Is it all right if I ask / why they brought a shop?
@@ -585,26 +592,21 @@ ASUKA: That, Private, is the last / thing in the world I am sure of.
 == m25_warroom
 @SONG own:aria
 NARRATION: The Allied table. The chair / at the head is filled. Two women.
-NELL: Friends. I want to say first / that I was wrong. About the seal.
+NELL: Friends. First, I was wrong. / About the seal.
 ARIA: Sister. Don't. Let me speak.
-ARIA: Four nations. Each one sold / the door. Each one lied about it.
-ARIA: Black Hole's lady auditor lit / the match. We've been burning since.
-OLAF: Aria! The ledger is true! You / cannot expect us to forgive it!
-ARIA: I expect you to be angry. At / her. Not at each other.
-KANBEI: Kanbei was angry at himself. / It is a waste of anger.
-ARIA: Then aim it, Emperor. Her name / is Asuka. Remember it.
-JESS: She is polite. She files. She / does not lie.
+ARIA: Four nations sold the door and / lied about it. Black Hole's auditor
+ARIA: lit the match. We have been / burning ever since.
+OLAF: Aria! The ledger is true! Do / not expect us to forgive it!
+ARIA: I expect you to be angry at / her. Not at each other.
 ARIA: She writes tiny and wastes no / margin. I compared the letters.
 ARIA: It's Sonja's hand. Yellow / Comet's daughter, in a black coat.
 KANBEI: ...Kanbei knew. Kanbei kept / silent. It was not betrayal.
 KANBEI: It was a father. Be angry at / her, if you must. Not at him.
-ARIA: I'm angry at everyone. Fine. / She is the worst kind of enemy.
-ARIA: She makes you doubt yourself.
-EAGLE: So we're going to hate her / cleanly?
-ARIA: Hate whoever you like. Fight / her at the Citadel.
-ARIA: The Last Citadel. Orange Star's / heart. Every colour. Every unit.
-HACHI: A last stand! Kid, I'll hold / the market. Free of charge.
-ARIA: Build anew. It starts in the / citadel.
+JESS: She is polite. She files. She / does not lie.
+ARIA: That is the worst kind of / enemy. She makes you doubt yourself.
+ARIA: We fight her at the Last / Citadel. Every colour. Every unit.
+HACHI: A last stand! I'll hold the / market, kid. Free of charge.
+JAKE: Yo, I'll hold the door. And / the other door.
 NELL: Aria. I'm so proud of you.
 ARIA: Don't be proud, Nell. Be / angry. For both of us.
 

@@ -545,7 +545,9 @@ mod tests {
         let b = book();
         let needs = |k: &str| {
             !k.split_once('_').is_some_and(|(m, rest)| {
-                m.len() == 3 && m.starts_with('m') && (rest.starts_with("day") || rest.starts_with("in_") || rest.starts_with("front2_"))
+                m.len() == 3
+                    && m.starts_with('m')
+                    && (rest.starts_with("day") || rest.starts_with("in_") || rest.starts_with("front2_"))
             })
         };
         let missing: Vec<&String> = b
@@ -571,7 +573,10 @@ mod tests {
         const ALL: usize = 3072;
         const RESERVE: usize = 150;
         eprintln!("text ids used by the BH2 scenes: {used} of {ALL} ({RESERVE} kept in reserve)");
-        assert!(used + RESERVE <= ALL, "the BH2 Campaign's scenes use {used} of {ALL} text ids: pack or trim");
+        assert!(
+            used + RESERVE <= ALL,
+            "the BH2 Campaign's scenes use {used} of {ALL} text ids: pack or trim"
+        );
     }
 
     #[test]
@@ -587,7 +592,11 @@ mod tests {
 
     #[test]
     fn own_songs_parse() {
-        assert!(song_by_name("own:door").is_some() && song_by_name("own:aria").is_some() && song_by_name("own:credits").is_some());
+        assert!(
+            song_by_name("own:door").is_some()
+                && song_by_name("own:aria").is_some()
+                && song_by_name("own:credits").is_some()
+        );
         assert!(song_by_name("own:nothing").is_none());
         assert!(song_by_name("co:asuka").is_some());
     }

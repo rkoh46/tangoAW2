@@ -573,8 +573,10 @@ SASHA: You may not keep my brother.
 == m19_staff
 @SONG enemy1
 NARRATION: The flagship's chart room. / North-east lies Orange Star.
-ASUKA: Blue Moon is closed. The Accord / is cracking. Orange Star is last.
-ASUKA: I intend to split it further. / Then take what remains.
+STURM: The orange flag in my hall. / Is it still standing.
+ASUKA: It stands, Lord Sturm. The tower / holds its prisoner. She reads my ledger.
+STURM: Then let her read. And let her / learn what it costs to read.
+ASUKA: I intend to split the Accord / further. Then take what remains.
 HAWKE: A divided house. I am almost / sorry for the occupants.
 VON BOLT: Divide and conquer! Kehh-heh! / My favourite. Divide, then bill.
 LASH: Lab 7 is in Orange Star. I / HELPED build it. Can I go home?
@@ -588,3 +590,4 @@ ADDER: The sky. Finally. My stage. / I shall take it. With flair.
 FLAK: Flak hits Max! Max is big! / Flak likes big!
 CRUMB CO: Ma'am. The crate. It hums / every night now. At the same hour.
 ASUKA: Yes. I have noticed. It is / counting something down.
+

@@ -330,7 +330,7 @@ KANBEI: Then it will cost it. They / should buy the truth, and not cheap.
 KANBEI: Kanbei yields the field. Not / the Table. A place stays set.
 KANBEI: The seventh chair has a / scarf. It will stay. For whoever
 KANBEI: comes to it. Kanbei will not / ask her name.
-ASUKA: I will not come to the Table.
+ASUKA: I cannot come to the Table. / Not yet.
 KANBEI: Then Kanbei will wait. He is / good at it. Ask Sensei.
 SENSEI: I would, but I'm old, and / I forgot to listen.
 ASUKA: ...Emperor. I have to go.
@@ -488,7 +488,12 @@ KOAL: I am not blushing. It is the / wind. Mind the lane.
 == m13_staff
 @SONG enemy1
 NARRATION: The flagship's chart room. / North lies Blue Moon, under snow.
-ASUKA: Yellow Comet is closed. Blue / Moon holds the iron, and the secret.
+STURM: Kanbei. His seal is on the / first page of your ledger.
+ASUKA: It is. He is beaten. He walks / free. I will manage him.
+STURM: I do not manage what I own. / I collect it.
+ASUKA: He is not yours, Lord Sturm. / He is a witness. I need him standing.
+STURM: ...Noted. Do not make a / habit of correcting me.
+ASUKA: I make a habit of being right. / It is cheaper.
 HAWKE: Iron Gate Pass is a single / door. I would like to knock on it.
 ASUKA: You shall, Marshal.
 JUGGER: BLUE MOON WIRE: LOCATED. / SIXTEEN SEAMS. I REQUEST THE TASK.
@@ -504,3 +509,4 @@ ADDER: Snow on a cape is a crime. I / request an umbrella and a valet.
 CLONE ANDY: Okay! Snow! I'll bring / a heater! I can fix any-- ...heater!
 CRUMB CO: Ma'am, I'll send soup. Hot. / In a flask. Gerald says no lumps.
 ASUKA: Thank you, Commander. Blue Moon / will be cold. We shall be efficient.
+

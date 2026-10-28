@@ -4,6 +4,14 @@
 
 == m26_pre | ASUKA
 @SONG co:max
+NARRATION: Orange Star's tent, before / dawn. Aria hands Max a sealed order.
+ARIA: Take the key and the boy. / Alive. Alive, Max.
+MAX: Alive! Got it! Mostly!
+SAMI: Roger. We secure the boy. We / do not break the boy.
+ARIA: Hawke is there. Do not let him / charm you. He charms like a surgeon.
+MAX: Big man isn't charmed by / anybody!
+SAMI: Max. You adore the Marshal's coat.
+MAX: ...It's a really good coat.
 NARRATION: Black Hole's eastern HQ. A / grey fort on a snowy plateau.
 NARRATION: Max and Sami hit the gate. / The whole garrison is on the wall.
 MAX: Hey! Black Hole! Remember me? / Lunch, delivered! Fist first!
@@ -219,6 +227,14 @@ ASUKA: Hold the shore until Commander / Hobb reaches the door.
 DRAKE: Okay! They've got walls! / Why do they always have walls?
 GRIT: Reckon the door is humming. / Do you hear that, Drake?
 DRAKE: I hear a lot of humming. I'm / trying not to think about it.
+KOAL: Four roads to the Obelisk. All / repaved. Mind the lane, Captain.
+KINDLE: The glow is so flattering, / darlings. I shall stand beside it.
+JUGGER: DOOR HUM: 124 HERTZ. SAME AS / CRATE, CRYSTAL, AND HIM.
+FLAK: Flak guards boy. Boy has key. / Flak not eat key.
+LASH: The hum is a perfect fifth! / Heehee! I want to hug it!
+ADDER: The door at dusk. A star walks / through. Photograph it, someone!
+VON BOLT: Second pick of the door! / Kehh... I mean what is behind it!
+CLONE ANDY: Okay! I'm watching the / shore. It's roomy. I like roomy.
 
 == m28_door
 @SONG own:door
@@ -621,6 +637,8 @@ ARIA: She's right, damn it. ...I hate / that she's right.
 NELL: Come here, love.
 ARIA(s): I wrote BUILD ANEW for / everyone. Not for this.
 NELL: You built something. It will / stay. It's the best thing anyone's done.
+ARIA: ...I'm not crying. It's the / wind.
+NELL(h): Of course it is, love.
 ARIA: ...Fine. You win. Take your / seal.
 ASUKA: Not here. Not now. When the / army has rested.
 ARIA: ...You're giving me a day?
@@ -641,3 +659,16 @@ COLIN: What if I aim at the old / man's rooster?
 JESS: Then you hit a rooster. / A very expensive one.
 VON BOLT: INTEREST! HIDE! They want / my rooster! Kehh!
 COLIN: ...I-I'll aim at the dock. / Sorry, Colonel!
+
+== m31_day9
+ANDY: Aria! Okay! We're with you! / Every colour! Every unit!
+MAX: Pathetic, Black Hole! Come on, / big man's right here!
+SAMI: Roger. Hold the walls. Nobody / retreats. Nobody.
+HACHI: Closing-down sale, kid! Last / stand's on the house!
+JAKE: Yo, the stair's mine! How you / like me now, Black Hole?
+RACHEL: By the book, no, by Aria's / book! Hold the stair!
+OLAF: Ice and honour! Blue Moon / returns! For Colin! For the snow!
+KANBEI: Yellow Comet stands. The / table stands. Kanbei stands.
+EAGLE: Death from above! One last / time! Come on!
+JESS: Tanks first. Paperwork after. / We can do both.
+ARIA: That's it. That's all of you. / BUILD ANEW!

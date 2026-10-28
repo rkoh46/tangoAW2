@@ -710,8 +710,11 @@ NARRATION: On the cushion of the empty / chair, the gavel waits.
 == m08_staff
 @SONG enemy1
 NARRATION: The flagship's chart room. / East lies the Comet Chain.
-ASUKA: Green Earth is closed. The / Chain is next. Its walls are paper.
-ASUKA: Its pride is not. Kanbei will / meet us at his Table.
+STURM: Green Earth is mine. Show me / the next.
+ASUKA: Lord Sturm. The Comet Chain. / Its walls are paper. Its pride is not.
+STURM: Pride is a wall. Break it.
+ASUKA: Kanbei will meet us at his / Table. I will manage him.
+STURM: Do.
 HAWKE: Honour is the hardest wall to / audit. I recommend patience.
 VON BOLT: Honour! Kehh... does it have / a price? Everything does!
 KOAL: Eleven bridges run the length / of the Chain. I will pave all eleven.
@@ -724,3 +727,4 @@ ADDER: A festival! Banners, an / audience, a stage. Which hotel?
 CLONE ANDY: Okay! A festival! New / names! Lantern. Lamp. Lumin-... okay!
 CRUMB CO: Ma'am! I'm staying with the / crate. Gerald says he's got it.
 ASUKA: Understood. The crate stays warm. / The Chain falls cold.
+
