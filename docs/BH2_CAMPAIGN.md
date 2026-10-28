@@ -106,6 +106,53 @@ Each uses the engine's existing triggers (Spawn, TakeOver with a held second HQ,
 
 Every other mission is a straight battle.
 
+## 4c. Map rules for every mission (owner, 2026-10-28)
+
+These apply to all 26 missions, not just Act I:
+1. **Ports** always touch navigable sea a ship can leave by (PT01 is an error).
+2. **Black Factories** must spawn, and spawn smart, proven in the harness with a spawn log.
+3. **Inventions** never hit anyone on day 1: no unit starts in a Laser's lines or a cannon's first target area. They are Black Hole's alone. The Deathray, where used, goes at the top of the map.
+4. **Looks and weather vary,** and neighbouring missions never share both.
+5. **Maps look designed, not generated:**
+   - roads follow the terrain;
+   - coasts have bays and capes;
+   - cities sit in towns worth fighting over;
+   - mountains and woods form ridges, passes and forest belts;
+   - no filler.
+6. **Every property and terrain type gets used** across the campaign: Com Towers, silos, ports, airports, pipes and seams, reefs, rivers and bridges, volcanoes.
+7. **Rivers are never cut off,** beaches are long and Landers can land. Each map's picture is checked against the game's own tiles (RN01).
+
+**Look and weather plan** (draft):
+
+| # | Look | Weather / fog |
+|---|---|---|
+| 1 | Normal | Fog |
+| 2 | Normal | Clear |
+| 3 | Desert, volcano | Clear |
+| 4 | Normal (islands and sky) | Clear |
+| 5 | Wasteland | Clear |
+| 6 | Normal | Rain + fog |
+| 7 | Desert | Sandstorm |
+| 8 | Normal | Clear |
+| 9 | Normal | Clear |
+| 10 | Wasteland (split isles) | Fog |
+| 11 | Snow | Snow |
+| 12 | Snow | Fog |
+| 13 | Snow | Snowstorm |
+| 14 | Wasteland (foundry valley), volcano | Clear |
+| 15 | Normal | Clear |
+| 16 | Normal | Rain |
+| 17 | Wasteland (Lab 7 ruins) | Fog |
+| 18 | Normal | Clear |
+| 19 | Desert (coast) | Clear |
+| 20 | Normal | Sandstorm on front 2 |
+| 21 | Snow | Clear |
+| 22 | Normal (sea fortress) | Rain |
+| 23 | Wasteland | Changing storm weather |
+| 24 | Desert | Clear |
+| 25 | Normal (citadel), huge | Clear, then weather with each commander (Olaf's snow) |
+| 26 | Normal (Black Hole's island) | Clear |
+
 ## 5. Ending and credits
 
 - **Epilogue after M25.** The new Orange Star CO is the last to fall. Nell surrenders the Accord's seal to Asuka, not to Sturm. Asuka leads Black Hole and the world, with Hawke as Marshal; "Succession" ends with Hawke kneeling to the army, not the person. Crumb keeps Gerald and the key, and the door hums, closed but not locked. Sturm is somewhere past it.
