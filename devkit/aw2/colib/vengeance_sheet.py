@@ -51,9 +51,9 @@ def build(png, md):
         im = Image.open(OUT / f"{name}.bmp").convert("RGB").crop((0, 0, 240, 160)).resize((W, H), Image.NEAREST)
         x, y = 8 + (k % 3) * (W + 8), 8 + (k // 3) * (H + 26)
         sheet.paste(im, (x, y + 16))
-        # an inset of the forecast box at 3x (the digits read clearly: 39 / 48, not 39 / 40)
-        box = Image.open(OUT / f"{name}.bmp").convert("RGB").crop((30, 75, 90, 105)).resize((180, 90), Image.NEAREST)
-        sheet.paste(box, (x + W - 186, y + 22))
+        # an inset of the forecast box at 3x 
+        box = Image.open(OUT / f"{name}.bmp").convert("RGB").crop((36, 82, 72, 108)).resize((144, 104), Image.NEAREST)      # the one damage box, 4x (the AW2 font's 8 has a gap in its middle bar; 0 does not)
+        sheet.paste(box, (x + 6, y + 22))
         d.text((x, y + 2), cap, fill=(255, 220, 90), font=font)
     sheet.save(png)
     return text
