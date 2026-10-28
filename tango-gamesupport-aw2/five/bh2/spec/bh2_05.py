@@ -25,16 +25,18 @@ def build():
     belt(m, "^", [(11, 27), (17, 24), (24, 19), (28, 15)], width=1, seed=2, gaps=[(16, 25), (23, 20)], p=1.0)
     belt(m, "^", [(21, 4), (30, 4)], width=1, seed=3, gaps=[(25, 4)], p=1.0); belt(m, "^", [(21, 5), (21, 12)], width=1, seed=4, gaps=[(21, 9)], p=1.0)
     belt(m, "^", [(21, 13), (30, 13)], width=1, seed=5, gaps=[(26, 13)], p=1.0); belt(m, "^", [(30, 10), (30, 13)], width=1, seed=6, p=1.0)
-    belt(m, "^", [(31, 11), (38, 12)], width=1, seed=7, gaps=[(36, 12)]); belt(m, "^", [(2, 12), (3, 18)], width=1, seed=8); belt(m, "^", [(1, 4), (6, 2)], width=2, seed=9, gaps=[(4, 3)])
-    belt(m, "^", [(12, 2), (18, 3)], width=1, seed=10); belt(m, "^", [(26, 21), (33, 20)], width=1, seed=11, gaps=[(29, 20)]); belt(m, "^", [(34, 26), (38, 22)], width=1, seed=12)
-    belt(m, "^", [(18, 29), (26, 30)], width=1, seed=13); belt(m, "^", [(14, 9), (17, 8)], width=1, seed=14)
+    belt(m, "^", [(31, 11), (38, 12)], width=1, seed=7, gaps=[(36, 12)], p=1.0); belt(m, "f", [(2, 12), (3, 18)], width=1, seed=8, p=1.0); belt(m, "^", [(1, 4), (6, 2)], width=1, seed=9, gaps=[(4, 3)], p=1.0)
+    belt(m, "f", [(12, 2), (18, 3)], width=1, seed=10, p=1.0); belt(m, "f", [(26, 21), (33, 20)], width=1, seed=11, gaps=[(29, 20)], p=1.0); belt(m, "f", [(34, 26), (38, 22)], width=1, seed=12, p=1.0)
+    belt(m, "f", [(18, 29), (26, 30)], width=1, seed=13, p=1.0); belt(m, "f", [(14, 9), (17, 8)], width=1, seed=14, p=1.0)
     for i, (cx, cy, n) in enumerate([(12, 12, 3), (24, 24, 3), (8, 8, 3), (35, 16, 3), (16, 28, 2)]):
         m.cluster("f", cx, cy, n, seed=40 + i)                              # (dead trees: the wasteland look draws few)
-    for i, (cx, cy, n) in enumerate([(9, 16, 7), (16, 10, 6), (24, 23, 7), (14, 14, 5), (33, 16, 7), (10, 5, 6), (28, 28, 6), (2, 28, 4), (36, 28, 6), (20, 27, 5), (5, 17, 5),
-                                     (18, 21, 5), (36, 21, 5), (13, 30, 4), (27, 17, 4), (16, 3, 4), (8, 23, 3)]):
-        m.cluster("^", cx, cy, n, seed=60 + i)                              # (rubble heaps and slag: the wasteland's broken ground)
+    
+    
+    belt(m, "f", [(16, 12), (18, 16)], width=1, seed=69); belt(m, "f", [(27, 22), (30, 24)], width=1, seed=70)             # (ridges of rubble and slag: the ground between them stays open for the armies)
     for i, (cx, cy, n) in enumerate([(7, 10, 4), (22, 19, 4), (31, 27, 4), (4, 21, 3), (15, 26, 3), (33, 12, 3), (11, 9, 3), (38, 17, 3), (26, 4, 2)]):
         m.cluster("f", cx, cy, n, seed=80 + i)
+    for i, pts in enumerate([[(9, 15), (12, 19)], [(14, 8), (19, 9)], [(24, 22), (30, 26)], [(33, 15), (37, 19)], [(14, 25), (19, 27)], [(3, 8), (7, 11)], [(33, 22), (36, 26)], [(17, 18), (21, 20)]]):
+        belt(m, "f", pts, width=2, seed=90 + i, p=0.95)                     # (dead-tree belts: grouped, the open ground between them is where the armies meet)
     # --- the pocket's pipe walls: x30 from the north edge to y9, then y9 east to the map edge; the seams (30,5) and (34,9) are its gates
     m.pipe([(30, 0), (30, 9)]); m.pipe([(30, 9), (39, 9)]); m.put("Z", 30, 5); m.put("Z", 34, 9)
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
@@ -48,7 +50,7 @@ def build():
     route(m, [(5, 25), (4, 19), (5, 13), (8, 8), (14, 6), (20, 7), (21, 9), (24, 9)], seed=2)
     route(m, [(8, 28), (17, 29), (25, 27), (32, 25), (36, 19), (36, 14), (36, 12), (34, 10)], seed=3)
     route(m, [(26, 12), (26, 9), (25, 8)], seed=4); route(m, [(25, 9), (28, 8), (29, 5)], seed=5); route(m, [(34, 8), (36, 5), (36, 4), (38, 4)], seed=6); route(m, [(31, 5), (34, 5), (36, 4)], seed=7)
-    route(m, [(5, 13), (8, 12), (9, 13)], seed=8); route(m, [(32, 25), (31, 23)], seed=9); route(m, [(14, 21), (10, 17), (8, 14), (8, 12)], seed=10)
+    route(m, [(32, 25), (31, 23)], seed=9); route(m, [(14, 21), (10, 17), (9, 13)], seed=10)
     route(m, [(18, 29), (18, 31)], seed=11); route(m, [(26, 14), (30, 16), (32, 18), (34, 22), (32, 25)], seed=12)
     thin_roads(m)
     # --- towns: Black Hole's ruins district, the ruined villages (neutral), the capital, the airport district

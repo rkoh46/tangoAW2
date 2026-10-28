@@ -47,10 +47,10 @@ def build():
     m.puts("B", [(5, 10), (5, 14)]).puts("C", [(4, 9), (4, 15), (2, 11)])                        # the depot's district
     m.puts("B", [(23, 4), (27, 5)]).puts("C", [(24, 2), (27, 3), (22, 3)])                       # Jess's fort
     # --- roads that follow the land (each leg bends round mountains and woods), bridges at (15,5), (15,9) and (16,16)
-    route(m, [(6, 12), (8, 12), (9, 9), (13, 9), (15, 9, "="), (17, 9), (21, 9), (26, 9)], seed=1)          # the middle road: the halfway bridge
-    route(m, [(8, 12), (9, 15), (14, 16), (16, 16, "="), (18, 16), (23, 16), (26, 16)], seed=2)             # the south road: the escape route
-    route(m, [(9, 9), (10, 5), (14, 5), (15, 5, "="), (17, 5), (24, 5), (25, 4)], seed=3)                   # the north road to Jess's fort
-    route(m, [(25, 4), (26, 7), (26, 9), (26, 14), (26, 18)], seed=4)                                         # the east road to the quay
+    route(m, [(6, 12), (8, 12), (9, 9), (13, 9), (15, 9, "="), (20, 8), (24, 10), (26, 9)], seed=1, wander=1.4)          # the middle road: the halfway bridge
+    route(m, [(8, 12), (9, 15), (14, 16), (16, 16, "="), (21, 17), (24, 15), (25, 13)], seed=2, wander=1.4)             # the south road: the escape route
+    route(m, [(9, 9), (10, 5), (14, 5), (15, 5, "="), (19, 6), (22, 4), (25, 4)], seed=3, wander=1.4)                   # the north road to Jess's fort
+    route(m, [(25, 4), (27, 7), (26, 9), (24, 12), (26, 15), (27, 17), (26, 18)], seed=4, wander=1.4)                                         # the east road to the quay
     route(m, [(10, 5), (6, 4), (3, 6)], seed=11); town(m, 3, 6, "CC", seed=12)
     route(m, [(20, 9), (20, 11)], seed=5)                                                                       # the spur up to the Com Tower
     route(m, [(4, 12), (6, 12)], seed=6); route(m, [(4, 10), (5, 12)], seed=7)

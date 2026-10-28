@@ -149,3 +149,37 @@ def check_looks():
         if a[2:] == b[2:]:
             out.append(f"M{a[0]} and M{b[0]} look alike: both {a[2]}, {a[3]}{', fog' if a[4] else ''}")
     return out
+
+
+def ground_colour(png):
+    """The dominant colour of a game picture's ground (units and buildings are small: the most common colour after quantising to 8 levels a channel, averaged over its bin)."""
+    import numpy as np
+    from PIL import Image
+    a = np.asarray(Image.open(png).convert("RGB")).reshape(-1, 3).astype(int)
+    q = a // 32
+    key = q[:, 0] * 64 + q[:, 1] * 8 + q[:, 2]
+    top = np.bincount(key).argmax()
+    return tuple(int(v) for v in a[key == top].mean(axis=0))
+
+
+def check_pictures(raw, near=40, near2=22):
+    """Warnings comparing the ground colours of the game's own pictures (`aw2dev maps boot --campaign bh2`): two consecutive missions whose ground colours are within `near` (RGB distance) and
+    whose weather and fog match, or two missions with one between them within `near2` (their grounds are the same sand). Returns (table lines, warnings)."""
+    raw = Path(raw)
+    cols, lines, warns = {}, [], []
+    for n, key, look, weather, fog in looks():
+        f = next((raw / f"m{n}_{v}.png" for v in ("full", "fogoff") if (raw / f"m{n}_{v}.png").exists()), None)
+        if f:
+            cols[n] = (ground_colour(f), look, weather, fog)
+            lines.append(f"M{n} {look:<9} {weather:<9}{' fog' if fog else '    '} ground {cols[n][0]}")
+    ns = sorted(cols)
+    dist = lambda a, b: sum((x - y) ** 2 for x, y in zip(cols[a][0], cols[b][0])) ** 0.5
+    for a, b in zip(ns, ns[1:]):
+        d = dist(a, b)
+        if d < near and cols[a][2:] == cols[b][2:]:
+            warns.append(f"M{a} and M{b} look alike in the game: ground colours {d:.0f} apart (under {near}) with the same weather and fog")
+    for a, b in zip(ns, ns[2:]):
+        d = dist(a, b)
+        if d < near2 and cols[a][2:] == cols[b][2:]:
+            warns.append(f"M{a} and M{b} (one mission between) have the same ground: {d:.0f} apart (under {near2}) with the same weather and fog")
+    return lines, warns

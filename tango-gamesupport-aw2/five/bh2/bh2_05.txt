@@ -8,70 +8,70 @@
 
 map bh2_05
 armies 2 3 5 3
-unit 1 1 2 22
+unit 1 1 3 22
 unit 1 1 8 22
-unit 1 1 10 23
+unit 1 1 11 23
 unit 1 1 13 24
 unit 1 1 4 28
 unit 1 1 10 28
 unit 1 1 3 29
-unit 1 2 7 21
-unit 1 2 13 25
-unit 1 2 8 26
-unit 1 2 12 26
-unit 1 3 7 24
+unit 1 2 8 21
+unit 1 2 4 26
+unit 1 2 13 26
+unit 1 2 2 27
+unit 1 3 8 24
 unit 1 3 8 27
 unit 1 5 2 21
 unit 1 5 10 25
-unit 1 5 6 28
+unit 1 5 3 28
 unit 1 5 9 29
-unit 1 5 5 30
-unit 1 6 7 22
-unit 1 7 4 22
-unit 1 7 12 23
+unit 1 5 8 30
+unit 1 6 5 23
+unit 1 7 9 22
+unit 1 7 9 23
 unit 1 8 3 24
-unit 1 10 12 22
-unit 1 10 11 23
+unit 1 10 4 23
+unit 1 10 12 23
 unit 1 10 13 29
-unit 1 11 5 25
-unit 1 14 7 25
+unit 1 11 7 25
+unit 1 14 5 25
 unit 1 14 12 29
 unit 1 15 4 24
-unit 2 1 19 3
+unit 2 1 13 3
 unit 2 1 26 5
 unit 2 1 26 6
 unit 2 1 29 6
 unit 2 1 27 8
-unit 2 1 13 10
-unit 2 1 17 10
-unit 2 1 26 18
+unit 2 1 15 10
+unit 2 1 18 10
+unit 2 1 21 20
 unit 2 2 26 7
 unit 2 2 22 9
-unit 2 2 19 10
-unit 2 2 21 16
+unit 2 2 12 10
+unit 2 2 20 17
 unit 2 3 24 7
 unit 2 3 26 8
-unit 2 3 30 20
-unit 2 5 12 4
+unit 2 3 30 18
+unit 2 5 19 3
 unit 2 5 28 7
-unit 2 5 20 8
+unit 2 5 20 9
 unit 2 5 27 9
 unit 2 5 26 10
-unit 2 5 21 20
-unit 2 6 16 6
+unit 2 5 32 17
+unit 2 6 18 5
 unit 2 6 23 9
-unit 2 7 23 17
+unit 2 7 26 16
 unit 2 10 28 8
 unit 2 10 24 9
 unit 2 10 26 11
-unit 2 10 28 15
-unit 2 11 16 8
-unit 2 11 24 14
+unit 2 10 23 15
+unit 2 11 20 7
+unit 2 11 25 14
 unit 2 14 24 6
 unit 2 14 26 12
-unit 2 14 32 17
+unit 2 14 30 15
 unit 2 15 24 11
-unit 2 15 30 16
+unit 2 15 28 15
 unit 2 16 31 4
 unit 2 16 33 4
 unit 2 16 34 7
@@ -79,35 +79,35 @@ unit 2 17 35 0
 unit 2 17 31 5
 unit 2 19 34 1
 unit 2 19 32 5
-.....^........................I.........
-....^..^......^.^.............I.........
-..^...^....^^^^^^^^...........I.........
-.^^..c^.^...^.^^^^^....^...^^.IB....Q.c.
-.^^.RRRR..^......^^..^^^..f^^^I.A...RRR.
-...^^.^R.^^..bcc...C^^^^...C^RZRRRRaRb..
-...^^^^R.^^^RRRRRRRR.^^....BRRI..CRRR...
-.....c.RfRRRR....^.RR^^.....RCI.C.RA....
-....RRRRRRcff^^..^^.R..C.RRRR.I...RA....
-.....Rcff..f..^^^^..RRRRR2R.C^IIIIZIIIII
-.RRRRR.fc......^^....BC...R...^...RR^^^.
-.R.^^R.c....f..^....^^^..CR...^^^^^RR.^.
-.R^^^RRRRt..f.....^^^^^...RB^^^^^^^.Rc^.
-.R.^^RccR...f.^^...^^^.^^.R.^^^.....R..^
-.R.^....RRRb..^....^..^.RRR.^....^..R...
-.R.^^....^RR.^^....^.RRRR.RRRRR..^ffRc..
-.R.^...^^^^R...^.^^^RR..CC.^^^RR^^.fR...
-.R.^^^^.^.RRR.^^^^^bRC....^^^..RR^^cR.ff
-.R.^^^......RR^^^^RRRff.^..^^.RR.^..R.f.
-.RRRR^..^..^^R.c..^R..f..^^^^.Rcb^..RRR.
-....R....^^^^Rc..^^R..f..^^...R^..^^^^R.
-...fRf....^.RRRR.^^R.....^.^..R^^^^.^^R.
-....RC....a.R..RRRRR....^^...^Rt^^R.RRR.
-..CBR...^^RRR.....^^^^.^^.....RR.RRRR^R^
-....R.C.^.R.C.....^^^^^^^^^....RcR...^R^
-...XRRB.XRR.......^^^^.^^^^RRRRRRR..^^^.
-........RR.^..ff..^.^...fc.R...bcR.^^^^.
-..^^.1.RRBC^^^^^^^.^^^...RRR..^ffR^.^^^.
-.^^....BRR.^.^..f.^^.^^^^^cR^^^..R^^^c..
-.........RRRRRRRRRR^^^^^^^^R.^^..R^^RRc.
-...........^^^.C.^R.^.^^^^^R.....RRRR...
-...........^.....cRRRRRRRRRR............
+..............................I.........
+..............ffff.f..........I.........
+......^....fffffffff..........I.........
+.RRR..^^....f.f.fff....^...^^.IB....Q.c.
+.R^RRc^^...........C.^^^..f^^^I.A...RRR.
+.RR^^^^.....c.RRRRRR^^^^...C^RZRRRRaRb..
+..Rf.fff...RRRRbCf.RR^^....BRRI..CRRR...
+..RRRcfcfRRR...f.fffR^^.....RCI.C.RA....
+.fffRRRRRR.fffffffffR..C.RRRR.I...RA....
+..f.fffRfc.f..ffffffRRRRR2R.C^IIIIZIIIII
+......fRff.....ff.fffBC...R...^...RR^^^.
+.....fcRf...f....f.f^^^..CR...^^^^^RR.^.
+..fff.cRft..f...ff^^^^^...RB^^^^^^^.Rc^.
+..ffcRRRfR.ff....ff^^^.^^.R.^^^...f.R..^
+..ffcR.b.Rf......ff^..^.RRR.^......fRf.f
+...ffR..fRfffff...f^.RRRR.RRRRRf.fffRcff
+..ff.R..fRfff.f^.^^^RR..CC..^^RRRf.fRff.
+..fffR.RRRRfff^^^^^bRCf....^^...R..cRfff
+...ffR.R...fff^^^^RRRfff^..^^...R...Rfff
+....RR.R^..^^fc.f.Rfffff.^^^^...RRRRRf.f
+....R..R.^^^^.cRRRRffff..^^.f..ccfRfRRR.
+...fRfaR..^.f.RR.....f.ff^ffffffffRfffRR
+....R..RRRC...R......fff^^ffffftffRffffR
+..CBR....RRRRRRfff^^^^.^^ffffffR.bRffffR
+....R.C...R...ffff^^^^^^^ffffffRfRRfffRR
+...XRRB.XRRC...fff^^^^.^^..RRRRRRRffffRf
+........RR.^.fffff^f.f.cf..Rffffbc.fffRc
+.....1.RRBC^^^^^^^fRRRRRRRRR.ffff...ffRf
+.......BRR.^.^..C.RRffffc............RR.
+.........RRRRRRRRRRffffffff..........Rc.
+................cfR.ff.f.fff............
+..................R.......f.............

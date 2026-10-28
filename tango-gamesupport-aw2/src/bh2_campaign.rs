@@ -143,8 +143,9 @@ fn bh2_03() -> MissionDef {
     m.units = deployment("bh2_03");
     m.rank_days = 16;
     m.look = 2; // the Desert look
-                // Black Hole's Black Factory (the foundry): its schedule by day, three doors (the units are the slots' price caps: the smart spawner, `bh_factory` / `bh_smart`,
-                // chooses what each slot builds from the field: Anti-Air and Fighters only against air, foot soldiers for captures, indirects behind a safe line, a varied mix)
+    m.weather = Weather::Sandstorm; // dust over the desert (long guns lose a cell of range), so M3 does not read as M5's tan wasteland
+                                    // Black Hole's Black Factory (the foundry): its schedule by day, three doors (the units are the slots' price caps: the smart spawner, `bh_factory` / `bh_smart`,
+                                    // chooses what each slot builds from the field: Anti-Air and Fighters only against air, foot soldiers for captures, indirects behind a safe line, a varied mix)
     m.factory = F3.to_vec();
     // Mount Ember (the volcano in the middle of the map): from day 3 it erupts every day on 3 of the 28 cells of the ring road round it (5 HP, any army's units, never below 1).
     m.volcano = Some(VolcanoDef::new(3, 1, 5, &ring(19, 10, 26, 17)).per_eruption(3));

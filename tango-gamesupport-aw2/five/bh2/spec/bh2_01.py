@@ -44,8 +44,8 @@ def build():
         "neutral bases and farms in towns; missile silo (26,6). Player: Asuka (forced), LAN4 CR2 INF4 MECH2 TANK2 RECON1 APC1 ART1. Enemy (Drake): INF8 MECH2 TANK3 ART2 RECON1 CR2 SUB1."))
     m.put("2", 14, 3).put("1", 14, 24).put("p", 15, 10).put("M", 26, 6).puts("P", [(7, 22), (22, 22)])
     # --- the roads
-    route(m, [(5, 12), (7, 8), (10, 5), (13, 4)], seed=1); route(m, [(14, 9), (14, 8), (14, 5)], seed=2)                       # the west road and the cove road to the fort's gates
-    route(m, [(23, 12), (24, 8), (21, 9, "="), (19, 6), (17, 4)], seed=3)
+    route(m, [(5, 12), (8, 8), (12, 5), (13, 4)], seed=1, wander=0.3); route(m, [(14, 9), (14, 5)], seed=2, wander=0.3)                       # the west road and the cove road to the fort's gates
+    route(m, [(23, 12), (24, 8), (21, 9, "="), (19, 6), (17, 4)], seed=3, wander=0.3)
     route(m, [(24, 8), (26, 7)], seed=6); route(m, [(7, 23), (10, 23), (14, 24), (18, 23), (22, 23)], seed=7)
     route(m, [(14, 24), (14, 26)], seed=8); route(m, [(10, 23), (8, 25)], seed=9); route(m, [(18, 23), (20, 25)], seed=10)
     thin_roads(m)

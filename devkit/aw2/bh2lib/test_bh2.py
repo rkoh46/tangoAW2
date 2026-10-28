@@ -54,7 +54,25 @@ class Looks(unittest.TestCase):
     def test_act_one_looks_and_weather(self):
         got = {n: (look, weather, fog) for n, _, look, weather, fog in bh2lib.looks()}
         self.assertEqual(got[1], ("normal", "clear", True))       # M1: normal with fog
-        self.assertEqual(got[2][0], "normal"); self.assertEqual(got[3][0], "desert"); self.assertEqual(got[4][0], "normal"); self.assertEqual(got[5][0], "wasteland")
+        self.assertEqual(got[2][0], "normal"); self.assertEqual(got[3][:2], ("desert", "sandstorm")); self.assertEqual(got[4][0], "normal"); self.assertEqual(got[5][0], "wasteland")
+
+    def test_a_picture_comparison_catches_two_missions_that_look_alike(self):
+        """Planted: a desert mission and a wasteland mission next to each other, both pictures the same sand, same weather: flagged; with different weather or a different ground: not."""
+        import tempfile
+        from PIL import Image
+        real = bh2lib.looks
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                for n, c in ((1, (246, 238, 131)), (2, (246, 230, 139)), (3, (197, 230, 49))):
+                    Image.new("RGB", (32, 32), c).save(Path(d) / f"m{n}_full.png")
+                bh2lib.looks = lambda: [(1, "a", "desert", "clear", False), (2, "b", "wasteland", "clear", False), (3, "c", "normal", "clear", False)]
+                lines, warns = bh2lib.check_pictures(d)
+                self.assertTrue(any("M1 and M2" in w for w in warns), warns)
+                self.assertFalse(any("M2 and M3" in w for w in warns), warns)
+                bh2lib.looks = lambda: [(1, "a", "desert", "sandstorm", False), (2, "b", "wasteland", "clear", False), (3, "c", "normal", "clear", False)]
+                self.assertEqual(bh2lib.check_pictures(d)[1], [])
+        finally:
+            bh2lib.looks = real
 
     def test_neighbouring_missions_do_not_look_alike(self):
         self.assertEqual(bh2lib.check_looks(), [])

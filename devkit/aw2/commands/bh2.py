@@ -21,7 +21,8 @@ def register(sub):
     a.set_defaults(fn=sheets)
     a = ps.add_parser("features", help="which properties, terrain and inventions each BH2 map uses")
     a.set_defaults(fn=features)
-    a = ps.add_parser("check", help="world-map flags inside their nations, on land")
+    a = ps.add_parser("check", help="world-map flags inside their nations, on land; looks and weather; with the game's pictures, ground colours of neighbouring missions")
+    a.add_argument("--pictures", help="the game's pictures (default devkit/work/campaign/bh2/review_raw, when it exists)")
     a.set_defaults(fn=check)
 
 
@@ -60,6 +61,13 @@ def check(a):
     for n, key, look, weather, fog in bh2lib.looks():
         util.say(f"M{n} {key}: look {look}, weather {weather}{', fog' if fog else ''}")
     warns = bh2lib.check_looks()
+    pics = a.pictures or cfg.work("campaign", "bh2", "review_raw")
+    from pathlib import Path
+    if Path(pics).exists() and any(Path(pics).glob("m*_*.png")):
+        lines, pw = bh2lib.check_pictures(pics)
+        for l in lines:
+            util.say("picture: " + l)
+        warns += pw
     for w in warns:
         util.say(f"WARNING: {w}")
     util.say("bh2 check: " + ("flags clean" if not problems else f"{len(problems)} problem(s)") + (f", {len(warns)} look warning(s)" if warns else ", looks vary"))
