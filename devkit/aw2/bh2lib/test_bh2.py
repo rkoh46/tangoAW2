@@ -200,3 +200,12 @@ class Features(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Silhouettes(unittest.TestCase):
+    """The silhouette rule (the owner's): no new map is too like another, none is a rounded blob in the sea (approved maps are grandfathered)."""
+
+    def test_maps_are_varied(self):
+        from . import silhouette
+        problems, _ = silhouette.check(str(Path(__file__).resolve().parents[3] / "tango-gamesupport-aw2" / "five" / "bh2"))
+        self.assertEqual(problems, [])

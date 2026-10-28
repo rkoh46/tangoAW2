@@ -73,6 +73,11 @@ Act II pictures: `aw2dev bh2 pictures --act 2` (+ `worldmap_flags_act2.png`), `a
 Looks: M11 snow + snow, M12 snow + fog, M13 snow + snow weather + fog (the engine's heaviest: its only snow weather is `Snow`; the fog makes the whiteout and tells M13 from M11), M14 wasteland. The Black Factory proof for M14 is `tools/aw2test/tests/test_bh2_factory.py` (`-k bh2_m14_`): it logs every spawn with the field's reason (`factory_spawn_log_m14.txt`) and reads the eruptions.
 Act III pictures: `aw2dev bh2 pictures --act 3`, `aw2dev bh2 sheets --act 3`. Flags M11..M14 are inside Blue Moon.
 
+## The silhouette rule (the owner's: no more ovals)
+Every BH2 map must have its own shape. `aw2dev bh2 silhouettes` (also part of `aw2dev bh2 check` and the python tests) compares each map's obstacle mask (water, shoal, reef, lava, mountains) on a 24 x 16 grid with every other map's (intersection over union, limit 0.62) and flags the rounded blob in the sea (sea on all four sides, one landmass, ellipse fit >= 0.78, solidity >= 0.88).
+The maps the owner has approved (Act I's five, Act II) are grandfathered: listed, never failed. Measured: M1 and M2 pass; M4 and M6 overlap 0.64 (both approved); M7 and M9 are blobs by the numbers (approved).
+Vocabulary for a new map: land edge to edge with no sea, or sea along one edge (a coast); a peninsula; an archipelago; a bay or fjord biting deep into the land; a diagonal coast or a wedge; a delta; a canyon or valley between ranges; an isthmus joining two landmasses; a lake in the middle; lava or wasteland bays; a land that hangs from one edge as a U round a bay. Helpers: `snap` (the land cell nearest a waypoint), `snap_coast` (a coast cell for a port), `fix_rungs` (a length-one road rung that no game tile draws).
+
 ## Act IV
 | M | Map | Size | Armies | Features |
 |---|---|---|---|---|

@@ -861,6 +861,56 @@ def thin_roads(m):
     return m
 
 
+def snap(m, x, y, chars=".f"):
+    """The land cell nearest to (x, y) (a cell holding one of `chars`): a waypoint kept on land whatever the coast does (used by the Act IV/V specs)."""
+    best = None
+    for r in range(0, 14):
+        for yy in range(y - r, y + r + 1):
+            for xx in range(x - r, x + r + 1):
+                if max(abs(xx - x), abs(yy - y)) == r and m.inside(xx, yy) and m.g[yy][xx] in chars:
+                    d = abs(xx - x) + abs(yy - y)
+                    if best is None or d < best[0]:
+                        best = (d, xx, yy)
+        if best:
+            return (best[1], best[2])
+    raise ValueError(f"{m.name}: no land near ({x}, {y})")
+
+
+def snap_coast(m, x, y, sea="~"):
+    """The land cell nearest to (x, y) that has a sea cell (`sea`) on one of its four sides: where a port goes."""
+    best = None
+    for yy in range(m.h):
+        for xx in range(m.w):
+            if m.g[yy][xx] in ".f" and any(m.get(xx + a, yy + b) == sea for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                d = abs(xx - x) + abs(yy - y)
+                if best is None or d < best[0]:
+                    best = (d, xx, yy)
+    if best is None:
+        raise ValueError(f"{m.name}: no coast")
+    return (best[1], best[2])
+
+
+def fix_rungs(m):
+    """A road cell that joins two parallel roads one cell apart (a rung of length one: roads above and below it that both turn sideways) is a tile pair no game map draws (lint TJ01 `0x0C1 above 0x0E1`):
+    the rung goes back to plain. Used by the Act IV maps (the older maps keep their roads as the owner saw them)."""
+    isr = lambda x, y: m.get(x, y) in "R="
+    for _ in range(4):
+        done = True
+        for y in range(1, m.h - 1):
+            for x in range(1, m.w - 1):
+                if m.g[y][x] != "R":
+                    continue
+                if isr(x, y - 1) and isr(x, y + 1) and not isr(x - 1, y) and not isr(x + 1, y):
+                    if (isr(x - 1, y - 1) or isr(x + 1, y - 1)) and (isr(x - 1, y + 1) or isr(x + 1, y + 1)):
+                        m.g[y][x] = "."; done = False
+                elif isr(x - 1, y) and isr(x + 1, y) and not isr(x, y - 1) and not isr(x, y + 1):
+                    if (isr(x - 1, y - 1) or isr(x - 1, y + 1)) and (isr(x + 1, y - 1) or isr(x + 1, y + 1)):
+                        m.g[y][x] = "."; done = False
+        if done:
+            break
+    return m
+
+
 def neutralize(m, near=14, keep=()):
     """Properties (B C A P) farther than `near` cells (Manhattan) from the HQ they would belong to (the nearest HQ digit) become neutral (lower case): an army starts with its own
     district, the villages out in the field are there to be taken."""

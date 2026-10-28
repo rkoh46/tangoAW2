@@ -511,8 +511,8 @@ fn bh2_17() -> MissionDef {
 }
 
 /// M18's crate tile (the yard, `mark_crate`) and the reserve's Neotanks (`mark_neo*`).
-const M18_CRATE: (u8, u8) = (8, 12);
-const M18_NEO: [(u8, u8); 4] = [(7, 9), (9, 10), (7, 15), (9, 14)];
+const M18_CRATE: (u8, u8) = (9, 16);
+const M18_NEO: [(u8, u8); 4] = [(5, 15), (7, 19), (11, 15), (11, 19)];
 
 /// M18 The Door Is Open: Asuka + Crumb defend the depot; when Crumb (the named APC) reaches the crate tile the reserve's Neotanks appear; Crumb lost is the mission lost.
 fn bh2_18() -> MissionDef {
