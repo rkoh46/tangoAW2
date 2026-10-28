@@ -18,7 +18,7 @@ Lead designer's draft built on the owner's founding notes (2026-10-28). Nothing 
 
 ## 1. The premise in one paragraph
 
-BH1 ended with Andy's broadcast: **"ALL COLOURS EAST. THE FENCE IS DOWN. BUILD ANEW."** The Allies took the last train and their ships **east, past the maps**, to the old continent on the AW1 map, where the four nations first grew up. Sturm holds the west and sits in the Obelisk's hall listening to the crate hum. He gives the eastern war to the one officer who already knows the Allies' ledgers from the inside: **Asuka**, the woman who was Sonja. Her method is intel first, then invasion. Black Hole lands on the grey island in the south-west, **the Ashen Shelf**, the one place on the AW1 map no nation owns. From there it takes Green Earth's islands, the Yellow Comet chain, the Blue Moon north and the Orange Star capital where the Accord has been rebuilt. On the way, every BH1 mystery is opened, and the last one opens a door.
+BH1 ended with Andy's broadcast: **"ALL COLOURS EAST. THE FENCE IS DOWN. BUILD ANEW."** The Allies took the last train and their ships **east, past the maps**, to the old continent on the AW1 map, where the four nations first grew up. Sturm holds the west and sits in the Obelisk's hall listening to the crate hum. He gives the eastern war to the one officer who already knows the Allies' ledgers from the inside: **Asuka**, the woman who was Sonja. Her method is intel first, then invasion. The campaign **starts on Black Hole's own island**, the grey island in the bottom-left corner of the map: Black Hole territory, the base of the invasion. From there it takes Green Earth's islands, the Yellow Comet chain, the Blue Moon north and the Orange Star capital where the Accord has been rebuilt. On the way, every BH1 mystery is opened, and the last one opens a door.
 
 ## 2. How each BH1 thread ends
 
@@ -38,7 +38,7 @@ BH1 ended with Andy's broadcast: **"ALL COLOURS EAST. THE FENCE IS DOWN. BUILD A
 
 ## 3. Cast and rivalries
 
-**Black Hole: Asuka leads in every mission.** The other twelve all get story missions as her second front, her tag partner, or a solo detachment she commands by radio:
+**Black Hole:** Asuka is the **lead commander of the invasion** and the story's voice. As in BH1, you pick any Black Hole CO in most missions, and some missions force a CO where the story or a rivalry needs one (about 14 forced, 12 free). The other twelve all get story missions as her second front, her tag partner, or a solo detachment she commands by radio:
 - Sturm, Von Bolt, Hawke, Koal, Kindle, Jugger, Flak, Lash, Adder, Clone Andy and Crumb.
 - Sturm commands in the prologue and leaves through the door in M23. He is not playable in BH2's story missions; he is in Free Play afterwards.
 
@@ -51,37 +51,37 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | # | Title | Where | You | Enemy | Notes |
 |---|---|---|---|---|---|
 | **Prologue** | The Auditor | BH1 Orange Castle, then the Obelisk | — | — | Scenes only. Sonja's last day: Sturm, Von Bolt, Hawke's distrust, Kanbei's letter, Andy's broadcast. The name: "Sonja audited a nation. **Asuka** audits the world." She takes command of the eastern war. |
-| **Act I** | **Landfall** | Ashen Shelf and Green Earth's southern islands | | | |
-| 1 | Black Insight | Ashen Shelf | Asuka | Drake | Fog. Teaches Asuka's intel. Naval landing on reachable beaches. |
-| 2 | The Quartermaster's Crate | Ashen Shelf depot | Asuka + Crumb (Tag) | Jess | Defend the depot convoy; the crate travels with you. |
-| 3 | Iron Ledger | Green Earth south | Asuka, Von Bolt in support | Javier + Jess | **BF**: you seize an old Accord foundry. The ledger and its symbol are found. |
-| 4 | Talons | Green Earth sea and sky | Front 1: Asuka. Front 2: Hawke | Front 1: Drake. Front 2: Eagle | **2F #1.** Hawke vs Eagle in a sky front. Your Lasers and minicannons hold the island. |
-| 5 | Evergreen in Exile | Green Earth's exile capital | Asuka + a free pick | Eagle + Javier | Big map. Ends Act I. Allied war room afterwards. |
+| **Act I** | **Landfall** | Black Hole's island (bottom left), then Green Earth's southern islands | | | |
+| 1 | Black Insight | Black Hole's island (south-west) | **Forced:** Asuka | Drake | Fog. Teaches Asuka's intel. Naval landing on reachable beaches. |
+| 2 | The Quartermaster's Crate | Black Hole's island, the depot | **Forced:** Asuka + Crumb (Tag) | Jess | Defend the depot convoy; the crate travels with you. |
+| 3 | Iron Ledger | Green Earth south | Free pick | Javier + Jess | **BF**: you seize an old Accord foundry. The ledger and its symbol are found. |
+| 4 | Talons | Green Earth sea and sky | Front 1: free pick. Front 2: **forced** Hawke | Front 1: Drake. Front 2: Eagle | **2F #1.** Hawke vs Eagle in a sky front. Your Lasers and minicannons hold the island. |
+| 5 | Evergreen in Exile | Green Earth's exile capital | Free pair | Eagle + Javier | Big map. Ends Act I. Allied war room afterwards. |
 | **Act II** | **Comet Chain** | Yellow Comet's eastern islands | | | |
-| 6 | Paper Lanterns | Yellow Comet night islands | Asuka | Sensei | Rain and fog. Night intel raid on the B Copter fleet. |
-| 7 | Comet Highway | Yellow Comet's long island | Koal + Kindle (detachment, Tag) | Grimm + Sensei | A road race across a chain of bridges. |
-| 8 | Black Lanterns | Yellow Comet coast | Asuka | Grimm | **Black Crystals** heal you; Grimm must be strong enough to break them. |
-| 9 | The Table | Yellow Comet capital | Asuka (forced) | Kanbei + Sensei | Father vs daughter, no time limit. Your Black Cannons shell Kanbei's walls from your side; his defence is terrain and elite units. |
-| 10 | Two Tides | Yellow Comet's split isles | Front 1: Asuka. Front 2: Flak | Front 1: Kanbei. Front 2: Grimm | **2F #2.** Kanbei's last stand with honour. Ends Act II. |
+| 6 | Paper Lanterns | Yellow Comet night islands | Free pick | Sensei | Rain and fog. Night intel raid on the B Copter fleet. |
+| 7 | Comet Highway | Yellow Comet's long island | **Forced:** Koal + Kindle (Tag) | Grimm + Sensei | A road race across a chain of bridges. |
+| 8 | Black Lanterns | Yellow Comet coast | Free pick | Grimm | **Black Crystals** heal you; Grimm must be strong enough to break them. |
+| 9 | The Table | Yellow Comet capital | **Forced:** Asuka | Kanbei + Sensei | Father vs daughter, no time limit. Your Black Cannons shell Kanbei's walls from your side; his defence is terrain and elite units. |
+| 10 | Two Tides | Yellow Comet's split isles | Front 1: **forced** Asuka. Front 2: free pick | Front 1: Kanbei. Front 2: Grimm | **2F #2.** Kanbei's last stand with honour. Ends Act II. |
 | **Act III** | **Iron North** | Blue Moon (snow) | | | |
-| 11 | Cold Wire | Blue Moon border | Jugger (detachment) | Grit | Snow. Cut the Allied wire on a pipe network with seams. |
-| 12 | Lot 42 | Blue Moon lab island | Asuka + Lash (Tag) | Sasha + Colin | Sasha confesses who bought Lot 42. **Black Obelisk** on your side. |
-| 13 | Whiteout Harbour | Blue Moon harbours | Flak | Olaf | Snowstorm. A naval and ground mix. |
-| 14 | Thirty Years of Iron | Blue Moon's foundry valley | Asuka + Jugger (Tag) | Olaf + Grit | **BF.** The ledger is proven. Crumb's page turns up. Ends Act III. |
+| 11 | Cold Wire | Blue Moon border | **Forced:** Jugger | Grit | Snow. Cut the Allied wire on a pipe network with seams. |
+| 12 | Lot 42 | Blue Moon lab island | **Forced:** Lash + a free partner (Tag) | Sasha + Colin | Sasha confesses who bought Lot 42. **Black Obelisk** on your side. |
+| 13 | Whiteout Harbour | Blue Moon harbours | **Forced:** Flak | Olaf | Snowstorm. A naval and ground mix. |
+| 14 | Thirty Years of Iron | Blue Moon's foundry valley | Free pair | Olaf + Grit | **BF.** The ledger is proven. Crumb's page turns up. Ends Act III. |
 | **Act IV** | **The Accord Breaks** | Orange Star north-west | | | |
-| 15 | Every Colour | Orange Star border plains | Asuka + Adder (Tag) | Max + Sami | The Allies split over Asuka's leaked ledger. |
-| 16 | The East Tower | Orange Star castle town | Asuka | Andy + Rachel | Andy's commandos free Nell. A chase you can't fully win; the story requires her escape. |
-| 17 | Echo, Again | Orange Star Lab 7 ruins | Clone Andy (forced) | Andy | The mirror match, and Lab 7's project 17 is revealed. |
-| 18 | The Door Is Open | The Ashen Shelf depot, under attack | Asuka + Crumb (Tag) | Hachi + Jake | The crate opens. Hobb's journal is read. The key turns only for Crumb. |
-| 19 | Skyfall | Orange Star skies and coast | Adder (detachment) | Rachel + Jake | Air superiority. The Allies' answer to it is real. |
-| 20 | The Rail East | Orange Star rail corridor | Front 1: Asuka. Front 2: Koal | Front 1: Andy. Front 2: Hachi | **2F #3.** Capture the heavy train with the door-seal machinery. Ends Act IV. |
+| 15 | Every Colour | Orange Star border plains | Free pair | Max + Sami | The Allies split over Asuka's leaked ledger. |
+| 16 | The East Tower | Orange Star castle town | Free pick | Andy + Rachel | Andy's commandos free Nell. A chase you can't fully win; the story requires her escape. |
+| 17 | Echo, Again | Orange Star Lab 7 ruins | **Forced:** Clone Andy | Andy | The mirror match, and Lab 7's project 17 is revealed. |
+| 18 | The Door Is Open | Black Hole's island depot, under attack | **Forced:** Asuka + Crumb (Tag) | Hachi + Jake | The crate opens. Hobb's journal is read. The key turns only for Crumb. |
+| 19 | Skyfall | Orange Star skies and coast | **Forced:** Adder | Rachel + Jake | Air superiority. The Allies' answer to it is real. |
+| 20 | The Rail East | Orange Star rail corridor | Front 1: free pick. Front 2: free pick | Front 1: Andy. Front 2: Hachi | **2F #3.** Capture the heavy train with the door-seal machinery. Ends Act IV. |
 | **Act V** | **Succession** | | | | |
-| 21 | The Second Folder | Black Hole's eastern HQ | Asuka + Hawke (Tag) | Max + Sami | Hawke and Asuka find they planned the same thing. |
-| 22 | Von Bolt's Note | Orange Star sea fortress | Asuka + Von Bolt (Tag) | Jess + Colin | The sealed note is opened. **BF**, against a fortress strong enough to take it. |
-| 23 | Where the Map Ends | The Obelisk, west | Asuka + Crumb (Tag) | Drake + Grit (an Allied strike force to destroy the Obelisk) | Crumb's key opens the door. Sturm walks through it into the storm, leaving Black Hole to Asuka: "Hold my world." You hold the Obelisk until the storm passes (a day limit). Sturm is gone, not beaten: an open hook. |
-| 24 | The Gate of Colours | Orange Star's outer capital | Asuka + a free partner | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M26.** |
-| 25 | **The Last Accord** | The Accord's citadel, a huge map | Asuka + a free partner | **Gauntlet: Nell, then Olaf, Kanbei and Eagle, then a new Orange Star CO** | **The final mission**, scripted like BH1's Nell-to-Andy takeover but longer, with no time limit. Nell holds the citadel. As you break each line, fresh armies arrive and the next CO takes command from a new HQ: Olaf's Blue Moon with snow, Kanbei's Yellow Comet elite, then Eagle's air fleet. When all four have fallen, a **new Orange Star CO** (art from the owner) takes the last stand. The Allies use **no Black Hole inventions**: their walls are terrain, numbers and reinforcements. Your own inventions may stand on your side. |
-| **Secret 26** | **Through the Door** | Past the map: the edge of Emerald Sun's land | Asuka + a free pick | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
+| 21 | The Second Folder | Black Hole's eastern HQ | **Forced:** Asuka + Hawke (Tag) | Max + Sami | Hawke and Asuka find they planned the same thing. |
+| 22 | Von Bolt's Note | Orange Star sea fortress | **Forced:** Von Bolt + a free partner (Tag) | Jess + Colin | The sealed note is opened. **BF**, against a fortress strong enough to take it. |
+| 23 | Where the Map Ends | The Obelisk, west | **Forced:** Asuka + Crumb (Tag) | Drake + Grit (an Allied strike force to destroy the Obelisk) | Crumb's key opens the door. Sturm walks through it into the storm, leaving Black Hole to Asuka: "Hold my world." You hold the Obelisk until the storm passes (a day limit). Sturm is gone, not beaten: an open hook. |
+| 24 | The Gate of Colours | Orange Star's outer capital | Free pair | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M26.** |
+| 25 | **The Last Accord** | The Accord's citadel, a huge map | **Forced:** Asuka + a free partner (Tag) | **Gauntlet: Nell, then Olaf, Kanbei and Eagle, then a new Orange Star CO** | **The final mission**, scripted like BH1's Nell-to-Andy takeover but longer, with no time limit. Nell holds the citadel. As you break each line, fresh armies arrive and the next CO takes command from a new HQ: Olaf's Blue Moon with snow, Kanbei's Yellow Comet elite, then Eagle's air fleet. When all four have fallen, a **new Orange Star CO** (art from the owner) takes the last stand. The Allies use **no Black Hole inventions**: their walls are terrain, numbers and reinforcements. Your own inventions may stand on your side. |
+| **Secret 26** | **Through the Door** | Black Hole's island (south-west): Emerald Sun lands on Black Hole's home | Free pair | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out lands on Black Hole's own island. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
 
 **Counts**
 - Two-front missions: 3 (M4, M10, M20).
