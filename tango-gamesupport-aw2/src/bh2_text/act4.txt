@@ -1,1 +1,591 @@
-# placeholder
+# BH2 dialogue, act4 "The Accord Breaks": M20 Every Colour, M21 The East Tower, M22 Echo Again, M23 The Door Is Open, M24 Skyfall, M25 The Rail East (format: README.txt).
+
+# ---------------------------------------------------------------- M20 Every Colour (FREE PAIR; enemy Max + Sami; the Allies split over the leaked ledger)
+
+== m20_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:max
+NARRATION: Orange Star's border plains. / Banners of four colours on one road.
+MAX: Hey! Black Hole! You look / thirsty! Have a knuckle sandwich!
+SAMI: Roger. Hold the plains, grunts. / Nobody crosses that road.
+ASUKA: Max. Sami. You have until / dawn.
+MAX: Until dawn for what? I don't / negotiate. I punch.
+ASUKA: At dawn, every Allied HQ gets / the Accord's master ledger.
+ASUKA: Four seals. Thirty years. Every / nation, in its own handwriting.
+SAMI: You are bluffing.
+ASUKA: I do not bluff. It is in / the post. Already.
+MAX: Treachery! Hiding your shells / in a letter?! That is low!
+ASUKA: I return what the Accord / kept from you, Max. For free.
+MAX: I don't care what's in your / book!
+SAMI: Max.
+MAX: ...I care a little.
+SAMI: Roger. So do I.
+@IF ASUKA
+ASUKA: Information is the last / currency. I just paid every account.
+@IF CRUMB CO
+CRUMB CO: Ma'am, that is a lot of mail! / Do I stamp them? Gerald can lick.
+@IF HAWKE
+HAWKE: A leak is a gambit. Offer / the pawn. Take the board.
+@IF KOAL
+KOAL: A letter travels faster than / any road. I resent that. Mind the post.
+@IF KINDLE
+KINDLE: A scandal, darlings! Across / four nations! Divine!
+@IF JUGGER
+JUGGER: LEAK: DELIVERED. REACTION: / PENDING. ANTICIPATION: LOGGED.
+@IF FLAK
+FLAK: Flak not read. Flak hit. Same / effect.
+@IF LASH
+LASH: Ooh, scandal! Can I help? I'd / add pictures! Heehee!
+@IF ADDER
+ADDER: A scandal needs a photograph. / I volunteer. Left side.
+@IF VON BOLT
+VON BOLT: Information! Kehh... I sell / it, too! Who undercut me?!
+@IF CLONE ANDY
+CLONE ANDY: Okay! Letters! I can fix / any-- ...any envelope! Sure!
+@END
+@PARTNER ASUKA
+[CO2]: The ledger will do the work. / We need only keep them in one place.
+@PARTNER CRUMB CO
+[CO2]: Hello, Max! Hello, Sami! Have / you eaten? Gerald baked a cake!
+@PARTNER HAWKE
+[CO2]: Hold them here, and the news / will come to them. Patience.
+@PARTNER KOAL
+[CO2]: Plains, a road, a deadline. I / enjoy a deadline. Mind the lane.
+@PARTNER KINDLE
+[CO2]: Darlings, this is the most / delicious betrayal I have staged.
+@PARTNER JUGGER
+[CO2]: PARTNER: PRESENT. LEDGER: / READING. ESTIMATED SPLIT: SOON.
+@PARTNER FLAK
+[CO2]: Flak hits Max! Max is big! / Flak likes. Flak likes big.
+@PARTNER LASH
+[CO2]: Partner! Ooh! I brought / pamphlets! They explode! Heehee!
+@PARTNER ADDER
+[CO2]: Together. The leak, the light, / and me. A perfect trio.
+@PARTNER VON BOLT
+[CO2]: Kehh... partner. Fifty-fifty / on the scandal? Sixty-forty. Mine.
+@PARTNER CLONE ANDY
+[CO2]: Hey! I've got your back! I / can fix any-- ...okay! Sure!
+@END
+SAMI: Roger. Grunts, spread out. / Make them bleed for every yard.
+ASUKA: Hold them here. Let them / read while they bleed.
+
+== m20_split
+@SONG ally1
+NARRATION: The open Allied band. Every / HQ has read it. All talk at once.
+OLAF: Jess! Your ministry bought / the door! Blue Moon sold it!
+JESS: Olaf, I read the same page. / My stamp is on yours.
+JAVIER: Hark! My towers stand on / a keyhole! I demand to know why!
+KANBEI: Kanbei's seal. On the first / page. Kanbei was a fool.
+EAGLE: So who's supposed to be mad / at who here? I'm lost.
+GRIT: Ayup. All of us. At each / other. Reckon that's the plan.
+MAX: Everybody shut up! You're / ruining my fight!
+SAMI: Max. Look. Blue Moon's guns / are leaving the plains.
+MAX: What?! The big blue guy's / leaving?!
+SAMI: Roger. The Accord is breaking.
+MAX: ...Pathetic.
+
+== m20_post
+@SONG co:max
+MAX(s): Okay, okay! We fall back. / For now! Not because you won!
+SAMI: Roger. Because our friends / are fighting each other. Dammit.
+MAX: Hey! You! Black Hole lady! If / Nell gets hurt, I'll...
+ASUKA: I do not want Nell hurt, Max. / I want her to read.
+MAX: Read what?
+ASUKA: Every page. She signed the / first seal. She should hear it.
+SAMI: Roger. Commander Asuka. You / blew the Accord up from inside.
+ASUKA: No, Sami. I handed over / the match. The Accord lit itself.
+SAMI: That is not a defence.
+ASUKA: It is not a defence. It is / an audit. They are different.
+MAX: I hate you. I don't hate you. / I hate that you're right.
+MAX: Grit's calling. Hang on. ...Grit? / ...Yes. ...I know, son.
+SAMI: Max.
+MAX: He says don't read it in front / of the troops. Too late!
+SAMI: Roger. Fall back to the tower. / We get Nell. We fix this.
+
+== m20_map
+@SONG enemy1
+MORTAR: Ma'am. The Allies are / fighting each other on the band.
+ASUKA: Of course they are. They paid / each other for thirty years.
+WICK: Is it all right if I say / I feel sorry for them?
+ASUKA: You may feel what you like, / Private. Just keep your rifle clean.
+WICK: ...Yes, ma'am. Is it all right / if I feel sorry for us too?
+ASUKA: Yes. That is the correct / ratio.
+
+# ---------------------------------------------------------------- M21 The East Tower (FREE; enemy Andy + Rachel; Andy's commandos free Nell)
+
+== m21_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG own:aria
+NARRATION: Orange Star's castle town. / Rain. A map room above a bakery.
+NARRATION: A woman bends over the plans. / Nell's face. A harder jaw.
+ARIA: Four guards. One window. One / night. Tell me why it fails.
+ANDY: Uh... it's not my best plan?
+ARIA: It is not a plan, it's a hope. / Hope loses.
+RACHEL: By the book, we should wait / for the others to calm down.
+ARIA: Rachel, the book says Nell is / in a tower. Burn the book.
+JAKE: Yo, who's the lady? She sounds / like Nell on a bad day.
+ARIA: I am Aria. Nell's twin. Your / sister, Rachel. The one you forgot.
+RACHEL: I never forgot! You left!
+ARIA: I left to build what the Accord / forgot to. It's built. Come.
+HACHI: Kid, she's "A." Chairs, depots, / the broadcast. Her handwriting.
+ANDY: You wrote "Build anew"?! I / read it a thousand times!
+ARIA: You read it well. Nell kept / the peace so long it became a sentence.
+ARIA: I am done being polite. She / walks out of that tower tonight.
+NARRATION: Black Hole's side. The tower / is garrisoned. The rain is cold.
+ASUKA: Nell is in the tower. Andy will / come for her. Let him come.
+ASUKA: The CO on the radio holds / the town. I watch the window.
+@IF ASUKA
+ASUKA: Never guard a door. Make the / door the mistake he wants to make.
+@IF CRUMB CO
+CRUMB CO: Ma'am, is the lady in the / tower nice? Gerald sent a biscuit.
+@IF HAWKE
+HAWKE: A prisoner is a piece that / cannot move. Do not move the others.
+@IF KOAL
+KOAL: A tower with one road. Four / guards. I will mind the road.
+@IF KINDLE
+KINDLE: A tower! A balcony! A prisoner / in a window! Oh, darlings, the romance!
+@IF JUGGER
+JUGGER: PRISONER: ONE. GUARDS: FOUR. / ESCAPE ODDS: 61 PERCENT. ODD.
+@IF FLAK
+FLAK: Flak guards door. Door guards / Flak. Same thing.
+@IF LASH
+LASH: Ooh! Nell's tower! I helped / build the alarm! It plays a lullaby!
+@IF ADDER
+ADDER: A tower, rain and a rescue? / Photograph the window. No, the other.
+@IF VON BOLT
+VON BOLT: A prisoner! Kehh... an asset! / Never sell her. Rent her.
+@IF CLONE ANDY
+CLONE ANDY: Okay! The tower! Nell! / Is Andy coming? I will... hide.
+@END
+RACHEL: By the book, we take the / town. Then the tower. No gaps.
+ANDY: Hold on, Nell! I'm coming! / Somebody grab the ropes!
+
+== m21_day5
+ANDY: Rachel, take the left! I'll / take the commandos in over the wall!
+RACHEL: Rule two: do not go over a / wall you haven't scouted.
+ANDY: Rule two is for people who / haven't got friends in towers!
+
+== m21_freed
+@SONG own:aria
+NARRATION: A window shatters. A rope / drops. A woman in grey leans out.
+NELL: Andy! My dear boy! You came!
+ANDY: I told you I would, Nell! I / didn't wait for the book!
+NELL: I told you not to go alone.
+ANDY: I didn't! Aria planned it! / She's down in the bakery!
+NELL: ...Aria?
+ANDY: Your sister! The loud one!
+NELL(h): Oh, my goodness. She / listened after all.
+ASUKA: Garrison. Hold your fire. / Hold it.
+HAWKE: Asuka. Your queen is leaving.
+ASUKA: I know. Let her go.
+
+== m21_post
+@SONG co:nell
+NELL: Commander Asuka. I read the / ledger. It's true. All of it.
+NELL: I signed the first seal. I'll / answer for it. Properly.
+ASUKA: Then answer well, Nell.
+NELL: You don't sound like a monster.
+ASUKA: Monsters file less.
+NELL(h): Ha! Oh, I like you. I wish / you were on my side.
+ASUKA: I am on the side of the / ledger. It is the only honest one.
+NELL: Then we agree on something. / Andy, come on. We're leaving.
+ANDY: Thanks, Black Hole lady! ...I / mean... you're still the enemy!
+ASUKA: Go, Andy. Bring her home.
+HAWKE: You let the queen go. I / record it as an error.
+ASUKA: A queen in a cage guards / nothing. A queen loose argues
+ASUKA: with her own side. I wanted / the argument.
+HAWKE: A calculated release. I / concede the tempo.
+HAWKE: Her file is a single line, / by the way. "Aria. Nell's twin."
+HAWKE: Raised east of the fence. I / dislike a woman with no file.
+ASUKA: You are describing me, Marshal.
+HAWKE: Precisely. It is why I / dislike you both.
+
+== m21_map
+@SONG enemy2
+MORTAR: Ma'am. The tower is empty. / Window broken. Rope still swinging.
+WICK: Is it all right if I'm / glad she got out?
+MORTAR: Wick.
+WICK: ...I'm glad she got out.
+MORTAR: ...Fine. So am I.
+ASUKA: You are both correct, / gentlemen. It was the point.
+
+# ---------------------------------------------------------------- M22 Echo, Again (Clone Andy fixed; enemy Andy; Lab 7's project 17)
+
+== m22_pre | CLONE ANDY
+@SONG co:clone andy
+NARRATION: Laboratory 7. A ruin in / fog. Orange Star's shuttered lab.
+CLONE ANDY: Okay. Okay. It's... Lab / 7. It's where I started.
+LASH: Hey, Andy-me! It's your / birthplace! Ooh! Look at the vats!
+CLONE ANDY: Not helping, Doctor.
+ANDY: I heard that! Who's out there?!
+ANDY: That's my voice! That's my / face! Show yourself!
+CLONE ANDY: Hi. It's me. I mean, it's / Clone Andy. ...Hi, Andy.
+ANDY: You've got my face.
+CLONE ANDY: I know. It was roomy. I'm / sorry. I picked a name.
+ANDY: You can't have my name!
+CLONE ANDY: I did not take the / name. I took "Clone". It's mine.
+ANDY: It's not funny.
+CLONE ANDY: It's a little funny.
+ANDY: ...A little.
+CLONE ANDY: Okay. So. I'm here to / fight you. I'm sorry.
+ANDY: I'm sorry too. Don't hold back.
+CLONE ANDY: I'll try not to. I / can fix any-- ...okay. Go.
+ASUKA: Andy. The Laboratory's / archive is behind the east vat.
+ASUKA: I do not care which of you / wins. I care what is in the binder.
+
+== m22_day5
+ANDY: You hit like me! That's / not fair!
+CLONE ANDY: I had practice! In / a jar!
+ANDY: ...That's the saddest thing / I ever heard.
+CLONE ANDY: It was okay. It was roomy.
+
+== m22_binder
+@SONG own:door
+NARRATION: The archive. A binder. Seventeen / tabs. Sixteen are marked CLOSED.
+LASH: Ooh, the Form 27-Bs! I filed / those! I filed them four times!
+JUGGER: PROJECT 16: ECHO. SUBJECT: / CLONE ANDY. STATUS: CLOSED.
+LASH: Closed? I didn't close it! / He's right there!
+CLONE ANDY: I'm... right here. Hi.
+LASH: Hi.
+ASUKA: Tab seventeen. Open it.
+JUGGER: PROJECT 17: STORM RECALL. / STATUS: DEFERRED. NOT CLOSED.
+LASH: Deferred... Nell never closed / it. Heehee. Nell is sneaky!
+ASUKA: Read the purpose.
+JUGGER: "TO DRIVE THE STORM BACK / THROUGH THE DOOR."
+JUGGER: "REQUIRES: THE KEY, THE SEAL / MACHINE, A VOICE IN HIS PITCH."
+ASUKA: A voice in his pitch. Project / Echo was a rehearsal for that.
+CLONE ANDY(s): For Sturm? Sir Sturm? ...I / was a practice run for his door?
+ASUKA: You were a practice run for / a voice. You became a man instead.
+CLONE ANDY: ...Is that better?
+ASUKA: It is the better outcome. It / was never the plan.
+LASH: ...Oh. Oh. Okay. I'm / not laughing.
+
+== m22_post
+@SONG co:clone andy
+ANDY(s): I'm falling back. ...I can't / finish this. Not you.
+CLONE ANDY: Okay. Okay. It's all / right, Andy. I wasn't going to.
+ANDY: The binder. Project 17. Nell / never told us.
+CLONE ANDY: She kept it. Because the / Accord was scared. Of him.
+ANDY: Of Sturm.
+CLONE ANDY: Yes. Sir, I... I don't / want to hurt anyone.
+ANDY: Neither do I. That's the / problem with us.
+ANDY: Hey. Can you still say it? / The thing you never finish?
+CLONE ANDY: I can fix any-- ...
+ANDY: Any what?
+CLONE ANDY(h): ...Anything. I can fix / anything. I think.
+ANDY(h): Yeah. You can. Pass me my / wrench, would you?
+CLONE ANDY: Here. It's yours.
+ANDY: Keep it. You'll need it more.
+NARRATION: Andy walks into the fog, / alone. The wrench is gone.
+ASUKA: Commander. You finished it.
+CLONE ANDY: Yes, ma'am. First time.
+ASUKA: Do not stop now.
+
+== m22_map
+@SONG enemy2
+CRUMB CO: Ma'am! The Sergeant says / Clone Andy finished his sentence!
+ASUKA: He did.
+CRUMB CO: Gerald is crying. A little. / Biscuits can.
+MORTAR: Crumb. They cannot.
+CRUMB CO: Sergeant, you're crying / too.
+MORTAR: It is the fog.
+
+# ---------------------------------------------------------------- M23 The Door Is Open (Asuka + Crumb fixed; enemy Hachi + Jake at Black Hole's island depot)
+
+== m23_pre | ASUKA
+@SONG co:hachi
+NARRATION: Black Hole's island. The / depot. Night. Orange Star at the wall.
+MORTAR: Ma'am. Two armies on the north / road. Hachi's. And Jake's.
+WICK: Is it all right if I ask / why they brought a shop?
+HACHI: Evening, kid! Hachi's Shop! / Closing-down sale on everything!
+HACHI: Except the crate. The crate is / not for sale. It's for taking.
+JAKE: Yo! Jake's in the house! The / hottest CO in Orange Star!
+JAKE: Don't make me serve you!
+ASUKA: Hachi. You came a long way / for a box.
+HACHI: Project 17 says the key is / in it. The key stops the storm.
+HACHI: Aria wants it. I'm a merchant. / I'll buy it. Name a price.
+ASUKA: It is not for sale.
+HACHI: Kid. Everything is for sale. / First rule of the shop.
+CRUMB CO: Ma'am! The crate is humming / a song! A lullaby! Loud!
+STURM: Asuka. The crate is loud. It / asks. Answer it.
+ASUKA: Lord Sturm, we are under attack.
+STURM: Then be quick.
+ASUKA: Commander Hobb. The crate. / Reach it. I will hold the depot.
+CRUMB CO: Ma'am? What if I'm not / allowed?
+MORTAR: Crumb. You are allowed.
+JAKE: Yo, are we gonna talk all / night, or what?
+HACHI: Jake, hush. This is the / good part. Business first.
+
+== m23_day4
+JAKE: Yo, they got walls! Who builds / walls on a depot?!
+HACHI: Somebody who knew we'd come, / kid. Mind the drainage.
+
+== m23_crate
+@SONG own:door
+NARRATION: The depot cellar. The crate / hums a note. The seal glows.
+CRUMB CO: Ma'am. It's humming my name. / I think it's my name.
+ASUKA: Commander. You do not have to / do this.
+CRUMB CO: Yes I do, ma'am. It's my / post. Sergeant says so.
+MORTAR: Crumb.
+CRUMB CO: Sergeant? You said do not / open it.
+MORTAR: I said not until it was / time. It is time. Open it.
+STURM: Hobb. Open it. I am listening.
+CRUMB CO: Yes, sir.
+NARRATION: Crumb lifts Gerald to the / keyhole mark. It fits. A click.
+NARRATION: The crate sighs open. Inside, / a bronze key. A canvas journal.
+ASUKA: The key. Long as an arm. A / keyhole for a bow.
+NARRATION: She reaches for it. It is / cold as a well. She withdraws.
+ASUKA: It refuses me.
+CRUMB CO: It's warm. Like a hand. / Ma'am, it's like a hand.
+STURM: It answers him.
+CRUMB CO: Sir?
+STURM: Read the book, Hobb.
+
+== m23_journal
+@SONG own:door
+CRUMB CO: "Journal of Quartermaster / Philip Hobb. Office of Works."
+CRUMB CO: "The Accord asked me to build / a door. I said yes. They pay well."
+CRUMB CO: "Day 40. It is built. It is / not a door to any room I know."
+CRUMB CO: "Day 61. A man came through at / dusk. Tall. Cold. One word. Mine."
+ASUKA: Sturm.
+CRUMB CO: "Day 62. They want it sealed. / The man walked to the coast, and the
+CRUMB CO: world fell to him. Then he went / back, to fetch the rest."
+CRUMB CO: "Day 63. I sealed it behind / him. The Accord wished to burn it."
+CRUMB CO: "A door that cannot open is a / wall. A wall that will not burn, a vow."
+CRUMB CO: "Day 70. The Accord strikes me / from the rolls. They bury the door
+CRUMB CO: under an Obelisk and a fence. / I made a key. Only my blood turns it."
+CRUMB CO: "If the door must open again, / let a Hobb decide. If it must close,
+CRUMB CO: let the same. Day 71. I left / my last biscuit with the child."
+CRUMB CO: "Issue number one. The seal is / the key to the crate. He will know."
+CRUMB CO: "He is a good boy. I have not / met him."
+CRUMB CO(s): He didn't meet me, ma'am. / He wrote me a biscuit.
+ASUKA: He wrote you a journal, / Commander. The longest letter I know.
+STURM: Where is the door.
+ASUKA: Under your feet, Lord Sturm. / It is the Obelisk.
+STURM: I know. Bring the key.
+ASUKA: It turns only for Commander / Hobb.
+STURM: Then bring Hobb.
+CRUMB CO: Sir? Do I go west?
+STURM: Not yet. First, survive.
+
+== m23_reserve
+@SONG own:door
+CRUMB CO: There's a last page. "Order / of the Quartermaster."
+CRUMB CO: "In the event the key turns, / release the reserve."
+MORTAR: Reserve. What reserve?
+NARRATION: The cellar floor shudders. / Iron doors roll back. Engines wake.
+NARRATION: Rows of Neotanks, black and / thirty years asleep, grind into the rain.
+JAKE: Yo... those are NEOTANKS.
+HACHI: Kid, you got Neotanks in the / basement? Under the biscuits?
+ASUKA: The Quartermaster's reserve. / He thought of everything but a key.
+MORTAR: Thirty years in the dark. / And they start on the first turn.
+WICK: Is it all right if I cheer? / Quietly?
+ASUKA: Cheer, Private. Quietly.
+HACHI: Closing-down sale's over, / Jake. Fall back. Fall back!
+
+== m23_post
+@SONG co:hachi
+HACHI(s): Kid, I didn't know about / the grandson. I'd never have sold it.
+HACHI: I'll tell Aria you've got / the key. She'll want a word.
+HACHI: She'll be loud. Don't take / it personal.
+ASUKA: I look forward to it, Hachi.
+JAKE: Yo, that was wild. Neotanks! / Respect, black lady.
+JAKE: But we're comin' back. Big / time. Whassup now?
+CRUMB CO: I'm sorry about the cellar, / Mr Hachi.
+HACHI: Kid. Don't be. Keep it. It's / a good basement.
+HACHI: And kid. Whoever wrote that / journal, he's proud of you.
+CRUMB CO: He never met me.
+HACHI: Doesn't matter. I never met / mine either. He's proud anyway.
+CRUMB CO(h): ...Thank you, Mr Hachi.
+NARRATION: The Orange Star columns / withdraw into the rain.
+ASUKA: Commander Hobb. You will be the / one who decides.
+CRUMB CO: I don't want to, ma'am. I / want soup.
+ASUKA: Soup is permitted.
+MORTAR: Soup. Now.
+
+== m23_map
+@SONG sturm
+STURM: The key. Where is it.
+ASUKA: In Commander Hobb's hand. It / turns for no one else.
+STURM: The Obelisk is ready. Send / both west.
+ASUKA: Lord Sturm. The Allies know. / They will come for the door.
+STURM: Let them come. I will open / it with them watching.
+ASUKA: And what is behind it?
+STURM: The rest of the storm.
+ASUKA: ...Noted, Lord Sturm.
+
+# ---------------------------------------------------------------- M24 Skyfall (Adder fixed; enemy Rachel + Jake)
+
+== m24_pre | ADDER
+@SONG co:adder
+NARRATION: Orange Star's skies and coast. / Bomber, fighter, and a long beach.
+ADDER: Ladies and gentlemen: the star / arrives. Mind the cape.
+RACHEL: By the book: an air force / needs an airfield. Delete the airfield.
+JAKE: Yo, pretty boy! Wanna dance?
+ADDER: Pretty boy? Kneel before Adder.
+RACHEL: Rule six: a pilot is only / as brave as his fuel.
+ADDER: Fuel is for ordinary men, my / dear. I run on adoration.
+ASUKA: Adder. They will answer your / sky. Be careful.
+ADDER: Careful? Darling General, I am / never careful. I am photographed.
+HAWKE: Adder. Your angles, please. / Orange Star has real anti-air.
+ADDER: Marshal, I am delighted to / be criticised by a gentleman.
+JAKE: Yo, he's talkin' to himself!
+ADDER: I am talking to my audience. / Say hello, audience.
+RACHEL: Rule one: do not answer / the pilot.
+JAKE: Rule one is boring!
+
+== m24_day5
+RACHEL: Flak net online! By the / book, all batteries fire!
+ADDER: My cape! They burned my cape! / Rachel, that is unforgivable!
+RACHEL: It is not in the book.
+ADDER: I will write it in!
+
+== m24_post
+@SONG co:adder
+ADDER(s): My wing. My lovely, / lovely wing. Grounded by a book.
+RACHEL: Rule seven: an air force is / only as good as its fields.
+ADDER: I concede the point. Their / answer is real. I dislike it.
+ADDER: It is also excellent. Photograph / the flak. Now.
+JAKE: Yo, good flyin', pretty boy. / Whassup? You were smooth.
+ADDER: Pretty! Say it twice!
+JAKE: Pretty. Pretty boy.
+RACHEL: Rule: never admire the / enemy.
+JAKE: Rule: break rules, Rach.
+RACHEL: ...Commander Asuka. My / sister left the tower.
+ASUKA: Your sister is safe, Rachel. / Both are.
+RACHEL: ...Both. Thank you. That / was not in the book either.
+ASUKA: The book is short.
+HAWKE: Adder. The cape survived?
+ADDER: Marshal, the cape is the / only survivor of the war.
+HAWKE: Excellent. Hold that thought.
+
+== m24_map
+@SONG enemy1
+MORTAR: Ma'am. Adder has asked if / the beach is open to the press.
+ASUKA: There is no press, Sergeant.
+MORTAR: He says to produce one.
+WICK: Is it all right if I'm / the press?
+ASUKA: Yes, Private. Take notes. He / will want to be quoted.
+
+# ---------------------------------------------------------------- M25 The Rail East (TWO FRONTS, both FREE: front 1 vs Andy, front 2 vs Hachi; the heavy train)
+
+== m25_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:andy
+NARRATION: The Rail East. A heavy train / steams on one line. Eleven cars.
+NARRATION: Two fronts. Andy guards the / rail. Hachi guards the market line.
+ANDY: Okay! The train! Nobody touches / the train! It's got children on it!
+HACHI: Closing-down sale, kid! Everything / half off but the train!
+ASUKA: Eleven cars. Hawke counted the / weight in the Rail Yard. It was heavy.
+ASUKA: Door-seal machinery, from Lab 7. / Project 17. I mean to capture it.
+HAWKE: The weight said more than / children. The manifest lied by omission.
+ANDY: It's not lying! It's got / kids and it's got a machine!
+ANDY: Both are true! Okay?!
+@IF ASUKA
+ASUKA: A train on a rail has no / second option. I find that restful.
+@IF CRUMB CO
+CRUMB CO: Is it a nice train, ma'am? / Gerald loves trains.
+@IF HAWKE
+HAWKE: A train is a king that cannot / leave his square. I shall approach.
+@IF KOAL
+KOAL: Rails are roads with opinions. / I will remove the opinions.
+@IF KINDLE
+KINDLE: A train! Smoke! Steam! A / grand finale, darlings.
+@IF JUGGER
+JUGGER: TRAIN: ELEVEN CARS. WEIGHT: / HIGH. HUMOR: NOT FOUND. HIT: YES.
+@IF FLAK
+FLAK: Train! Big! Flak stops train! / Flak uses face.
+@IF LASH
+LASH: Ooh, a train! Can I blow up / the tracks? Just the second one!
+@IF ADDER
+ADDER: A train in sunset steam. / Photograph me beside it.
+@IF VON BOLT
+VON BOLT: A train! Kehh... freight / pays by weight! How much is it?
+@IF CLONE ANDY
+CLONE ANDY: Okay! A train! Andy's / on it! I will be gentle. I think.
+@END
+@PARTNER ASUKA
+[CO2]: Front two, the market line. I / shall read the receipts while I fight.
+@PARTNER CRUMB CO
+[CO2]: Hello, Mr Hachi! It's me! / Crumb! I won't shoot the stalls!
+@PARTNER HAWKE
+[CO2]: A market line is a board of / small squares. I enjoy those.
+@PARTNER KOAL
+[CO2]: A market road. Wide and / badly cambered. I will fix it.
+@PARTNER KINDLE
+[CO2]: A market! Stalls, darlings! / Banners! I shall make an entrance.
+@PARTNER JUGGER
+[CO2]: FRONT TWO: ACCEPTED. VENDORS: / DETECTED. PRICE: LOGGED.
+@PARTNER FLAK
+[CO2]: Flak hits market! Market has / food! Flak eats! Fights! Both!
+@PARTNER LASH
+[CO2]: Ooh! A market! Everything has / a price! I'll price your explosions!
+@PARTNER ADDER
+[CO2]: Front two. A stage of stalls. / Mind the awnings. My cape.
+@PARTNER VON BOLT
+[CO2]: A market! Kehh-heh! My / element! I'll haggle with the guns!
+@PARTNER CLONE ANDY
+[CO2]: Okay! The market! I'll fix / any-- ...any stall! Sure!
+@END
+HACHI: Closing-down sale! No refunds! / No returns! No train!
+ASUKA: Seize the train, whoever / reaches it. Alive. Intact.
+
+== m25_day6
+ANDY: Okay! Faster! Bring the / train up! Hold the tracks!
+HACHI: Closing-down sale on the / siding, kid! Half price on bullets!
+
+== m25_front2_post
+HACHI(s): The market line is gone. / Closing down. Properly, this time.
+HACHI: Keep the train, kid. I'm / out of stock.
+ANDY: Hachi! You folded?!
+HACHI: A merchant knows when the / sale is over, kid.
+
+== m25_front2_lost
+HACHI: Ha! Sale's on, kid! Come / get your discount!
+ASUKA: Understood. The main front / must take the train alone.
+ANDY: Okay! Hachi did it! Hold the / train!
+
+== m25_post
+@SONG own:door
+ANDY(s): The train... I couldn't hold / it. I'm sorry, Nell. Sorry, everyone.
+NARRATION: The heavy train, captured. / Eleven cars, steam, and silence.
+ASUKA: Open the third car.
+NARRATION: Crates of bolted steel and / a mass of black machinery.
+ASUKA: A seal machine. A frame of / rails and clamps. For one door.
+HAWKE: I said the weight spoke. I / was understating it.
+ASUKA: Project 17. They meant to / push him back and weld it shut.
+CRUMB CO: Ma'am? If they weld the / door shut, who's on the other side?
+ASUKA: Whoever the storm came from.
+CRUMB CO: And nobody can come back. / Ever. Even if they want to.
+ASUKA: That is the idea, Commander.
+CRUMB CO: That's not nice. That's / very sad.
+ASUKA: ...Yes. I rather agree.
+ANDY: Okay. We got kids in the / other cars. Let them go, please.
+ASUKA: Andy. They are free. Take them / home. We want only the machine.
+ANDY: Thanks. ...Aria will be so / mad.
+ASUKA: I look forward to meeting her.
+
+== m25_map
+@SONG enemy2
+MORTAR: Ma'am. We have a machine, a / key, and a grandson.
+ASUKA: And a door the Allies want / shut, and a man who wants it open.
+WICK: Is it all right if I ask / which of them is right?
+ASUKA: That, Private, is the last / thing in the world I am sure of.
+
+== m25_warroom
+@SONG own:aria
+NARRATION: The Allied table. The chair / at the head is filled. Two women.
+NELL: Friends. I want to say first / that I was wrong. About the seal.
+ARIA: Sister. Don't. Let me speak.
+ARIA: Four nations. Each one sold / the door. Each one lied about it.
+ARIA: Black Hole's lady auditor lit / the match. We've been burning since.
+OLAF: Aria! The ledger is true! You / cannot expect us to forgive it!
+ARIA: I expect you to be angry. At / her. Not at each other.
+KANBEI: Kanbei was angry at himself. / It is a waste of anger.
+ARIA: Then aim it, Emperor. Her name / is Asuka. Remember it.
+JESS: She is polite. She files. She / does not lie.
+ARIA: That's the worst kind of / enemy. She makes you doubt yourself.
+EAGLE: So we're going to hate her / cleanly?
+ARIA: Hate whoever you like. Fight / her at the Citadel.
+ARIA: The Last Citadel. Orange Star's / heart. Every colour. Every unit.
+HACHI: A last stand! Kid, I'll hold / the market. Free of charge.
+ARIA: Build anew. It starts in the / citadel.
+NELL: Aria. I'm so proud of you.
+ARIA: Don't be proud, Nell. Be / angry. For both of us.
