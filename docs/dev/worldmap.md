@@ -7,7 +7,7 @@ output (checked in): `tango-gamesupport-aw2/art/worldmap/bh2_world.bin` (format 
 
 ## Conversion (`aw2dev worldmap convert bh2`)
 1. Crop the black strip, resample (Lanczos) to 256 x 256: the picture is square, and the map layer is 512 x 256 at most. Nothing is dithered.
-2. Classify every pixel: the sea or one of five nations (Orange Star, Blue Moon, Green Earth, Yellow Comet, the grey Ashen Shelf) by the colour of its land
+2. Classify every pixel: the sea or one of five nations (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole's own grey island, bottom left) by the colour of its land
    (seed pixels in the toml); specks, text strokes and the compass are sea or the land around them, holes in the land are land, the coast's rim joins the land.
    The class per pixel is the region mask.
 3. Fit nine 15-colour palettes. Each palette entry belongs to one class (`tags`); the palette plan in the toml says how many entries a palette gives the sea and each nation

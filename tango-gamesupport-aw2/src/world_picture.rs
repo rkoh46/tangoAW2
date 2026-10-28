@@ -13,7 +13,23 @@ use std::sync::OnceLock;
 pub static BH2: PictureSource = PictureSource::new("bh2", include_bytes!("../art/worldmap/bh2_world.bin"));
 
 /// The nations' names by class number (class 0 is the sea).
-pub const REGION_NAMES: [&str; 6] = ["Sea", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Ashen Shelf"];
+pub const REGION_NAMES: [&str; 6] = ["Sea", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole"];
+
+/// The class of Black Hole's own island (the grey island, bottom left). It is Black Hole's from the start: [`PictureMap::conquered`] always
+/// includes it, so it is drawn in Black Hole's colours, and its missions (M1, M2, M26) never change it.
+pub const BLACK_HOLE_REGION: u8 = 5;
+
+/// Where each mission's flag stands on the BH2 picture: (mission number, nation class, x, y) in map pixels (docs/dev/bh2-maps.md). Every flag must lie inside
+/// its own nation's mask (`world_picture::tests::bh2_flags_lie_in_their_nation`, `aw2dev bh2 check`). M1, M2 and the secret M26 are on Black Hole's island,
+/// M3 to M5 in Green Earth's south. The rest of the campaign's flags are placed with their missions.
+pub const BH2_FLAGS: &[(u8, u8, i16, i16)] = &[
+    (1, 5, 38, 204),
+    (2, 5, 18, 214),
+    (3, 3, 96, 173),
+    (4, 3, 150, 215),
+    (5, 3, 115, 140),
+    (26, 5, 30, 222),
+];
 
 /// A converted picture, parsed on first use.
 pub struct PictureSource {
@@ -165,7 +181,10 @@ impl PictureMap {
                 done[r] += won(m) as u32;
             }
         }
-        (1..8).filter(|&r| total[r] > 0 && total[r] == done[r]).fold(0u8, |a, r| a | 1 << r)
+        // (Black Hole's own island is Black Hole's from the start, whatever its missions)
+        (1..8)
+            .filter(|&r| r == BLACK_HOLE_REGION as usize || (total[r] > 0 && total[r] == done[r]))
+            .fold(0u8, |a, r| a | 1 << r)
     }
 }
 
@@ -193,6 +212,20 @@ mod tests {
     }
 
     #[test]
+    fn bh2_flags_lie_in_their_nation() {
+        let m = BH2.map();
+        for &(mission, region, x, y) in BH2_FLAGS {
+            assert_eq!(m.region_at(x as i32, y as i32), region, "M{mission}'s flag at ({x}, {y}) is not inside {}", REGION_NAMES[region as usize]);
+            assert!(region != 0, "M{mission}'s flag is on the sea");
+        }
+        // the owner's plan: M1, M2 and M26 on Black Hole's island, M3 to M5 in Green Earth
+        for &(mission, region, ..) in BH2_FLAGS {
+            let want = if matches!(mission, 1 | 2 | 26) { BLACK_HOLE_REGION } else { 3 };
+            assert_eq!(region, want, "M{mission}");
+        }
+    }
+
+    #[test]
     fn every_nation_has_land_and_entries_to_tint() {
         let m = BH2.map();
         for r in 1..REGION_NAMES.len() as u8 {
@@ -213,8 +246,9 @@ mod tests {
         // a nation is conquered when all of its missions are won, and only then
         let pts: Vec<(i16, i16)> = m.slots.iter().filter(|s| s.0 == 1 || s.0 == 2).map(|s| (s.1, s.2)).collect();
         let os_n = m.slots.iter().filter(|s| s.0 == 1).count();
-        assert_eq!(m.conquered(&pts, |i| i < os_n), 1 << 1);
-        assert_eq!(m.conquered(&pts, |i| i + 1 < os_n), 0);
-        assert_eq!(m.conquered(&pts, |_| true), (1 << 1) | (1 << 2));
+        let home = 1 << BLACK_HOLE_REGION;
+        assert_eq!(m.conquered(&pts, |i| i < os_n), home | 1 << 1);
+        assert_eq!(m.conquered(&pts, |i| i + 1 < os_n), home);
+        assert_eq!(m.conquered(&pts, |_| true), home | (1 << 1) | (1 << 2));
     }
 }

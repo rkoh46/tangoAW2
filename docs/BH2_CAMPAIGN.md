@@ -92,6 +92,42 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 - Forced CO picks: about 12, the rest free.
 - Day limits: only where the clock is the mission (M2, M7, M16, M20, M23).
 
+## 4b. Scripted fights (owner, 2026-10-28: not just the final mission)
+
+Every scripted moment uses the engine's existing triggers:
+- **Spawn:** reinforcements appear.
+- **TakeOver and a held second HQ:** a new CO takes command.
+- **SetCo:** the CO changes mid-battle.
+- **Add/SetFunds**, **Strike** and **named units** (UnitAt, NamedIn, UnitGone).
+- **Army conditions:** a defeated army, an army down to so many units, a property count, a cell's owner.
+- **Timing:** days, repeating every N days, and flags.
+
+Each one plays a short scene with music. They are listed by mission.
+
+| # | Scripted fight | How it plays |
+|---|---|---|
+| 1 | **Ghost fleet** | Drake's main fleet hides in the fog. On day 3, or when your first unit reaches the mid-island, his Battleship group appears behind your landing (a Spawn), and Asuka's intel line warns one turn early. |
+| 2 | **The crate hums** | Whenever Jess's units come within 3 tiles of the crate truck, her ambush squads spring from the forest (one-shot Spawns at 3 marked points). If the truck reaches the halfway bridge, Crumb's Supply APCs arrive. |
+| 3 | **The cold foundry** | Your Black Factory starts **jammed**. Capture the foundry's two side buildings to light it. When it first produces, Jess answers with an armoured counter-attack wave (a Spawn plus funds). |
+| 4 | **Wing and wave** | Sky front: Eagle's second wing arrives on day 3. If Hawke clears the sky first, a Bomber flight is **sent to front 1** to help Asuka against Drake. If Drake's fleet falls first, Eagle's wing turns home (it is removed). |
+| 5 | **The exile government** | When Javier's HQ falls, **Eagle takes over** from a second HQ in the capital's airport district (a held second HQ). The battle continues against a fresh air-heavy army. |
+| 7 | **The race** | Grimm's convoy **marches** for the far bridgehead city. If it arrives first, Sensei's paratroopers (B Copter drops) appear behind your lines. Win the race to stop them. |
+| 9 | **The Table** | At half strength, Kanbei calls Sensei's airlift (a Spawn of B Copters with Infantry). When Kanbei's last tank falls, the father-and-daughter scene plays and Kanbei **yields the field** (a scripted Win). |
+| 10 | **Two tides** | When either front is won, its surviving units are **sent** to the other front. Kanbei's honour guard makes a last charge from his HQ on day 6. |
+| 11 | **Cutting the wire** | Each pipe seam you break cuts one Allied supply line, and Grit's funds drop each time. Break all three and his artillery park's ammo runs dry. |
+| 13 | **Whiteout** | On day 4 Olaf's Winter Fury comes early and Blue Moon reinforcements land from the frozen harbour (a Spawn). Hold the harbour gates. |
+| 16 | **The East Tower** | Nell's escape convoy is a named unit racing for the coast. It always escapes; the story requires it, and Andy's T Copter lifts her out on day 5. Then the mission changes: Andy's rearguard must be routed before his reinforcements land. |
+| 17 | **Project 17** | A mirror match: both armies start identical. On day 5 Lab 7's sealed hangar opens and the "Storm Recall" prototype, a Megatank, joins Andy (a Spawn). Destroy it, or capture the lab before it activates. |
+| 18 | **The door is open** | You defend the depot until Crumb (a named unit) reaches the crate tile. The crate opens and Black Hole's reserve wakes: a Spawn of Neotanks. The tide turns. |
+| 20 | **The rail east** | The heavy train is a named unit on a rail line that moves each day. Stop it before it leaves the map (front 1). Hachi's armoured trains on front 2 feed funds to Andy until they're beaten. |
+| 22 | **Von Bolt's note** | Your **Deathray**, at the top edge, fires every 3 days. The sealed note opens when you take Colin's treasury, and Colin's funds collapse (SetFunds). |
+| 23 | **The storm passes** | Hold the Obelisk for 9 days while the storm **Strikes** random tiles on both sides every day. Drake and Grit's strike force arrives in three waves (days 2, 4 and 6). |
+| 24 | **Andy falls back** | When Max and Sami are both defeated, Andy's army **withdraws**: his units march off the map to the citadel, as the bridge to M25. Rout him before he leaves for a better start in M25: a bond that carries over. |
+| 25 | **The Last Accord** | The final gauntlet: Nell, then Olaf, Kanbei, Eagle and finally Aria take over in turn, each with fresh armies and a new HQ, with no time limit. |
+| 26 | **The legion lands** | Emerald Sun invades Black Hole's home island in waves: Klaus's first landing, Cassius's cavalry on the flank on day 3, Aurelia's siege engines on day 5 and Livia's fleet off the coast on day 7. Each wave is a Spawn with its own scene. |
+
+That makes 19 of 26 missions with a scripted fight. The rest are straight battles, to keep the variety.
+
 ## 5. Ending and credits
 
 - **Epilogue after M25.** The new Orange Star CO is the last to fall. Nell surrenders the Accord's seal to Asuka, not to Sturm. Asuka leads Black Hole and the world, with Hawke as Marshal; "Succession" ends with Hawke kneeling to the army, not the person. Crumb keeps Gerald and the key, and the door hums, closed but not locked. Sturm is somewhere past it.

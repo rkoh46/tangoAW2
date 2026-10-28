@@ -176,7 +176,7 @@ def from_mapdata(md):
     team = md.meta.get("team") if isinstance(md.meta, dict) else None
     if team:
         side = {i + 1: t for i, t in enumerate(team)}
-    player = 1 if md.source in ("es", "bh") else 0
+    player = 1 if md.source in ("es", "bh", "bh2") else 0
     return StudyMap(md.name, md.source, [list(r) for r in G.g], own, side, list(md.units or []), player, meta={"title": md.name})
 
 

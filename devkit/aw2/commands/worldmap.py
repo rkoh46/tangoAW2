@@ -19,7 +19,7 @@ def register(sub):
     a.set_defaults(fn=convert)
     a = ps.add_parser("preview", help="render the converted map (and conquered states) to a PNG")
     a.add_argument("source")
-    a.add_argument("--conquered", help="comma-separated region numbers (1 Orange Star .. 5 Ashen Shelf) or 'all': one extra panel; default shows four states")
+    a.add_argument("--conquered", help="comma-separated region numbers (1 Orange Star .. 5 Black Hole) or 'all': one extra panel; default shows four states")
     a.add_argument("--out", help="PNG path (default devkit/work/worldmap/<source>_preview.png)")
     a.set_defaults(fn=preview)
     a = ps.add_parser("check", help="budgets, region coverage and stability")

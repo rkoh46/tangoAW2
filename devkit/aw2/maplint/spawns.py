@@ -8,7 +8,7 @@ KINDS = {"INFANTRY": 1, "MECH": 2, "MD_TANK": 3, "MEGATANK": 4, "TANK": 5, "RECO
          "ROCKETS": 11, "STEALTH": 12, "BLACK_BOMB": 13, "ANTI_AIR": 14, "MISSILES": 15, "FIGHTER": 16, "BOMBER": 17, "BLACK_BOAT": 18,
          "B_COPTER": 19, "T_COPTER": 20, "BATTLESHIP": 21, "CRUISER": 22, "LANDER": 23, "SUB": 24, "CARRIER": 26, "OOZIUM": 27}
 FN = re.compile(r"^(?:pub )?fn (\w+)\(", re.M)
-MISSION = {"bh": re.compile(r"^bh\d\d$"), "es": re.compile(r"^es\d\d$")}
+MISSION = {"bh": re.compile(r"^bh\d\d$"), "es": re.compile(r"^es\d\d$"), "bh2": re.compile(r"^bh2_\d\d$")}
 UD = re.compile(r"UnitDef::new\(\s*(\d+)\s*,\s*unit::([A-Z_]+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)")
 # `wave(army, unit::KIND, &CELLS[a..b])` (es_campaign::wave: one unit on each cell of a slice of a `const CELLS: [(u8, u8); N]` table of the same file)
 WAVE = re.compile(r"wave\(\s*(\d+)\s*,\s*unit::([A-Z_]+)\s*,\s*&([A-Z_][A-Z0-9_]*)(?:\[(\d*)\.\.(\d*)\])?\s*\)")

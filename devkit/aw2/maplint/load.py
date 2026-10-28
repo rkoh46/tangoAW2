@@ -141,6 +141,19 @@ def es_maps(rom=None, files=None):
     return out
 
 
+def bh2_maps(rom=None, files=None):
+    """The BH2 Campaign's maps (five/bh2/bh2_NN.txt, built by bhmap.py --campaign bh2): the same MapData as the Emerald Sun maps, source "bh2"."""
+    mappy, tc, bhmap = _five()
+    rom = rom or rom_bytes()
+    edge = mappy.sea_edges(rom)
+    paths = files or sorted((FIVE / "bh2").glob("bh2_[0-9][0-9]*.txt"))
+    out = []
+    for m in bhmap.parse([str(p) for p in paths]):
+        rows = mappy.tiles(m, edge)
+        out.append(MapData(m["name"], "bh2", rows, units=m["units"], text=m["rows"], meta=m))
+    return out
+
+
 def versus_maps(rom=None):
     mappy, tc, _ = _five()
     rom = rom or rom_bytes()
@@ -158,9 +171,9 @@ def look_of(name):
     if not hasattr(look_of, "cache"):
         look_of.cache = {}
         src = FIVE.parent / "src"
-        for f in sorted(src.glob("es_act*.rs")) + sorted(src.glob("bh_act*.rs")):
+        for f in sorted(src.glob("es_act*.rs")) + sorted(src.glob("bh_act*.rs")) + sorted(src.glob("bh2_act*.rs")):
             text = f.read_text()
-            fns = list(re.finditer(r"^(?:pub )?fn ((?:es|bh)\d\d\w*)\(", text, re.M))
+            fns = list(re.finditer(r"^(?:pub )?fn ((?:es|bh|bh2_)\d\d\w*)\(", text, re.M))
             for i, m in enumerate(fns):
                 body = text[m.start(): fns[i + 1].start() if i + 1 < len(fns) else len(text)]
                 mm = re.search(r"m\.look = (\d)", body)

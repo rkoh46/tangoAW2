@@ -321,7 +321,7 @@ def joins(G):
     skip = tc.structure_cells(G.t) | tc.editor_sea(G.t, L["rom"])
     for x, y, p in tc.violations(G.t, L["pairs"], skip):
         out.append(Problem("TJ01", x, y, tc.describe((x, y, p)).split(") ", 1)[1]))
-    if G.m.source in ("bh", "es", "versus", "aw2"):
+    if G.m.source in ("bh", "es", "bh2", "versus", "aw2"):
         for x, y, p in tc.mountain_violations(G.t, L["mountain"]):
             out.append(Problem("TJ03", x, y, tc.describe((x, y, p)).split(") ", 1)[1]))
     for y in range(G.h):
@@ -487,7 +487,7 @@ def _desc(c):
 def reach(G):
     """The BH Campaign's reachability checks (five/bhmap.py check_reach), on a text map; needs the map's text rows."""
     bh = _bh()
-    if G.m.source not in ("bh", "es"):
+    if G.m.source not in ("bh", "es", "bh2"):
         return []
     out = []
     for p in bh.check_reach(G.m.meta):
@@ -513,12 +513,13 @@ def _unit_problem(G, u, bh, rule_prefix=""):
 
 @functools.lru_cache(maxsize=2)
 def _bh_grids(source="bh"):
-    if source != "es":
+    if source not in ("es", "bh2"):
         return {m.name: Grid(m) for m in load.bh_maps()}
     out = {}
-    for p in sorted((load.FIVE / "es").glob("es[0-9][0-9]*.txt")):
+    pats = {"es": ("es", "es[0-9][0-9]*.txt", load.es_maps), "bh2": ("bh2", "bh2_[0-9][0-9]*.txt", load.bh2_maps)}[source]
+    for p in sorted((load.FIVE / pats[0]).glob(pats[1])):
         try:
-            for m in load.es_maps(files=[p]):
+            for m in pats[2](files=[p]):
                 out[m.name] = Grid(m)
         except Exception:      # (a map still being written by its author)
             pass
@@ -529,7 +530,7 @@ def spawned(G):
     """Units the mission's code places by literal coordinates (spawns.py): on terrain they can enter, and not on a unit of the map file.
     A mission with a second front (`bh08` and `bh08b`) is checked against both maps: the spawn must fit at least one."""
     from . import spawns as sp
-    if G.m.source not in ("bh", "es"):
+    if G.m.source not in ("bh", "es", "bh2"):
         return []
     bh = _bh()
     name = G.m.name

@@ -10,7 +10,7 @@ output = "tango-gamesupport-aw2/art/worldmap/bh2_world.bin"
 
 # The nations, tag 1..5 (tag 0 is the sea). `seeds` are source pixels with each class's typical colour (sea first).
 [regions]
-names = ["Sea", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Ashen Shelf"]
+names = ["Sea", "Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole"]
 seeds = [[60, 600], [100, 200], [450, 480], [500, 900], [1100, 600], [120, 1000]]
 # Parts of the picture that are not land (the compass), in source pixels (x0, y0, x1, y1): always sea.
 sea_boxes = [[1140, 20, 1233, 200]]
