@@ -2,7 +2,7 @@
 //! project owner's picture, imported by `aw2dev co portrait import`). The final opponent of the BH2 Campaign and Asuka's mirror.
 //!
 //! Her kit is two small rules, both her own:
-//! - **Vengeance** (day to day, every level): a unit of hers with [`VENGEANCE_HP`] HP or less (displayed HP, so 50 or less of the unit's 100) attacks [`VENGEANCE_ATTACK`]% harder ([`vengeance`], added in
+//! - **Vengeance** (day to day, every level): a unit of hers with [`VENGEANCE_HP`] (8) HP or less (displayed HP, so 80 or less of the unit's 100) attacks [`VENGEANCE_ATTACK`]% harder ([`vengeance`], added in
 //!   `com_tower::side_firepower` to the battle's base damage like the other per-unit firepower terms, so the forecast and the CPU's estimates agree).
 //! - **Build Anew** (Super Power, [`STARS`] 7 stars): every unit of hers recovers [`HEAL`] HP (`es_co::each_unit`: `RepairUnit(unit, 3, 0)`, for free) and attacks [`SCOP_ATTACK`]% harder (`stat`, on
 //!   top of the power's own +10%). Nothing else: no defence, move or funds bonus.
@@ -11,7 +11,7 @@
 //!
 //! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
 //! |---|---|---|
-//! | Attack | +20% for a unit on 5 HP or less | +20% for every unit (and the power's own +10%) |
+//! | Attack | +25% for a unit on 8 HP or less | +20% for every unit (and the power's own +10%) |
 //! | HP | | +3 to every unit |
 //! | Luck, movement, defence | the game's own | the power's own +10% defence |
 //!
@@ -29,8 +29,8 @@ pub const NO_COP_LIKE: u8 = 10;
 /// Stars of her CO Power (none) and of her Super Power in all.
 pub const STARS: (u32, u32) = (0, 7);
 /// Vengeance: displayed HP at or under which a unit attacks harder, and by how much (percent).
-pub const VENGEANCE_HP: u8 = 5;
-pub const VENGEANCE_ATTACK: i32 = 20;
+pub const VENGEANCE_HP: u8 = 8;
+pub const VENGEANCE_ATTACK: i32 = 25;
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -50,7 +50,7 @@ pub fn bonus(mode: u8, field: usize) -> i32 {
     }
 }
 
-/// Vengeance's firepower % for a unit with `hp` (the unit record's 0..100 HP): 20 at 5 displayed HP or less, else 0.
+/// Vengeance's firepower % for a unit with `hp` (the unit record's 0..100 HP): 25 at 8 displayed HP or less, else 0.
 pub fn vengeance(hp: u8) -> i32 {
     let shown = (hp as u32 + 9) / 10;
     if hp > 0 && shown <= VENGEANCE_HP as u32 {
@@ -81,9 +81,9 @@ mod tests {
     }
 
     #[test]
-    fn vengeance_is_five_displayed_hp_or_less() {
-        // displayed HP is the unit's HP in tenths, rounded up: 41..50 show 5, 51..60 show 6
-        assert_eq!([100, 60, 51, 50, 41, 40, 10, 1].map(vengeance), [0, 0, 0, 20, 20, 20, 20, 20]);
+    fn vengeance_is_eight_displayed_hp_or_less() {
+        // displayed HP is the unit's HP in tenths, rounded up: 71..80 show 8, 81..90 show 9
+        assert_eq!([100, 90, 81, 80, 71, 40, 10, 1].map(vengeance), [0, 0, 0, 25, 25, 25, 25, 25]);
         assert_eq!(vengeance(0), 0, "a dead unit");
     }
 

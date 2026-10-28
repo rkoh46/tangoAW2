@@ -40,8 +40,8 @@ LEGACY = {
     ("asuka", "meter"): ["asuka_powers_cost_more_each_use_and_the_meter_charges"],
     ("asuka", "tag"): ["asuka_tag_compatibility_and_names", "asuka_tag_power_with_von_bolt", "asuka_tag_power_with_hawke"],
     ("asuka", "cpu"): ["asuka_cpu_uses_her_powers"],
-    # Aria: the generic co_verify_* scenarios play her numbers; her own suite (tests/test_aria.py) proves the rest (Vengeance at 5 and 6 HP, the missing Power entry, the CPU, Build Anew's heal and nothing else)
-    ("aria", "d2d"): ["aria_row_has_only_a_super_power_and_the_games_luck", "aria_vengeance_adds_twenty_percent_to_a_unit_on_five_hp_or_less"],
+    # Aria: the generic co_verify_* scenarios play her numbers; her own suite (tests/test_aria.py) proves the rest (Vengeance at 8 and 9 HP, the missing Power entry, the CPU, Build Anew's heal and nothing else)
+    ("aria", "d2d"): ["aria_row_has_only_a_super_power_and_the_games_luck", "aria_vengeance_adds_twenty_five_percent_to_a_unit_on_eight_hp_or_less"],
     ("aria", "scop"): ["aria_build_anew_adds_firepower_and_heals_and_nothing_else"],
     ("aria", "meter"): ["aria_has_no_power_entry_and_the_super_power_costs_seven_stars"],
     ("aria", "cpu"): ["aria_cpu_uses_only_her_super_power"],

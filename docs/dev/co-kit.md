@@ -113,7 +113,7 @@ CO 92 (`crate::asuka`, docs/dev/asuka.md): the first CO of the kit that is in **
 
 ## Aria
 CO 93 (`crate::aria`, docs/dev/aria.md): an Orange Star CO in every Versus list with **only a Super Power** (`stars = { cop = 0, scop = 7 }`: the data file needs no `[cop]` mods and quote; the CO page says she has none) and a picture on a **baked-in checkerboard
-background**: the pixel-art mode's `checker`, `checker_seeds`, `grid_hint`, `erase`, `mug_erase`, `fringe_skip`, `bg_seeds`, `face_edge_protect` options (aria.md). Her day to day is Vengeance (`vengeance = { hp = 5, attack = 20 }`: a unit on 5 HP or less attacks 20% harder; no `mods`), her Super Power heals 3 HP and adds 20% attack.
+background**: the pixel-art mode's `checker`, `checker_seeds`, `grid_hint`, `erase`, `mug_erase`, `fringe_skip`, `bg_seeds`, `face_edge_protect` options (aria.md). Her day to day is Vengeance (`vengeance = { hp = 8, attack = 25 }`: a unit on 8 HP or less attacks 25% harder; no `mods`), her Super Power heals 3 HP and adds 20% attack.
 
 ## Limits
 The supplied pictures are one expression each: the happy, sad and angry slots show the neutral face (edited faces were rejected; real expression pictures from the owner are picked up as `art-src/cos/<id>_<expression>.*`). The importer expects a bust on a

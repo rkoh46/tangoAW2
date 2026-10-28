@@ -124,8 +124,8 @@ class Ctx:
             # 1 + the bonus, u16 per army at 0x0203C820)
             snap = g.e.u16(0x0203C820 + 2 * (u["army"] - 1))
             tower_fp += snap - 1 if snap else 3 * self.properties(g, u["army"])
-        if p["co"] == 93 and st["co_abilities"] and 0 < u["hp"] <= 50:
-            tower_fp += 20      # Aria's Vengeance: a unit on 5 HP or less (internal 50) attacks 20% harder (crate::aria::vengeance)
+        if p["co"] == 93 and st["co_abilities"] and 0 < u["hp"] <= 80:
+            tower_fp += 25      # Aria's Vengeance: a unit on 8 HP or less (internal 80) attacks 25% harder (crate::aria::vengeance)
         tower_def = self.rules.tower(p["co"], p["co_mode"], 1) * towers
         return damage.Side(
             type=u["type"], hp=u["hp"], ammo=u["ammo"],

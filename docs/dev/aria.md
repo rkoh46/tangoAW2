@@ -9,12 +9,12 @@ Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos
 ## What she does (the owner's redesign: two small rules of her own)
 | | **Vengeance** (day to day) | **Build Anew** (Super Power, 7 stars) |
 |---|---|---|
-| Attack | a unit with 5 HP or less (displayed) attacks 20% harder | every unit +20% (and the power's own +10% / +10%) |
+| Attack | a unit with 8 HP or less (displayed) attacks 25% harder | every unit +20% (and the power's own +10% / +10%) |
 | HP | | every unit recovers 3 HP (`RepairUnit(unit, 3, 0)`, free) |
 | Luck, movement, defence | the game's own (Asuka keeps Nell's luck and Sturm's movement) | nothing more |
-- **Vengeance** is a per-unit firepower term: `aria::vengeance(hp)` (20 for 1..50 internal HP, i.e. 5 displayed or less) added in `com_tower::side_firepower` with the other terms of a battle's base damage (Com Towers, skills),
+- **Vengeance** is a per-unit firepower term: `aria::vengeance(hp)` (25 for 1..80 internal HP, i.e. 8 displayed or less) added in `com_tower::side_firepower` with the other terms of a battle's base damage (Com Towers, skills),
   so the forecast, the attack and the counterattack agree; the HP is the unit record's at the time the strike is worked out (a counterattack uses the HP the hit left). `data.py` has no mod for it: `cos/aria.toml` says
-  `vengeance = { hp = 5, attack = 20 }` and the test calculator adds it in `Ctx.side`.
+  `vengeance = { hp = 8, attack = 25 }` and the test calculator adds it in `Ctx.side`.
 - **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt. Her CO row has 0 stars for it (`aria::STARS = (0, 7)`), which is all the game needs: the map menu has no "Power" entry (and "Super" appears at exactly
   7 x 9000, +20% each use), the HUD meter has a mark for the Super Power only, the CO page says she has none (the text is `[cop] text` in her data file, the wording of the page AW2 writes for Sturm), the
   CPU plays her with Von Bolt's profile (`ds_ai::template_of` -> 11) and Sturm's power settings in her row (`co_roster::new_row`): a Super Power as soon as the meter allows, never a CO Power. Her CO Power
@@ -53,5 +53,5 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
 
 ## Verification (what was run)
 `aw2dev co verify aria --net` (`co_verify_*_aria`, the generic scenarios against `cos/aria.toml` through `cospec.py`: attack, defence, counter and meter, move, economy, the heal of 3, the meter's 7 stars and the
-missing Power entry, the Tag Power with Nell, an unlisted pair, the CPU's Super Power, the HQ, both peers equal), `tests/test_aria.py` (the row, Vengeance at 5 and 6 displayed HP in both levels and as a counterattacker,
+missing Power entry, the Tag Power with Nell, an unlisted pair, the CPU's Super Power, the HQ, both peers equal), `tests/test_aria.py` (the row, Vengeance at 8 and 9 displayed HP in both levels and as a counterattacker,
 the menu, the CPU, Build Anew's heal and nothing else), `aw2dev test`, `aw2dev co check`, `co balance`, `armyskin check --live` and `kit check`.

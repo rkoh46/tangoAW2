@@ -440,7 +440,7 @@ class AriaArt(unittest.TestCase):
         cos, tags = data.load_all()
         a = cos["aria"]
         self.assertEqual((a["army"], a["stars"], a["hq"]), ("orange_star", {"cop": 0, "scop": 7}, "default"))
-        self.assertEqual(a["d2d"]["vengeance"], {"hp": 5, "attack": 20})
+        self.assertEqual(a["d2d"]["vengeance"], {"hp": 8, "attack": 25})
         self.assertEqual(a["d2d"]["mods"], [])
         self.assertEqual(a["scop"]["mods"], [{"units": "all", "attack": 20}])
         self.assertEqual(a["scop"]["heal"], 3)

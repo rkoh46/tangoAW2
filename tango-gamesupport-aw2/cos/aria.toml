@@ -1,5 +1,5 @@
 # Aria, Commander of the New Accord (docs/dev/co-kit.md, docs/dev/aria.md). Nell's sister, an Orange Star CO: the final opponent of the BH2 Campaign (docs/BH2_CAMPAIGN.md section 9, branch bh2design)
-# and Asuka's mirror. Her numbers are her own (src/aria.rs): Vengeance (+20% attack for a unit on 5 HP or less); only a Super Power: heals 3 and +20% attack. Not in the Emerald Sun Campaign.
+# and Asuka's mirror. Her numbers are her own (src/aria.rs): Vengeance (+25% attack for a unit on 8 HP or less); only a Super Power: heals 3 and +20% attack. Not in the Emerald Sun Campaign.
 id = "aria"
 name = "Aria"
 army = "orange_star"
@@ -17,10 +17,10 @@ stars = { cop = 0, scop = 7 }
 
 [d2d]
 name = "Vengeance"
-text = "Units with 5 HP or less attack with 20% more firepower. Her wounded troops fight hardest."
+text = "Units with 8 HP or less attack with 25% more firepower. Her wounded troops fight hardest."
 # no mods: the bonus depends on the unit's HP (crate::aria::vengeance); the check below plays it in battle
 mods = []
-vengeance = { hp = 5, attack = 20 }
+vengeance = { hp = 8, attack = 25 }
 
 [cop]
 # No CO Power (stars.cop = 0): the CO page says so, as AW2 says of Sturm.

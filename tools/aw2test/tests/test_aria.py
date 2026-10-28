@@ -1,7 +1,7 @@
 """Aria (CO 93, crate::aria): Nell's sister, an Orange Star CO with only a Super Power (docs/dev/aria.md). The numbers every CO has (attack, defence, move, heal, meter, Tag Power) are played by
 `aw2dev co verify aria` (tests/test_co_verify.py) against `cos/aria.toml`; this file proves the rest with numbers from the game:
     - the CO table's row: 0 stars for the CO Power, 7 for the Super Power, the game's own luck, Orange Star's style and colour bytes, her texts and quote slots;
-    - Vengeance: a unit on 5 HP or less (displayed) attacks 20% harder, 6 HP and up does not, in every power level, as attacker and as counterattacker, checked against the calculator's ranges;
+    - Vengeance: a unit on 8 HP or less (displayed) attacks 25% harder, 9 HP and up does not, in every power level, as attacker and as counterattacker, checked against the calculator's ranges;
     - no CO Power: the map menu never offers "Power" and offers "Super" at 7 stars, the CPU plays her with a Super Power only;
     - Build Anew heals 3 HP, adds 20% firepower and nothing else (no move, no funds);
     - the Orange Star HQ is drawn for her."""
@@ -112,13 +112,13 @@ def aria_cpu_uses_only_her_super_power(ctx):
 
 
 @test(modes=("ds",))
-def aria_vengeance_adds_twenty_percent_to_a_unit_on_five_hp_or_less(ctx):
-    """Vengeance: Aria's Tanks at 100, 60, 51, 50, 41, 10 internal HP (6, 6, 6, 5, 5, 1 displayed) each hit an Infantry; every loss is inside the calculator's range, and the range differs between 6 and 5
-    displayed HP by the 20% (the calculator adds it for 50 and under, `Ctx.side`). The same at the Super Power level (Build Anew's 20% on top) and as the counterattacker of Andy's hit."""
+def aria_vengeance_adds_twenty_five_percent_to_a_unit_on_eight_hp_or_less(ctx):
+    """Vengeance: Aria's Tanks at 100, 90, 81, 80, 71, 10 internal HP (10, 9, 9, 8, 8, 1 displayed) each hit an Infantry; every loss is inside the calculator's range, and the range differs between 9 and 8
+    displayed HP by the 25% (the calculator adds it for 80 and under, `Ctx.side`). The same at the Super Power level (Build Anew's 20% on top) and as the counterattacker of Andy's hit."""
     from aw2test import coverify as cv
     for mode in (0, 2):
         m = ctx.map()
-        hps = [100, 60, 51, 50, 41, 10]
+        hps = [100, 90, 81, 80, 71, 10]
         for k, _ in enumerate(hps):
             m.unit(1, "tank", 3 + 3 * k, 10).unit(2, "infantry", 3 + 3 * k, 11)
         g = ctx.start(m, ["aria", "andy"], env=cv.ENV)
@@ -135,12 +135,12 @@ def aria_vengeance_adds_twenty_percent_to_a_unit_on_five_hp_or_less(ctx):
             loss = before - hp_of(g, x, 11)
             ranges[hp] = sorted(out.losses)
             ctx.check(loss in out.losses, f"mode {mode}, Tank at {hp} HP: loss {loss} inside the calculator's {sorted(out.losses)}")
-        # 6 displayed HP (51, 60) has no Vengeance and 5 (50) does: the calculator's range at 50 HP is the one with 20% more per bar
-        ctx.check(max(ranges[50]) * 10 // 5 >= max(ranges[60]) * 10 // 6 or max(ranges[50]) > 0, "the ranges are the calculator's")
+        # 9 displayed HP (81, 90) has no Vengeance and 8 (80) does: the calculator's range at 80 HP has 25% more per bar
+        ctx.check(max(ranges[80]) * 9 > max(ranges[81]) * 8, "Vengeance shows: 80 HP hits harder per bar than 81")
         g.e.close()
-    # the counterattack: Andy's Infantry hits Aria's Tank (at 100, 50 and 56 internal HP) and she counters; the counter is worked out from the HP the hit left (the unit record's), Vengeance included:
-    # a Tank hit from 56 (6 displayed) down to 5 displayed counters with +20%
-    for hp in (100, 50, 56):
+    # the counterattack: Andy's Infantry hits Aria's Tank (at 100, 80 and 86 internal HP) and she counters; the counter is worked out from the HP the hit left (the unit record's), Vengeance included:
+    # a Tank hit from 86 (9 displayed) down to 8 displayed counters with +25%
+    for hp in (100, 80, 86):
         m = ctx.map()
         m.unit(1, "tank", 10, 10).unit(2, "infantry", 11, 10)
         g = ctx.start(m, ["aria", "andy"], humans=(1, 2), env=cv.ENV)
