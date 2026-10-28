@@ -833,6 +833,9 @@ fn build(core: &Core) -> Option<Built> {
         } else {
             crate::ds_co_art::co_art_for(co, ds)?
         };
+        if let Some(plate) = crate::es_cos::name_plate(co) {
+            art.name = plate; // Varro's own name plate (the donor's face stays)
+        }
         if co == CLONE_ANDY {
             // His name graphic reads "Clone", cut from AW2's own letters.
             if let Some(n) = clone_name(core) {

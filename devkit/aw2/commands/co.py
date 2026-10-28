@@ -103,6 +103,15 @@ def pimport(a):
             probs, summary = recolour.check(co, d)
             util.say(f"{co}: {summary}" + ("; PROBLEMS " + "; ".join(probs) if probs else "") + " (nothing to import or compare: no committed art)")
             bad += bool(probs)
+    for co, d in cos.items():
+        if d.get("portrait", {}).get("name_plate") and (not a.co or co in a.co):
+            # a placeholder face with a name plate of its own (Varro): only name.png
+            if a.check:
+                same = I.name_plate_same(co, d["name"])
+                util.say(f"{co}: {'the committed name plate is what the letters give' if same else 'DIFFERENT from the committed name plate'}")
+                bad += not same
+            else:
+                util.say(f"{co}: wrote {I.write_name_plate(co, d['name']).relative_to(cfg.REPO)}/name.png (name plate only)")
     for co, d in sel.items():
         spec = {"source": d["portrait"]["source"]}
         if getattr(a, "pixelart", False):

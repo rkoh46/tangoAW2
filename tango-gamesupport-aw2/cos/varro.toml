@@ -31,3 +31,5 @@ quote = ["Sol Invictus! The sun", "does not set on Aurea!"]
 [portrait]
 # a Dual Strike CO's face stands in until his own is drawn (crate::es_co::INFO donor)
 placeholder = true
+# his name plate is his own (art/cos/varro/name.png, our letters: `aw2dev co portrait import varro`); the face is the donor's until his own is drawn
+name_plate = true

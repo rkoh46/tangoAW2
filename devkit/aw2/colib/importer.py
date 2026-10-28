@@ -362,6 +362,25 @@ def write_art(co, im, root=None, name=None):
     return d
 
 
+def name_plate_png(name):
+    """The 48 x 16 name graphic of `name` as a PIL image (the fixed name palette, our letters)."""
+    from . import namefont
+    return _png(namefont.name_grid(name), [(0, 0, 0)] + namefont.name_rgb()[1:])
+
+
+def write_name_plate(co, name, root=None):
+    """A CO with a placeholder face (Varro) still has his own name plate: art/cos/<co>/name.png only."""
+    d = (root or ART_DIR) / co
+    d.mkdir(parents=True, exist_ok=True)
+    name_plate_png(name).save(d / "name.png", optimize=True, transparency=0, bits=4)
+    return d
+
+
+def name_plate_same(co, name, root=None):
+    p = (root or ART_DIR) / co / "name.png"
+    return p.exists() and np.array_equal(np.array(Image.open(p)), np.array(name_plate_png(name)))
+
+
 def read_art(co, root=None):
     """-> ({name: indexes}, palette) from the committed PNGs."""
     d = (root or ART_DIR) / co

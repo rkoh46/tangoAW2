@@ -158,6 +158,15 @@ fn px(bytes: &[u8]) -> Option<(Px, Vec<u16>)> {
     decode(bytes)
 }
 
+/// Varro's own name plate (his face is still a donor's): the 48 x 16 name graphic of `art/cos/varro/name.png`, in AW2's name tiles; None for any other CO.
+pub fn name_plate(co: u8) -> Option<Vec<u8>> {
+    if co != crate::es_co::VARRO {
+        return None;
+    }
+    let (name, _) = px(include_bytes!("../art/cos/varro/name.png"))?;
+    (name.w == 48 && name.h == 16).then(|| name.to_tiles(6, 2, |k| (k / 2, k % 2)))
+}
+
 /// A CO's pictures in AW2's formats: the figure as the body's two files, the normal, happy and sad faces (the third slot of AW2's three is the defeat face; the angry
 /// face is kept for dialogue), the mini (two columns of 2 x 3 tiles), the HUD face, the name, and the palette (one scheme, repeated for the eight colour schemes).
 pub fn art(co: u8) -> Option<CoArt> {
@@ -223,5 +232,7 @@ mod tests {
             assert!(name(co).is_some());
         }
         assert_eq!(name(crate::co_new::ES_FIRST), Some(b"Klaus".to_vec()));
+        assert_eq!(name_plate(crate::es_co::VARRO).map(|n| n.len()), Some(crate::ds_co_art::NAME_LEN), "Varro has a name plate of his own");
+        assert!(name_plate(crate::es_co::KLAUS).is_none());
     }
 }
