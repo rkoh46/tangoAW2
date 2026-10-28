@@ -80,20 +80,21 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 22 | Von Bolt's Note | Orange Star sea fortress | Asuka + Von Bolt (Tag) | Jess + Colin | The sealed note is opened. **BF**, against a fortress strong enough to take it. |
 | 23 | Where the Map Ends | The Obelisk, west | Asuka + Crumb (Tag) | Drake + Grit (an Allied strike force to destroy the Obelisk) | Crumb's key opens the door. Sturm walks through it into the storm, leaving Black Hole to Asuka: "Hold my world." You hold the Obelisk until the storm passes (a day limit). Sturm is gone, not beaten: an open hook. |
 | 24 | The Gate of Colours | Orange Star's outer capital | Asuka + a free partner | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M26.** |
-| 25 | **The Last Accord** | The Accord's citadel, a huge map | Asuka + a free partner | **Gauntlet: Nell, then Olaf, Kanbei and Eagle** | **The final mission**, scripted like BH1's Nell-to-Andy takeover but longer, with no time limit. Nell holds the citadel. As you break each line, fresh armies arrive and the next CO takes command from a new HQ: Olaf's Blue Moon with snow, Kanbei's Yellow Comet elite, then Eagle's air fleet. The captured door-seal machinery is the **Deathray at the top of the map**, now in Allied hands. Black Cannons, Lasers and minicannons guard the walls. Every wave is strong enough to stand up to them. |
+| 25 | **The Last Accord** | The Accord's citadel, a huge map | Asuka + a free partner | **Gauntlet: Nell, then Olaf, Kanbei and Eagle, then a new Orange Star CO** | **The final mission**, scripted like BH1's Nell-to-Andy takeover but longer, with no time limit. Nell holds the citadel. As you break each line, fresh armies arrive and the next CO takes command from a new HQ: Olaf's Blue Moon with snow, Kanbei's Yellow Comet elite, then Eagle's air fleet. When all four have fallen, a **new Orange Star CO** (art from the owner) takes the last stand. The Allies use **no Black Hole inventions**: their walls are terrain, numbers and reinforcements. Your own inventions may stand on your side. |
 | **Secret 26** | **Through the Door** | Past the map: the edge of Emerald Sun's land | Asuka + a free pick | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
 
 **Counts**
 - Two-front missions: 3 (M4, M10, M20).
-- Factory missions: your Black Factory in M3, M14 and M22; the Allies' captured inventions in M25.
+- Factory missions: your Black Factory in M3, M14 and M22.
+- **Rule (owner):** Black Hole's inventions are Black Hole's alone. The Allies never own or use one in any mission.
 - Inventions: in about 12 missions.
-- Deathray: M25 only, at the top of the map (Allied-held).
+- Deathray: Black Hole's alone, never held by the Allies, and always at the top of the map. It goes in M22's sea fortress assault, on your side. It is not in the final mission.
 - Forced CO picks: about 12, the rest free.
 - Day limits: only where the clock is the mission (M2, M7, M16, M20, M23).
 
 ## 5. Ending and credits
 
-- **Epilogue after M25.** Eagle is the last to fall. Nell surrenders the Accord's seal to Asuka, not to Sturm. Asuka leads Black Hole and the world, with Hawke as Marshal; "Succession" ends with Hawke kneeling to the army, not the person. Crumb keeps Gerald and the key, and the door hums, closed but not locked. Sturm is somewhere past it.
+- **Epilogue after M25.** The new Orange Star CO is the last to fall. Nell surrenders the Accord's seal to Asuka, not to Sturm. Asuka leads Black Hole and the world, with Hawke as Marshal; "Succession" ends with Hawke kneeling to the army, not the person. Crumb keeps Gerald and the key, and the door hums, closed but not locked. Sturm is somewhere past it.
 - **Separate credits sequence.** A full staff roll with its own music, cast by army, and a last page.
 - **Secret epilogue after M26.** Emerald Sun's legion halts at the edge of the map. Klaus: "The sun does not set. It waits." This links to the Emerald Sun Campaign.
 
@@ -121,3 +122,14 @@ The owner's AW1-style picture is imported pixel by pixel as a new interactive wo
 4. **The owner's picture is the world map**, imported pixel by pixel.
 5. **Three new songs (Door motif, final battle, credits):** sketches first, for the owner to listen to.
 6. **The owner's new CO:** concepts are offered for the owner to choose from.
+7. **No Deathray or other Black Hole invention in Allied hands (owner).** The final mission has no Deathray.
+8. **M25's last enemy is a new Orange Star CO,** after Nell, Olaf, Kanbei and Eagle. Lead designer's concept below; the owner supplies the art.
+
+## 9. The new Orange Star CO (concept for review)
+
+**Aria, Commander of the New Accord.** Aria is the first officer raised east of the fence: Nell's protégée, who rebuilt the Allied army while Nell was a prisoner. She wrote the words of Andy's broadcast, "BUILD ANEW", and believes in the Accord's ideal even after Asuka's ledger exposed its lie. She is Asuka's mirror: what Sonja might have become if she had stayed. She appears in Act IV scenes (planning Nell's rescue in M16, the war room after M20), so M25's reveal is earned.
+- **Day to day, "Common Cause":** her units are +10% defence, and +10% more next to another of her units.
+- **CO Power, "Rally":** all units heal 1 HP and move 1 more space.
+- **Super CO Power, "Build Anew":** all units heal 3 HP and gain +20% attack and +30% defence. Every city and HQ she owns produces funds twice that day.
+- **Theme:** an Orange Star hero theme of her own: bright, determined, the last stand.
+- **Name, look and gender are open:** your art decides.
