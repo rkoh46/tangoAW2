@@ -46,20 +46,18 @@ def build():
     m.put("1", 3, 12).put("2", 25, 3).put("t", 20, 12).put("p", 26, 19)
     m.puts("B", [(5, 10), (5, 14)]).puts("C", [(4, 9), (4, 15), (2, 11)])                        # the depot's district
     m.puts("B", [(23, 4), (27, 5)]).puts("C", [(24, 2), (27, 3), (22, 3)])                       # Jess's fort
-    # --- roads that follow the land (each leg bends round mountains and woods), bridges at (15,5), (15,9) and (16,16)
-    route(m, [(6, 12), (8, 12), (9, 9), (13, 9), (15, 9, "="), (20, 8), (24, 10), (26, 9)], seed=1, wander=1.4)          # the middle road: the halfway bridge
-    route(m, [(8, 12), (9, 15), (14, 16), (16, 16, "="), (21, 17), (24, 15), (25, 13)], seed=2, wander=1.4)             # the south road: the escape route
-    route(m, [(9, 9), (10, 5), (14, 5), (15, 5, "="), (19, 6), (22, 4), (25, 4)], seed=3, wander=1.4)                   # the north road to Jess's fort
-    route(m, [(25, 4), (27, 7), (26, 9), (24, 12), (26, 15), (27, 17), (26, 18)], seed=4, wander=1.4)                                         # the east road to the quay
-    route(m, [(10, 5), (6, 4), (3, 6)], seed=11); town(m, 3, 6, "CC", seed=12)
-    route(m, [(20, 9), (20, 11)], seed=5)                                                                       # the spur up to the Com Tower
-    route(m, [(4, 12), (6, 12)], seed=6); route(m, [(4, 10), (5, 12)], seed=7)
+    # --- roads that follow the land: one main road from the depot over the halfway bridge (15,9) to the quay, a south branch over the escape bridge (16,16), a north branch to Jess's fort and
+    # the Com Tower's spur; open country between them (bridges at (15,9) and (16,16))
+    route(m, [(6, 12), (8, 11), (10, 9), (13, 9), (15, 9, "="), (20, 8), (25, 10), (26, 14), (26, 18)], seed=1, wander=0.5)
+    route(m, [(8, 12), (9, 15), (13, 16), (16, 16, "="), (20, 17), (25, 17)], seed=2, wander=0.5)
+    route(m, [(22, 8), (23, 5), (25, 4)], seed=3, wander=0.5)
+    route(m, [(20, 8), (20, 11)], seed=5)
+    route(m, [(4, 12), (6, 12)], seed=6)
     thin_roads(m)
-    # towns at the junctions and bridgeheads
-    town(m, 10, 9, "CC", seed=1); town(m, 10, 15, "CB", seed=2); town(m, 13, 9, "C", seed=3); town(m, 17, 9, "CC", seed=4)
-    town(m, 22, 9, "CCb", seed=5); town(m, 22, 16, "CC", seed=6); town(m, 26, 12, "C", seed=7); town(m, 26, 17, "CC", seed=8)
-    town(m, 17, 5, "C", seed=9); town(m, 12, 5, "C", seed=10); town(m, 18, 16, "C", seed=11)
-    neutralize(m, 13)
+    # towns at the junctions and bridgeheads; a village in the north-west corner
+    town(m, 10, 9, "CC", seed=1); town(m, 10, 15, "CB", seed=2); town(m, 17, 9, "CC", seed=4); town(m, 22, 8, "CCb", seed=5); town(m, 21, 17, "CC", seed=6)
+    town(m, 26, 12, "C", seed=7); town(m, 26, 16, "CC", seed=8); town(m, 13, 9, "C", seed=9); town(m, 18, 17, "C", seed=11); town(m, 23, 6, "C", seed=10)
+    town(m, 4, 4, "CC", seed=12, roadside=False); town(m, 12, 3, "CC", seed=13, roadside=False)
     m.unit(1, APC, 6, 12, name="crate")
     m.units(1, INF, [(5, 11), (5, 13), (7, 10), (7, 14)]).units(1, MECH, [(9, 9), (9, 16)]).units(1, TANK, [(9, 12), (10, 10), (10, 14)])
     m.unit(1, ART, 4, 12).unit(1, RECON, 11, 12)
