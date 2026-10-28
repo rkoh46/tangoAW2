@@ -46,7 +46,7 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
   eye, and the coat's middle and dark orange (the light one comes from the clustering): the coat is a three-shade ramp (ff7b10 / de6308 / c55200), the hair gold plus its shadows, the shirt white and a grey.
 - Large art: 128 x 160 cells at 1x (`frame = [-6, -2]`: hat to the coat's hem); the mug is a 48-cell square at 1x (`mug = [33, 11]`): her head is 54 cells wide, so the square keeps the face and cuts a little
   hair at both sides; `eyes` places the mini and HUD windows.
-- **Facing**: imported with `flip = false`, as in the source, which is how AW2's COs face (right). In the picture her **body is turned three quarters to the viewer's right** (the coat's open front and her hip face right,
+- **Facing**: imported with `flip = true` (mirrored at the owner's request: as supplied she looked the way AW2's COs face, but the owner wants her the other way). In the picture her **body is turned three quarters to the viewer's right** (the coat's open front and her hip face right,
   the cigarette hand on the left) and her **head faces forward, eyes toward the viewer** with the nose and the face's shadow side turned slightly to the right: she reads as facing right, like Kanbei and Asuka.
 - Tests: `aw2.colib.test_co.AriaArt` (the committed art equals a fresh import, lint, lightness and fringe lints, the palette keeps blue / white / two skin tones / a three-orange coat, the checker flatten),
   `co portrait lint`, `co portrait ingame aria`, `tests/test_aria_pictures.py` and the review sheet.

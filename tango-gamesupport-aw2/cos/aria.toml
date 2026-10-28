@@ -44,4 +44,4 @@ defeat = "Then build it better than I did."
 [portrait]
 # The picture the project owner supplied (pixel art, its "transparent" background a checkerboard baked into the JPEG: `checker = true` in the framing file beside it). A direct import, facing right as supplied.
 source = "art-src/cos/aria_v1.jpg"
-flip = false
+flip = true
