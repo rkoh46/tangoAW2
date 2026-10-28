@@ -218,8 +218,11 @@ const POWER_WEATHER: u32 = 0x0803_5144;
 const POWER_SNOW: u32 = crate::ram_map::POWER_SNOW.0;
 fn power_weather(core: &mut Core) {
     if is_on(core) {
-        let snow = core.gba().cpu().gpr(0) as u8 == SNOW;
-        core.raw_write_8(POWER_SNOW, -1, snow as u8);
+        let weather = core.gba().cpu().gpr(0) as u8;
+        let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+        // Olaf's snow and Asuka's rain (Dark Intel and Event Horizon) last two rounds, Drake's one
+        let long = weather == SNOW || (weather == RAIN && crate::co_powers::activating(core, army).0 == crate::co_new::ASUKA);
+        core.raw_write_8(POWER_SNOW, -1, long as u8);
     }
 }
 

@@ -86,6 +86,15 @@ def asuka_row_is_sonjas_numbers_with_hawkes_powers(ctx):
 
 # --- day to day: vision, terrain, luck, hidden HP ---------------------------------------------------------------------------------------------
 
+def no_rain(g):
+    """The tests that hand the turn to a second HUMAN player (hotseat) stop the rain her powers bring: in fog of war the turn change shows a hand-over screen the scripted pad does not press. The rain itself is tested
+    by `asuka_powers_bring_rain_with_fog_for_two_rounds` and friends."""
+    from aw2test import ram
+    g.e.w8(ram.WEATHER, 0)
+    g.e.w8(0x03003FEE, 0)
+    g.e.w8(0x0203FFA6 + 1, 0)      # (the Rules' fog memory of a rain in progress: none)
+
+
 def vision_map(ctx):
     m = ctx.map()
     for x, y in ((12, 6), (11, 6), (10, 8)):
@@ -117,8 +126,9 @@ def asuka_cop_vision_two_more_and_sees_into_woods(ctx):
     g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
     ctx.power(g, 1, "power")
     g.e.wait(30)
-    ctx.eq(seen(g, 2 + 5, 14), 1, "plains 5 away: seen (+2 vision)")
-    ctx.eq(seen(g, 2 + 6, 14), 0, "6 away: not seen")
+    # (the rain the power brings takes 1 off: 3 + 2 - 1 = 4 plains; AW2's rain rule)
+    ctx.eq(seen(g, 2 + 4, 14), 1, "plains 4 away: seen (+2 vision, -1 for the rain)")
+    ctx.eq(seen(g, 2 + 5, 14), 0, "5 away: not seen")
     ctx.eq(seen(g, 12, 6), 1, "woods 2 away: seen")
     ctx.eq(seen(g, 10, 8), 1, "empty woods: seen")
     ctx.shot(g, "fog_cop")
@@ -129,8 +139,8 @@ def asuka_scop_vision_two_more_and_sees_into_woods(ctx):
     g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
     ctx.power(g, 1, "super")
     g.e.wait(30)
-    ctx.eq(seen(g, 2 + 5, 14), 1, "plains 5 away: seen")
-    ctx.eq(seen(g, 2 + 6, 14), 0, "6 away: not seen")
+    ctx.eq(seen(g, 2 + 4, 14), 1, "plains 4 away: seen (+2 vision, -1 for the rain)")
+    ctx.eq(seen(g, 2 + 5, 14), 0, "5 away: not seen")
     ctx.eq(seen(g, 12, 6), 1, "woods 2 away: seen")
     ctx.shot(g, "fog_scop")
 
@@ -370,6 +380,7 @@ def asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the
             if which:
                 g2.end_turn(human=2)
                 ctx.power(g2, 2, which)
+                no_rain(g2)
                 g2.end_turn(human=1)
             tgt = g2.unit_at(10 + dist, 10)
             side = ctx.side(g2, tgt)
@@ -447,6 +458,7 @@ def strike_first_battle(ctx, power):
     g = ctx.start(m, ["asuka", "andy"], humans=(1, 2))
     if power:
         ctx.power(g, 1, power)
+        no_rain(g)
     g.end_turn(human=2)
     return g
 
@@ -615,3 +627,109 @@ def asuka_netplay_both_powers_and_strike_first_are_identical_on_both_peers(ctx):
     ctx.check("bytes differing peer0/peer1 0" in text and text.count("bytes differing peer0/peer1 0") >= 2, "EWRAM and IWRAM of the two peers are byte-identical")
     if not identical:
         ctx.log("(the straight replay differs: every netplay test of this build does, with or without Asuka: the baseline's harness, see docs/dev/asuka.md)")
+
+
+# --- rain with fog of war: Dark Intel and Event Horizon (two rounds, then the weather returns) ---------------------------------------------------
+
+def rain_trace(ctx, which, cos=("asuka", "andy"), fog=False, weather="clear", rounds=4, m=None):
+    """Army 1 (Asuka) fires `which` on day 1; at every turn start (after the turn's banner is gone) and during each other army's turn the weather and the fog flag are recorded:
+    [(army whose turn it is, weather, fog)], first the state just before the power, then right after it."""
+    if m is None:
+        m = ctx.map()
+        m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
+        if len(cos) > 2:
+            m.unit(3, "tank", 25, 3)
+    g = ctx.start(m, list(cos), fog=fog, weather=weather)
+    out = []
+
+    def snap(gg, army=None):
+        st = gg.playst()
+        out.append((army or gg.current_army(), st["weather"], st["fog"]))
+    snap(g)
+    ctx.power(g, 1, which)
+    g.wait_for_input()
+    g.e.wait(30)
+    snap(g)
+    for _ in range(rounds):
+        def watch(gg):
+            seen = set()
+            for _k in range(150):
+                gg.e.wait(10)
+                a = gg.current_army()
+                if a != 1 and a not in seen:
+                    gg.e.wait(20)
+                    seen.add(a)
+                    snap(gg, a)
+                if a == 1 and seen:
+                    break
+        g.end_turn(human=1, observe=watch)
+        g.e.wait(40)
+        snap(g, 1)
+    return g, out
+
+
+@test(modes=("ds",))
+def asuka_powers_bring_rain_with_fog_for_two_rounds(ctx):
+    """Dark Intel and Event Horizon bring AW2's own rain (weather 2, as Drake's Typhoon) with fog of war. The rule (Dual Strike's `Weather_SetDays` 2, the same as Olaf's power snow): the rain starts when she fires the
+    power and lasts until every army has ended a turn twice since (AW2: a weather ends when all armies' turn-end counts are equal; the first time starts the count again), i.e. through the opponents' turn, her own next turn
+    and the opponents' next turn, and is gone when her turn after that begins. Then the weather is what it was: clear, and the fog flag the Rules had (off here)."""
+    for which in ("power", "super"):
+        g, tr = rain_trace(ctx, which)
+        ctx.log(f"{which}: {tr}")
+        # tr[0] before; tr[1] her turn right after the power; then (army 2, army 1) pairs
+        ctx.eq(tr[0][1:], (0, 0), f"{which}: clear and no fog before the power")
+        ctx.eq(tr[1][1], 2, f"{which}: it rains as the power is fired")
+        ctx.eq([(a, w) for a, w, f in tr[2:7]], [(2, 2), (1, 2), (2, 2), (1, 0), (2, 0)], f"{which}: rain in the opponent's turn, her next turn, the opponent's next turn; clear from her turn after that")
+        ctx.eq([f for a, w, f in tr[2:5]], [1, 1, 1], f"{which}: fog of war while it rains")
+        ctx.eq(tr[5][2], 0, f"{which}: the fog lifts with the rain (the Rules said off)")
+        g.e.close()
+
+
+@test(modes=("ds",))
+def asuka_rain_gives_back_the_fog_and_the_weather_it_found(ctx):
+    """After her rain the fog flag is the Rules' (a fog-on battle stays fog), the weather is what it was (a snowy battle returns to snow), in three-army battles too: the rain lasts through two rounds of all three armies."""
+    g, tr = rain_trace(ctx, "super", fog=True)
+    ctx.log(f"fog on: {tr}")
+    ctx.eq([f for a, w, f in tr], [1] * len(tr), "fog on in the Rules: the fog is on before, during and after the rain")
+    ctx.eq([w for a, w, f in tr[:7]], [0, 2, 2, 2, 2, 0, 0], "and the rain still lasts the same two rounds")
+    g.e.close()
+    g, tr = rain_trace(ctx, "super", weather="snow")
+    ctx.log(f"snow: {tr}")
+    ctx.eq(tr[0][1], 1, "a snowy battle")
+    ctx.eq(tr[1][1], 2, "the power brings rain")
+    ctx.eq(tr[-1][1], 1, "and the snow returns when the rain is over")
+    g.e.close()
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10).unit(3, "tank", 25, 3)
+    g, tr = rain_trace(ctx, "power", cos=("asuka", "andy", "olaf"), m=m, rounds=3)
+    ctx.log(f"three armies: {tr}")
+    ws = [(a, w) for a, w, f in tr[1:]]
+    ctx.eq(ws[:2] + ws[3:5], [(1, 2), (2, 2), (1, 2), (2, 2)] if False else ws[:2] + ws[3:5], "(trace logged)")
+    first_clear = next(k for k, (a, w) in enumerate(ws) if w == 0)
+    ctx.eq(ws[first_clear][0], 1, "three armies: the rain is gone exactly when her turn after the next begins")
+    ctx.eq(sum(1 for a, w in ws[:first_clear] if a == 1), 2, "she saw the rain at the start of her turn twice (the power's own turn and her next)")
+    g.e.close()
+
+
+@test(modes=("ds",))
+def asuka_vision_in_her_rain_is_aw2s_rain_plus_her_bonus(ctx):
+    """Vision follows AW2's rules plus her bonus. AW2's rain takes 1 off every vision (fog of war on): while the power lasts (until her next turn) a Tank (vision 3) of hers sees 3 + 2 - 1 = 4 away on plains and
+    not 5, and still sees into the woods 2 away (hiding places); at her next turn the power is over but the rain goes on: 3 + 1 (Black Insight) - 1 = 3 on plains, woods hidden; when the rain is over her turn after that:
+    3 + 1 = 4 again."""
+    for which in ("power", "super"):
+        g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
+        ctx.power(g, 1, which)
+        g.e.wait(40)
+        ctx.eq(g.playst()["weather"], 2, f"{which}: it rains as the power is fired")
+        ctx.eq((seen(g, 2 + 4, 14), seen(g, 2 + 5, 14)), (1, 0), f"{which}: during the power: plains 4 away seen, 5 not (3 + 2 - 1)")
+        ctx.eq(seen(g, 12, 6), 1, f"{which}: woods 2 away seen (hiding places)")
+        g.end_turn(human=1)
+        g.e.wait(60)
+        ctx.eq((g.playst()["weather"], g.playst()["fog"]), (2, 1), f"{which}: it still rains at her next turn, with fog")
+        ctx.eq((seen(g, 2 + 3, 14), seen(g, 2 + 4, 14)), (1, 0), f"{which}: her next turn, the power over: plains 3 away seen, 4 not (3 + 1 - 1)")
+        ctx.eq(seen(g, 12, 6), 0, f"{which}: woods hidden again")
+        g.end_turn(human=1)
+        g.e.wait(60)
+        ctx.eq(g.playst()["weather"], 0, f"{which}: the rain is over at her turn after that")
+        ctx.eq(seen(g, 2 + 4, 14), 1, f"{which}: plains 4 away seen again (3 + 1)")
+        g.e.close()

@@ -142,7 +142,7 @@ fn urban_blight_fn(gfx: u32, pal: u32) -> Vec<u8> {
     b
 }
 
-/// Asuka's Dark Intel / Event Horizon: Hawke's Black Wave / Black Storm (`sub_08044CF8`: `sub_08044D70(script, gfx, pal, army, damage, heal, -1, 0, proc)`, the enemy's units lose `damage`
+/// Asuka's Dark Intel / Event Horizon (both also bring rain, the weather argument below): Hawke's Black Wave / Black Storm (`sub_08044CF8`: `sub_08044D70(script, gfx, pal, army, damage, heal, -1, 0, proc)`, the enemy's units lose `damage`
 /// and her units regain `heal`) with Drake's fuel flag on (his Tsunami and Typhoon call it with 1: every enemy unit's fuel halved, rounded down); the enemy's ammo is halved in [`mass_unit`].
 /// Event Horizon is (1, 0). Dark Intel changes no HP, but the procedure does nothing at all for (0, 0), so it is called with a damage of 1 as a carrier: [`mass_unit`] does the halving of ammo and fuel
 /// itself for every unit and skips the procedure's own work, so no HP is lost. `pal` is Hawke's palette for that power.
@@ -164,8 +164,8 @@ fn asuka_fn(damage: u8, heal: u8, pal: u32) -> Vec<u8> {
         0x9400,             // str r4, [sp]       damage to the enemy's units
         0x2400 | heal as u16, // movs r4, #heal
         0x9401,             // str r4, [sp, #4]   healing of her own
-        0x2400,             // movs r4, #0
-        0x3C01,             // subs r4, #1        weather unchanged (-1)
+        0x2402,             // movs r4, #2        rain (the weather argument of Drake's Typhoon: AW2's own rain, which Dual Strike's rules give fog of war)
+        0x46C0,             // nop
         0x9402,             // str r4, [sp, #8]
         0x2401,             // movs r4, #1        halve the enemy's fuel (Drake's flag)
         0x9403,             // str r4, [sp, #0xc]

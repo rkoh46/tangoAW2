@@ -8,6 +8,10 @@
 //! - **No movement trait** any more (the Sturm's-movement charts were dropped with the simplification); her day to day is **+5% attack and defence** again ([`DAY_BONUS`] 5, in every power too).
 //! - **Hawke's mass-HP procedure** (`sub_08044D70`, called by her own two power functions in `co_powers::asuka_fn`) is now only the carrier of the halving and one HP: Dark Intel ([`HP_ENEMY`] 0, [`HP_OWN`] 0)
 //!   changes no HP, Event Horizon makes every enemy unit lose 1 HP (never below 1); the sparkle and the cut-in are Hawke's (his presentation row is her template, [`LIKE`]).
+//! - **Rain for two rounds**: both powers set AW2's own rain (the weather argument of the mass procedure is 2, as Drake's Typhoon's), which Dual Strike's rules give fog of war ([`crate::ds_weather`]). The rain
+//!   lasts the way Olaf's power snow does (`ds_weather::power_weather`): AW2 ends a weather when every army has ended a turn since it began; for her rain the first time starts the count again, so it ends when
+//!   every army has ended two turns since the power: through the opponents' turn(s), her next turn and the opponents' next turn(s), gone when her turn after that begins (any number of armies). The weather and
+//!   the fog flag go back to what they were. Vision follows AW2's rain (-1) plus her bonus.
 //! - **Drake's halving, extended**: the same procedure's fuel flag (Drake's Tsunami and Typhoon) halves every enemy unit's fuel, rounded down, and `co_powers::mass_unit` halves every enemy unit's
 //!   ammo the same way (a unit with no ammo stat has 0 and is unaffected). Not Drake's rain.
 //! - **Sonja's art** (the project owner's decision): her presentation row's pictures, palette, expressions and HUD face are AW2's Sonja row; only her name graphic is hers. Her HQ is Black Hole's
@@ -20,6 +24,7 @@
 //! | Terrain stars the enemy loses | 1 | 2 | 3 |
 //! | HP | hidden from the enemy | none | every enemy unit loses 1 HP |
 //! | Enemy ammo and fuel | | halved | halved |
+//! | Weather | | rain with fog for two rounds | the same |
 //! | Luck | 0..19% (Nell's) | same | same |
 //! | Firepower | 0 | +10% (every power) | +10% |
 //!

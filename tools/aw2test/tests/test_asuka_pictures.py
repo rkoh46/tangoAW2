@@ -215,6 +215,8 @@ def asuka_pics_counter_break(ctx):
     m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10).unit(1, "infantry", 3, 3).unit(2, "infantry", 25, 15)
     g = ctx.start(m, ["asuka", "andy"], humans=(1, 2), visuals="a")
     ctx.power(g, 1, "super")
+    from tests.test_asuka import no_rain
+    no_rain(g)
     g.end_turn(human=2)
     ctx.shot(g, "cb_before")
     e = g.e
