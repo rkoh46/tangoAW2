@@ -215,6 +215,19 @@ pub fn held_hq(core: &Core) -> Option<(u8, u8)> {
         .flatten()
 }
 
+/// Whether (x, y) is one of the mission's held HQs (the first, or one of the gauntlet's further stage HQs).
+pub fn is_held_hq(core: &Core, x: u8, y: u8) -> bool {
+    if held_hq(core) == Some((x, y)) {
+        return true;
+    }
+    if !active(core) || is_ds(core) || !in_battle(core) {
+        return false;
+    }
+    campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.held_more.get(mission(core) as usize).map(|v| v.contains(&(x, y)))))
+        .unwrap_or(false)
+}
+
 /// The DS Campaign's mission being played (Dual Strike's own missions have
 /// rules of their own); 0xFF in another campaign.
 pub fn ds_mission(core: &Core) -> u8 {

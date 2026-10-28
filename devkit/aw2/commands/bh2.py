@@ -3,6 +3,7 @@
   bh2 pictures [--out DIR]    m01.png .. (full map, fog off, units and labels, "MISSION N - Title" burned in), the fog views, act1_sheet.png, worldmap_flags.png
   bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png
   bh2 silhouettes             the silhouette check (no two maps alike, no oval blobs; docs/dev/bh2-maps.md)
+  bh2 difficulty              the static difficulty score of every mission (M25 must be the hardest by 10%)
   bh2 features                the feature coverage table (properties, terrain, inventions per map) and what no map uses yet
   bh2 check                   the world-map flag check (every mission flag on land inside its nation) and the pipeline checks (specs up to date, lint clean)
 Maps: `aw2dev maps gen --campaign bh2`, `aw2dev maps lint --source bh2`.
@@ -24,6 +25,8 @@ def register(sub):
     a.set_defaults(fn=sheets)
     a = ps.add_parser("silhouettes", help="the silhouette check: maps too alike or a rounded blob in the sea (approved maps are listed, not failed)")
     a.set_defaults(fn=silhouettes)
+    a = ps.add_parser("difficulty", help="the static difficulty score of every BH2 mission; the final mission must lead by 10 percent")
+    a.set_defaults(fn=difficulty)
     a = ps.add_parser("features", help="which properties, terrain and inventions each BH2 map uses")
     a.set_defaults(fn=features)
     a = ps.add_parser("check", help="world-map flags inside their nations, on land; looks and weather; with the game's pictures, ground colours of neighbouring missions")
@@ -36,7 +39,7 @@ def pictures(a):
     out = a.out or cfg.work("bh2", "maps")
     paths = pics.write_all(out)
     paths.append(pics.world_flags(f"{out}/worldmap_flags.png"))
-    for act in ([a.act] if a.act else [2, 3, 4]):
+    for act in ([a.act] if a.act else [2, 3, 4, 5]):
         paths.append(pics.world_flags(f"{out}/worldmap_flags_act{act}.png", act=act))
     for p in paths:
         util.say(f"picture: {p}")
@@ -50,6 +53,18 @@ def sheets(a):
     for p in paths:
         util.say(f"picture: {p}")
     return 0 if paths else 1
+
+
+def difficulty(a):
+    from ..bh2lib import difficulty as dif
+    lines, rs = dif.report()
+    for l in lines:
+        print(l)
+    scores = sorted(((sc, n) for n, t, nm, sc, sp in rs), reverse=True)
+    top, second = scores[0], scores[1]
+    ok = top[1] == 25 and top[0] >= second[0] * 1.10
+    util.say(f"hardest: M{top[1]} ({top[0]}), next M{second[1]} ({second[0]}): " + ("M25 leads by a clear margin" if ok else "M25 is NOT clearly the hardest"))
+    return 0 if ok else 1
 
 
 def silhouettes(a):

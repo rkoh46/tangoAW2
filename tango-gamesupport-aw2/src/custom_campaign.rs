@@ -870,6 +870,8 @@ pub struct MissionDef {
     /// and the capture is the mission's first stage (a trigger on `OwnerAt` plays the second: the
     /// same army, a new CO, reserves). Whoever captures it, it only changes hands.
     pub held_hq: Option<(u8, u8)>,
+    /// More held HQs (a gauntlet's stage HQs: every one but the last is held; BH2's M25).
+    pub held_more: Vec<(u8, u8)>,
 }
 
 /// A named unit (of the mission's deployment, or spawned with a name by an
@@ -988,6 +990,7 @@ impl MissionDef {
             marches: Vec::new(),
             jams: Vec::new(),
             held_hq: None,
+            held_more: Vec::new(),
         }
     }
 }
@@ -1780,6 +1783,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
             .collect(),
         jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
+        held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
         secret: if def.secret_mission.is_empty() {
             None
         } else {

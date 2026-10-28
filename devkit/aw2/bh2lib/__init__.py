@@ -27,6 +27,12 @@ MISSIONS = {
     18: ("bh2_18", "The Door Is Open"),
     19: ("bh2_19", "Skyfall"),
     20: ("bh2_20", "The Rail East"),
+    21: ("bh2_21", "The Second Folder"),
+    22: ("bh2_22", "Von Bolt's Note"),
+    23: ("bh2_23", "Where the Map Ends"),
+    24: ("bh2_24", "The Gate of Colours"),
+    25: ("bh2_25", "The Last Accord"),
+    26: ("bh2_26", "Through the Door"),
 }
 FRONT2 = {4: "bh2_04b", 10: "bh2_10b", 20: "bh2_20b"}          # a two-front mission's second map
 
@@ -66,7 +72,7 @@ def check_flags():
     from ..worldmaplib import tool
     m, _ = tool.load("bh2")
     out = []
-    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4, 11: 2, 12: 2, 13: 2, 14: 2, 15: 1, 16: 1, 17: 1, 18: 5, 19: 1, 20: 1}
+    home = {1: 5, 2: 5, 26: 5, 3: 3, 4: 3, 5: 3, 6: 4, 7: 4, 8: 4, 9: 4, 10: 4, 11: 2, 12: 2, 13: 2, 14: 2, 15: 1, 16: 1, 17: 1, 18: 5, 19: 1, 20: 1, 21: 1, 22: 1, 23: 1, 24: 1, 25: 1}
     seen = set()
     for mission, region, x, y in flags():
         seen.add(mission)

@@ -536,6 +536,7 @@ pub fn choose(
         .iter()
         .any(|&h| f.foes.iter().any(|s| manhattan((s.x, s.y), h) <= 7));
     let campaign = crate::ds_campaign::active(core);
+    let bh2 = crate::ds_campaign::source(core) == crate::bh2_campaign::SOURCE;
     let air_n = f.foes.iter().filter(|s| matches!(s.t, 16 | 17 | 19 | 12)).count() as i32;
     let own_aa = own_types_aa(&f);
     let air_deficit = (air_n > 0 || (airport_near && own_aa == 0 && f.foes.len() > 0)) && own_aa * 2 < air_n.max(1);
@@ -558,7 +559,11 @@ pub fn choose(
         .into_iter()
         .filter(|o| match o.0 {
             16 => air_w > 0 && aa_hard_near < 2,
-            17 | 19 => aa_near == 0 && aa_all < 2,
+            17 => aa_near == 0 && aa_all < 2,
+            // (BH2: no Black Boat from a Black Factory: the field's "hurt units to repair" would otherwise put a boat on land-locked doors)
+            18 => !bh2,
+            // (BH2: a B Copter is built only while the field shows enemy air, as the Fighter and the Anti-Air are)
+            19 => aa_near == 0 && aa_all < 2 && (!bh2 || air_w > 0),
             _ => true,
         })
         .collect();

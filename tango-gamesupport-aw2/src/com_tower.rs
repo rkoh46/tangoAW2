@@ -222,7 +222,7 @@ fn held_hq_capture(core: &mut Core) {
         core.raw_read_16(CAPTURE_CELL, -1) as u8,
         core.raw_read_16(CAPTURE_CELL + 2, -1) as u8,
     );
-    if crate::ds_campaign::held_hq(core) == Some((x, y)) {
+    if crate::ds_campaign::is_held_hq(core, x as u8, y as u8) {
         core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);
     }
 }

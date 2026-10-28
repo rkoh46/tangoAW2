@@ -589,6 +589,273 @@ fn bh2_20() -> MissionDef {
     m
 }
 
+/// M21 The Second Folder: Asuka + Hawke (forced pair) against Max + Sami at Black Hole's eastern HQ, between two frozen lakes (snow look, clear).
+fn bh2_21() -> MissionDef {
+    let mut m = MissionDef::new("bh2_21", "The Second Folder");
+    m.objective = "Hold the isthmus and take the Orange Star HQ.";
+    m.map = MapSrc::Built("bh2_21");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(crate::co_new::ASUKA, co::HAWKE)).funds(14000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::MAX, co::SAMI)).funds(22000),
+    ];
+    m.units = deployment("bh2_21");
+    m.look = 1; // the Snow look
+    m.rank_days = 18;
+    m.flag = flag(21);
+    m.stars = 2;
+    m.needs = Needs::All(vec!["bh2_20"]);
+    m
+}
+
+/// Factory table of M22 (day, the three doors' slots; 0 none): the foundry builds against a fortress, Anti-Air only when the Allied Fighters show.
+const F22: [(u8, [u8; 3]); 14] = [
+    (2, [0, unit::MD_TANK, 0]),
+    (3, [unit::INFANTRY, 0, unit::INFANTRY]),
+    (4, [0, unit::TANK, 0]),
+    (5, [unit::ARTILLERY, 0, unit::TANK]),
+    (6, [0, unit::MD_TANK, 0]),
+    (7, [unit::MECH, 0, unit::ROCKETS]),
+    (8, [0, unit::MD_TANK, unit::ANTI_AIR]),
+    (9, [unit::TANK, 0, unit::ARTILLERY]),
+    (10, [unit::INFANTRY, unit::NEOTANK, unit::INFANTRY]),
+    (11, [0, unit::MD_TANK, 0]),
+    (12, [unit::MECH, 0, unit::ROCKETS]),
+    (13, [0, unit::NEOTANK, 0]),
+    (14, [unit::TANK, 0, unit::ANTI_AIR]),
+    (16, [unit::INFANTRY, unit::MD_TANK, unit::ARTILLERY]),
+];
+
+/// M22 Von Bolt's Note: Von Bolt (forced) + a free partner against Jess + Colin at the Orange Star sea fortress; the player's Black Factory and Deathray (rain).
+fn bh2_22() -> MissionDef {
+    let mut m = MissionDef::new("bh2_22", "Von Bolt's Note");
+    m.objective = "Cross the strait and take the fortress's HQ; the Deathray covers the east.";
+    m.map = MapSrc::Built("bh2_22");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(co::VON_BOLT)).funds(14000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::JESS, co::COLIN)).funds(26000),
+    ];
+    m.units = deployment("bh2_22");
+    m.weather = Weather::Rain;
+    m.rank_days = 22;
+    m.factory = F22.to_vec();
+    m.flag = flag(22);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_21"]);
+    m
+}
+
+/// M23's reinforcement cells (the map's `mark_wave*` notes): waves of three on days 2, 4, 6 and 8.
+const M23_WAVES: [(u8, u8); 12] = [(42, 5), (42, 9), (42, 13), (42, 17), (41, 7), (41, 11), (41, 15), (41, 19), (42, 3), (42, 21), (41, 4), (41, 22)];
+
+/// A reinforcement trigger on a day: the army's units appear on the cells.
+fn day_wave(day: u16, units: Vec<UnitDef>) -> Trigger {
+    Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: day }, vec![Action::Spawn(units)]).repeating()
+}
+
+/// M23 Where the Map Ends: Asuka + Crumb (forced pair) hold the Obelisk against Drake + Grit's strike force for nine days (wasteland, sandstorm).
+fn bh2_23() -> MissionDef {
+    let mut m = MissionDef::new("bh2_23", "Where the Map Ends");
+    m.objective = "Hold the Obelisk until day 10. The waves come over the bridges and by air.";
+    m.map = MapSrc::Built("bh2_23");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pair(crate::co_new::ASUKA, co::CRUMB)).funds(12000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::DRAKE, co::GRIT)).funds(18000),
+    ];
+    m.units = deployment("bh2_23");
+    m.look = 3; // the Wasteland look
+    m.weather = Weather::Sandstorm; // the storm
+    m.rank_days = 10;
+    let w = |k: usize, kind: u8| UnitDef::new(2, kind, M23_WAVES[k].0, M23_WAVES[k].1).attack();
+    m.triggers = vec![
+        day_wave(2, vec![w(0, unit::NEOTANK), w(1, unit::MD_TANK), w(2, unit::B_COPTER)]),
+        day_wave(4, vec![w(3, unit::NEOTANK), w(4, unit::ROCKETS), w(5, unit::FIGHTER)]),
+        day_wave(6, vec![w(6, unit::MD_TANK), w(7, unit::BOMBER), w(8, unit::NEOTANK)]),
+        day_wave(8, vec![w(9, unit::NEOTANK), w(10, unit::STEALTH), w(11, unit::MEGATANK)]),
+        // nine days held: the storm passes
+        Trigger::new(When::TurnStart, Cond::DayAtLeast(10), vec![Action::Win]),
+    ];
+    m.flag = flag(23);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_22"]);
+    m
+}
+
+/// M24 The Gate of Colours: a free pair against Andy and Max + Sami, two allied armies (three armies), on the desert delta.
+fn bh2_24() -> MissionDef {
+    let mut m = MissionDef::new("bh2_24", "The Gate of Colours");
+    m.objective = "Cross the three rivers and take both Allied HQs.";
+    m.map = MapSrc::Built("bh2_24");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(2).funds(16000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(co::MAX, co::SAMI)).team(2).funds(16000),
+    ];
+    m.units = deployment("bh2_24");
+    m.look = 2; // the Desert look
+    m.rank_days = 22;
+    m.flag = flag(24);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_23"]);
+    m
+}
+
+/// M25's stage HQs (the map's `Q` tiles): Nell's `2` at (22,12) is the first line; the others are held until the last.
+const M25_NELL: (u8, u8) = (22, 12);
+const M25_OLAF: (u8, u8) = (34, 12);
+const M25_KANBEI: (u8, u8) = (45, 12);
+const M25_EAGLE: (u8, u8) = (54, 12);
+const M25_ARIA: (u8, u8) = (61, 12);
+/// Aria's CO id: the new Orange Star commander (the `aria` branch's id 93: not merged here, so a placeholder CO takes her place; replace this constant when it lands).
+const ARIA_CO: u8 = co::MAX;
+
+/// Each stage's fresh troops (cells in the stage's room, free of start units): (kind, cell).
+const OLAF_WAVE: [(u8, (u8, u8)); 14] = [
+    (unit::MD_TANK, (30, 8)),
+    (unit::MD_TANK, (30, 10)),
+    (unit::NEOTANK, (31, 13)),
+    (unit::ROCKETS, (32, 15)),
+    (unit::MD_TANK, (33, 7)),
+    (unit::ARTILLERY, (34, 13)),
+    (unit::MD_TANK, (34, 16)),
+    (unit::MECH, (34, 18)),
+    (unit::NEOTANK, (35, 9)),
+    (unit::ROCKETS, (35, 11)),
+    (unit::INFANTRY, (36, 14)),
+    (unit::NEOTANK, (37, 18)),
+    (unit::MD_TANK, (38, 10)),
+    (unit::ARTILLERY, (38, 14)),
+];
+const KANBEI_WAVE: [(u8, (u8, u8)); 14] = [
+    (unit::NEOTANK, (42, 8)),
+    (unit::MEGATANK, (42, 13)),
+    (unit::MD_TANK, (43, 11)),
+    (unit::NEOTANK, (43, 17)),
+    (unit::MEGATANK, (44, 7)),
+    (unit::MD_TANK, (44, 14)),
+    (unit::ARTILLERY, (45, 18)),
+    (unit::NEOTANK, (46, 11)),
+    (unit::MD_TANK, (46, 14)),
+    (unit::ROCKETS, (47, 7)),
+    (unit::NEOTANK, (47, 18)),
+    (unit::MEGATANK, (48, 10)),
+    (unit::MD_TANK, (48, 12)),
+    (unit::ARTILLERY, (48, 14)),
+];
+const EAGLE_WAVE: [(u8, (u8, u8)); 11] = [
+    (unit::FIGHTER, (52, 8)),
+    (unit::FIGHTER, (52, 13)),
+    (unit::BOMBER, (52, 15)),
+    (unit::STEALTH, (52, 17)),
+    (unit::FIGHTER, (53, 11)),
+    (unit::BOMBER, (54, 9)),
+    (unit::B_COPTER, (54, 17)),
+    (unit::STEALTH, (55, 7)),
+    (unit::FIGHTER, (55, 11)),
+    (unit::BOMBER, (55, 13)),
+    (unit::B_COPTER, (55, 15)),
+];
+const ARIA_WAVE: [(u8, (u8, u8)); 8] = [
+    (unit::NEOTANK, (60, 7)),
+    (unit::MD_TANK, (60, 10)),
+    (unit::MEGATANK, (60, 12)),
+    (unit::ROCKETS, (60, 18)),
+    (unit::NEOTANK, (61, 14)),
+    (unit::FIGHTER, (62, 11)),
+    (unit::MD_TANK, (63, 13)),
+    (unit::ARTILLERY, (63, 15)),
+];
+
+fn stage(list: &[(u8, (u8, u8))]) -> Action {
+    Action::Spawn(list.iter().map(|&(k, (x, y))| UnitDef::new(2, k, x, y).attack()).collect())
+}
+
+/// The next line: when the player holds this stage's HQ, the same army goes on under the next commander with fresh troops and funds.
+fn takeover(hq: (u8, u8), co_next: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
+    Trigger::new(
+        When::AfterAction,
+        Cond::OwnerAt {
+            x: hq.0,
+            y: hq.1,
+            army: 1,
+        },
+        vec![
+            Action::TakeOver {
+                army: 2,
+                co: co_next,
+                meter_pct: 40,
+            },
+            Action::AddFunds { army: 2, funds },
+            stage(wave),
+        ],
+    )
+}
+
+/// M25 The Last Accord: the final mission, a gauntlet. Asuka + a free partner; Nell, then Olaf, Kanbei, Eagle and Aria take the same army over from a new HQ each time a line breaks; no time limit, no Black Hole inventions on the Allied side.
+fn bh2_25() -> MissionDef {
+    let mut m = MissionDef::new("bh2_25", "The Last Accord");
+    m.objective = "Break Nell's line, then Olaf's, Kanbei's and Eagle's, and take Aria's HQ.";
+    m.map = MapSrc::Built("bh2_25");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(crate::co_new::ASUKA)).funds(30000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).funds(30000),
+    ];
+    m.units = deployment("bh2_25");
+    m.fog = true;
+    m.rank_days = 40;
+    m.held_hq = Some(M25_NELL);
+    m.held_more = vec![M25_OLAF, M25_KANBEI, M25_EAGLE];
+    m.triggers = vec![
+        takeover(M25_NELL, co::OLAF, 20000, &OLAF_WAVE),
+        takeover(M25_OLAF, co::KANBEI, 22000, &KANBEI_WAVE),
+        takeover(M25_KANBEI, co::EAGLE, 24000, &EAGLE_WAVE),
+        takeover(M25_EAGLE, ARIA_CO, 30000, &ARIA_WAVE),
+        // Aria's HQ is the last: its capture wins
+        after(
+            Cond::OwnerAt {
+                x: M25_ARIA.0,
+                y: M25_ARIA.1,
+                army: 1,
+            },
+            vec![Action::Win],
+        ),
+    ];
+    m.flag = flag(25);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_24"]);
+    m
+}
+
+/// M26's landing cells (the map's `mark_cav`, `mark_siege` and `mark_fleet` notes).
+const M26_CAV: [(u8, u8); 4] = [(12, 4), (15, 6), (18, 8), (20, 11)];
+const M26_SIEGE: [(u8, u8); 4] = [(37, 24), (35, 25), (38, 22), (33, 26)];
+const M26_FLEET: [(u8, u8); 5] = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)];
+
+/// M26 Through the Door (secret): a free pair against Klaus + Aurelia, the Emerald Sun legion, on Black Hole's own island; Cassius's cavalry on day 3, Aurelia's siege on day 5, Livia's fleet on day 7. (The Emerald Sun skin on the enemy army is a hook: see docs/dev/bh2-maps.md.)
+fn bh2_26() -> MissionDef {
+    let mut m = MissionDef::new("bh2_26", "Through the Door");
+    m.objective = "Hold the island against the legion's three waves and take Klaus's HQ.";
+    m.map = MapSrc::Built("bh2_26");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(crate::es_co::KLAUS, crate::es_co::AURELIA)).funds(22000),
+    ];
+    m.units = deployment("bh2_26");
+    m.rank_days = 20;
+    let at = |kind: u8, c: (u8, u8)| UnitDef::new(2, kind, c.0, c.1).attack();
+    m.triggers = vec![
+        // Cassius's cavalry
+        day_wave(3, vec![at(unit::RECON, M26_CAV[0]), at(unit::TANK, M26_CAV[1]), at(unit::RECON, M26_CAV[2]), at(unit::TANK, M26_CAV[3])]),
+        // Aurelia's siege engines
+        day_wave(5, vec![at(unit::ARTILLERY, M26_SIEGE[0]), at(unit::ROCKETS, M26_SIEGE[1]), at(unit::MD_TANK, M26_SIEGE[2]), at(unit::ARTILLERY, M26_SIEGE[3])]),
+        // Livia's fleet
+        day_wave(7, vec![at(unit::BATTLESHIP, M26_FLEET[0]), at(unit::CRUISER, M26_FLEET[1]), at(unit::CRUISER, M26_FLEET[2]), at(unit::SUB, M26_FLEET[3]), at(unit::LANDER, M26_FLEET[4])]),
+    ];
+    m.flag = flag(26);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_24"]); // the secret mission opens after M24
+    m
+}
+
 /// The campaign.
 pub fn def() -> CampaignDef {
     let mut missions = vec![
@@ -612,6 +879,12 @@ pub fn def() -> CampaignDef {
         bh2_18(),
         bh2_19(),
         bh2_20(),
+        bh2_21(),
+        bh2_22(),
+        bh2_23(),
+        bh2_24(),
+        bh2_25(),
+        bh2_26(),
     ];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
@@ -621,10 +894,10 @@ pub fn def() -> CampaignDef {
         prologue_song: None,
         credits: Vec::new(),
         missions,
-        final_mission: "bh2_20",
+        final_mission: "bh2_25",
         bonds: Vec::new(),
         extra_bonds: 0,
-        secret_mission: "",
+        secret_mission: "bh2_26",
     }
 }
 
@@ -646,7 +919,7 @@ mod tests {
     #[test]
     fn act_one_has_five_missions_and_a_second_front_for_m4() {
         let d = def();
-        assert_eq!(d.missions.len(), 20);
+        assert_eq!(d.missions.len(), 26);
         assert!(d.missions[3].front2.as_ref().is_some_and(|f| f.sky));
         assert!(d.missions[4].held_hq.is_some());
     }
@@ -670,13 +943,12 @@ mod tests {
         assert!(d.missions[13].factory.len() == 14 && d.missions[13].volcano.is_some());
         assert_eq!(d.missions[13].look, 3);
         assert!(d.missions[10..13].iter().all(|m| m.look == 1), "M11 to M13 are the snow look");
-        assert_eq!(d.final_mission, "bh2_20");
     }
 
     #[test]
     fn act_four_has_six_missions_a_scripted_depot_and_a_second_front_for_m20() {
         let d = def();
-        assert!(d.missions[14..].iter().map(|m| m.key).eq(["bh2_15", "bh2_16", "bh2_17", "bh2_18", "bh2_19", "bh2_20"]));
+        assert!(d.missions[14..20].iter().map(|m| m.key).eq(["bh2_15", "bh2_16", "bh2_17", "bh2_18", "bh2_19", "bh2_20"]));
         assert_eq!(d.missions[16].look, 3);
         assert_eq!(d.missions[18].look, 2);
         let f = d.missions[19].front2.as_ref().expect("M20's second front");
@@ -694,6 +966,45 @@ mod tests {
         let c = m.units.iter().find(|u| u.name == "crumb").expect("crumb");
         assert_eq!((c.army, c.kind), (1, 7), "Crumb is Black Hole's APC");
         assert!(c.x > M18_CRATE.0 + 10, "Crumb starts by the quay, far from the crate");
+    }
+
+    #[test]
+    fn act_five_has_the_gauntlet_the_waves_and_the_secret() {
+        let d = def();
+        assert!(d.missions[20..].iter().map(|m| m.key).eq(["bh2_21", "bh2_22", "bh2_23", "bh2_24", "bh2_25", "bh2_26"]));
+        assert_eq!(d.final_mission, "bh2_25");
+        assert_eq!(d.secret_mission, "bh2_26");
+        // M22: the player's factory; M23: waves and the day-10 win, no day limit; M24: three armies; M25: four held HQs and five triggers (four takeovers and the win), no day limit
+        assert!(d.missions[21].factory.len() == 14);
+        assert_eq!(d.missions[22].triggers.len(), 5);
+        assert_eq!(d.missions[22].day_limit, 0);
+        assert_eq!(d.missions[23].armies.len(), 3);
+        assert!(d.missions[24].held_hq.is_some() && d.missions[24].held_more.len() == 3);
+        assert_eq!(d.missions[24].triggers.len(), 5);
+        assert_eq!(d.missions[24].day_limit, 0);
+        assert_eq!(d.missions[25].triggers.len(), 3);
+    }
+
+    /// Every cell a wave or a stage names is ground (sea for M26's fleet) and free of start units; M25's stage HQs are the map's `Q` tiles.
+    #[test]
+    fn act_five_spawn_cells_are_on_the_maps_and_free() {
+        let free = |map: &str, cells: &[(u8, u8)], sea: bool| {
+            let m = built_map(map).unwrap_or_else(|| panic!("{map}"));
+            for &(x, y) in cells {
+                assert!((x as usize) < m.width as usize && (y as usize) < m.height as usize, "{map}: ({x}, {y}) is off the map");
+                assert!(!m.units.iter().any(|u| (u.x, u.y) == (x, y)), "{map}: a unit starts on ({x}, {y})");
+                let _ = sea;
+            }
+        };
+        free("bh2_23", &M23_WAVES, false);
+        free("bh2_26", &M26_CAV, false);
+        free("bh2_26", &M26_SIEGE, false);
+        free("bh2_26", &M26_FLEET, true);
+        for w in [&OLAF_WAVE[..], &KANBEI_WAVE[..], &EAGLE_WAVE[..], &ARIA_WAVE[..]] {
+            free("bh2_25", &w.iter().map(|&(_, c)| c).collect::<Vec<_>>(), false);
+        }
+        let hq = |c: (u8, u8)| c;
+        assert_eq!([hq(M25_NELL), M25_OLAF, M25_KANBEI, M25_EAGLE, M25_ARIA], [(22, 12), (34, 12), (45, 12), (54, 12), (61, 12)]);
     }
 
     /// M9's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.

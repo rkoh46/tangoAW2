@@ -99,6 +99,8 @@ pub struct Custom {
     pub jams: Vec<Vec<crate::custom_campaign::JamDef>>,
     /// Per mission: an HQ whose capture does not defeat its army (the army has another HQ).
     pub held_hq: Vec<Option<(u8, u8)>>,
+    /// Per mission: more held HQs (a gauntlet's stage HQs: the same rule as [`Self::held_hq`]).
+    pub held_more: Vec<Vec<(u8, u8)>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,

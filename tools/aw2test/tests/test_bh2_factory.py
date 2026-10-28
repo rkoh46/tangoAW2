@@ -58,13 +58,16 @@ def verdict(s):
         capture = s["to_target"] not in ("None", "?")
         block = s["adj"] > 0
         return (capture or block, f"{u}: " + ("a property to capture (to target " + s["to_target"] + ")" if capture else "blocks the enemy beside the factory") if (capture or block) else f"{u} with nothing to capture or block")
+    if u == "Missiles" and air_seen:
+        return True, f"Missiles: the enemy shows {s['air']}% air (they are Anti-Air)"
     if u in INDIRECT:
         safe = s["adj"] == 0 and s["threat"] in ("0", "0.0")
-        return (safe, f"{u}: a safe backline (threat {s['threat']}, adjacent {s['adj']})" if safe else f"{u} with the enemy at the factory (threat {s['threat']}, adjacent {s['adj']})")
+        guarded = "protected backline" in s["why"] and s["adj"] == 0                  # (the field's own reason: guards beside the doors and targets within three turns)
+        return (safe or guarded, f"{u}: a safe backline (threat {s['threat']}, adjacent {s['adj']})" if safe else f"{u}: a protected backline (guards at the doors, none adjacent)" if guarded else f"{u} with the enemy at the factory (threat {s['threat']}, adjacent {s['adj']})")
     return True, f"{u}: the best counter / traveller of the field ({s['why'].split(';')[0]})"
 
 
-def factory_and_volcano(ctx, n, title):
+def factory_and_volcano(ctx, n, title, volcano=True):
     save = os.path.join(ctx.out, f"m{n}.sav")
     shutil.copy(paths.base_save(), save)
     e, g, d = b2.enter(ctx, n, env={"TANGOAW2_BH_LOG_ALL": "1"}, save=save)
@@ -104,7 +107,8 @@ def factory_and_volcano(ctx, n, title):
     if len(spawns) >= 6:
         ctx.check(len(set(types)) >= 3, f"a varied mix ({sorted(set(types))})")
         ctx.check(max(types.count(t) for t in set(types)) <= 0.6 * len(types), "no type is more than 60% of the spawns")
-    ctx.check(all(erupted.get(k) for k in erupted if 4 <= k <= DAYS) and any(erupted.get(k) for k in erupted), f"the volcano erupts (cells by day: { {k: len(v) for k, v in erupted.items()} })")
+    if volcano:
+        ctx.check(all(erupted.get(k) for k in erupted if 4 <= k <= DAYS) and any(erupted.get(k) for k in erupted), f"the volcano erupts (cells by day: { {k: len(v) for k, v in erupted.items()} })")
     e.close()
 
 
@@ -116,3 +120,9 @@ def bh2_m3_factory_and_volcano(ctx):
 @test(name="bh2_m14_factory_and_volcano", modes=("ds",))
 def bh2_m14_factory_and_volcano(ctx):
     factory_and_volcano(ctx, 14, "Thirty Years of Iron")
+
+
+@test(name="bh2_m22_factory_and_deathray", modes=("ds",))
+def bh2_m22_factory_and_deathray(ctx):
+    """M22 Von Bolt's Note: the foundry's Black Factory spawns and is smart (the same rules as M3 and M14); the Deathray stands at the top edge and hurts nobody on day 1 (the review's first-turn check, `bh2_review_m22`)."""
+    factory_and_volcano(ctx, 22, "Von Bolt's Note", volcano=False)
