@@ -1,0 +1,503 @@
+# BH2 dialogue, act2 "Comet Chain": M9 Paper Lanterns, M10 Comet Highway, M11 Black Lanterns, M12 The Table, M13 Two Tides (format: README.txt).
+
+# ---------------------------------------------------------------- M9 Paper Lanterns (FREE; enemy Sensei; night, rain, fog; a raid on the B Copter fleet)
+
+== m09_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG ally2
+NARRATION: The Comet Chain. Comet Hall, / the night before the Lantern Festival.
+KANBEI: Sensei, light the first / lantern. Kanbei is too slow tonight.
+SENSEI: You are slow every night. / It is called being an emperor.
+GRIMM: Har! Lanterns! I'll light them / all! With a punch!
+SENSEI: You'll light them with a / match. Like a civilised man.
+KANBEI: Grimm. A lantern is a / prayer. Not a target.
+GRIMM: ...A prayer. Okay. I'll punch / the prayer gently.
+KANBEI: Set the long table. Six / places. Kanbei will say the rest.
+SENSEI: And the seventh?
+KANBEI: ...Kanbei has not decided.
+NARRATION: The Comet Chain. Night. Rain, / fog, and ten thousand paper lanterns.
+NARRATION: The Lantern Night. Yellow / Comet's B Copters sleep at anchor.
+SENSEI: Easy there, youngsters. It's / Lantern Night. Respect the dead.
+SENSEI: Each light is for someone who / did not come home. Mind your boots.
+ASUKA: Sensei. We are not here for / the festival.
+SENSEI: Nobody ever is. And who's / this? A new face in the rain?
+SENSEI: Hm. I know that coat. I know / that walk. Whose is it?
+ASUKA: Asuka. Black Hole. Your fleet / is at anchor under the lanterns.
+ASUKA: A night raid. Rain, fog and / paper light. I hold your roster.
+SENSEI: Do you now. Only my / quartermaster holds that roster.
+ASUKA: He files in triplicate. Like / all of Yellow Comet.
+SENSEI: Aye. Like all of us.
+SENSEI: You write the way a girl I / taught did. Tiny. No wasted margin.
+ASUKA: A common habit among clerks.
+SENSEI: Is it? ...I forget names. / Never faces. Never handwriting.
+ASUKA: Then forget this one.
+SENSEI: Hah. Forgetting's the only / thing I still do well. I'm old.
+SENSEI: Old men tell nobody. That's / what the pension's for.
+@IF ASUKA
+ASUKA: Rain on the radar, fog on the / ground. I am entirely at home.
+@IF CRUMB CO
+CRUMB CO: Lanterns are lovely, ma'am. / Gerald thinks they are soup. I hope not.
+@IF HAWKE
+HAWKE: A raid is a question asked at / the right hour. Night answers.
+@IF KOAL
+KOAL: Wet tarmac, no lane lines. / I am displeased. Mind the lane.
+@IF KINDLE
+KINDLE: A hundred thousand little / spotlights. For me? You shouldn't have.
+@IF JUGGER
+JUGGER: VISIBILITY: ZERO POINT THREE. / LIGHT SOURCE: PAPER. QUERY: WHY.
+@IF FLAK
+FLAK: Flak is wet. Flak hates wet. / Flak smashes copter. Then dry.
+@IF LASH
+LASH: Ooh, rain! Everything conducts in / rain! Don't touch the Rockets! Heehee!
+@IF ADDER
+ADDER: Rain ruins hair. Lanterns save / it. I shall pose by the nearest one.
+@IF VON BOLT
+VON BOLT: Lanterns! Kehh... a coin each? / Do they float? I can sell floating.
+@IF CLONE ANDY
+CLONE ANDY: Okay! Rain! I can fix any-- / ...any leak! Sure! Hold the bucket!
+@END
+SENSEI: Hah. A bucket. Good lad. / Right, knees. Let us see them.
+ASUKA: Fog thick, rain steady, lanterns / hiding us. Begin.
+
+== m09_day4
+SENSEI: B Copters, up! Mind the / lanterns! Mind my knees!
+SENSEI: Hah! Don't burn the paper. / It's somebody's grandmother.
+ASUKA: Understood, Sensei. We will / burn only the copters.
+
+== m09_post
+@SONG co:sensei
+SENSEI(s): Hmph. My fleet. All of it. / Grounded under the lights.
+SENSEI: Well fought, girl. ...Ahem. / Commander.
+ASUKA: You said "girl", Sensei.
+SENSEI: I did not. I'm old. I / forget. We agreed.
+ASUKA: We agreed.
+SENSEI: Walk with me a moment. The / rain's good for old bones.
+SENSEI: Kanbei's gone to his Hall. / He's set a table.
+ASUKA: Of course he has.
+SENSEI: Six places, laid for a / council. And a seventh, apart.
+SENSEI: There's a scarf folded on / the seventh chair. A red one.
+ASUKA: ...A scarf.
+SENSEI: Don't ask me who it's for. / I'm old. I forget.
+SENSEI: But I'll tell you this, as / a man who taught you both.
+SENSEI: He means to meet you at / that Table. As himself.
+SENSEI: Honour's all he has left. / Do not take it as an insult.
+ASUKA: I will take it as an / appointment, Sensei.
+SENSEI: ...You always did make the / hard thing sound like paperwork.
+ASUKA: It is easier to carry.
+SENSEI: Aye. It is. Until it isn't.
+MORTAR: Ma'am? The channel was open.
+ASUKA: Then close it, Sergeant. And / forget the last minute.
+MORTAR: Ma'am, I forget everything / the moment I hear it.
+ASUKA: A valuable trait.
+MORTAR: It is why I am a Sergeant.
+
+== m09_map
+@SONG enemy2
+NARRATION: The Comet Chain, after the / festival. Lanterns burn down to ash.
+WICK: Is it all right if I ask, ma'am? / Are you sad?
+ASUKA: No.
+WICK: You have been writing the same / letter for an hour.
+ASUKA: It is not a letter. It is / a draft.
+MORTAR: Wick. Leave the General alone.
+ASUKA: It is nothing, Sergeant. A / man set a table. I am deciding
+ASUKA: whether it is a trap, or a / table.
+WICK: Which is it, ma'am?
+ASUKA: I have not decided. That is / why it is still a draft.
+
+# ---------------------------------------------------------------- M10 Comet Highway (Koal + Kindle fixed; enemy Grimm + Sensei)
+
+== m10_pre | KOAL, KINDLE
+@SONG co:koal
+NARRATION: Yellow Comet's long island. / A highway of bridges runs its length.
+KOAL: Eleven bridges. Three spans / each. Mind the lane.
+KINDLE: Eleven bridges, darling? Eleven / entrances. I do love an entrance.
+KOAL: You will stay in your lane. / You are not the Highway.
+KINDLE: Darling, I am every highway. / I merely let others pave me.
+GRIMM: Har! Who's on my road?! Koal! / Road man! I hired you!
+KOAL: You never paid.
+GRIMM: Invoice me! I'll pay in / punches!
+GRIMM: And who's the fancy lady? / She's got feathers!
+KINDLE: Fancy? Feathers? I am the / event, you powdered bruiser!
+GRIMM: Powdered? That's donut sugar! / Don't touch my sugar!
+KINDLE: Sugar on my stage? Darling, / that is a crime.
+SENSEI: Easy, youngsters. Bridges are / holy. Don't blow all of them.
+KOAL: Sensei. Your lane is clear. / Fall back and your garden is safe.
+SENSEI: It's a puddle I liked. You / paved it. We've been over this.
+ASUKA: Koal. Kindle. Eleven bridges, / two armies in the middle.
+ASUKA: Take them in order. Do not get / cute. Kindle, that includes you.
+KINDLE: Cute? Darling, I am never / cute. I am devastating.
+KOAL: Asuka. If she goes off the / road, I will not follow her.
+KINDLE: Darling Koal. You never / follow. That is your charm.
+
+== m10_day5
+KINDLE: The fourth bridge! Fireworks, / darlings! Light the sky!
+GRIMM: Har! Pretty! Punch the / fireworks!
+SENSEI: Grimm. You can't punch a / firework.
+GRIMM: Watch me!
+KOAL: He is punching the bridge. / The bridge is load-bearing.
+
+== m10_post
+@SONG co:kindle
+GRIMM(s): Okay! Okay! You win! My / knuckles are on fire. Har...
+KINDLE: Darling, they were already / on fire. That is why I like you.
+GRIMM: Don't like me! I'm the bad guy!
+KINDLE: You are the opening act. / A good one. Bow.
+GRIMM: ...Okay. I bow. Don't tell / the Emperor.
+SENSEI: Well fought, youngsters. / Koal, you drove beautifully.
+KOAL: I drove within the lane.
+SENSEI: That is what beautifully / means.
+KINDLE: And I, darling? Be honest.
+KOAL: ...You cleared a bridge with / fireworks. It was efficient.
+KINDLE: Efficient! He said efficient! / The man is a poet!
+KOAL: It is a surveyor's word.
+KINDLE: It is the finest word in / the language. Say it again.
+KOAL: Efficient.
+SENSEI: Aye, you two. Go carefully. / The Table's ahead.
+SENSEI: And mind the Emperor. He's / in no mood to be thanked.
+KINDLE: Darling Sensei, we thank / nobody. We applaud. Thrice.
+SENSEI: ...Sentimental fools. Go.
+
+== m10_map
+@SONG enemy1
+KINDLE: Darling. Do you know what / Kanbei wrote on my scroll?
+KOAL: "Thank you for your service."
+KINDLE: Twelve years of fire. And / he used the second-best brush.
+KOAL: I was thanked for the highway. / In writing. The sign was never built.
+KINDLE: Two people a nation thanked / and then did not know what to do with.
+KOAL: Yes.
+KINDLE: Now we have flags, and a / General who files our grudges.
+KOAL: Mind the lane, Kindle.
+KINDLE: Always, darling. It is the / most romantic thing you say.
+
+# ---------------------------------------------------------------- M11 Black Lanterns (FREE; enemy Grimm; Black Crystals heal you)
+
+== m11_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:grimm
+NARRATION: Yellow Comet's coast, night. / Black crystals burn like lanterns.
+ASUKA: The Cinder Coast's old crystal. / Black lanterns. They heal what
+ASUKA: stands beside them. Hold them / and your army mends itself.
+GRIMM: Har! Pretty rocks! A glowing / punching bag!
+GRIMM: Hey, black lady! You plan, I / punch. We should never meet!
+ASUKA: We are meeting, Grimm.
+GRIMM: Then you better bring snacks! / I can't punch on an empty stomach!
+GRIMM: Pencil necks, hold the / coast! Grimm is coming!
+@IF ASUKA
+ASUKA: Crystals burn for whoever / holds them. I shall hold them well.
+@IF CRUMB CO
+CRUMB CO: Ma'am, the crystal's warm. / Gerald says it hums, like the crate.
+@IF HAWKE
+HAWKE: A healing post is a lever. / He must strike it. I shall let him.
+@IF KOAL
+KOAL: A crystal beside a road is a / waystation. Not a weapon.
+@IF KINDLE
+KINDLE: Black light! The only one / flattering to my cheekbones.
+@IF JUGGER
+JUGGER: CRYSTAL: UNIDENTIFIED. HUM: / MATCHES TARGET. QUERY: SAME HUM.
+@IF FLAK
+FLAK: Flak punches rock! Rock heals / Flak! Win!
+@IF LASH
+LASH: Ooh! Healing crystals! I will / take one apart! Just one! Heehee!
+@IF ADDER
+ADDER: Crystals. They glow, like me. / Photograph us together.
+@IF VON BOLT
+VON BOLT: A crystal! Kehh... how / many does it cost to own the coast?
+@IF CLONE ANDY
+CLONE ANDY: Okay! A crystal! I can fix / any-- ...any wound! Sure!
+@END
+GRIMM: Okay! Crystals! Go! Let's / punch a coast!
+ASUKA: Hold the lanterns. Make him / spend his strength on stone.
+
+== m11_day5
+GRIMM: Har! Take this, rock! And / this one! And THIS one!
+GRIMM: Why's it still glowing?
+ASUKA: Because it is stronger than / you, Grimm. Please keep trying.
+
+== m11_post
+@SONG co:grimm
+GRIMM(s): Okay! Okay! Dang! My / knuckles are done. Har...
+GRIMM: You're not so bad for a pencil / neck, lady.
+ASUKA: Where is the Emperor, Grimm?
+GRIMM: The Hall. The Table. Dunno. / Last night he punched the table.
+GRIMM: No. I punched the table. He / got mad. Honest.
+GRIMM: Then he set six places, and / a seventh with a red scarf.
+ASUKA: You told me that already. / Everyone does.
+GRIMM: Dunno why. It's just a / scarf. Looks warm.
+ASUKA: It is warm.
+GRIMM: Huh. You know it? Weird.
+ASUKA: I know the weave. Thank / you, Grimm.
+GRIMM: Don't thank me! Fight me / again! In a week!
+ASUKA: In a week, you will have / rested. I will ask nicely.
+GRIMM: Deal! Har!
+@IF ASUKA
+ASUKA: He punched a crystal for two / hours. I respect stamina.
+@IF CRUMB CO
+CRUMB CO: Mr Grimm, would you like a / biscuit? Gerald says it helps knuckles.
+@IF HAWKE
+HAWKE: He mistook strength for / strategy. I shall write him a footnote.
+@IF KOAL
+KOAL: He broke three crystals and a / road. I will bill him for the road.
+@IF KINDLE
+KINDLE: A man who punches light? / Darling, an honest critic at last.
+@IF JUGGER
+JUGGER: OPPONENT: GRIMM. THREAT: / PHYSICAL. HIS HUGS: ALSO A THREAT.
+@IF FLAK
+FLAK: Grimm hit Flak. Flak hit Grimm. / Flak likes Grimm.
+@IF LASH
+LASH: Ooh! His knuckles glow! Can I / study them? Heehee!
+@IF ADDER
+ADDER: That jaw. Those fists. A poster / waiting. Hold still, Grimm.
+@IF VON BOLT
+VON BOLT: Kehh... a man who breaks / crystals breaks inventory. Send a bill.
+@IF CLONE ANDY
+CLONE ANDY: Okay! Good fight, Grimm! / I can fix any-- ...your knuckles!
+@END
+
+== m11_map
+@SONG enemy2
+JUGGER: CRYSTAL HUM: 124 HERTZ. CRATE / HUM: 124 HERTZ. DEDUCTION: SAME.
+LASH: Same?! Ooh! Same! Can I take / one apart? Just a little one?
+JUGGER: NEGATIVE. LASH: HANDS OFF. / CRYSTAL: NOT A TOY. UNDERSTOOD?
+LASH: Aww. Okay. I'll only listen. / Heehee. It sings in B-flat!
+FLAK: Flak ate crystal dust. Tastes / like pennies. Flak feels good!
+ASUKA: Flak. Do not eat the crystals.
+FLAK: ...Flak ate small one. Flak / sorry. Flak feels REALLY good.
+MORTAR: Ma'am, the Table is two days / east. Gather the staff.
+ASUKA: ...Yes. Gather them all.
+
+# ---------------------------------------------------------------- M12 The Table (Asuka fixed; enemy Kanbei + Sensei; no time limit)
+
+== m12_pre | ASUKA
+@SONG co:kanbei
+NARRATION: Comet Hall, the capital of / Yellow Comet. A long table stands set.
+NARRATION: Six places for a council. A / seventh apart, with a red scarf.
+WICK: Is it all right if I ask, ma'am? / You have read that map for an hour.
+ASUKA: I am reading the terrain.
+MORTAR: Ma'am, that is a picture of / a table.
+ASUKA: It is the most heavily / defended table in the world.
+KANBEI: Commander Asuka of Black Hole! / Kanbei greets you.
+ASUKA: Emperor Kanbei. I greet you.
+KANBEI: Your name is new to Kanbei. A / fine name. Kanbei heard it once.
+KANBEI: In a lullaby. A long time / ago. It stayed.
+ASUKA: Lullabies do not defend / halls, Emperor. Walls do.
+KANBEI: Today Kanbei fights a / stranger. A fine stranger.
+KANBEI: Kanbei will not ask who / taught her to file in triplicate.
+ASUKA: Withdraw your troops from the / Hall, Emperor, and I spare the Table.
+KANBEI: The Table was built for / guests. Kanbei has not met them all.
+SENSEI: Easy, youngsters. Mind the / crockery.
+KANBEI: Sensei. Hold the sky. Kanbei / holds the ground. And the Table.
+SENSEI: Aye. And what does the lady / hold?
+ASUKA: Four Black Cannons, Sensei. / They shell the walls, not the Hall.
+ASUKA: No time limit. I am in no / hurry to finish what I came to do.
+KANBEI: Good. Then Kanbei need not / hurry either.
+KANBEI: Come, Asuka. Let honour judge us.
+ASUKA: Honour. I will file it / under evidence.
+
+== m12_airlift
+@SONG co:sensei
+NARRATION: Half of Kanbei's army has / fallen. The Hall stands. A rotor sounds.
+KANBEI: Sensei! The airlift! Now!
+SENSEI: Right, knees. Don't fail me. / B Copters, drop the lot!
+NARRATION: Copters bank over the walls. / Infantry spill onto the courtyard.
+ASUKA: An airlift. Of course. He / taught half of them to jump.
+SENSEI: Hah! Don't flatter me, girl. / I'll cry on the stick.
+ASUKA: Sergeant. Sensei called me / "girl". Again. Do not note it.
+MORTAR: I heard nothing, ma'am.
+KANBEI: Fight on! The Hall holds / while a father breathes!
+ASUKA: ...Hold the line. All of it.
+
+== m12_post
+@SONG ally2
+KANBEI(s): Kanbei's last tank is down. / The Hall stands. The field is yours.
+ASUKA: Emperor. Sergeant. Close the / channel. Everyone out of the room.
+MORTAR: Channel is closed, ma'am. / All of it. I checked twice.
+KANBEI: Yes. Close it. Kanbei has / one more guest.
+NARRATION: The Great Table. Ash and / lantern-smoke. Two figures. One scarf.
+KANBEI: You are thin. You were / always thin. Eat.
+ASUKA: Emperor. There is no daughter / on this field.
+KANBEI: No. A commander named Asuka. / A name Kanbei has always liked.
+KANBEI: It was her mother's word. / A bird of tomorrow. Kanbei remembers.
+ASUKA: ...You remember.
+KANBEI: A baby who held a pencil in / both fists and filed the kitchen.
+ASUKA: I did not come to hurt you.
+KANBEI: You came to read. Kanbei / knows. You read what he would not.
+ASUKA: Father. ...Emperor. Did you / know? The iron. The keyhole.
+KANBEI(s): Kanbei signed nothing he read. / Kanbei signed everything he trusted.
+KANBEI: It is the same shame. The / Accord asked, and he kept silent.
+KANBEI: Honour has no manual for / that. Kanbei is still writing one.
+ASUKA: The truth will cost you your / people's trust.
+KANBEI: Then it will cost it. They / should buy the truth, and not cheap.
+KANBEI: Kanbei yields the field. Not / the Table. A place stays set.
+KANBEI: The seventh chair has a / scarf. It will stay. For whoever
+KANBEI: comes to it. Kanbei will not / ask her name.
+ASUKA: I cannot come to the Table. / Not yet.
+KANBEI: Then Kanbei will wait. He is / good at it. Ask Sensei.
+SENSEI: I would, but I'm old, and / I forgot to listen.
+ASUKA: ...Emperor. I have to go.
+KANBEI: Go. Eat well. Wear a scarf. / And Asuka... read it all.
+ASUKA: I will. Thank you.
+KANBEI: Do not thank Kanbei. Win / honourably. It is the only
+KANBEI: thing he ever asked of / anyone he loved.
+NARRATION: Outside, Mortar stands at / the door, his back to the room.
+MORTAR: I never heard anything, ma'am.
+ASUKA: That, Sergeant, is why I / promoted you in my head.
+
+== m12_map
+@SONG ally2
+WICK: Ma'am? Is it all right if I / ask what the red scarf was?
+ASUKA: A kindness. Rather expensive.
+MORTAR: Wick. The General is going / for a walk. Leave her.
+ASUKA: Sergeant, I am staying. Bring / me the maps of the split isles.
+ASUKA: Kanbei yielded the field, not / the nation. He will make a stand.
+MORTAR: Ma'am. It will be an / honourable stand.
+ASUKA: That is what concerns me. An / honourable man is very hard to beat.
+
+# ---------------------------------------------------------------- M13 Two Tides (TWO FRONTS: front 1 Asuka vs Kanbei; front 2 FREE vs Grimm)
+
+== m13_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:kanbei
+NARRATION: The Split Isles. Two tides / meet in one strait. Two fronts.
+NARRATION: Yellow Comet's last holdings: / a garrison, and a relief army.
+KANBEI: Kanbei yielded the Table. Not / the isles. Asuka, hear him.
+KANBEI: This is Kanbei's last stand. / Come and make it a good one.
+ASUKA: Emperor. There is no need.
+KANBEI: There is every need. It is / what honour looks like, from outside.
+ASUKA: Then I will give you the / battle you want. And no less.
+KANBEI: Kanbei asks no more.
+GRIMM: Har! The other tide's mine! / Whoever's on the radio... hi!
+GRIMM: I'm Grimm! I punch / islands! Bring a snack!
+ASUKA: The east tide goes to the CO / on the radio. Keep Grimm off the strait.
+@IF ASUKA
+ASUKA: Two tides, two lessons. I shall / teach both by the clock.
+@IF CRUMB CO
+CRUMB CO: Hello, Grimm! I have snacks! / Gerald says do not share the biscuit.
+@IF HAWKE
+HAWKE: Two fronts, one clock. Thank / you for the problem. I shall solve it.
+@IF KOAL
+KOAL: A strait is a road that / flooded. I will lay a ford.
+@IF KINDLE
+KINDLE: Two tides! Two choruses! I / shall conduct from the foam.
+@IF JUGGER
+JUGGER: TIDES: TWO. FRONTS: TWO. ENEMIES: / ONE LOUD. QUERY: WHY SO LOUD.
+@IF FLAK
+FLAK: Grimm! Flak knows Grimm! Big man! / Flak smash big man! Fun!
+@IF LASH
+LASH: Ooh! Two tides! I have a coil / that makes waves! Heehee! Biggest!
+@IF ADDER
+ADDER: A strait at sunset. The / light does wonders. Photograph me.
+@IF VON BOLT
+VON BOLT: Two fronts, two payrolls! / Kehh... hire nobody. I mean it.
+@IF CLONE ANDY
+CLONE ANDY: Okay! Two tides! I can fix / any-- ...any wave! Sure!
+@END
+KANBEI: Grimm! Hold the east tide! / Asuka! Hold if you can!
+
+== m13_day6
+KANBEI: Soldiers of Yellow Comet! / Your Emperor stands with you!
+KANBEI: There is no retreat on / this strait! Only forward!
+ASUKA: Sergeant, I can respect a man / who tells his troops the truth.
+MORTAR: He is telling them to die, / ma'am.
+ASUKA: He is telling them it is / worth it. That is harder.
+
+== m13_front2_post
+GRIMM(s): Dang! My strait! My / islands! Har...
+GRIMM: Emperor! I couldn't hold the / east tide! Sorry!
+KANBEI: Grimm. Well fought. Fall / back to the Chain.
+GRIMM: I'm still punching! Next week!
+KANBEI: Yes. Next week.
+
+== m13_front2_lost
+GRIMM: Har! The east tide is mine! / Take that, pencil necks!
+ASUKA: Noted. Strengthen the main / front. The strait must be won.
+KANBEI: Asuka! Kanbei thanks you / for the delay! Come and finish!
+
+== m13_post
+@SONG co:kanbei
+KANBEI(s): Kanbei's last guard is / fallen. The strait is yours.
+ASUKA: Emperor. You may go. Walk out / with your guard. Keep your sword.
+KANBEI: Kanbei has been beaten by a / commander named Asuka.
+KANBEI: It is the happiest defeat of / his life. He will not explain.
+ASUKA: Do not explain, Emperor. I / understood.
+KANBEI: To the Chain! Yellow Comet / will live! Honour travels light!
+SENSEI: Kanbei. Lunch.
+KANBEI: ...Lunch.
+SENSEI: Thank you, girl. I mean / Commander. I forget.
+ASUKA: Of course, Sensei. Forgetting / is a mercy.
+MORTAR: Ma'am. The Chain is taken. / Four nations. Two left standing.
+ASUKA: Two and a half. One of them / is angry. The other is hiding.
+MORTAR: Who is hiding?
+ASUKA: Blue Moon. Hiding behind its / border, counting its iron.
+
+== m13_map
+@SONG enemy2
+CRUMB CO: Ma'am! Quartermaster's log! / The crate is humming again!
+ASUKA: Commander. You are at the / depot, I am in Yellow Comet.
+CRUMB CO: I know, ma'am! I heard it / hum on the radio! Over the radio!
+ASUKA: A crate that hums by radio. / Perhaps it listens to more than Sturm.
+CRUMB CO(s): Ma'am, I think it likes you.
+ASUKA: Then it has taste. Continue / the log.
+JUGGER: KANBEI: ENEMY. TREATED WITH / HONOUR. QUERY: IS THIS COMMON.
+ASUKA: It is rare, Jugger. Log it / as rare.
+FLAK: Flak liked Emperor. Emperor / shared tea. Flak shared soup.
+
+== m13_warroom
+@SONG ally1
+NARRATION: The Allied table, in the / east. The empty chair. The gavel.
+KANBEI: Kanbei yields the Chain. The / Emperor is unhurt.
+SENSEI: His pride is hurt. I have / examined it. It will mend.
+JESS: Yellow Comet is down. Green / Earth is down. Who is next?
+OLAF: Blue Moon! Olaf will hold the / border with ice and honour!
+GRIT: Reckon honour is cold comfort, / Olaf. She cut the Line in a day.
+ANDY: Okay. I'm done sitting. I / want to go to the tower. For Nell.
+MAX: Big man says go! The tower has / four guards and a window!
+RACHEL: A new letter from "A." again. / It says: "Be patient. I come soon."
+JAVIER: Hark! Whoever writes so / neatly, I should like to challenge!
+JESS: I keep wondering why a clerk / writes like she has all the time.
+JESS: And then I look at the Calder / Foundry ledger.
+KANBEI: Jess. What ledger?
+JESS: ...Later, Emperor. When the / table is smaller.
+NARRATION: Kanbei looks at the seventh / chair. It is still set.
+
+== m13_stand
+@SONG co:kanbei
+NARRATION: The strait bridge. Kanbei's / guard holds it, a hundred strong.
+KANBEI: Soldiers of Yellow Comet! The / bridge is held! Cross it over Kanbei!
+ASUKA: Emperor. Surrender. Spare your / guard. I will not ask twice.
+KANBEI: A bridge is held, Commander. / It is not argued.
+ASUKA: You are outnumbered. The / strait is lost.
+KANBEI: Then Kanbei will be lost / with it. Honourably. In order.
+SENSEI: Easy, Kanbei. A hundred men / is a lot of lunch to waste.
+KANBEI: Teacher. Take the wounded / and go. Kanbei needs no one.
+SENSEI: Hah. Fine. But I'm taking / the lunch.
+KANBEI: Asuka! Do not spare us! It / is the one insult Kanbei could not bear.
+ASUKA: Then I shall not, Emperor. / I shall win as cleanly as I can.
+KANBEI: ...That is the finest thing / a stranger ever said to Kanbei.
+ASUKA: I am only a commander, / Emperor.
+KANBEI: Yes. Kanbei knows. Charge!
+
+== m10_day9
+KINDLE: Darling Koal, the sixth / bridge. Shall we cross hand in hand?
+KOAL: No. You cross on the left. I / cross on the right. We do not touch.
+KINDLE: How romantic. A gap of a / metre between us.
+KOAL: Two metres. A lane and a half.
+GRIMM: Har! You two fight like a / married road!
+KOAL: ...A married road.
+KINDLE: Darling, he said "married". / Do not blush.
+KOAL: I am not blushing. It is the / wind. Mind the lane.
+
+== m13_staff
+@SONG enemy1
+NARRATION: The flagship's chart room. / North lies Blue Moon, under snow.
+STURM: Kanbei. His seal is on the / first page of your ledger.
+ASUKA: It is. He is beaten. He walks / free. I will manage him.
+STURM: I do not manage what I own. / I collect it.
+ASUKA: He is not yours, Lord Sturm. / He is a witness. I need him standing.
+STURM: ...Noted. Do not make a / habit of correcting me.
+ASUKA: I make a habit of being right. / It is cheaper.
+HAWKE: Iron Gate Pass is a single / door. I would like to knock on it.
+JUGGER: BLUE MOON WIRE: LOCATED. / SIXTEEN SEAMS. I REQUEST THE TASK.
+LASH: Ooh! Sasha's lab island! Lot / 42! Can I have it? Please?
+ASUKA: You may, Doctor. Carefully.
+FLAK: Flak hits harbours. Harbours / have fish. Flak likes fish.
+KINDLE: Snow, darlings? My costume / will be ruined. I must buy another.
+VON BOLT: Buy another! Kehh... on / whose coin? Mine? NO.
+CRUMB CO: Ma'am, I'll send soup. Hot. / In a flask. Gerald says no lumps.
+
