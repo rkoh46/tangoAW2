@@ -6,30 +6,28 @@ she stayed). Design: `docs/BH2_CAMPAIGN.md` section 9 (branch `bh2design`); this
 and texts), `crumb.rs` (`has_own_quotes`, the `PayForPower` trap calls `aria::power_paid`), `ds_co_page.rs`, `ds_ai.rs`, `sturm_pairs.rs` / `tag.rs` (her pair), `custom_campaign.rs` (`country`: Orange Star).
 Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos/aria_v1.toml`.
 
-## What she does (the owner's final numbers)
-| | **Common Cause** (day to day) | **Build Anew** (Super Power, 7 stars) |
+## What she does (the owner's redesign: two small rules of her own)
+| | **Vengeance** (day to day) | **Build Anew** (Super Power, 7 stars) |
 |---|---|---|
-| Attack / defence | +3% / +10% | +20% / +30% on top (and the power's own +10% / +10%) |
-| Move | Sturm's: every terrain costs 1 for ground units | +1 on every unit |
+| Attack | a unit with 5 HP or less (displayed) attacks 20% harder | every unit +20% (and the power's own +10% / +10%) |
 | HP | | every unit recovers 3 HP (`RepairUnit(unit, 3, 0)`, free) |
-| Funds | | one day's income, once, at once (below) |
-| Luck | Nell's: 0..19%, no bad luck | the same |
+| Luck, movement, defence | the game's own (Asuka keeps Nell's luck and Sturm's movement) | nothing more |
+- **Vengeance** is a per-unit firepower term: `aria::vengeance(hp)` (20 for 1..50 internal HP, i.e. 5 displayed or less) added in `com_tower::side_firepower` with the other terms of a battle's base damage (Com Towers, skills),
+  so the forecast, the attack and the counterattack agree; the HP is the unit record's at the time the strike is worked out (a counterattack uses the HP the hit left). `data.py` has no mod for it: `cos/aria.toml` says
+  `vengeance = { hp = 5, attack = 20 }` and the test calculator adds it in `Ctx.side`.
 - **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt. Her CO row has 0 stars for it (`aria::STARS = (0, 7)`), which is all the game needs: the map menu has no "Power" entry (and "Super" appears at exactly
   7 x 9000, +20% each use), the HUD meter has a mark for the Super Power only, the CO page says she has none (the text is `[cop] text` in her data file, the wording of the page AW2 writes for Sturm), the
   CPU plays her with Von Bolt's profile (`ds_ai::template_of` -> 11) and Sturm's power settings in her row (`co_roster::new_row`): a Super Power as soon as the meter allows, never a CO Power. Her CO Power
   quote slots hold the Super Power's line (nothing reads them). `data.py` lets `stars.cop = 0` without a `[cop]` section's mods or quote.
-- **Luck and movement are Asuka's implementation** (`co_roster::build`: `asuka::LUCK` 20 with no bad luck, the three movement charts of Sturm's row `asuka::MOVE_LIKE`), switched on for Aria too.
-- **Funds**: defined exactly as an immediate grant equal to one day's income: the Funds rule's value for a property (`FUNDS_PER_PROPERTY`, 1000 by default; the Rules screen) times the properties that
-  earn (`co_powers::earners`: the HQ, cities, bases, airports, ports; not labs or towers), added to her funds when the power is paid for (`PayForPower`'s trap, `aria::power_paid`), once, capped at 999999. "Twice
-  that day" = the normal day's income at the start of her turn plus this grant. No income mode, no grant.
-- **Stars 0 / 7** (the owner's): for comparison Sturm 0 / 10, Kanbei 4 / 7, Eagle 3 / 9. `aw2dev co check` keeps her under Kanbei's caps (day to day +13, Super Power +73 of firepower + defence, against its caps of 40 and 120).
+- **Stars 0 / 7**: for comparison Sturm 0 / 10, Kanbei 4 / 7, Eagle 3 / 9; `aw2dev co balance aria --vs Max Kanbei Sturm` (below).
 - **Tag**: Nell + Aria, "Sisters' Accord", 115%, 2 stars (`cos/tags.toml`, `sturm_pairs::DUOS`); Aria with anyone else 95% (`sturm_pairs::aria_compatibility`, as Asuka's).
 - Orange Star's colours, style and HQ: her row's style byte and colour are Nell's (`new_row`), her battle style 0 (`co_new::build`), her HQ the game's own (`hq = "default"`), the CO page's tab Orange Star's
   (`custom_campaign::country`). In the Teams list and the War Room she follows Nell (`like`).
 - **Not in the Emerald Sun Campaign**, reserved for the BH2 Campaign. In every Versus list, the tag partner pick, War Room, Survival, Champion and the DS-style CO select grid.
 - **Theme**: a placeholder, `co:nell` (her row's music is Nell's). Her own song, "Last Accord", is on the `bh2music` branch (its file `bh2/aria.m4t` under music) and is being reworked: when it lands,
   set `theme = "own:aria"` and add a row to `es_music::SOURCES` as Asuka's.
-- Online: `SIM_VERSION` 32 -> **33** (`pvp.rs` history): the CO table, the Teams order, the texts and the pictures are 93 rows long and `PayForPower` pays the grant.
+- Online: `SIM_VERSION` 32 -> **33** (`pvp.rs` history): the CO table, the Teams order, the texts and the pictures are 93 rows long and a hurt unit of hers attacks harder. (Earlier drafts of her kit, with +3% / +10%,
+  Nell's luck, Sturm's movement, +30% defence, +1 move and a day's income, were dropped before release: those traits stay Asuka's.)
 
 ## Her picture (a direct import, with a baked-in checkerboard)
 `art-src/cos/aria_v1.jpg` is 838 x 2000, a full-body figure in pixel art (native cells of 7 px: 118 x 279) whose "transparent" background is a **checkerboard baked into the JPEG** (white and light grey squares
@@ -54,6 +52,6 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
   photographs 56 frames; the quote frame is the one with the most text typed.
 
 ## Verification (what was run)
-`aw2dev co verify aria` (`co_verify_*_aria`, the generic scenarios against `cos/aria.toml` through `cospec.py`: attack, defence, luck, counter and meter in 474 + 444 stat checks, move, economy with the Funds rule
-at 1000, the heal of 3 and the grant, the meter's 7 stars and the missing Power entry, the Tag Power with Nell, an unlisted pair, the CPU's Super Power, the HQ), `tests/test_aria.py` (the row, luck, Sturm's
-movement in clear / rain / snow, the menu, the CPU, the grant at 1000 and 2000 a property), `co_verify`'s `--net` (both peers equal), `aw2dev test`, `aw2dev co check`, `armyskin check --live` and `kit check`.
+`aw2dev co verify aria --net` (`co_verify_*_aria`, the generic scenarios against `cos/aria.toml` through `cospec.py`: attack, defence, counter and meter, move, economy, the heal of 3, the meter's 7 stars and the
+missing Power entry, the Tag Power with Nell, an unlisted pair, the CPU's Super Power, the HQ, both peers equal), `tests/test_aria.py` (the row, Vengeance at 5 and 6 displayed HP in both levels and as a counterattacker,
+the menu, the CPU, Build Anew's heal and nothing else), `aw2dev test`, `aw2dev co check`, `co balance`, `armyskin check --live` and `kit check`.

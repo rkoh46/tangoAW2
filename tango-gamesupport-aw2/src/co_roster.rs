@@ -480,7 +480,7 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     for mode in 0..3u8 {
         // Asuka's Black Insight: Sturm's movement, his row's three charts of each level as the pack has them (every terrain costs 1 for ground units, in every weather: the pack's
         // weather no longer slows anyone, `build`)
-        let charts = if co == crate::co_new::ASUKA || co == crate::co_new::ARIA {
+        let charts = if co == crate::co_new::ASUKA {
             let at = 0x38 + 0x44 * mode as usize + 0x18;
             rows[crate::asuka::MOVE_LIKE as usize][at..at + 12].to_vec()
         } else {
@@ -525,8 +525,8 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         }
         row[at + 0x18..at + 0x24].copy_from_slice(&charts);
         row[at + 0x24..at + 0x44].copy_from_slice(&neutral_stats);
-        if co == crate::co_new::ASUKA || co == crate::co_new::ARIA {
-            // Black Insight's (and Common Cause's) luck: Nell's day-to-day maximum roll in every level (her powers do not raise it further), no bad luck
+        if co == crate::co_new::ASUKA {
+            // Black Insight's luck: Nell's day-to-day maximum roll in every level (her powers do not raise it further), no bad luck
             row[at + 0x0E..at + 0x10].copy_from_slice(&crate::asuka::LUCK.to_le_bytes());
             row[at + 0x10..at + 0x12].copy_from_slice(&0i16.to_le_bytes());
         }

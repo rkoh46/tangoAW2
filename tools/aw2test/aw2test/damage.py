@@ -55,9 +55,9 @@ ARIA = 93
 
 
 def aria_bonus(mode, which):
-    """Aria's own numbers (crate::aria::bonus) on every unit: day to day +3% firepower and +10% defence, the Super Power (mode 2; she has no CO Power) +20% / +30% and +1 move on top, with the +10% firepower
-    every power adds."""
-    v = {0: 3 + (20 if mode == 2 else 0), 1: 10 + (30 if mode == 2 else 0), 2: 1 if mode == 2 else 0}.get(which, 0)
+    """Aria's own numbers (crate::aria::bonus) on every unit: the Super Power (mode 2; she has no CO Power) +20% firepower, nothing else, with the +10% firepower every power adds. Vengeance (a unit on
+    5 HP or less +20%) depends on the unit: `Ctx.side` adds it."""
+    v = {0: 20 if mode == 2 else 0}.get(which, 0)
     if which == 0 and mode > 0:
         v += 10
     return v
@@ -172,8 +172,8 @@ class Rules:
             m["abilities"] = 0
             return m
         if co == ARIA and self.chart is not None:
-            # (Aria: Nell's luck, no bad luck, Andy's counter, no skills: crate::aria)
-            m["luck"], m["neg_luck"] = 20, 0
+            # (Aria: the game's own luck (Andy's row), Andy's counter, no skills: crate::aria)
+            m["luck"], m["neg_luck"] = self.chart.co_field(81, mode, 0x1C), self.chart.co_field(81, mode, 0x1E)
             m["counter"] = self.chart.co_field(81, mode, 0x20)
             m["abilities"] = 0
             return m

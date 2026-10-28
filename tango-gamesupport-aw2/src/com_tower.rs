@@ -156,6 +156,13 @@ fn side_firepower(core: &Core, bu: u32) -> i32 {
         add += crate::co_roster::ds_terrain_stars(core, army, raw) >> 1;
     }
     add += crate::co_powers::extra_firepower(core, army);
+    if crate::co_roster::army_co(core, army).0 == crate::co_new::ARIA && core.raw_read_8(CO_ABILITIES, -1) != 0 {
+        // Aria's Vengeance: a unit with 5 HP or less (displayed) attacks 20% harder
+        let unit = core.raw_read_32(bu, -1);
+        if (0x0200_0000..0x0204_0000).contains(&unit) {
+            add += crate::aria::vengeance(core.raw_read_8(unit + 4, -1) & 0x7F);
+        }
+    }
     add += crate::tag::firepower(core, army);
     let unit = core.raw_read_32(bu, -1);
     if (0x0200_0000..0x0204_0000).contains(&unit) {

@@ -1,5 +1,5 @@
 # Aria, Commander of the New Accord (docs/dev/co-kit.md, docs/dev/aria.md). Nell's sister, an Orange Star CO: the final opponent of the BH2 Campaign (docs/BH2_CAMPAIGN.md section 9, branch bh2design)
-# and Asuka's mirror. Her numbers are her own (src/aria.rs): +3% attack, +10% defence, Nell's luck, Sturm's movement; only a Super Power: heals 3, +1 move, +20% / +30%, a day's income at once. Not in the Emerald Sun Campaign.
+# and Asuka's mirror. Her numbers are her own (src/aria.rs): Vengeance (+20% attack for a unit on 5 HP or less); only a Super Power: heals 3 and +20% attack. Not in the Emerald Sun Campaign.
 id = "aria"
 name = "Aria"
 army = "orange_star"
@@ -11,16 +11,16 @@ full_name = "Aria"
 # Placeholder: Nell's song until her own is ready (branch bh2music, tango-gamesupport-aw2/music/bh2/aria.m4t, "Last Accord"); then `theme = "own:aria"` and a row in es_music::SOURCES.
 theme = "co:nell"
 bio = "Nell's sister, and Commander of the New Accord. She rebuilt the Allied army from the ground up and never leaves a soldier to stand alone. Hit: Teamwork Miss: Going it alone"
-luck = [20, 20, 20]          # Nell's day-to-day maximum roll (as Asuka's), no bad luck
-bad_luck = [0, 0, 0]
-movement = "sturm"           # every terrain costs 1 for her ground units (his row's charts), as Asuka's
+luck = [10, 10, 10]          # the game's own (Andy's row): she has no luck or movement trait
 # Only a Super Power, like Dual Strike's Von Bolt: no CO Power (no Power entry in the menu, no COP stars, the AI never tries one). The Super Power costs 7 stars.
 stars = { cop = 0, scop = 7 }
 
 [d2d]
-name = "Common Cause"
-text = "Common Cause: my units attack 3% harder and take 10% less damage, my luck is good and every terrain costs 1 to cross."
-mods = [ { units = "all", attack = 3, defence = 10 } ]
+name = "Vengeance"
+text = "Units with 5 HP or less attack with 20% more firepower. Her wounded troops fight hardest."
+# no mods: the bonus depends on the unit's HP (crate::aria::vengeance); the check below plays it in battle
+mods = []
+vengeance = { hp = 5, attack = 20 }
 
 [cop]
 # No CO Power (stars.cop = 0): the CO page says so, as AW2 says of Sturm.
@@ -29,11 +29,9 @@ text = "Aria has no CO Power. She saves all her energy for her Super CO Power."
 
 [scop]
 name = "Build Anew"
-text = "All my units recover 3 HP, move 1 space more, attack 20% harder and take 30% less damage. I collect a day's income at once."
-mods = [ { units = "all", attack = 20, defence = 30, move = 1 } ]
+text = "Restores 3 HP to all units. Firepower rises by 20%."
+mods = [ { units = "all", attack = 20 } ]
 heal = 3
-# Funds: an immediate grant equal to one day's income (the Funds rule x the properties that earn), once, when the power is used.
-income_grant = true
 quote = ["BUILD ANEW! From these", "ashes, we rise again!"]
 
 [lines]

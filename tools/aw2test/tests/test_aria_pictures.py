@@ -41,7 +41,7 @@ def expected_quote():
 
 @test(modes=("ds",))
 def aria_pics_build_anew_activation(ctx):
-    """Build Anew from the map menu: frames every 2 emulated frames; the typed-out quote box (both lines, her own text), the cut-in with the name half typed and whole, the units before and after."""
+    """Build Anew from the map menu: frames every 2 emulated frames; the typed-out quote box (both lines, her own text), the cut-in with the name half typed and whole, the units before and after (+3 HP)."""
     from aw2test import coverify as cv
     g = ctx.start(cv.econ_map(ctx), ["aria", "andy"], env=cv.ENV)
     ctx.set_hp(g, 3, 3, 45)
@@ -77,7 +77,7 @@ def aria_pics_build_anew_activation(ctx):
     g.wait_for_input()
     ctx.shot(g, "scop_after")
     ctx.eq(g.unit_at(3, 3)["hp"], 80, "the Infantry 45 (rounded up to 5 HP) -> 80 (3 HP healed)")
-    ctx.eq(cv.funds(g), 10000 - 0 + 7000, "one day's income (7 properties x 1000) was paid")
+    ctx.eq(cv.funds(g), 10000, "no funds are paid")
 
 
 @test(modes=("ds",))

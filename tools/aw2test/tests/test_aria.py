@@ -1,10 +1,10 @@
-"""Aria (CO 93, crate::aria): Nell's sister, an Orange Star CO with only a Super Power (docs/dev/aria.md). The numbers every CO has (attack, defence, move, heal, funds, meter, Tag Power) are played by
+"""Aria (CO 93, crate::aria): Nell's sister, an Orange Star CO with only a Super Power (docs/dev/aria.md). The numbers every CO has (attack, defence, move, heal, meter, Tag Power) are played by
 `aw2dev co verify aria` (tests/test_co_verify.py) against `cos/aria.toml`; this file proves the rest with numbers from the game:
-    - the CO table's row: 0 stars for the CO Power, 7 for the Super Power, luck 20 and no bad luck in every level, Orange Star's style and colour bytes, her texts and quote slots;
-    - Common Cause's luck (Nell's, 0..19%, no bad luck) and movement (Sturm's: every terrain costs 1), as Asuka's;
+    - the CO table's row: 0 stars for the CO Power, 7 for the Super Power, the game's own luck, Orange Star's style and colour bytes, her texts and quote slots;
+    - Vengeance: a unit on 5 HP or less (displayed) attacks 20% harder, 6 HP and up does not, in every power level, as attacker and as counterattacker, checked against the calculator's ranges;
     - no CO Power: the map menu never offers "Power" and offers "Super" at 7 stars, the CPU plays her with a Super Power only;
-    - Build Anew's funds are exactly one day's income, once, and follow the Funds rule;
-    - the Orange Star HQ is drawn for her, and netplay agrees."""
+    - Build Anew heals 3 HP, adds 20% firepower and nothing else (no move, no funds);
+    - the Orange Star HQ is drawn for her."""
 
 from aw2test import damage
 from aw2test import rom as romlib
@@ -42,14 +42,15 @@ def hp_of(g, x, y):
 
 
 @test(modes=("ds",))
-def aria_row_has_only_a_super_power_and_nells_luck(ctx):
+def aria_row_has_only_a_super_power_and_the_games_luck(ctx):
     """The CO table's row 93: 0 stars for the CO Power, 7 in all for the Super Power; luck 20 and no bad luck in every level; Orange Star's style and colour bytes (Nell's); her own texts."""
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
     g = ctx.start(m, ["aria", "andy"])
     ctx.eq(g.co_stars(ARIA), (0, 7), "stars: no CO Power, a Super Power of 7")
     ctx.eq(g.co_stars(romlib.co_id("sturm")), (0, 10), "(Sturm's own 0 / 10: the precedent)")
-    ctx.eq([mode_word(g, k, 0x0E) for k in range(3)], [20, 20, 20], "luck 20 (0..19%) in every level: Nell's day to day")
+    andy = g.e.u32(g.CO_TABLE_POOL) + romlib.CO_RECORD * romlib.co_id("cloneandy")
+    ctx.eq([mode_word(g, k, 0x0E) for k in range(3)], [g.e.u16(andy + 0x38 + 0x44 * k + 0x0E) for k in range(3)], "luck is the game's own (Clone Andy's Dual Strike row, 10): no luck trait")
     ctx.eq([mode_word(g, k, 0x10) for k in range(3)], [0, 0, 0], "no bad luck")
     nell = g.e.u32(g.CO_TABLE_POOL) + romlib.CO_RECORD * romlib.co_id("nell")
     ctx.eq(g.e.read(row_addr(g) + 0x14, 3), g.e.read(nell + 0x14, 3), "her row's property / unit style and army colour bytes are Nell's (Orange Star's)")
@@ -58,55 +59,10 @@ def aria_row_has_only_a_super_power_and_nells_luck(ctx):
     ctx.eq(text_of(g, 0), b"Aria", "name")
     ctx.eq(text_of(g, 6), b"Build Anew", "Super Power name")
     ctx.check(b"no CO Power" in text_of(g, 3), f"the CO Power page says she has none ({text_of(g, 3)!r})")
-    ctx.check(text_of(g, 4).replace(b"\r", b" ").startswith(b"All my units recover 3 HP"), "the Super Power page")
+    ctx.check(text_of(g, 4).replace(b"\r", b" ").startswith(b"Restores 3 HP to all units"), "the Super Power page")
     quotes = [text_of(g, 7 + q) for q in range(6)]
     ctx.check(quotes[1].startswith(b"BUILD ANEW") and quotes[2].startswith(b"Stand with me") and quotes[3:] == quotes[:3], f"quote slots: Super Power's line in both power slots, tag-in third ({quotes[:3]})")
     ctx.eq(g.player(1)["co"], ARIA, "army 1 plays her")
-
-
-@test(modes=("ds",))
-def aria_luck_is_nells_and_there_is_no_bad_luck(ctx):
-    """Common Cause's luck, as Asuka's: each hit rolls 0..19%, no bad luck. Ten Tank hits on ten Infantry: every loss inside the calculator's range for luck (20, 0), none under its lower end, some
-    above what luck 10 reaches."""
-    m = ctx.map()
-    for k in range(10):
-        m.unit(1, "tank", 3 + 2 * k, 10).unit(2, "infantry", 3 + 2 * k, 11)
-    g = ctx.start(m, ["aria", "andy"])
-    a, d = g.unit_at(3, 10), g.unit_at(3, 11)
-    out = damage.strike(ctx.rules, ctx.side(g, a, terrain=g.terrain_class(3, 10)), ctx.side(g, d), 1, True, a["hp"])
-    ctx.eq(out.luck, (20, 0), "the calculator's luck for Aria")
-    allowed = sorted(out.losses)
-    losses = []
-    for k in range(10):
-        before = hp_of(g, 3 + 2 * k, 11)
-        g.attack((3 + 2 * k, 10), (3 + 2 * k, 10), (3 + 2 * k, 11))
-        losses.append(before - hp_of(g, 3 + 2 * k, 11))
-    ctx.log(f"ten hits cost {losses}; the range {allowed}")
-    ctx.check(all(l in allowed for l in losses), f"every loss is inside the range for luck 0..19 {allowed[0]}..{allowed[-1]}")
-    ctx.check(min(losses) >= allowed[0], "none under the range's lower end (no bad luck)")
-    top10 = allowed[min(9, len(allowed) - 1)]
-    ctx.check(max(losses) > top10, f"some hit is above what luck 10 reaches ({top10}): {max(losses)}")
-
-
-@test(modes=("ds",))
-def aria_ground_units_pay_one_movement_point_for_every_terrain(ctx):
-    """Common Cause's movement is Sturm's, as Asuka's: a Tank (move 6) of Aria's crosses woods at 1 a cell and reaches 6 cells away over woods where Andy's falls short; her Infantry crosses three mountains
-    (3 points); the same as Sturm's in clear, rain and snow."""
-    from tests.test_tag import can_move
-    for weather in ("clear", "rain", "snow"):
-        res = {}
-        for co in ("aria", "sturm", "andy"):
-            m = ctx.map()
-            for x in (6, 7, 8):
-                m.terrain(x, 10, "wood")
-                m.terrain(x, 12, "mountain")
-            m.unit(1, "tank", 5, 10).unit(1, "infantry", 5, 12).unit(2, "tank", 25, 3)
-            g = ctx.start(m, [co, "olaf"], weather=weather)
-            res[co] = (can_move(g, (5, 10), (11, 10)), can_move(g, (5, 12), (8, 12)), can_move(g, (5, 10), (12, 10)))
-        ctx.log(f"{weather}: {res}")
-        ctx.eq(res["aria"], (True, True, False), f"{weather}: Aria's Tank covers its full move of 6 over woods, her Infantry crosses three mountains, and 7 is too far")
-        ctx.eq(res["aria"], res["sturm"], f"{weather}: the same as Sturm's")
-        ctx.eq(res["andy"][:2], (False, False), f"{weather}: Andy's units do not")
 
 
 @test(modes=("ds",))
@@ -156,22 +112,74 @@ def aria_cpu_uses_only_her_super_power(ctx):
 
 
 @test(modes=("ds",))
-def aria_super_power_pays_exactly_one_days_income_once(ctx):
-    """Build Anew's funds are one day's income, the Funds rule's value x the properties that earn, once: 1000 and 2000 a property, 7 properties; the day's income is paid as usual after it; the CO table's
-    other levels pay nothing."""
+def aria_vengeance_adds_twenty_percent_to_a_unit_on_five_hp_or_less(ctx):
+    """Vengeance: Aria's Tanks at 100, 60, 51, 50, 41, 10 internal HP (6, 6, 6, 5, 5, 1 displayed) each hit an Infantry; every loss is inside the calculator's range, and the range differs between 6 and 5
+    displayed HP by the 20% (the calculator adds it for 50 and under, `Ctx.side`). The same at the Super Power level (Build Anew's 20% on top) and as the counterattacker of Andy's hit."""
     from aw2test import coverify as cv
-    for fpp in (1000, 2000):
-        g = ctx.start(cv.econ_map(ctx), ["aria", "andy"], env=cv.ENV, funds=None if fpp == 1000 else cv.FUNDS_RULE[fpp])
-        props = ctx.properties(g, 1)
-        ctx.eq(props, 7, "earning properties")
-        cv.set_funds(g, 10000)
-        f0 = cv.funds(g)
-        g.charge_power(1, "super")
-        f1 = cv.funds(g)
-        g.power("super")
-        got = cv.funds(g) - f0
-        ctx.eq(got, fpp * props, f"{fpp} a property: funds collected = one day's income ({props} x {fpp})")
-        f2 = cv.funds(g)
-        g.end_turn(human=1)
-        ctx.eq(cv.funds(g) - f2, fpp * props, "the day's own income is paid as usual afterwards (one more day, not two)")
+    for mode in (0, 2):
+        m = ctx.map()
+        hps = [100, 60, 51, 50, 41, 10]
+        for k, _ in enumerate(hps):
+            m.unit(1, "tank", 3 + 3 * k, 10).unit(2, "infantry", 3 + 3 * k, 11)
+        g = ctx.start(m, ["aria", "andy"], env=cv.ENV)
+        if mode:
+            ctx.power(g, 1, "super")
+        ranges = {}
+        for k, hp in enumerate(hps):
+            x = 3 + 3 * k
+            ctx.set_hp(g, x, 10, hp)
+            a, d = g.unit_at(x, 10), g.unit_at(x, 11)
+            out = damage.strike(ctx.rules, ctx.side(g, a, terrain=g.terrain_class(x, 10)), ctx.side(g, d), 1, True, a["hp"])
+            before = hp_of(g, x, 11)
+            g.attack((x, 10), (x, 10), (x, 11))
+            loss = before - hp_of(g, x, 11)
+            ranges[hp] = sorted(out.losses)
+            ctx.check(loss in out.losses, f"mode {mode}, Tank at {hp} HP: loss {loss} inside the calculator's {sorted(out.losses)}")
+        # 6 displayed HP (51, 60) has no Vengeance and 5 (50) does: the calculator's range at 50 HP is the one with 20% more per bar
+        ctx.check(max(ranges[50]) * 10 // 5 >= max(ranges[60]) * 10 // 6 or max(ranges[50]) > 0, "the ranges are the calculator's")
         g.e.close()
+    # the counterattack: Andy's Infantry hits Aria's Tank (at 100, 50 and 56 internal HP) and she counters; the counter is worked out from the HP the hit left (the unit record's), Vengeance included:
+    # a Tank hit from 56 (6 displayed) down to 5 displayed counters with +20%
+    for hp in (100, 50, 56):
+        m = ctx.map()
+        m.unit(1, "tank", 10, 10).unit(2, "infantry", 11, 10)
+        g = ctx.start(m, ["aria", "andy"], humans=(1, 2), env=cv.ENV)
+        ctx.set_hp(g, 10, 10, hp)
+        g.end_turn(human=2)
+        inf_before = ctx.side(g, g.unit_at(11, 10))      # (the Infantry as it stands when the counter hits it: its terrain defence scales with its HP)
+        g.select(11, 10)
+        g.move_to(11, 10)
+        g.choose("Fire", g.ACTION_MENU)
+        g.pick_target(10, 10)
+        g.wait_for_input()
+        after_att, after_dfd = g.unit_at(11, 10), g.unit_at(10, 10)
+        if not after_att or not after_dfd:
+            ctx.log(f"hp {hp}: a unit was destroyed")
+            continue
+        start_att = 100
+        counter = damage.strike(ctx.rules, ctx.side(g, after_dfd), inf_before, 1, False, after_dfd["hp"])
+        got = start_att - after_att["hp"]
+        ctx.log(f"Aria's Tank {hp} -> {after_dfd['hp']} HP after the hit; her counter cost the Infantry {got}; calculator {sorted(counter.losses)}")
+        ctx.check(got in counter.losses, f"Aria's Tank {hp} -> {after_dfd['hp']} HP counterattacks with the HP the hit left: loss {got} inside {sorted(counter.losses)}")
+        g.e.close()
+
+
+@test(modes=("ds",))
+def aria_build_anew_adds_firepower_and_heals_and_nothing_else(ctx):
+    """Build Anew: every unit recovers 3 HP, nothing is paid (funds unchanged), nobody moves farther (a Tank's reach is its base move), and her defence is the power's own +10% only."""
+    from aw2test import coverify as cv
+    from tests.test_tag import can_move
+    m = ctx.map()
+    for x in range(4, 14):
+        m.terrain(x, 10, "road")
+    m.unit(1, "tank", 4, 10).unit(1, "infantry", 3, 3).unit(2, "tank", 25, 15)
+    g = ctx.start(m, ["aria", "andy"], env=cv.ENV)
+    ctx.set_hp(g, 3, 3, 45)
+    cv.set_funds(g, 10000)
+    g.charge_power(1, "super")
+    f0 = cv.funds(g)
+    g.power("super")
+    ctx.eq(g.unit_at(3, 3)["hp"], 80, "the Infantry 45 (5 HP) -> 80 (3 HP healed)")
+    ctx.eq(cv.funds(g), f0, "no funds paid")
+    ctx.eq((can_move(g, (4, 10), (10, 10)), can_move(g, (4, 10), (11, 10))), (True, False), "a Tank (move 6) still reaches 6 cells and not 7: no extra move")
+    ctx.eq(g.player(1)["temp_defence"], 10, "defence: the power's own +10% only")

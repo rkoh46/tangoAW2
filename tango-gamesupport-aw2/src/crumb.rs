@@ -414,7 +414,6 @@ fn power_paid(core: &mut Core) {
         return;
     }
     crate::es_co::power_paid(core);
-    crate::aria::power_paid(core);
     let mode = core.gba().cpu().gpr(1) as u8;
     core.raw_write_8(POWER_MODE, -1, mode);
 }
