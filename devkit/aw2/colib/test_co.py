@@ -377,7 +377,7 @@ class Illustration(unittest.TestCase):
     def test_asuka_is_a_black_hole_co_with_her_pairs_and_a_name_graphic(self):
         cos, tags = data.load_all()
         a = cos["asuka"]
-        self.assertEqual((a["army"], a["stars"]), ("black_hole", {"cop": 3, "scop": 9}))        # Eagle's meter, AW2's and Dual Strike's table
+        self.assertEqual((a["army"], a["stars"]), ("black_hole", {"cop": 4, "scop": 8}))        # the normal cost
         self.assertEqual((a["luck"], a["bad_luck"]), ([20, 20, 20], [0, 0, 0]))                # Nell's day-to-day luck, no bad luck
         partners = {(p["b"] if p["a"] == "asuka" else p["a"]) for p in tags["pair"] if "asuka" in (p["a"], p["b"])}
         self.assertTrue({"ds:vonbolt", "aw2:hawke", "aw2:sturm"} <= partners, partners)

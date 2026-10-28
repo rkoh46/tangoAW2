@@ -109,7 +109,7 @@ skin and anything else. Tests: `ds_co_art::recolour_tests`, `test_co.py::test_cl
 Klaus, Aurelia, Livia fit with room, Cassius fills all 48 columns. No plate needed the short form (`short = "Aurel"` / `"Cass"` in the CO files are for a plate that clips).
 
 ## Asuka
-CO 92 (`crate::asuka`, docs/dev/asuka.md): the first CO of the kit that is in **every** Versus list (no playtest flag), a Black Hole CO whose numbers are Sonja's, whose powers add Hawke's HP swing and Drake's halving, and whose picture is the owner's illustration (imported by the illustration mode above). Her data file carries the optional keys `vision`, `hidden_hp`, `terrain_cut`, `strike_first`, `hp_own`, `hp_enemy` (checked by `co check`; the numbers themselves live in the game's tables).
+CO 92 (`crate::asuka`, docs/dev/asuka.md): the first CO of the kit that is in **every** Versus list (no playtest flag), a Black Hole CO whose numbers are Sonja's vision, hidden HP and terrain cut with Nell's luck, whose powers add Drake's halving of ammo and fuel (Event Horizon one HP off every enemy unit), and whose picture is the owner's illustration (imported by the illustration mode above). Her data file carries the optional keys `vision`, `hidden_hp`, `terrain_cut`, `strike_first`, `hp_own`, `hp_enemy` (checked by `co check`; the numbers themselves live in the game's tables).
 
 ## Aria
 CO 93 (`crate::aria`, docs/dev/aria.md): an Orange Star CO in every Versus list with **only a Super Power** (`stars = { cop = 0, scop = 7 }`: the data file needs no `[cop]` mods and quote; the CO page says she has none) and a picture on a **baked-in checkerboard

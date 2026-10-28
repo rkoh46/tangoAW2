@@ -142,10 +142,11 @@ fn urban_blight_fn(gfx: u32, pal: u32) -> Vec<u8> {
     b
 }
 
-/// Asuka's Dark Intel / Event Horizon: Hawke's Black Wave / Black Storm (`sub_08044CF8`: `sub_08044D70(script, gfx, pal, army, hp, hp, -1, 0, proc)`, her units
-/// regain `hp` and the enemy's lose `hp`) with Drake's fuel flag on (his Tsunami and Typhoon call it with 1: every enemy unit's fuel halved, rounded down); the enemy's ammo is halved
-/// in [`mass_unit`]. `hp` 1 for the CO Power, 2 for the Super Power; `pal` is Hawke's palette for that power.
-fn asuka_fn(hp: u8, pal: u32) -> Vec<u8> {
+/// Asuka's Dark Intel / Event Horizon: Hawke's Black Wave / Black Storm (`sub_08044CF8`: `sub_08044D70(script, gfx, pal, army, damage, heal, -1, 0, proc)`, the enemy's units lose `damage`
+/// and her units regain `heal`) with Drake's fuel flag on (his Tsunami and Typhoon call it with 1: every enemy unit's fuel halved, rounded down); the enemy's ammo is halved in [`mass_unit`].
+/// Event Horizon is (1, 0). Dark Intel changes no HP, but the procedure does nothing at all for (0, 0), so it is called with a damage of 1 as a carrier: [`mass_unit`] does the halving of ammo and fuel
+/// itself for every unit and skips the procedure's own work, so no HP is lost. `pal` is Hawke's palette for that power.
+fn asuka_fn(damage: u8, heal: u8, pal: u32) -> Vec<u8> {
     // literal pool after 28 halfwords: script, gfx, pal, current army, sub_08044D70
     const POOL: usize = 56;
     let ldr = |rd: u16, at: usize, entry: usize| -> u16 {
@@ -159,10 +160,10 @@ fn asuka_fn(hp: u8, pal: u32) -> Vec<u8> {
         ldr(2, 8, 2),       // ldr r2, =pal
         ldr(3, 10, 3),      // ldr r3, =current army
         0x881B,             // ldrh r3, [r3]
-        0x2400 | hp as u16, // movs r4, #hp
-        0x9400,             // str r4, [sp]       damage
-        0x2400 | hp as u16, // movs r4, #hp
-        0x9401,             // str r4, [sp, #4]   healing
+        0x2400 | damage as u16, // movs r4, #damage
+        0x9400,             // str r4, [sp]       damage to the enemy's units
+        0x2400 | heal as u16, // movs r4, #heal
+        0x9401,             // str r4, [sp, #4]   healing of her own
         0x2400,             // movs r4, #0
         0x3C01,             // subs r4, #1        weather unchanged (-1)
         0x9402,             // str r4, [sp, #8]
@@ -241,8 +242,8 @@ pub fn install(core: &mut Core) {
     core.raw_write_range(EX_MACHINA_FN, -1, &strike_fn(exm, THREE_HP));
     core.raw_write_range(COVERING_FIRE_FN, -1, &strike_fn(cf, THREE_HP));
     core.raw_write_range(URBAN_BLIGHT_FN, -1, &urban_blight_fn(gfx, pal));
-    core.raw_write_range(ASUKA_COP_FN, -1, &asuka_fn(1, 0x0811_3BA0));
-    core.raw_write_range(ASUKA_SCOP_FN, -1, &asuka_fn(2, 0x0811_3BC0));
+    core.raw_write_range(ASUKA_COP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[1].max(1), crate::asuka::HP_OWN[1], 0x0811_3BA0));
+    core.raw_write_range(ASUKA_SCOP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[2], crate::asuka::HP_OWN[2], 0x0811_3BC0));
     core.raw_write_32(SENTINEL, -1, MAGIC);
 }
 
@@ -771,12 +772,20 @@ fn mass_unit(core: &mut Core) {
         // Asuka: every enemy unit's ammo is halved, rounded down: 9 -> 4, 3 -> 1, 1 -> 0 (the fuel of Drake's flag does the same: 99 -> 49, 1 -> 0); units with no ammo stat have 0 and stay
         let u = core.gba().cpu().gpr(4) as u32;
         let a = army_of_index(core, u.wrapping_sub(core.raw_read_32(UNITS_POINTER, -1)) / UNIT);
+        let carrier = activating(core, army).1 == COP;      // Dark Intel: the procedure's HP work is skipped, the halving done here
         if (1..=5).contains(&a) && a != army && player_team(core, a) != player_team(core, army) {
             let w = core.raw_read_16(u + 4, -1);
             let ammo = (w >> 7) & 0xF;
             if ammo > 0 {
                 core.raw_write_16(u + 4, -1, (w & !(0xF << 7)) | (ammo >> 1) << 7);
             }
+            if carrier {
+                let f = core.raw_read_8(u + 6, -1);
+                core.raw_write_8(u + 6, -1, (f & 0x80) | ((f & 0x7F) >> 1));
+            }
+        }
+        if carrier {
+            core.gba_mut().cpu_mut().set_thumb_pc(MASS_NEXT);
         }
         return;
     }
@@ -1084,7 +1093,7 @@ mod tests {
     fn code_sizes() {
         assert_eq!(strike_fn(0, 30).len(), 36);
         assert_eq!(urban_blight_fn(0, 0).len(), 72);
-        assert_eq!(asuka_fn(1, 0).len(), 76);
+        assert_eq!(asuka_fn(1, 0, 0).len(), 76);
         assert!(
             URBAN_BLIGHT_FN + 72 <= ASUKA_COP_FN
                 && ASUKA_COP_FN + 76 <= ASUKA_SCOP_FN

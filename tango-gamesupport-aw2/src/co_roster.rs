@@ -230,7 +230,7 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
         v += POWER_FIREPOWER;
     }
     if co == crate::co_new::ASUKA && matches!(field, FIREPOWER | DEFENCE) {
-        // her day to day: all her units +5% attack and +5% defence, on top of every power's numbers
+        // her day to day's +5% attack and +5% defence (`asuka::DAY_BONUS`, 0 for now: the one-line toggle), on top of every power's numbers
         v += crate::asuka::DAY_BONUS;
     }
     Some(v)
@@ -478,14 +478,8 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     let neutral_stats = andy[0x38 + 0x24..0x38 + 0x44].to_vec();
     let andy_charts = andy[0x38 + 0x18..0x38 + 0x24].to_vec();
     for mode in 0..3u8 {
-        // Asuka's Black Insight: Sturm's movement, his row's three charts of each level as the pack has them (every terrain costs 1 for ground units, in every weather: the pack's
-        // weather no longer slows anyone, `build`)
-        let charts = if co == crate::co_new::ASUKA {
-            let at = 0x38 + 0x44 * mode as usize + 0x18;
-            rows[crate::asuka::MOVE_LIKE as usize][at..at + 12].to_vec()
-        } else {
-            andy_charts.clone()
-        };
+        // (Asuka no longer has Sturm's movement: her charts are Andy's like everyone's)
+        let charts = andy_charts.clone();
         let b = block(ds, mode)?;
         let at = 0x38 + 0x44 * mode as usize;
         let name = match mode {
@@ -511,6 +505,9 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             if b[0x08 + byte] & bit != 0 {
                 abilities |= aw2;
             }
+        }
+        if co == crate::co_new::ASUKA && mode == 2 {
+            abilities &= !crate::asuka::STRIKE_FIRST_ABILITY; // Event Horizon has no strike-first (Sonja's block has it; hers does not)
         }
         row[at + 8..at + 12].copy_from_slice(&abilities.to_le_bytes());
         for (aw2, dso) in [

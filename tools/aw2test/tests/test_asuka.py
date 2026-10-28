@@ -57,7 +57,7 @@ def asuka_row_is_sonjas_numbers_with_hawkes_powers(ctx):
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
     g = ctx.start(m, ["asuka", "andy"])
-    ctx.eq(g.co_stars(ASUKA), (3, 9), "stars: CO Power 3, Super Power 9 in all: Eagle's")
+    ctx.eq(g.co_stars(ASUKA), (4, 8), "stars: CO Power 4, Super Power 8 in all: the normal cost")
     ctx.eq(g.co_stars(romlib.co_id("eagle")), (3, 9), "(Eagle's own 3 / 9)")
     ctx.eq(g.co_stars(romlib.co_id("sonja")), (3, 5), "(Sonja's own 3 / 5)")
     ctx.eq(g.co_stars(romlib.co_id("hawke")), (5, 9), "(Hawke's own 5 / 9)")
@@ -67,7 +67,7 @@ def asuka_row_is_sonjas_numbers_with_hawkes_powers(ctx):
     ctx.eq(g.e.u16(nell + 0x0E), 20, "(Nell's own day-to-day luck is 20; her powers 60 and 100)")
     ctx.eq([mode_word(g, k, 0x10) for k in range(3)], [0, 0, 0], "no bad luck (Sonja's quirk is gone)")
     ctx.eq([mode_word(g, k, 0x12) for k in range(3)], [0, 0, 0], "no counter bonus (Dual Strike's Sonja has none)")
-    ctx.eq([mode_word(g, k, 0x08, 4) for k in range(3)], [0x01, 0x09, 0x0D], "skills: hidden HP; + sees into hiding places; + strikes first")
+    ctx.eq([mode_word(g, k, 0x08, 4) for k in range(3)], [0x01, 0x09, 0x09], "skills: hidden HP; + sees into hiding places; no strike-first (Sonja's Super Power has it, Asuka's does not)")
     cop, scop = mode_word(g, 1, 0x04, 4), mode_word(g, 2, 0x04, 4)
     ctx.check(0x08749600 <= cop < 0x0874A000 and 0x08749600 <= scop < 0x0874A000 and cop != scop and cop & 1 and scop & 1, f"her own power procedures (Black Wave / Black Storm with Drake's fuel flag): {cop:#x}, {scop:#x}")
     ctx.check(cop != HAWKE_COP and scop != HAWKE_SCOP, "not Hawke's own words")
@@ -206,18 +206,9 @@ def asuka_ground_units_pay_one_movement_point_for_every_terrain(ctx):
             g = ctx.start(m, [co, "olaf"], weather=weather)
             res[co] = (can_move(g, (5, 10), (11, 10)), can_move(g, (5, 12), (8, 12)), can_move(g, (5, 10), (12, 10)))
         ctx.log(f"{weather}: (Tank 6 cells over woods, Infantry 3 cells over mountains, Tank 7 cells) {res}")
-        ctx.eq(res["asuka"], (True, True, False), f"{weather}: Asuka's Tank covers its full move of 6 over woods, her Infantry crosses three mountains (3 points), and 7 is too far")
-        ctx.eq(res["sturm"], res["asuka"], f"{weather}: the same as Sturm's (in the Dual Strike pack rain and snow no longer slow anyone, and his charts are the clear one in every weather)")
-        ctx.eq(res["andy"][:2], (False, False), f"{weather}: Andy's units do not (woods cost a Tank 2, mountains an Infantry 2)")
-    # the CPU's Asuka benefits too: her Tank crosses the same ground in one turn
-    m = ctx.map()
-    for x in (14, 15, 16):
-        m.terrain(x, 10, "wood")
-    m.unit(1, "infantry", 2, 2).unit(2, "tank", 20, 10)
-    g = ctx.start(m, ["andy", "asuka"])
-    g.end_turn(human=1)
-    tank = [u for u in g.units(2) if u["type"] == 5 or True][0]
-    ctx.check(tank["x"] < 20, f"the CPU's Asuka moved her Tank ({(tank['x'], tank['y'])})")
+        ctx.eq(res["asuka"], res["andy"], f"{weather}: Asuka's units move exactly like Andy's (no movement trait any more)")
+        ctx.eq(res["asuka"][:2], (False, False), f"{weather}: woods cost her Tank 2 and mountains her Infantry 2 like anyone's")
+
 
 
 @test(modes=("ds",))
@@ -272,9 +263,10 @@ def hp_battle(ctx, which, cos=("asuka", "andy"), **kw):
 
 
 def fire(ctx, g, which, step):
+    """`step`: the HP (internal) every enemy unit loses (0 in Dark Intel, 10 in Event Horizon); hers never change."""
     before_hp = {(u["x"], u["y"]): u["hp"] for u in g.units()}
     before, after = ctx.power(g, 1, which)
-    ctx.expect_hp_change(before, after, {1: step, 2: -step}, f"Asuka's {which}")
+    ctx.expect_hp_change(before, after, {1: 0, 2: -step}, f"Asuka's {which}")
     moved = {}
     for u in after.values():
         key = (u["x"], u["y"])
@@ -284,28 +276,28 @@ def fire(ctx, g, which, step):
 
 
 @test(modes=("ds",))
-def asuka_cop_black_analysis_heals_one_and_costs_the_enemy_one(ctx):
-    """CO Power: every unit of hers +10 (1 HP) up to 100, every enemy unit -10 down to 1 (never destroyed). The exact numbers: 45 -> 55, 95 -> 100, 100 stays,
-    5 -> 15, 91 -> 100 for hers; 55 -> 45, 100 -> 90, 5 -> 1, 11 -> 1, 10 -> 1 for the enemy's. The meter is spent at the 4-star price (27000, 9000 a star)."""
+def asuka_cop_black_analysis_heals_one_and_costs_the_enemy_one(ctx):      # (name kept for `co verify`; the CO Power now changes no HP)
+    """CO Power: no HP changes on either side (the units' HP before and after are equal); the meter is spent at the 4-star price (36000, 9000 a star)."""
     g = hp_battle(ctx, "power")
     p = g.player(1)
-    ctx.eq(g.charge_power(1, "power"), 3 * 9000, "the CO Power costs 3 stars of 9000")
-    before, after, moved = fire(ctx, g, "power", 10)
-    want = {(10, 10): 100, (5, 5): 55, (7, 7): 100, (3, 12): 100, (8, 8): 15, (12, 12): 100,
-            (11, 10): 90, (6, 4): 45, (20, 12): 1, (21, 12): 1, (22, 14): 1, (24, 6): 90}
+    ctx.eq(g.charge_power(1, "power"), 4 * 9000, "the CO Power costs 4 stars of 9000")
+    before, after, moved = fire(ctx, g, "power", 0)
+    want = {(x, y): hp for _, x, y, hp in OWN + FOE}
     for pos, hp in want.items():
-        ctx.eq(hp_of(g, *pos), hp, f"HP at {pos} after Dark Intel")
+        ctx.eq(hp_of(g, *pos), hp, f"HP at {pos} after Dark Intel: unchanged (no HP effect)")
     ctx.eq(g.player(1)["powers_used"], 1, "one power used (the next costs +20%)")
     ctx.shot(g, "cop_hp")
 
 
 @test(modes=("ds",))
-def asuka_scop_counter_storm_heals_two_and_costs_the_enemy_two(ctx):
-    """Super Power: +20 / -20 (2 HP): 45 -> 65, 95 -> 100, 5 -> 25, 91 -> 100; enemy 55 -> 35, 100 -> 80, 5 -> 1, 11 -> 1, 10 -> 1. The price is 8 stars of 9000."""
+def asuka_scop_counter_storm_heals_two_and_costs_the_enemy_two(ctx):      # (name kept for `co verify`; the Super Power costs every enemy unit 1 HP)
+    """Super Power: her units keep their HP; every enemy unit loses 1 HP (10): 55 -> 45, 100 -> 90, 5 -> 1, 11 -> 1, 10 -> 1. The price is 8 stars of 9000."""
     g = hp_battle(ctx, "super")
-    ctx.eq(g.charge_power(1, "super"), 9 * 9000, "the Super Power costs 9 stars of 9000")
-    before, after, moved = fire(ctx, g, "super", 20)
-    want = {(10, 10): 100, (5, 5): 65, (7, 7): 100, (8, 8): 25, (12, 12): 100, (11, 10): 80, (6, 4): 35, (20, 12): 1, (21, 12): 1, (22, 14): 1, (24, 6): 80}
+    ctx.eq(g.charge_power(1, "super"), 8 * 9000, "the Super Power costs 8 stars of 9000")
+    before, after, moved = fire(ctx, g, "super", 10)
+    # hers unchanged, every enemy unit loses 1 HP (10) and never goes below 1 HP
+    want = {(x, y): hp for _, x, y, hp in OWN}
+    want.update({(11, 10): 90, (6, 4): 45, (20, 12): 1, (21, 12): 1, (22, 14): 1, (24, 6): 90})
     for pos, hp in want.items():
         ctx.eq(hp_of(g, *pos), hp, f"HP at {pos} after Event Horizon")
     ctx.shot(g, "scop_hp")
@@ -321,15 +313,15 @@ def asuka_powers_cost_more_each_use_and_the_meter_charges(ctx):
     ctx.eq(g.player(1)["charge"], 0, "the meter starts empty")
     ctx.attack(g, (10, 10), (10, 10), (11, 10))
     p = g.player(1)
-    ctx.check(0 < p["charge"] < 3 * 9000, f"the attack charged the meter ({p['charge']}) below the CO Power's 27000")
-    ctx.eq(power_star_cost(0) * 3, 27000, "the first CO Power's price")
-    ctx.eq(power_star_cost(1) * 3, 32400, "the second's")
-    ctx.eq(power_star_cost(0) * 9, 81000, "the first Super Power's price")
-    ctx.eq(g.charge_power(1, "power"), 27000, "the harness fills exactly 27000")
+    ctx.check(0 < p["charge"] < 4 * 9000, f"the attack charged the meter ({p['charge']}) below the CO Power's 36000")
+    ctx.eq(power_star_cost(0) * 4, 36000, "the first CO Power's price (4 stars)")
+    ctx.eq(power_star_cost(1) * 4, 43200, "the second's")
+    ctx.eq(power_star_cost(0) * 8, 72000, "the first Super Power's price (8 stars)")
+    ctx.eq(g.charge_power(1, "power"), 36000, "the harness fills exactly 36000")
     ctx.power(g, 1, "power")
     g.end_turn(human=1)
     g.end_turn(human=1)
-    ctx.eq(g.charge_power(1, "power"), 32400, "after one power used: 32400")
+    ctx.eq(g.charge_power(1, "power"), 43200, "after one power used: 43200")
     before, after = ctx.power(g, 1, "power")
     ctx.eq(g.player(1)["powers_used"], 2, "two used")
 
@@ -366,7 +358,7 @@ def asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the
             att, dfd = g.unit_at(10, 10), g.unit_at(10 + dist, 10)
             r = ctx.attack(g, (10, 10), (10, 10), (10 + dist, 10))
             got = r["records"][0]["base"]
-            fp = 105 + (10 if which else 0)
+            fp = 100 + damage.ASUKA_DAY_BONUS + (10 if which else 0)
             ctx.eq(got, r["first"].base, f"{a} -> {d}, {which or 'day to day'}: the game's base damage is the calculator's (firepower {fp}%)")
             literal = {("tank", "tank"): 55, ("artillery", "tank"): 70}.get((a, d))
             if literal:
@@ -384,12 +376,12 @@ def asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the
             want_def = damage.total_defence(chart, side, 0, dist)
             g2.attack((10, 10), (10, 10), (10 + dist, 10))
             rd = ctx.battle_records(g2)[1]
-            ctx.eq(rd["defence"], want_def, f"{d} of Asuka's, {which or 'day to day'}: Andy's attack meets defence {want_def} (her +5{' and the power +10' if which else ''})")
+            ctx.eq(rd["defence"], want_def, f"{d} of Asuka's, {which or 'day to day'}: Andy's attack meets defence {want_def} (her day-to-day bonus {damage.ASUKA_DAY_BONUS}{' and the power +10' if which else ''})")
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10)
     g = ctx.start(m, ["andy", "asuka"], humans=(1, 2))
     g.attack((10, 10), (10, 10), (11, 10))
-    ctx.eq(ctx.battle_records(g)[1]["defence"], 115, "Asuka's Tank on plains defends at 100 + 10 (one star) + 5 = 115, Andy's would be 110")
+    ctx.eq(ctx.battle_records(g)[1]["defence"], 110 + damage.ASUKA_DAY_BONUS, "Asuka's Tank on plains defends at 100 + 10 (one star) + her day-to-day bonus (0 for now; Andy's would be 110)")
 
 
 # --- Dark Intel / Event Horizon: the enemy's ammo and fuel are halved ------------------------------------------------------------------------
@@ -459,11 +451,13 @@ def strike_first_battle(ctx, power):
     return g
 
 
+STRIKE_FIRST = False      # Event Horizon has no strike-first any more (Counter Break was removed with the simplification)
+
+
 @test(modes=("ds",))
 def asuka_counter_break_her_units_strike_first(ctx):
-    """Event Horizon: when Andy's Tank (100 HP) attacks Asuka's Tank (100 HP) she strikes FIRST at full strength, then his Tank replies at its reduced HP. The two HP losses fit exactly that
-    order: hers on him is the full-HP strike's (the calculator's range for a strike from 100 HP), his on her the strike from what he has left. Without the power (and in Dark Intel) it is
-    the plain order: he hits first, her reply is reduced."""
+    """No strike-first any more (Counter Break was removed): when Andy's Tank (100 HP) attacks Asuka's Tank (100 HP) in Event Horizon, in Dark Intel and without a power alike, the order is the plain one:
+    he hits first, her reply is reduced (the losses fit the calculator's plain order). `STRIKE_FIRST` = True would test the old behaviour."""
     for power in ("super", None, "power"):
         g = strike_first_battle(ctx, power)
         a0, d0 = g.unit_at(10, 10), g.unit_at(11, 10)       # hers, his
@@ -481,7 +475,7 @@ def asuka_counter_break_her_units_strike_first(ctx):
             left = a0["hp"] - min(l1, a0["hp"])
             if left > 0 and l1 == dfd_loss:
                 plain_reply |= {min(l, 100) for l in damage.strike(ctx.rules, def_side, att_side, dist, False, left).losses}
-        if power == "super":
+        if STRIKE_FIRST and power == "super":
             hers = damage.strike(ctx.rules, def_side, att_side, dist, False, a0["hp"])
             ctx.check(att_loss in {min(l, 100) for l in hers.losses}, f"strike first: Andy's loss {att_loss} is her full-HP strike's {sorted(hers.losses)}")
             ok = False
@@ -505,7 +499,7 @@ def asuka_counter_break_her_units_strike_first(ctx):
 def asuka_cpu_uses_her_powers(ctx):
     """A CPU Asuka (Hawke's profile: `ds_ai::template_of`) with the meter at the CO Power's price uses her CO Power on her turn, and with the Super Power's price her Super Power: the mode turns on, the
     Black Wave's / Black Storm's HP change is applied to both armies' units, the meter is spent and the turn still ends and comes back to the human."""
-    for which, mode, step in (("power", 1, 10), ("super", 2, 20)):
+    for which, mode, step in (("power", 1, 0), ("super", 2, 10)):
         m = ctx.map()
         m.unit(1, "tank", 10, 10).unit(1, "infantry", 3, 3).unit(2, "tank", 20, 10).unit(2, "infantry", 22, 12)
         g = ctx.start(m, ["andy", "asuka"])
@@ -570,10 +564,10 @@ def run_tag_power(ctx, partner, label, partner_step):
     ctx.require(e.wait_until(lambda: g.player(1)["co_mode"] == 2, 3000, step=10), f"{label}: the first Super Power (Asuka's) starts")
     g.wait_for_input()
     mid = {(u["x"], u["y"]): u["hp"] for u in g.units()}
-    ctx.eq(mid[(3, 3)], 65, f"{label}: Event Horizon healed her Infantry 45 -> 65")
-    ctx.eq(mid[(25, 14)], 35, f"{label}: and cost the enemy Infantry 55 -> 35")
-    ctx.eq(mid[(10, 10)], 100, f"{label}: Tank stays at 100 (cap)")
-    ctx.eq(mid[(11, 10)], 80, f"{label}: enemy Tank 100 -> 80")
+    ctx.eq(mid[(3, 3)], 45, f"{label}: Event Horizon leaves her Infantry at 45 (no healing)")
+    ctx.eq(mid[(25, 14)], 45, f"{label}: and costs the enemy Infantry 55 -> 45")
+    ctx.eq(mid[(10, 10)], 100, f"{label}: Tank stays at 100")
+    ctx.eq(mid[(11, 10)], 90, f"{label}: enemy Tank 100 -> 90")
     ctx.eq(ctx.tag_firepower(g, 1, ASUKA), tag.compatibility(romlib.DualStrike(), ASUKA, romlib.co_id(partner)) - 100, f"{label}: tag firepower in the first half")
     ctx.shot(g, f"tag_{partner}_first_half")
     g.open_map_menu()
@@ -594,11 +588,11 @@ def asuka_tag_power_with_von_bolt(ctx):
 
 @test(modes=("ds",))
 def asuka_tag_power_with_hawke(ctx):
-    """Black Eclipse (Asuka + Hawke, 120): Event Horizon (+20 / -20) and then Hawke's Black Storm (+20 / -20 again): the totals are +40 / -40 over the two halves, capped at 100 and floored at 1."""
+    """Black Eclipse (Asuka + Hawke, 120): Event Horizon (enemy -10) and then Hawke's Black Storm (+20 / -20): the totals are +20 for hers and -30 for the enemy's over the two halves, capped at 100 and floored at 1."""
     before, mid, after = run_tag_power(ctx, "hawke", "Black Eclipse", 20)
-    ctx.eq(after[(3, 3)], 85, "Infantry 45 -> 65 -> 85")
-    ctx.eq(after[(25, 14)], 15, "enemy Infantry 55 -> 35 -> 15")
-    ctx.eq(after[(11, 10)], 60, "enemy Tank 100 -> 80 -> 60")
+    ctx.eq(after[(3, 3)], 65, "Infantry 45 -> 45 -> 65")
+    ctx.eq(after[(25, 14)], 25, "enemy Infantry 55 -> 45 -> 25")
+    ctx.eq(after[(11, 10)], 70, "enemy Tank 100 -> 90 -> 70")
     ctx.eq(after[(10, 10)], 100, "Tank 100 stays")
 
 

@@ -401,7 +401,7 @@ SCEN = {"asuka": s_asuka, "swap": s_swap, "tagpower": s_tagpower, "super": s_sup
 
 # ---- the custom COs' powers (aw2dev co verify --net): army 1's CO is poked in at the first idle moment (gPlayers + 0x3C + 0x1D in a 2P Versus game), its meter filled, its power played,
 # and the special rules exercised by an attack (Testudo's counter, Onager's splash, Triumph's second move); the two peers' hashes must agree (net repeat) ----
-CO_IDS = {"andy": 1, "kanbei": 6, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "aria": 93}
+CO_IDS = {"andy": 1, "kanbei": 6, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "aria": 93}
 ARMY1_CO = "0x020232DD"
 PARTNER_REC = "0x0203F400"          # crate::tag::STATE: the army 1's partner: +0 CO, +1 phase, +2 uses, +4 the partner's meter
 
