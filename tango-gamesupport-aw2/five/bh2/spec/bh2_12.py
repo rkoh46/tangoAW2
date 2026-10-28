@@ -1,11 +1,11 @@
 """BH2 M12 Lot 42 (Act III): Blue Moon's lab island, in the snow and the fog. Lash (forced) with a free tag partner against one Blue Moon army under the pair Sasha + Colin.
 
 Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md section 4). The situation: Lot 42 is a lab island: Blue Moon's research district (cities, an HQ and two ports) on the east side behind a pipe wall with a seam gate, a pond in the
-hills that feeds a river with a mouth on the south coast, and Black Hole's landing on the west side: its HQ, a base district, a port in a bay and, on the headland beside the HQ, the Black Obelisk (Black Hole's alone). A small
+hills that feeds a river with a mouth on the south coast, and Black Hole's landing on the west side: its HQ, a base district, a port in a bay and, in the heart of the island, a cell on Black Hole's side of the middle, the Black Obelisk (Black Hole's alone) in a crescent of cliffs that every road of the island passes. A small
 southern isle (a Com Tower, a missile silo and two villages) lies in the strait; only Landers reach it, and whoever holds it has a long view in the fog.
 - Lanes: the river's two bridges (north and south), the coast roads, the lab wall's seam gate and the beaches north and south for Landers, the strait and its reefs for the ships.
 - Where the fight happens: the river's bridgeheads and the pond's hills, then the lab wall.
-- Properties: the Obelisk headland and bases for Black Hole, the lab district's cities and bases for Blue Moon, the isle's Com Tower and silo.
+- Properties: the Obelisk's heart and the bases of Black Hole, the lab district's cities and bases for Blue Moon, the isle's Com Tower and silo.
 - Threats and answers: Sasha's and Colin's Tanks, Rockets and artillery -> the Obelisk's reach, Md Tanks and Black Hole's own artillery; the ships of both sides -> Cruisers and Submarines and the guns on the beaches. Blue Moon fields no air: Black Hole fields none.
 """
 import random
@@ -55,12 +55,13 @@ def build():
     belt(m, "f", [(8, 16), (12, 14)], width=1, seed=7); belt(m, "f", [(15, 12), (19, 13)], width=2, seed=8); belt(m, "f", [(28, 10), (32, 12)], width=2, seed=9)
     belt(m, "f", [(17, 20), (21, 19)], width=1, seed=10); belt(m, "f", [(30, 14), (34, 15)], width=1, seed=11); belt(m, "f", [(5, 8), (9, 7)], width=1, seed=12); belt(m, "f", [(16, 22), (19, 25)], width=0, seed=13)
     belt(m, "f", [(31, 20), (34, 19)], width=1, seed=14)
+    belt(m, "^", [(14, 11), (14, 16)], width=1, seed=21, gaps=[(14, 13)], p=1.0); belt(m, "^", [(15, 17), (21, 17)], width=1, seed=22, gaps=[(18, 17)], p=1.0); belt(m, "^", [(16, 10), (20, 10)], width=1, seed=23, gaps=[(18, 10)], p=1.0)
     m.header(armies=2, colours=(BH, BM), objective=[1], comment=(
         "M12 Lot 42 (snow look, fog): Lash (forced) + a free tag partner (Black Hole, HQ 1 (8,14), the west) against one Blue Moon army under the pair Sasha + Colin (HQ 2 (32,11), the lab district in the east behind the pipe wall x27 with the seam gate (27,7)). "
-        "The Black Obelisk (O) stands on the west headland at (4,13). A pond (22,9) feeds the river with bridges (22,12) and (24,18); the southern isle (Com Tower (20,27), missile silo (22,26)) is reached by Landers only. "
+        "The Black Obelisk (O) stands in the heart of the island at (18,14), a cell on Black Hole's side of the middle, in a crescent of cliffs. A pond (22,9) feeds the river with bridges (22,12) and (24,18); the southern isle (Com Tower (20,27), missile silo (22,26)) is reached by Landers only. "
         "Player: INF4 MECH2 TANK4 MDT1 ART2 ROCK1 RECON1 CR1 SUB1 LAN2; Blue Moon: INF6 MECH3 TANK4 MDT2 ART2 ROCK1 RECON1 CR2 SUB1."))
     m.put("1", 8, 14).put("2", 32, 11).put("t", 20, 27).put("M", 22, 26)
-    m.stamp("O", 4, 13)
+    m.stamp("O", 18, 14)                              # the Black Obelisk stands in the heart of the island, on Black Hole's side of the middle
     PB = (9, B[9] - 2)
     flat = lambda a: min((x for x in range(26, 37) if B[x] == B[x - 1] == B[x + 1]), key=lambda x: abs(x - a))
     P2 = flat(31)
@@ -74,7 +75,7 @@ def build():
     route(m, [(9, B[9] - 3), (9, 16)], seed=6); route(m, [(P2, B[P2] - 1), L(P2, 18), L(31, 16)], seed=7); route(m, [(18, T[18] + 3), L(18, 8), (20, 12)], seed=8)
     route(m, [(4, 15), (8, 15)], seed=9); route(m, [L(8, 12), L(7, 8)], seed=16); route(m, [(16, 27), (24, 27)], seed=10)
     thin_roads(m)
-    town(m, 8, 14, "BBC", seed=44); town(m, 11, 17, "BC", seed=2); town(m, 7, 9, "C", seed=3); town(m, 9, 18, "C", seed=4); town(m, 14, 12, "C", seed=5); town(m, 16, 19, "Cb", seed=6)
+    town(m, 8, 14, "BBC", seed=44); town(m, 11, 17, "BC", seed=2); town(m, 7, 9, "C", seed=3); town(m, 9, 18, "C", seed=4); town(m, 14, 12, "C", seed=5); town(m, 21, 14, "Cb", seed=41, radius=3); town(m, 18, 8, "c", seed=42); town(m, 16, 19, "Cb", seed=6)
     town(m, 20, 12, "Cb", seed=7); town(m, 18, 6, "cc", seed=8); town(m, 22, 18, "c", seed=9); town(m, 25, 11, "C", seed=10); town(m, 26, 16, "Cb", seed=11)
     town(m, 32, 11, "BBBC", seed=12, radius=3); town(m, 30, 8, "BCC", seed=13, radius=3); town(m, 34, 8, "CC", seed=14); town(m, 33, 14, "BC", seed=15); town(m, 29, 15, "CC", seed=16); town(m, 35, 17, "C", seed=17)
     town(m, 31, 18, "C", seed=18); town(m, 6, 20, "c", seed=19); town(m, 14, 22, "c", seed=20); town(m, 16, 27, "c", seed=21); town(m, 24, 27, "c", seed=22); town(m, 12, 6, "c", seed=23)
@@ -103,5 +104,5 @@ def build():
         m.unit(1, k, x, y)
     for k, (x, y) in zip([CR, CR, SUB], m.sea_near(P2, B[P2] + 2, 3, box=(26, B[P2] + 1, 37, 27), deep=False)):
         m.unit(2, k, x, y)
-    m.note("hq", 8, 14, "Lash's HQ"); m.note("enemy_hq", 32, 11, "Sasha + Colin's HQ (objective)"); m.note("obelisk", 4, 13, "Black Hole's Black Obelisk"); m.note("gate", 27, 7, "seam gate in the lab wall")
+    m.note("hq", 8, 14, "Lash's HQ"); m.note("enemy_hq", 32, 11, "Sasha + Colin's HQ (objective)"); m.note("obelisk", 18, 14, "Black Hole's Black Obelisk, in the heart of the island"); m.note("gate", 27, 7, "seam gate in the lab wall")
     return m
