@@ -17,9 +17,9 @@ stars = { cop = 4, scop = 8 }                 # the normal cost (Kanbei 4 / 7, H
 
 [d2d]
 name = "Black Insight"
-text = "Vision rises by 1, and her HP is hidden. Enemy cover drops 1 star, and luck is good."
-# (no attack / defence mods: the +5% / +5% is off for now, one line to switch on: crate::asuka::DAY_BONUS)
-mods = []
+text = "Firepower and defense rise by 5%, and vision by 1. Her HP is hidden, enemy cover drops 1 star, and luck is good."
+# (the +5% / +5%: crate::asuka::DAY_BONUS, one line to switch it off)
+mods = [ { units = "all", attack = 5, defence = 5 } ]
 vision = 1
 hidden_hp = true
 terrain_cut = 1

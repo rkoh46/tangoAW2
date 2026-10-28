@@ -124,9 +124,8 @@ CO select grid (Versus' grid no longer draws black cells for Emerald Sun COs the
 | Hit points | hidden from the enemy | no change | every enemy unit loses 1 HP (never below 1) |
 | Enemy ammo and fuel | | halved, rounded down | halved, rounded down |
 | Luck | 0..19% (Nell's), no bad luck | same | same |
-| Attack / defence | 0 for now (the +5% / +5% is a one-line toggle, `asuka::DAY_BONUS`) | +10% firepower, +10% defence (every power) | the same |
-- **Removed in the simplification** (before: 3 / 9 stars, Eagle's meter): Sturm's movement (her movement charts are Andy's now), the +5% attack and defence (`DAY_BONUS` 0, being confirmed with the owner: set 5 to switch
-  it back on; `damage.ASUKA_DAY_BONUS` in the harness mirrors it), the HP swing of Hawke's Black Wave / Black Storm (her units +1 / +2 HP, the enemy's -1 / -2), and Counter Break (her units strike first when attacked: Sonja's
+| Attack / defence | +5% / +5% (`asuka::DAY_BONUS`, a one-line toggle) | +10% firepower, +10% defence (every power) | the same |
+- **Removed in the simplification** (before: 3 / 9 stars, Eagle's meter): Sturm's movement (her movement charts are Andy's now), the +5% attack and defence were taken out and **put back by the owner** (`DAY_BONUS` 5; set 0 to switch it off; `damage.ASUKA_DAY_BONUS` in the harness mirrors it), the HP swing of Hawke's Black Wave / Black Storm (her units +1 / +2 HP, the enemy's -1 / -2), and Counter Break (her units strike first when attacked: Sonja's
   strike-first skill 0x04 is masked off her Super Power's row, `co_roster::build`). Kept: Sonja's vision, hidden HP and terrain cut, **Nell's luck**, the halving of ammo and fuel.
 - **Sonja's numbers** are her Dual Strike block (`co_roster::ds_co(92) = 8`): vision, skills 0x01 / 0x09, the enemy's terrain cut. `aw2dev co verify sonja` proves Sonja herself is untouched.
 - **Nell's luck**: maximum roll 20 (AW2's table: Nell 20 / 60 / 100 by level) in all three levels, bad luck 0; her powers keep 20.

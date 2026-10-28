@@ -5,7 +5,7 @@
 //! - **Sonja's Dual Strike block** ([`SONJA_DS`], `co_roster::ds_co`): vision +1 / +2 / +2 in fog, her HP hidden from the enemy (Dual Strike's skill 0x01; the sees-into-hiding-places skill 0x08
 //!   in her powers), the enemy's terrain stars cut by 1 / 2 / 3, the power meter's usual +10% firepower in a power. Sonja's strike-first skill (0x04, Super Power) is masked off in her row.
 //!   Her **luck is Nell's** (maximum roll 20 in every level, no bad luck: the user's choice, replacing Sonja's quirk).
-//! - **No movement trait and no +5%** any more ([`DAY_BONUS`] is 0: a one-line toggle until the owner confirms it): the Sturm's-movement charts were dropped with the simplification.
+//! - **No movement trait** any more (the Sturm's-movement charts were dropped with the simplification); her day to day is **+5% attack and defence** again ([`DAY_BONUS`] 5, in every power too).
 //! - **Hawke's mass-HP procedure** (`sub_08044D70`, called by her own two power functions in `co_powers::asuka_fn`) is now only the carrier of the halving and one HP: Dark Intel ([`HP_ENEMY`] 0, [`HP_OWN`] 0)
 //!   changes no HP, Event Horizon makes every enemy unit lose 1 HP (never below 1); the sparkle and the cut-in are Hawke's (his presentation row is her template, [`LIKE`]).
 //! - **Drake's halving, extended**: the same procedure's fuel flag (Drake's Tsunami and Typhoon) halves every enemy unit's fuel, rounded down, and `co_powers::mass_unit` halves every enemy unit's
@@ -15,6 +15,7 @@
 //!
 //! | | Day to day, Black Insight | CO Power, Dark Intel (4 stars) | Super Power, Event Horizon (8 stars in all) |
 //! |---|---|---|---|
+//! | Attack / defence | +5% / +5% | +5% / +5% (and the power's own +10% / +10%) | the same |
 //! | Vision | +1 | +2, sees into woods and reefs | +2, sees into hiding places |
 //! | Terrain stars the enemy loses | 1 | 2 | 3 |
 //! | HP | hidden from the enemy | none | every enemy unit loses 1 HP |
@@ -34,8 +35,8 @@ pub const LIKE: u8 = 14;
 pub const STARS: (u32, u32) = (4, 8);
 /// Nell's day-to-day maximum luck roll (AW2's table: 20; her powers raise it to 60 and 100, Asuka's keep 20), no bad luck.
 pub const LUCK: i16 = 20;
-/// Her day to day: all her units attack and defend this much better (percent), in every power too. 0 for now (the owner is confirming it): set 5 to switch the +5% back on.
-pub const DAY_BONUS: i32 = 0;
+/// Her day to day: all her units attack and defend this much better (percent), in every power too. 5 (the owner confirmed it; set 0 to switch it off).
+pub const DAY_BONUS: i32 = 5;
 /// Her powers' HP effect on her own units and on the enemy's, by power level (none in Dark Intel, 1 off every enemy unit in Event Horizon).
 pub const HP_OWN: [u8; 3] = [0, 0, 0];
 pub const HP_ENEMY: [u8; 3] = [0, 0, 1];
@@ -54,7 +55,7 @@ mod tests {
     #[test]
     fn she_is_sonjas_numbers_without_the_extras() {
         assert_eq!(STARS, (4, 8), "the normal cost");
-        assert_eq!(DAY_BONUS, 0, "the +5% is off for now");
+        assert_eq!(DAY_BONUS, 5, "the +5% is on");
         assert_eq!((HP_OWN, HP_ENEMY), ([0, 0, 0], [0, 0, 1]));
         assert_eq!(ASUKA, 92);
         assert!((ASUKA as u32) < crate::co_roster::ROOM);

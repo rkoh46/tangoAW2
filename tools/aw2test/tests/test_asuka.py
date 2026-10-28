@@ -381,7 +381,7 @@ def asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the
     m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10)
     g = ctx.start(m, ["andy", "asuka"], humans=(1, 2))
     g.attack((10, 10), (10, 10), (11, 10))
-    ctx.eq(ctx.battle_records(g)[1]["defence"], 110 + damage.ASUKA_DAY_BONUS, "Asuka's Tank on plains defends at 100 + 10 (one star) + her day-to-day bonus (0 for now; Andy's would be 110)")
+    ctx.eq(ctx.battle_records(g)[1]["defence"], 110 + damage.ASUKA_DAY_BONUS, "Asuka's Tank on plains defends at 100 + 10 (one star) + her day-to-day bonus (5; Andy's would be 110)")
 
 
 # --- Dark Intel / Event Horizon: the enemy's ammo and fuel are halved ------------------------------------------------------------------------

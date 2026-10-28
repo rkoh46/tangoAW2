@@ -63,7 +63,7 @@ def aria_bonus(mode, which):
     return v
 
 
-ASUKA_DAY_BONUS = 0      # crate::asuka::DAY_BONUS
+ASUKA_DAY_BONUS = 5      # crate::asuka::DAY_BONUS
 CLONE_ANDY = 81
 
 
@@ -149,7 +149,7 @@ class Rules:
             v = self.chart.co_stat(co, mode, unit_type, which)
             if v is not None:
                 if co == 92 and which in (0, 1):
-                    v += ASUKA_DAY_BONUS      # Asuka's day to day: +5% attack and defence when crate::asuka::DAY_BONUS is 5 (0 for now)
+                    v += ASUKA_DAY_BONUS      # Asuka's day to day: +5% attack and defence when crate::asuka::DAY_BONUS is 5 (5)
                 return v
         if self.chart is not None and co == ARIA:
             # Aria (crate::aria): her own numbers, +3 / +10 day to day, +20 / +30 and +1 move in the Super Power (on top of the power's own +10), luck and movement as Asuka's
