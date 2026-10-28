@@ -48,7 +48,7 @@ def register(sub):
     a.add_argument("--source", default="all", choices=["bh", "es", "versus", "all"])
     a.set_defaults(fn=ports_table)
     a = ms.add_parser("render-check", help="the game's own pictures of maps against the drawings the games use for river, shoal, bridge and coast tiles (RN01)")
-    a.add_argument("--source", default="es", choices=["es", "bh", "versus"], help="the maps to check (their pictures: --pictures)")
+    a.add_argument("--source", default="es", choices=["es", "bh", "bh2", "versus"], help="the maps to check (their pictures: --pictures)")
     a.add_argument("--pictures", metavar="DIR", help="the folder of m<N>_full.png pictures of the maps to check (default: es devkit/work/campaign/es/review_raw, bh devkit/work/maps/boot)")
     a.add_argument("--corpus", metavar="DIR", nargs="*", help="the reference pictures (default: devkit/work/maps/boot, the BH Campaign's, and the other maps of the check itself)")
     a.set_defaults(fn=render_check)
@@ -60,6 +60,9 @@ def register(sub):
     a.add_argument("--json", metavar="FILE", help="write every row and the summaries as JSON")
     a.add_argument("--rows", action="store_true", help="print one line per map (default: the summaries only)")
     a.set_defaults(fn=study)
+    a = ms.add_parser("features", help="which properties, terrain and inventions each map of a campaign uses (coverage table)")
+    a.add_argument("--campaign", default="bh2", choices=["bh2", "es", "bh"])
+    a.set_defaults(fn=features)
     a = ms.add_parser("boot", help="enter BH missions in the offline harness and keep the map pictures")
     a.add_argument("--mission", nargs="*", type=int)
     a.add_argument("--out")
@@ -265,19 +268,19 @@ def render_check(a):
     """RN01: see maplint/render_check.py."""
     sys.path.insert(0, str(cfg.DEVKIT))
     from ..maplint import load, render_check as rc
-    maps = {"es": load.es_maps, "bh": load.bh_maps, "versus": load.versus_maps}[a.source]()
-    check_dir = a.pictures or str(cfg.work("campaign", "es", "review_raw") if a.source == "es" else cfg.work("maps", "boot"))
+    maps = {"es": load.es_maps, "bh": load.bh_maps, "bh2": load.bh2_maps, "versus": load.versus_maps}[a.source]()
+    check_dir = a.pictures or str(cfg.work("campaign", a.source, "review_raw") if a.source in ("es", "bh2") else cfg.work("maps", "boot"))
     corpus_dirs = a.corpus or [str(cfg.work("maps", "boot"))]
     bh = [(m, rc.picture_for(corpus_dirs, m.name)) for m in load.bh_maps() if not re.search(r"[a-z]$", m.name)]
     bh = [(m, p) for m, p in bh if p]
     todo = [(m, rc.picture_for([check_dir], m.name)) for m in maps]
     todo = [(m, p) for m, p in todo if p]
     if not todo:
-        util.die(f"no pictures of the {a.source} maps in {check_dir} (aw2dev campaign sheets / maps boot)")
+        util.die(f"no pictures of the {a.source} maps in {check_dir} (aw2dev campaign sheets / maps boot" + ("; the BH2 missions are not in the game yet, so its pictures wait for them: docs/dev/bh2-maps.md" if a.source == "bh2" else "") + ")")
     bad = 0
     for m, p in todo:
         # (the reference is the corpus minus the map itself: a map is never its own witness)
-        ref = rc.learn([(mm, pp) for mm, pp in bh + [x for x in todo if a.source == "es"] if mm.name != m.name])
+        ref = rc.learn([(mm, pp) for mm, pp in bh + [x for x in todo if a.source in ("es", "bh2")] if mm.name != m.name])
         probs = rc.check(m, p, ref)
         if probs is None:
             print(f"{m.name}: the picture {p.name} is not {m.w * 16}x{m.h * 16}: skipped")
@@ -288,7 +291,18 @@ def render_check(a):
         if not probs:
             print(f"{m.name}: clean")
     util.say(f"maps render-check {a.source}: {len(todo)} pictures, {bad} drawings no game picture shows")
-    return 1 if bad and a.source == "es" else 0
+    return 1 if bad and a.source in ("es", "bh2") else 0
+
+
+def features(a):
+    """The feature coverage of a campaign's maps: one row per map (properties, terrain, inventions), and what no map uses yet (docs/dev/bh2-maps.md)."""
+    sys.path.insert(0, str(cfg.DEVKIT))
+    from .. import bh2lib
+    from ..maplint import load
+    ms = {"bh2": load.bh2_maps, "es": load.es_maps, "bh": load.bh_maps}[a.campaign]()
+    table, _, missing = bh2lib.features_table(ms)
+    print(table)
+    return 0
 
 
 def boot(a):

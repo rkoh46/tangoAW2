@@ -24,6 +24,8 @@ pub mod bh_act5b;
 pub mod bh_ai;
 pub mod bh_campaign;
 pub mod bh_factory;
+pub mod bh2_map_data;
+pub mod bh2_maps;
 pub mod bh_map_data;
 pub mod bh_secret;
 pub mod bh_smart;

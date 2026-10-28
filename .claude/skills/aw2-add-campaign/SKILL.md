@@ -14,3 +14,6 @@ Read docs/dev/campaign-scenes.md and docs/AW2.md "BH Campaign".
 1. Put the owner's picture in `art-src/worldmap/<name>_world.jpg` with a `<name>_world.toml` (crop, size, nation seeds, palette plan, tint) like `bh2_world.toml`.
 2. `./aw2dev worldmap convert <name>` writes `tango-gamesupport-aw2/art/worldmap/<name>_world.bin`; `./aw2dev worldmap preview <name>` and LOOK at it; `./aw2dev worldmap check <name>` must be clean.
 3. A source uses it with `art: WorldArt::Picture(&world_picture::BH2)`; until then `TANGOAW2_BH_WORLDMAP=bh2` plays the BH Campaign on it, and `python3 tools/aw2test/run.py --mode ds -k bh_picture_map` photographs it. Details: docs/dev/worldmap.md.
+
+
+BH2 maps (docs/dev/bh2-maps.md): specs in `five/bh2/spec/`, `aw2dev maps gen --campaign bh2`, `aw2dev maps lint --source bh2`, `aw2dev bh2 pictures` (look at them: MISSION N - Title is burned in, fog off plus the fogged view), `aw2dev bh2 features` (coverage), `aw2dev bh2 check` (world-map flags on land inside their nation; `world_picture::BH2_FLAGS`).

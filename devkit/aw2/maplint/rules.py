@@ -811,6 +811,8 @@ def armies(G):
 
 def design_checks(G):
     from . import design, principles
+    if G.m.meta.get("nohq"):
+        return []         # (a sky front is open sky and aircraft: no ground, no properties, nothing to measure)
     return design.checks(G) + principles.checks(G)
 
 

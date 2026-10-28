@@ -78,6 +78,7 @@ Tables found in the ROM and used:
 | DQ11 | warn | a map meant to be fair (Versus, or a `fair` line) with unequal properties per army | 0 | 0 | 0 | 0 | 0 |
 | SP01 | warn | not enough room to fight: too many units for the walkable ground or for the frontage between the sides | 0 | 0 | 0 | 7 | 0 |
 | MD01..MD08 | warn | the design principles (too few properties, dead corners, one narrow corridor, a base in a day-one rush's reach, nothing in the middle, open field, an uncrossed river, roads to nowhere): `docs/dev/map-design.md`; failing for the Emerald Sun maps | 17-44 | 15-78 | 0-13 | 0-19 | see map-design.md |
+| IV01 | error | BH2 maps: an invention (Deathray, Black Cannon, minicannon, Laser, Black Crystal, Black Obelisk, Black Factory) nearer to another army's HQ than to Black Hole's, or a Deathray below the top rows | 0 | 0 | 0 | 0 | 0 |
 | ES01 | error | Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line) | 0 | 0 | 0 | 0 | 0 |
 
 Levels: **error** = AW2 and Dual Strike do it in at most a few percent of their maps (the rule's hits there are listed above, they are the games' own slips or deliberate shapes;
@@ -167,6 +168,10 @@ the learned 4-neighbour key of TJ02 stays the check of what the game draws (the 
   other Emerald Sun pictures. A key with fewer than 6 reference drawings has no verdict. Result: 0 findings in the BH and Emerald Sun pictures. A planted wrong drawing is flagged by the unit test.
   The diagonal-neighbour variant (which flagged hand-made maps) is not used.
 - **DQ12:** a straight line of 11 or more mountains away from the map edge (AW2 and Dual Strike have one in about 5% of their maps). `Canvas.ragged` breaks such lines.
+
+## BH2 maps (`--source bh2`)
+The BH2 Campaign's maps (docs/dev/bh2-maps.md) are held to the integrity rules, the design rules (DQ, SP, MD, PP03/04 fail) and IV01, as the Emerald Sun maps are. A `nohq` map (a sky front) skips the design rules. AR02 lets a held second HQ (`Q` in the text rows, as BH1's M30) stand beside an army's HQ, once.
+`aw2dev maps features --campaign bh2` lists the properties, terrain and inventions each map uses. `render-check --source bh2` is wired for the game's pictures once the missions are in the game.
 
 ## Armies and reachability (AR01 to AR03)
 - **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Emerald Sun and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.

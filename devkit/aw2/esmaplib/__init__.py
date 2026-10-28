@@ -44,7 +44,7 @@ class Canvas:
         self.dir = FIVE_DIR / self.campaign
         self.g = [[fill] * w for _ in range(h)]
         self.u = []                       # unit dicts
-        self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "blackhole": False,
+        self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "blackhole": False, "nohq": False,
                     "comment": ""}
         self.notes = []                   # (key, x, y, text): named places, printed with the map and written as comments
         self.reserved = set()             # cells `spread` leaves free (a mission's reinforcement cells: `reserve`)
@@ -415,6 +415,8 @@ class Canvas:
     def principles(self):
         """The design-principle findings (MD01..MD08, docs/dev/map-design.md) of the map as drawn: a list of strings."""
         from ..maplint import principles
+        if self.hdr.get("nohq"):
+            return []                     # (a sky front: open sky and aircraft, nothing to measure)
         return [str(p) for p in principles.check_study(self.study())]
 
     def thin_neutral_cities(self, fraction=0.12, keep=()):
@@ -500,6 +502,59 @@ class Canvas:
                 break
         return len(cities), len(cities) - len(removed), removed
 
+    def place(self, ch, n, box, seed=0, gap=3, near="R", reach=2, on=".f", avoid=()):
+        """Put `n` properties `ch` (b c a p B C A P t T ..) inside `box` (x0, y0, x1, y1): on ground in `on`, at least `gap` cells (Chebyshev) from every other property, and
+        within `reach` cells (Manhattan) of a road when `near` is "R" (roads lead to what is worth taking). Deterministic for `seed`. Returns the canvas (the cells: `last_placed`)."""
+        rnd = random.Random(f"{self.name}/p{seed}")
+        props = set("12345BCAPTQbcapt") | INVENTION_CHARS
+        have = [(x, y) for y in range(self.h) for x in range(self.w) if self.g[y][x] in props]
+        taken = {(u["x"], u["y"]) for u in self.u} | set(map(tuple, avoid))
+        x0, y0, x1, y1 = box
+        out = []
+        for _ in range(n):
+            cand = []
+            for y in range(max(y0, 0), min(y1, self.h - 1) + 1):
+                for x in range(max(x0, 0), min(x1, self.w - 1) + 1):
+                    if self.g[y][x] not in on or (x, y) in taken:
+                        continue
+                    if any(max(abs(x - a), abs(y - b)) < gap for a, b in have):
+                        continue
+                    if near and not any(self.get(x + dx, y + dy) in near for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1) if abs(dx) + abs(dy) <= reach):
+                        continue
+                    cand.append((x, y))
+            if not cand:
+                raise ValueError(f"{self.name}: no room for property {ch!r} in {box} (placed {len(out)} of {n})")
+            c = rnd.choice(cand)
+            self.g[c[1]][c[0]] = ch
+            have.append(c)
+            out.append(c)
+        self.last_placed = out
+        return self
+
+    def sea_near(self, x, y, n, box=None, deep=True):
+        """`n` free sea cells (not shoal, reef or under a unit; with `deep` also not touching land) nearest (x, y), in order: where a fleet's ships start beside a port."""
+        taken = {(u["x"], u["y"]) for u in self.u}
+        cand = []
+        x0, y0, x1, y1 = box or (0, 0, self.w - 1, self.h - 1)
+        for yy in range(y0, y1 + 1):
+            for xx in range(x0, x1 + 1):
+                if self.g[yy][xx] != "~" or (xx, yy) in taken:
+                    continue
+                if deep and any(self.get(a, b) not in "~" for a in range(xx - 1, xx + 2) for b in range(yy - 1, yy + 2)):
+                    continue
+                cand.append((abs(xx - x) + abs(yy - y), xx, yy))
+        return [(a, b) for _, a, b in sorted(cand)[:n]]
+
+    def stamp(self, ch, x, y):
+        """An invention at its anchor: `F` Black Factory (anchor on the footprint's third row: a 3 x 4 block from (x-1, y-2)), `v n D O` 3 x 3 centred on (x, y), single tiles
+        `S N W E L X`. The rest of a footprint is `#`. Inventions are Black Hole's alone (rule IV01)."""
+        box = {"F": (x - 1, y - 2, x + 1, y + 1)}.get(ch, (x - 1, y - 1, x + 1, y + 1) if ch in "vnDO" else (x, y, x, y))
+        for yy in range(box[1], box[3] + 1):
+            for xx in range(box[0], box[2] + 1):
+                self.put("#", xx, yy)
+        self.put(ch, x, y)
+        return self
+
     def patch(self, x, y, rows):
         """Stamp text rows with their top-left at (x, y); a space leaves the cell alone."""
         for dy, r in enumerate(rows):
@@ -553,6 +608,8 @@ class Canvas:
             out.append("objective " + " ".join(str(a) for a in h["objective"]))
         if h["blackhole"]:
             out.append("blackhole")
+        if h.get("nohq"):
+            out.append("nohq")
         for u in sorted(self.u, key=lambda u: (u["army"], u["kind"], u["y"], u["x"])):
             s = f"unit {u['army']} {u['kind']} {u['x']} {u['y']}"
             if u["hp"]:
@@ -593,4 +650,38 @@ def load_spec(path):
 
 def specs(campaign="es"):
     d = FIVE_DIR / campaign / "spec"
-    return sorted(d.glob("es[0-9][0-9].py")) if campaign == "es" else sorted(d.glob(f"{campaign}_[0-9][0-9].py"))
+    return sorted(d.glob("es[0-9][0-9].py")) if campaign == "es" else sorted(d.glob(f"{campaign}_[0-9][0-9]*.py"))
+
+
+# ---- shape helpers (the BH2 specs; any spec may use them) ----
+
+def land_rows(m, ranges, ch="."):
+    """Paint land from `ranges` {y: (x0, x1)} (inclusive): a coastline written row by row."""
+    for y, (x0, x1) in ranges.items():
+        m.rect(ch, x0, y, x1, y)
+    return m
+
+
+def shore(m, depth, box, land=".", dirs="NESW"):
+    """A beach: every sea cell of `box` (x0, y0, x1, y1) that touches land on one of the sides in `dirs` (N: land above it, E, S, W) becomes shoal (depth 1: AW2 draws
+    no beach wider than one cell, and long beaches only along north- and south-facing coasts: its vertical beach runs are two cells at most, so use dirs="NS" on islands;
+    never on the map's edge row or column)."""
+    side = {"N": (0, -1), "E": (1, 0), "S": (0, 1), "W": (-1, 0)}
+    dd = [side[c] for c in dirs]
+    x0, y0, x1, y1 = box
+    frontier = []
+    for y in range(max(y0, 0), min(y1, m.h - 1) + 1):
+        for x in range(max(x0, 0), min(x1, m.w - 1) + 1):
+            if m.g[y][x] == "~" and 0 < x < m.w - 1 and 0 < y < m.h - 1 and any(m.inside(x + a, y + b) and m.g[y + b][x + a] not in "~r,-" for a, b in dd):
+                frontier.append((x, y))
+    done = set(frontier)
+    for _ in range(depth):
+        nxt = []
+        for x, y in frontier:
+            m.g[y][x] = ","
+            for a, b in ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)):
+                if x0 <= a <= x1 and y0 <= b <= y1 and m.inside(a, b) and m.g[b][a] == "~" and (a, b) not in done:
+                    done.add((a, b))
+                    nxt.append((a, b))
+        frontier = nxt
+    return m
