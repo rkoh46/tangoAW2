@@ -325,20 +325,33 @@ fn save_write_aw2(core: &mut Core) {
     // A battle on two fronts (crate::two_front): the front not on the
     // screen and the battle's state follow the block (the slot takes more
     // than one sector: AW2's writer splits a record in 0xFAD-byte parts).
+    // The mark follows the block, and the pairs' tail when the block carries one ([`MARK_AT`]): it used to be written over the tail (the pairs of a two-front or stage-2 mission were lost
+    // on the resume); a reader looks at both places, so a save of the old layout still loads.
+    let at = if core.gba().cpu().gpr(2) as u32 >= BLOCK_SIZE + TAG_LEN { BLOCK_SIZE + TAG_LEN } else { BLOCK_SIZE };
     if let Some(k) = crate::stage::saved_state(core) {
-        // A mission saved on a later stage (crate::stage): a mark and the stage number follow the block (5 bytes of the record).
+        // A mission saved on a later stage (crate::stage): a mark and the stage number follow (5 bytes of the record).
         let mut t = crate::stage::SAVED_MARK.to_le_bytes().to_vec();
         t.push(k);
-        core.raw_write_range(BLOCK + BLOCK_SIZE, -1, &t);
-        core.gba_mut().cpu_mut().set_gpr(2, (BLOCK_SIZE + t.len() as u32) as i32);
+        core.raw_write_range(BLOCK + at, -1, &t);
+        core.gba_mut().cpu_mut().set_gpr(2, (at + t.len() as u32) as i32);
     } else if let Some(fronts) = crate::two_front::saved_state(core) {
         let mut t = FRONTS_MARK.to_le_bytes().to_vec();
         t.extend_from_slice(&fronts);
-        core.raw_write_range(BLOCK + BLOCK_SIZE, -1, &t);
-        core.gba_mut()
-            .cpu_mut()
-            .set_gpr(2, (BLOCK_SIZE + t.len() as u32) as i32);
+        core.raw_write_range(BLOCK + at, -1, &t);
+        core.gba_mut().cpu_mut().set_gpr(2, (at + t.len() as u32) as i32);
     }
+}
+
+/// Where a stage's or a two-front mission's mark may stand after the block: right after it (no pairs, or a save of the old layout) or after the pairs' tail.
+pub const MARK_AT: [u32; 2] = [BLOCK_SIZE, BLOCK_SIZE + TAG_LEN];
+
+/// The place in the staging buffer where `mark` stands, if it does.
+fn mark_in_buffer(core: &Core, mark: u32) -> Option<u32> {
+    MARK_AT.iter().copied().find(|&at| {
+        let mut b = [0u8; 4];
+        core.raw_read_range(BLOCK + at, -1, &mut b);
+        u32::from_le_bytes(b) == mark
+    })
 }
 
 /// The block's length as AW2 saves it, and the mark of the two-front state
@@ -363,17 +376,17 @@ fn applied_ds(core: &mut Core) {
     core.raw_write_range(crate::ds_campaign_rules::MTE_TOLD, -1, &b[24..24 + DS_MTE_LEN as usize]);
     crate::onyx::restore(core, &b[24 + DS_MTE_LEN as usize..]);
     // A mission saved on a later stage: the stage number.
-    if core.raw_read_32(BLOCK + BLOCK_SIZE, -1) == crate::stage::SAVED_MARK {
-        let k = core.raw_read_8(BLOCK + BLOCK_SIZE + 4, -1);
+    if let Some(at) = mark_in_buffer(core, crate::stage::SAVED_MARK) {
+        let k = core.raw_read_8(BLOCK + at + 4, -1);
         crate::stage::restore_saved(core, k);
-        core.raw_write_32(BLOCK + BLOCK_SIZE, -1, 0);
+        core.raw_write_32(BLOCK + at, -1, 0);
     }
     // A two-front battle's other front and state (saved after the block).
-    if core.raw_read_32(BLOCK + BLOCK_SIZE, -1) == FRONTS_MARK {
+    if let Some(at) = mark_in_buffer(core, FRONTS_MARK) {
         let mut f = vec![0u8; crate::two_front::SAVED_LEN as usize];
-        core.raw_read_range(BLOCK + BLOCK_SIZE + 4, -1, &mut f);
+        core.raw_read_range(BLOCK + at + 4, -1, &mut f);
         crate::two_front::restore_saved(core, &f);
-        core.raw_write_32(BLOCK + BLOCK_SIZE, -1, 0);
+        core.raw_write_32(BLOCK + at, -1, 0);
     }
 }
 
@@ -433,16 +446,18 @@ pub fn resume_mid(core: &mut Core, slot: u8) {
     // [`applied_ds`]).
     if let Some(i) = mid_sector(core, slot) {
         // (bytes: the mark is not word-aligned in Flash)
-        let at = FLASH + 0x1000 * i + 0x52 + BLOCK_SIZE;
-        let mut mark = [0u8; 4];
-        core.raw_read_range(at, -1, &mut mark);
-        if u32::from_le_bytes(mark) == FRONTS_MARK {
-            let live = core.raw_read_8(at + 4, -1);
-            crate::two_front::continue_on(core, live);
-        }
-        if u32::from_le_bytes(mark) == crate::stage::SAVED_MARK {
-            let k = core.raw_read_8(at + 4, -1);
-            crate::stage::continue_on(core, k);
+        for place in MARK_AT {
+            let at = FLASH + 0x1000 * i + 0x52 + place;
+            let mut mark = [0u8; 4];
+            core.raw_read_range(at, -1, &mut mark);
+            if u32::from_le_bytes(mark) == FRONTS_MARK {
+                let live = core.raw_read_8(at + 4, -1);
+                crate::two_front::continue_on(core, live);
+            }
+            if u32::from_le_bytes(mark) == crate::stage::SAVED_MARK {
+                let k = core.raw_read_8(at + 4, -1);
+                crate::stage::continue_on(core, k);
+            }
         }
     }
     let cpu = core.gba_mut().cpu_mut();
@@ -643,6 +658,17 @@ mod tests {
         assert!(worst <= STAGING);
         // (the reader's places are inside the buffer)
         assert!(FIVE_AT.iter().all(|&a| a + FIVE_HEAD < STAGING));
+    }
+
+    /// The stage's / two-front mark has a place of its own after the pairs' tail (it was written over the tail): the two places are different, and the longest record (the other front's state after the
+    /// pairs) still fits the staging buffer and the slot's two sectors.
+    #[test]
+    fn the_fronts_mark_does_not_overlap_the_pairs_tail() {
+        assert_eq!(MARK_AT, [BLOCK_SIZE, BLOCK_SIZE + TAG_LEN]);
+        assert!(MARK_AT[1] >= MARK_AT[0] + TAG_LEN, "the second place starts after the tail");
+        assert_eq!(TAG_AT - BLOCK, MARK_AT[0], "the tail starts at the first place");
+        let longest = MARK_AT[1] + 4 + crate::two_front::SAVED_LEN;
+        assert!(longest <= STAGING && longest <= SLOT_MAX, "{longest} bytes");
     }
 
     #[test]

@@ -145,6 +145,7 @@ def bh2_m31_gauntlet_suspend_and_resume(ctx):
     e, g, d = b2.enter(ctx, 31)
     d.leave_setup()
     a2.intro(ctx, e, d, "m31", (0,))
+    bp.to_player_turn(e, g, d)     # (the finale's opening scene, then the four nations' computer turns)
     d.wait_control()
     g._units_base = g._players_base = None
     bp.home(g, e)

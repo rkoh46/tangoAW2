@@ -13,6 +13,7 @@ from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2
 from aw2test import dscampaign as dc
 from aw2test import stitch
+from aw2test import tag as tagmod
 from aw2test.emu import Emu
 from aw2test.game import Game
 from aw2test.harness import test
@@ -368,6 +369,8 @@ def bh2_m31_stage_two_suspend_and_resume(ctx):
     e, g, d = play_to_stage_two(ctx)
     mine = signature(g.units(army=1))
     aria = len(g.units(army=2))
+    pairs = [tagmod.partner(e, a) for a in range(1, 5)]
+    ctx.check(any(pairs), f"the player's tag pair is live before the save ({pairs[0]})")
     ctx.log("before the save: players " + str([(a, g.player(a)['raw'][0x14:0x16].hex(), g.player(a)['raw'][0x1B], g.player(a)['raw'][0x1A], g.player(a)['raw'][0x2A]) for a in range(1, 5)]))
     names = saves.suspend(g)
     ctx.check("Save" in names, f"Save on the map menu of stage 2 ({names})")
@@ -389,6 +392,7 @@ def bh2_m31_stage_two_suspend_and_resume(ctx):
     ctx.eq(stage_of(e), 1, "resumed on stage 2 (the stage number came back)")
     ctx.eq(e.u8(FIVE_ON), 0, "the four-army game is on")
     ctx.eq(d.mission(), 30, "the mission is M31")
+    ctx.eq([tagmod.partner(e, a) for a in range(1, 5)], pairs, "the tag pairs survive a stage-2 resume (the stage mark used to be written over the pairs' tail)")
     ctx.eq(len(g.units(army=2)), aria, "Aria's army as saved")
     ctx.eq(signature(g.units(army=1)), mine, "the player's units as saved")
     ctx.eq(owner(e, 33, 5), 2, "Aria's HQ is on the map")
