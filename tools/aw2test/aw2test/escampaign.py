@@ -12,7 +12,7 @@ SOURCE = 0x0203FD57               # crate::ds_campaign::SOURCE (0 DS, 1 BH, 2 Em
 ES = 2
 ES_MAGIC = 0x43455741             # "AWEC"
 ES_SLOT, ES_MID_SLOT = 11, 12     # (the mid-mission slot is the BH Campaign's, told apart by the saved mission's top bits)
-CHOOSER_ROW = 3                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN, EMERALD SUN
+CHOOSER_ROW = 4                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN, BH2 CAMPAIGN, EMERALD SUN (campaign_menu::DISPLAY_ORDER; the source index stays 2)
 P_UNLOCKED = dc.PROGRESS + 0x0D
 ENV = {"TANGOAW2_ES_CAMPAIGN": "1"}
 

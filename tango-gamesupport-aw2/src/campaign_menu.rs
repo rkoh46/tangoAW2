@@ -158,10 +158,9 @@ fn help_lines(core: &mut Core) {
 pub fn entries(core: &Core) -> Vec<&'static str> {
     let mut v = vec![LABELS[0]];
     v.extend(
-        crate::campaign_model::SOURCES
-            .iter()
-            .filter(|s| (s.available)(core))
-            .map(|s| s.label),
+        displayed(core)
+            .into_iter()
+            .map(|i| crate::campaign_model::SOURCES[i].label),
     );
     // The campaigns still to come, shown but not playable: BH2 directly under the BH Campaign, Emerald Sun last.
     if crate::ds_weather::is_on(core) {
@@ -260,15 +259,23 @@ pub fn draw_notice(core: &Core, rgba: &mut [u8]) {
     cv.text(core, x + (w - text_width(core, t)) / 2, by, t, BLUE, SHADE);
 }
 
+/// The order the chooser lists the sources in (indices of `SOURCES`): DS, BH, BH2, Emerald Sun. Only the display order: every source keeps its index, its save slot and its record
+/// (`SOURCES` is in the order they were added: Emerald Sun is 2 and BH2 is 3).
+pub const DISPLAY_ORDER: [usize; 4] = [0, 1, 3, 2];
+
+/// The available sources' indices, in the chooser's order.
+pub fn displayed(core: &Core) -> Vec<usize> {
+    DISPLAY_ORDER
+        .iter()
+        .copied()
+        .filter(|&i| (crate::campaign_model::SOURCES[i].available)(core))
+        .collect()
+}
+
 /// The source (an index of `SOURCES`) the chooser's entry `choice` is
 /// (entry 0 is AW2's own campaign).
 fn source_of(core: &Core, choice: usize) -> Option<usize> {
-    crate::campaign_model::SOURCES
-        .iter()
-        .enumerate()
-        .filter(|(_, s)| (s.available)(core))
-        .nth(choice.checked_sub(1)?)
-        .map(|(i, _)| i)
+    displayed(core).get(choice.checked_sub(1)?).copied()
 }
 
 /// The chooser's first entry shown (EWRAM, crate::ds_campaign's block).
@@ -691,6 +698,21 @@ mod tests {
         assert_eq!(window(4, 1, 5), (2, 2));
         assert_eq!(window(1, 2, 5), (1, 0));
         assert_eq!(window(0, 3, 5), (0, 0));
+    }
+
+    /// The chooser reads AW2, DS, BH, BH2, Emerald Sun; the display order is a permutation of `SOURCES` and leaves every source's index (and so its save slot) alone.
+    #[test]
+    fn the_chooser_order_is_bh_then_bh2_then_emerald_sun() {
+        let src = &crate::campaign_model::SOURCES;
+        let mut sorted = DISPLAY_ORDER;
+        sorted.sort();
+        assert_eq!(sorted, [0, 1, 2, 3], "a permutation");
+        let labels: Vec<&str> = DISPLAY_ORDER.iter().map(|&i| src[i].label).collect();
+        assert_eq!(labels, ["DS CAMPAIGN", "BH CAMPAIGN", "BH2 CAMPAIGN", "EMERALD SUN"]);
+        // the indices and slots the saves use did not move
+        assert_eq!((src[2].label, src[2].save_slot, src[3].label, src[3].save_slot), ("EMERALD SUN", 11, "BH2 CAMPAIGN", 13));
+        assert_eq!(crate::bh2_campaign::SOURCE, 3);
+        assert_eq!(crate::es_campaign::SOURCE, 2);
     }
 
     #[test]

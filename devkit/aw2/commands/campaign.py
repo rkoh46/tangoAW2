@@ -86,7 +86,7 @@ def scenes(a):
 
 
 def menu(a):
-    """The Campaign chooser of the real app, entry by entry (AW2, DS, BH, Emerald Sun, BH2); exit 1 if an entry is missing."""
+    """The Campaign chooser of the real app, entry by entry (AW2, DS, BH, BH2, Emerald Sun); exit 1 if an entry is missing."""
     import json, time, subprocess
     from .. import profiles
     out = Path(a.out) if a.out else cfg.work("campaign", "menu")
@@ -127,7 +127,7 @@ def menu(a):
         d.press_until("A", {"screen_info.box_open": True}, timeout=30, gap=1.0)
         time.sleep(1.0)
         d.screenshot(str(out / "chooser_0_aw2.png"))
-        names = ["aw2", "ds", "bh", "emerald_sun", "bh2"]
+        names = ["aw2", "ds", "bh", "bh2", "emerald_sun"]   # (campaign_menu::DISPLAY_ORDER)
         def entry():
             got = d.peek(0x0203FD14, 1)
             return int(str(got.get("hex", got)), 16) if isinstance(got, dict) else -1
