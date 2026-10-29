@@ -4,234 +4,234 @@
 
 == m09_pre
 @SONG ally2
-NARRATION: Kite Hill, the northern coast. / Ten days until the tide.
-LIVIA: Three barges in the east bay by / a grain isle. They sail on day eleven.
+NARRATION: Kite Hill, on the northern / coast. Ten days until the tide.
+LIVIA: Three barges in the east bay, by a / grain isle. They sail on day eleven.
 LIVIA: The bay glows red, Legate. I will / not guess what the water is.
-LIVIA: The bill of lading says grain. / The creditor's stamp is the usual.
+LIVIA: The bill of lading says grain. The / creditor's stamp is the usual one.
 KLAUS: Then the barges are the road. / Whoever loads them, we meet.
 AURELIA: The depot is Kite Hill's plateau / airport. A long march from our landing.
 AURELIA: Take Kite Hill and you own every / approach. One river, four bridges.
 NARRATION: Kite Hill is scorched wasteland. / Ash, cinders, ruins, rough rock.
-AURELIA: Cinders, ruins for cover, / rock that rings. I can work with that.
-AURELIA: The river runs red and glowing, / like lava. Do not wade it.
-KLAUS: Clear air lets our wing see far / from the plateau. Use it well.
+AURELIA: Cinders, ruins for cover, rock / that rings. I can work with that.
+AURELIA: The river runs red and glowing, / like lava. Don't wade it.
+KLAUS: The air is clear. Our wing will see / far from the plateau. Use it well.
 KLAUS: A hill, a depot, a coast. Take / them and the northern shore falls.
-CASSIUS: Wings! You have an airport / and I have a bad feeling.
-CASSIUS: Nobody taught my horses to / climb a plateau at a gallop.
-KLAUS: Your horses hold the river and / its four bridges. Someone must.
-CASSIUS(h): Holding. Splendid. I have / always wanted to be a gate.
+CASSIUS: Wings! You've got an airport, and / I've got a bad feeling.
+CASSIUS: Nobody taught my horses to climb a / plateau at a gallop.
+KLAUS: Your horses hold the river and its / four bridges. Someone must.
+CASSIUS(h): Holding. Splendid. I've always / wanted to be a gate.
 LIVIA: Gates are paid by the day, / Prefect. I will see to yours.
 AURELIA: Legate, look at the ridge. / Missiles, and flak tanks at the gate.
-AURELIA: If the sky is theirs, we / are standing on stone.
-KLAUS: Then we fight the ground / first and the sky second.
-AURELIA: Bombs have a trajectory too. / Give me the angle and a map.
+AURELIA: If the sky is theirs, we're / standing on stone.
+KLAUS: Then we fight the ground first, and / the sky second.
+AURELIA: Bombs have a trajectory too. Give / me the angle and a map.
 AURELIA: A bomber is only a very / expensive, very hurried shell.
-AURELIA: Now look at the freight yard. / A pipeline walls it off from the road.
-AURELIA: One seam in the pipe. One hit / on the seam and the yard opens.
-AURELIA: A Black Hole Piperunner guards it. / Fast, armoured, runs through the pipes.
-AURELIA: The base beside the pipe builds / more. Rockets and Tanks answer.
-AURELIA: Bombers answer it from above. / Pick the answer, Legate.
-KLAUS: Break the seam early, Engineer, / before the second one rolls.
-KLAUS: You will have both. And / remember: these are not raiders.
-KLAUS: Black Hole's HQ, quay and inventions / lie east. It sells to whoever pays.
-LIVIA: I offered. They declined, / politely, and in advance.
-KLAUS: Then it is a hill. Take the / depot. Sink the barges.
+AURELIA: Now look at the freight yard. A / pipeline walls it off from the road.
+AURELIA: One seam in the pipe. One hit on / the seam and the yard opens.
+AURELIA: A Black Hole Piperunner guards it. / Fast, armoured, runs along the pipes.
+AURELIA: The base beside the pipe builds / more. Rockets and Tanks answer it.
+AURELIA: Bombers answer it from above. Pick / your answer, Legate.
+KLAUS: Break the seam early, Engineer, / before a second one rolls out.
+KLAUS: You will have both. And remember: / these are not raiders.
+KLAUS: Black Hole's HQ, quay and / inventions lie east. It sells to anyone.
+LIVIA: I made an offer. They declined, / politely, and in advance.
+KLAUS: Then it is a hill. Take the depot. / Sink the barges.
 
 == m09_pre2
 @SONG enemy1
 NARRATION: The freight yards. The / quartermasters' radio channel.
-ADDER: Well, well. A green sun on a / white field. How very fresh.
+ADDER: Well, well. A green sun on a white / field. How very fresh.
 ADDER: Quartermaster Adder, at your / service. And not at all at yours.
 FLAK: Raiders, Adder? Flak likes / raiders. Raiders bring fuel.
-ADDER: Flak, they are not raiders / until they have raided.
-ADDER: Visitors, you are standing on / a customer's property. Step back.
-KLAUS: I am Legate Klaus of Aurea. We / do not wish a war with you.
-ADDER: Delightful! A man with / manners. Then why the bombers?
-KLAUS: Because your barges carry a / stencil I have followed an ocean.
-ADDER: Ah. The stencil. A lovely / account. It pays well, and early.
-ADDER: Early is the finest virtue. / We guard what early money buys.
+ADDER: Flak, they are not raiders until / they have raided.
+ADDER: Visitors, you are standing on a / customer's property. Step back.
+KLAUS: I am Legate Klaus of Aurea. We do / not wish for a war with you.
+ADDER: Delightful! A man with manners. / Then why the bombers?
+KLAUS: Because your barges carry a / stencil I have followed across an ocean.
+ADDER: Ah. The stencil. A lovely account. / It pays well, and early.
+ADDER: Early is the finest virtue. We / guard what early money buys.
 FLAK: Flak guards Adder. And the / sandwiches. Both in danger.
-LIVIA: Quartermaster. Name the buyer / and I will pay you double.
-ADDER: Madam, I would sell my own / cape for double. I do not know him.
+LIVIA: Quartermaster. Name the buyer and / I will pay you double.
+ADDER: Madam, I would sell my own cape / for double. I do not know him.
 ADDER: Nobody does. The crates simply / arrive. The coin simply clears.
 KLAUS: Then I will read the crates / myself.
-ADDER: Read them from the lake, / then! Fighters up! Cape up!
-FLAK: Up, Adder? Up is for / the planes.
+ADDER: Read them from the lake, then! / Fighters up! Cape up!
+FLAK: Up, Adder? Up is for the planes.
 ADDER: Metaphorically, Flak. Fire.
 
 == m09_day4
-NARRATION: Day four. The harbour lamps / come on, three at a time.
-AURELIA: Legate, the barges have lit / their lamps. All three of them.
-LIVIA: A signal. They are asking the / tide to come early.
-ADDER: Our clients are impatient. / Three lamps, three hulls.
+NARRATION: Day four. The harbour lamps come / on, three at a time.
+AURELIA: Legate, the barges have lit their / lamps. All three of them.
+LIVIA: A signal. They are asking the tide / to come early.
+ADDER: Our clients are impatient. Three / lamps, three hulls.
 ADDER: A bargain: sink one and I will / tell you which crate to open.
 KLAUS: I will sink all three and open / them myself.
-FLAK: Adder? That was good / bargain. Flak would take it.
+FLAK: Adder? That was a good bargain. / Flak would take it.
 
 == m09_post
 @SONG hagevolt
 NARRATION: Kite Hill. The depot is ours. / The third barge burns.
-AURELIA: Hull three is down. Hull one / came up in two pieces.
-AURELIA: I told you. A trajectory is / a promise you can keep.
-KLAUS: Boarding party. Lamps out. / Open the holds one at a time.
-LEGIONARY: Legate! The crates carry / the stencil. The same mark.
-LEGIONARY: But they are light for / grain. Nothing shifts, nothing pours.
-LIVIA: Open one. Slowly. I want the / seal whole for the ledger.
-LEGIONARY: It is jars, Quaestor. Sealed / jars, forty to a crate.
-LEGIONARY: One cracked. Look at what / came out. It is grey. It is fine.
-AURELIA: That is ash. That is the ash / that fell on our fields.
-KLAUS: Close it. Do not breathe it. / Put it under guard.
+AURELIA: Hull three is down. Hull one came / up in two pieces.
+AURELIA: Told you. A trajectory is a / promise you can keep.
+KLAUS: Boarding party. Lamps out. Open / the holds one at a time.
+LEGIONARY: Legate! The crates carry the / stencil. The same mark.
+LEGIONARY: But they're light for grain. / Nothing shifts, nothing pours.
+LIVIA: Open one. Slowly. I want the seal / whole for the ledger.
+LEGIONARY: It's jars, Quaestor. Sealed / jars, forty to a crate.
+LEGIONARY: One cracked. Look what came out. / It's grey. It's fine as dust.
+AURELIA: That's ash. That's the ash that / fell on our fields.
+KLAUS: Close it. Do not breathe it. Put / it under guard.
 LIVIA: Barge one carried two hundred / crates. Barge two, three hundred.
-LIVIA: That is a harvest of ash. / Somebody paid to move it. In advance.
+LIVIA: That is a harvest of ash. Somebody / paid to move it. In advance.
 KLAUS: Not grain. Not one sack.
-ADDER: Ah. You found the jars. I / regret that I cannot be surprised.
-ADDER: We never open the crates, / Legate. It is bad manners.
-FLAK: Flak opened one once. Sad. / Flak closed it. Gave it back.
-KLAUS: Quartermaster. Who ships it / into Aurea?
+ADDER: Ah. You found the jars. I regret / that I cannot be surprised.
+ADDER: We never open the crates, Legate. / It is bad manners.
+FLAK: Flak opened one once. Sad. Flak / closed it. Gave it back.
+KLAUS: Quartermaster. Who ships it into / Aurea?
 ADDER: A very large account and a very / small stencil. Good day.
-LIVIA: I will check every bill we / have paid since the first spring.
-KLAUS: Raise the sun over the depot. / The northern coast is ours.
+LIVIA: I will check every bill we have / paid since the first spring.
+KLAUS: Raise the sun over the depot. The / northern coast is ours.
 
 == m09_map
 @SONG hagevolt
 NARRATION: The harbour office at Kite Hill. / Forty jars under one lamp.
-KLAUS: Forty jars on the table. / Nobody touch them.
-LIVIA: I counted them twice. Forty. It / is the only line that has not been
-LIVIA: marked up. I find that / restful.
+KLAUS: Forty jars on the table. Nobody / touch them.
+LIVIA: I counted them twice. Forty. It is / the only line that has not been
+LIVIA: marked up. I find that restful.
 KLAUS: You say that like a joke.
-LIVIA: It is a joke, Legate. It is / simply a very small one.
-KLAUS: Look at the stencil. A circle, / a bar, a double stroke.
-LIVIA: I have seen it on bills. I / believe I have seen it elsewhere.
-KLAUS: You looked at it too long / to have seen it only once.
+LIVIA: It is a joke, Legate. A very / small one.
+KLAUS: Look at the stencil. A circle, a / bar, a double stroke.
+LIVIA: I have seen it on bills. I believe / I have seen it elsewhere too.
+KLAUS: You looked at it too long to have / seen it only once.
 KLAUS: Where?
-LIVIA: I do not yet know that I am / right. When I do, you will know.
-LIVIA: A letter from the Consul came / this morning. He approves.
-LIVIA: He asks that the jars be sent / home to Aurelium, unopened.
+LIVIA: I do not yet know that I am right. / When I do, you will know.
+LIVIA: A letter from the Consul came this / morning. He approves.
+LIVIA: He asks that the jars be sent home / to Aurelium, unopened.
 KLAUS: My report left at dawn. His / letter is dated yesterday.
-LIVIA: I noticed. I have underlined / the date.
+LIVIA: I noticed. I have underlined the / date.
 KLAUS: The jars stay with me.
 
 # ---------------------------------------------------------------- M10 The Quiet Pass (Yellow Comet: Kanbei, Sonja; fog)
 
 == m10_pre
 @SONG aw2:422
-NARRATION: The Comet Mountains. Fog / lies in the pass like milk.
+NARRATION: The Comet Mountains. Fog lies in / the pass like milk.
 AURELIA: I can see my own boots and / nothing else. I hate fog.
-AURELIA: A wall I can measure. Fog is / a wall that moves.
-CASSIUS: It is perfect for cavalry. / No one sees you coming.
-CASSIUS: They also cannot see the / hole in the road. Details.
-KLAUS: Three pass roads over a river: west, / centre, east. One summit, north.
+AURELIA: A wall I can measure. Fog is a / wall that moves.
+CASSIUS: It's perfect for cavalry. No one / sees you coming.
+CASSIUS: Mind you, they can't see the hole / in the road either. Details.
+KLAUS: Three pass roads over a river: / west, centre, east. One summit, north.
 KLAUS: A goat track in the far west, foot / only. Whoever holds the summit wins.
-KLAUS: We have taken a coast, a fort and an / island. This is the roof of the frontier.
-LIVIA: And the road to the next / ledger. The trail goes north.
-LIVIA: A free port in the north buys / its grain through this pass.
+KLAUS: We have taken a coast, a fort and / an island. This is the frontier's roof.
+LIVIA: And the road to the next ledger. / The trail goes north.
+LIVIA: A free port in the north buys its / grain through this pass.
 KLAUS: Then we climb. Recons first. / Copters above the ridge line.
-AURELIA: Fog grounds the copters at / the third cloud. I counted.
-KLAUS: Then we climb on foot, and / learn the mountain's name.
+AURELIA: Fog grounds the copters at the / third cloud. I counted.
+KLAUS: Then we climb on foot, and learn / the mountain's name.
 NARRATION: Snow begins to fall on the pass, / thin and steady. Winter has come.
-CASSIUS(s): Snow, too. At home we have / the decency to rain.
-AURELIA: Thin air and cold. Fuel burns twice / as fast. Count your tanks, all of you.
+CASSIUS(s): Snow too. At home we have the / decency to rain.
+AURELIA: Thin air and cold. Fuel burns / twice as fast. Count your tanks, all.
 KLAUS: Then we march short and slow. / Winter keeps its own schedule.
-KANBEI: Strangers on the Comet Road. / And in my fog.
-KANBEI: Kanbei commands the / Yellow Comet border.
-KANBEI: You are the green sun from / Grimm's complaints.
-KLAUS: Legate Klaus of Aurea. We / come as travellers.
-KANBEI: Travellers do not bring / bombers, Legate. Or siege guns.
-KLAUS: The roads here are steep. / We bring what we can carry.
-KANBEI: A fair answer. It does not / open my pass.
-KANBEI: Eleven years Kanbei has kept / this summit. He will not give it to a flag
-KANBEI: that nobody has seen. Not / for courtesy. Not for coin.
-CASSIUS: Your Grimm shouted at me / on the Comet Road. Politely.
-KANBEI: Grimm shouts at everyone. / That is his gift to us.
-KANBEI: Kanbei is quieter. You will / find his walls quieter still.
-KLAUS: I do not seek your walls. I / seek the road through them.
-KANBEI: Then we agree on the / difficulty. Kanbei waits at the top.
+KANBEI: Strangers on the Comet Road. And / in Kanbei's fog.
+KANBEI: Kanbei commands the Yellow Comet / border.
+KANBEI: You are the green sun from Grimm's / complaints.
+KLAUS: Legate Klaus of Aurea. We come as / travellers.
+KANBEI: Travellers do not bring bombers, / Legate. Or siege guns.
+KLAUS: The roads here are steep. We bring / what we can carry.
+KANBEI: A fair answer. It does not open / Kanbei's pass.
+KANBEI: For eleven years Kanbei has kept / this summit. He will not give it to
+KANBEI: a flag nobody has seen. Not for / courtesy. Not for coin.
+CASSIUS: Your Grimm shouted at me on the / Comet Road. Politely.
+KANBEI: Grimm shouts at everyone. That is / his gift to us.
+KANBEI: Kanbei is quieter. You will find / his walls quieter still.
+KLAUS: I do not seek your walls. I seek / the road through them.
+KANBEI: Then we agree on the difficulty. / Kanbei waits at the top.
 SAMI: Kanbei! Don't scare them off / before I've had a go at them!
 SAMI: Sami, Orange Star infantry. The / Accord sent me to hold your west road.
 SAMI: Fog's no trouble. Boots find the / road. Infantry never needed eyes.
 KLAUS: Commander Sami. We seek no quarrel / with Orange Star.
-SAMI: Then stay off my road, Legate. / I'll be polite once. After that, no.
-LIVIA: Politeness, Commander, is a / debt too. Mine are in cipher.
-SAMI: Ha! I keep a march-roll. You're / on it. All of you. Names, ranks.
-CASSIUS: I am famous! On a march-roll! / Put me on line one.
+SAMI: Then stay off my road, Legate. I'll / be polite once. After that, no.
+LIVIA: Politeness, Commander, is a debt / too. Mine are in cipher.
+SAMI: Ha! I keep a march roll. You're on / it. All of you. Names, ranks.
+CASSIUS: I'm famous! On a march roll! Put / me on line one.
 SAMI: You are on line one, Prefect. / Under "loud".
-KLAUS: We will climb at first light. / Aurelia, set the guns on the spur.
-AURELIA: Setting them. If the fog / lifts I want to see him first.
-KANBEI: Come, then. The pass has / been quiet for eleven years.
-KANBEI: Let us see who breaks the / silence. It will not be Kanbei.
+KLAUS: We climb at first light. Aurelia, / set the guns on the spur.
+AURELIA: Setting them. If the fog lifts, I / want to see him first.
+KANBEI: Come, then. The pass has been / quiet for eleven years.
+KANBEI: Let us see who breaks the silence. / It will not be Kanbei.
 
 == m10_day4
 NARRATION: Day four, the centre road. The guns / fall silent. A white cloth on the spur.
-KANBEI: Legate. My scouts say your / men carried my wounded downhill.
-KLAUS: They were in the way. I do / not leave men on a road.
-SAMI: Well, go on, you two! First / duel I've watched all month!
-SAMI: Talk or fight! But pick one, / and keep it short! I'm freezing!
-KANBEI: One question, Legate. Kanbei / asks it once. Why do you march?
+KANBEI: Legate. Kanbei's scouts say your / men carried his wounded downhill.
+KLAUS: They were in the way. I do not / leave men on a road.
+SAMI: Well, go on, you two! First duel / I've watched all month!
+SAMI: Talk or fight! But pick one, and / keep it short! I'm freezing!
+KANBEI: One question, Legate. Kanbei asks / it once. Why do you march?
 KLAUS: Because the bread stopped. And / because someone made it stop.
-KANBEI: A conqueror who asks why. / Still, Kanbei keeps his pass.
-KANBEI: Noon. We resume at noon, and / the best of us wins.
+KANBEI: A conqueror who asks why. Still, / Kanbei keeps his pass.
+KANBEI: Noon. We resume at noon, and the / best of us wins.
 
 == m10_post
 @SONG co:kanbei
-NARRATION: The summit. The fog thins / and the Comet banner comes down.
-KANBEI: The pass is yours, Legate. Kanbei / was taught a pass falls only once.
-KANBEI: A hard lesson. Kanbei / thanks you for the mountain.
+NARRATION: The summit. The fog thins, and / the Comet banner comes down.
+KANBEI: The pass is yours, Legate. Kanbei / was taught that a pass falls once.
+KANBEI: A hard lesson. Kanbei thanks you / for the mountain.
 KLAUS: I take the pass, Commander. I do / not take your honour.
-KLAUS: You held it well. Eleven years / is a long time to hold anything.
-KANBEI: He held the last year badly. / He knew it, and held on anyway.
-KANBEI: His men trusted his face. / Kanbei wronged them.
-KLAUS: You wronged no one. Your / men are alive and so are mine.
-KANBEI: That is the only honour / Kanbei has left. He will keep it.
-AURELIA: Legate, he is crying. Is / that allowed in the Comet army?
+KLAUS: You held it well. Eleven years is / a long time to hold anything.
+KANBEI: He held the last year badly. He / knew it, and held on anyway.
+KANBEI: His men trusted his face. Kanbei / wronged them.
+KLAUS: You wronged no one. Your men are / alive, and so are mine.
+KANBEI: That is the only honour Kanbei / has left. He will keep it.
+AURELIA: Legate, he's crying. Is that / allowed in the Comet army?
 KANBEI: In Kanbei's army, tears are a / courtesy to the dead. No shame.
-CASSIUS: He is the best loser I have / ever met. I want lessons.
-LIVIA: I do not think the lesson / is transferable, Prefect.
-SAMI: Pass is yours, Legate. Infantry / don't cry. We just march home and eat.
-SAMI: Good fight, though. Next time / bring more soup. It's cold up here.
-KANBEI: Klaus. Kanbei heard you on / the radio, through the fog.
-KANBEI: You said, "because someone / made it stop." Kanbei believes you.
-KANBEI: My own northern farms are / grey. My fields in Comet Pass
-KANBEI: have not borne wheat for / two summers. Ash. On the wind.
+CASSIUS: He's the best loser I've ever / met. I want lessons.
+LIVIA: I do not think the lesson is / transferable, Prefect.
+SAMI: The pass is yours, Legate. Infantry / don't cry. We march home and eat.
+SAMI: Good fight, though. Next time bring / more soup. It's cold up here.
+KANBEI: Klaus. Kanbei heard you on the / radio, through the fog.
+KANBEI: You said, "because someone made it / stop." Kanbei believes you.
+KANBEI: Kanbei's own northern farms are / grey. His fields in Comet Pass
+KANBEI: have not borne wheat for two / summers. Ash. On the wind.
 KLAUS: You have seen it too.
 KANBEI: Kanbei has buried it. A farmer / brought him a sack, weeping.
 KANBEI: The Allies call it weather. / Kanbei calls it a debt with no creditor.
-LIVIA: That is precisely what it is. / I should like to hire your phrase.
-KANBEI: Then more than words. Kanbei / asks to follow your banner.
+LIVIA: That is exactly what it is. I / should like to borrow your phrase.
+KANBEI: Then more than words. Kanbei asks / to follow your banner.
 KLAUS: You have a nation.
-KANBEI: A nation that sent Kanbei to / hold a pass. He held it.
-KANBEI: Now Kanbei chooses where to / stand. Two banners, Legate. One road.
-KLAUS: Two banners. I accept. / On the day my army is wrong,
-KLAUS: you will say so aloud, in front / of everyone. That is the price.
-KANBEI: That is the least Kanbei / would do. He accepts gladly.
-CASSIUS(h): I told you! He is better / than you. Give him a horse!
-KLAUS: He has the Tag. That is a / better gift than a horse.
-SOLDIER YC: Commander! A rider from / the ridge. A letter for the Legate.
-KANBEI: From Sonja. She never / signs. She only initials.
-KLAUS: "The grey falls on my / mountains too. You are not alone.
+KANBEI: A nation that sent Kanbei to hold / a pass. He held it.
+KANBEI: Now Kanbei chooses where to stand. / Two banners, Legate. One road.
+KLAUS: Two banners. I accept. On the day / my army is wrong,
+KLAUS: you will say so aloud, in front of / everyone. That is the price.
+KANBEI: That is the least Kanbei would do. / He accepts gladly.
+CASSIUS(h): Told you! He's better than you. / Give him a horse!
+KLAUS: He has the Tag. That is a better / gift than a horse.
+SOLDIER YC: Commander! A rider from the / ridge. A letter for the Legate.
+KANBEI: From Sonja. She never signs. She / only initials.
+KLAUS: "The grey falls on my mountains / too. You are not alone.
 KLAUS: Ask who clears the crates at the / northern Free Port. Not the yards.
-KLAUS: Your name is in my black / book, Legate. Do not make me cross it
+KLAUS: Your name is in my black book, / Legate. Do not make me cross it
 KLAUS: out. S."
-LIVIA: A signed warning. How / unusually generous of her.
-KANBEI: She is generous when she / chooses. She chooses rarely.
+LIVIA: A signed warning. How unusually / generous of her.
+KANBEI: She is generous when she chooses. / She chooses rarely.
 
 == m10_map
 @SONG ally2
-NARRATION: Camp on the summit. Two / banners fly side by side.
-KANBEI: Aurelia, Kanbei has studied / your siege lines. Elegant.
-AURELIA: Thank you. They are also / the only thing I own.
-KANBEI: In my country, a general / takes a banner. You took two.
-KLAUS: I am told the second one / answers back.
-KANBEI: It answers truthfully. That / is a different thing.
-CASSIUS: Please. If there are two / banners, I want a third. Mine.
-LIVIA: The banner budget is closed, / Prefect. I have closed it myself.
-KLAUS: Livia. A moment. This note / from Sonja.
-LIVIA: A black book. Her black book / is a ledger in all but name.
-LIVIA: A creditor who writes down / every debt of honour. How elegant.
-KANBEI: She does not forgive. She does / not forget. Kanbei trusts her.
+NARRATION: Camp on the summit. Two banners / fly side by side.
+KANBEI: Aurelia, Kanbei has studied your / siege lines. Elegant.
+AURELIA: Thank you. They're also the only / thing I own.
+KANBEI: In Kanbei's country, a general / takes a banner. You took two.
+KLAUS: I am told the second one answers / back.
+KANBEI: It answers truthfully. That is a / different thing.
+CASSIUS: Please. If there are two banners, / I want a third. Mine.
+LIVIA: The banner budget is closed, / Prefect. I closed it myself.
+KLAUS: Livia. A moment. This note from / Sonja.
+LIVIA: A black book. Her black book is a / ledger in all but name.
+LIVIA: A creditor who writes down every / debt of honour. How elegant.
+KANBEI: She does not forgive. She does not / forget. Kanbei trusts her.
 KLAUS: You trust Sonja.
-KANBEI: Kanbei trusts her to do / exactly what she says.
-KANBEI: That is the whole of trust. / It is not warmth. It is reliability.
-KLAUS: Then it is settled. The / road runs to the north Free Port.
+KANBEI: Kanbei trusts her to do exactly / what she says.
+KANBEI: That is the whole of trust. It is / not warmth. It is reliability.
+KLAUS: Then it is settled. The road runs / to the northern Free Port.
 
 # ---------------------------------------------------------------- M11 The Treasure Train (marauders: Lash, Flak)
 
@@ -239,172 +239,172 @@ KLAUS: Then it is settled. The / road runs to the north Free Port.
 @SONG ally2
 NARRATION: The Pinewood road, in the north. / Forty tiles to the relay camp.
 LIVIA: Four APCs. One chest. Eleven / ledgers from Kite Hill.
-LIVIA: The Senate's relay camp is at / the far east end. We deliver.
-KLAUS: A conquest eats grain. Behind us lie five / provinces, and every one is hungry.
+LIVIA: The Senate's relay camp is at the / far east end. We deliver.
+KLAUS: A conquest eats grain. Behind us / lie five provinces, all hungry.
 KLAUS: The chest feeds the garrisons. It / arrives, or the frontier starves.
-CASSIUS: You are riding in a truck, / Quaestor. A truck!
-LIVIA: A truck is dignified, Prefect. / It has a roof, and a ledger rail.
-AURELIA: The road winds through the Pinewood, / past a hamlet, a ford, a ruin.
-AURELIA: The ford is the knot: the / Marrow road's bridge, mid-map.
+CASSIUS: You're riding in a truck, / Quaestor. A truck!
+LIVIA: A truck is dignified, Prefect. It / has a roof, and a ledger rail.
+AURELIA: The road winds through the / Pinewood: a hamlet, a ford, a ruin.
+AURELIA: The ford is the knot: the Marrow / road's bridge, mid-map.
 AURELIA: An APC stalled on the bridge / blocks all the others. Remember that.
-AURELIA: Three roads cross the Marrow: / the north road, ours, and the south.
-AURELIA: Each has a bridge, and a camp / road joins all three by the camp.
-AURELIA: The ford is not the only / crossing. The convoy may choose.
-NARRATION: The pines gave out. Sand, scrub, / and a ruin by the ford. A storm blows.
-LIVIA: Grit in the engines of four grain / carriers. I have begun a column.
-AURELIA: Few trees, so little cover. The / ruin is only a ruin in sand.
-AURELIA: And the dust takes a square of / range from my guns. Plan for that.
-KLAUS: Then the ford is the / hinge. Hold it, if you can.
-AURELIA: I can put guns on the east / bank. They will cover the crossing.
-KLAUS: Cassius, you screen the road / ahead of the convoy.
-CASSIUS: I am a screen. A glorious, / galloping screen. Tell me the enemy.
-KLAUS: Marauders. Lash holds the north-east, / Flak the south-east. Guns by the week.
+AURELIA: Three roads cross the Marrow: the / north road, ours, and the south.
+AURELIA: Each has a bridge, and a camp road / joins all three near the camp.
+AURELIA: The ford isn't the only crossing. / The convoy can choose.
+NARRATION: The pines give out. Sand, scrub, / a ruin by the ford. A storm blows.
+LIVIA: Grit in the engines of four grain / carriers. I have opened a column.
+AURELIA: Few trees, so little cover. The / ruin's only a ruin in sand.
+AURELIA: And the dust takes a square of / range off my guns. Plan for that.
+KLAUS: Then the ford is the hinge. Hold / it, if you can.
+AURELIA: I can put guns on the east bank. / They'll cover the crossing.
+KLAUS: Cassius, you screen the road ahead / of the convoy.
+CASSIUS: I'm a screen. A glorious, / galloping screen. Who's the enemy?
+KLAUS: Marauders. Lash holds the / north-east, Flak the south-east.
 KLAUS: One wears Yellow Comet coats, one / Green Earth. Neither army sent them.
 CASSIUS: Which week is this?
-LIVIA: A paid one. I have heard the / price. Someone is paying them well.
+LIVIA: A paid one. I have heard the price. / Someone is paying them well.
 FLAK: Hello, Aureans! Flak is Flak. / Convoy! Flak likes convoys!
-FLAK: Adder sold Flak's contract. / Company feeds Flak. Flak says yes.
-LASH: Flak! Don't greet the targets! / It ruins the calculation! Heehee!
+FLAK: Adder sold Flak's contract. The / company feeds Flak. Flak says yes.
+LASH: Flak! Don't greet the targets! It / ruins the calculation! Heehee!
 LASH: Four trucks, forty tiles, one / ford! Ooh, it's a lovely proof!
-LASH: I measured this road with a / ruler! You are going to lose it!
-LASH: I'm Lash, and I have read / the map twice. Have you?
-LASH: A convoy can't wait and a road / can't move. Q.E.D.! Heehee!
-KLAUS: We will see which of us / has read the map better.
-KLAUS: Move out. The chest does not / stop, and neither do we.
+LASH: I measured this road with a ruler! / You're going to lose it!
+LASH: I'm Lash, and I've read the map / twice. Have you?
+LASH: A convoy can't wait, and a road / can't move. Q.E.D.! Heehee!
+KLAUS: We will see which of us has read / the map better.
+KLAUS: Move out. The chest does not stop, / and neither do we.
 
 == m11_day5
-NARRATION: Day five. The ford. The / river runs high and brown.
-CASSIUS: Klaus. The ruin is a short / cut. A hundred paces and no water.
-CASSIUS: Lash is on the road. If we / break through the ruin, we beat him.
+NARRATION: Day five. The ford. The river / runs high and brown.
+CASSIUS: Klaus. The ruin's a shortcut. A / hundred paces and no water.
+CASSIUS: Lash is on the road. If we break / through the ruin, we beat him.
 LIVIA: The shortcut saves nine hours. / Hours are interest, Prefect.
-AURELIA: And a ruin is a wall with / holes. Lash chose it for you.
-CASSIUS: ...Then I take the road. / Slowly. The way Klaus would have.
-CASSIUS: I took the clever way at / Mistvale. I do not do it twice.
-LASH: He chose the road! Boo! Fine, / the ford it is. Fire!
+AURELIA: And a ruin is a wall with holes. / Lash chose it for you.
+CASSIUS: ...Then I take the road. Slowly. / The way Klaus would.
+CASSIUS: I took the clever way at Mistvale. / I won't do it twice.
+LASH: He chose the road! Boo! Fine, the / ford it is. Fire!
 
 == m11_post
 @SONG ally2
-NARRATION: The Senate's relay camp. / The convoy rolls in at dusk.
-LIVIA: Four APCs in, four out. I / counted them into the camp.
-LIVIA: A quaestor who loses count / of anything has nothing left.
-CASSIUS: You rode in that truck the / whole way. Was it that dull?
-LIVIA: It was restful. I read the / eleven ledgers. I recommend it.
+NARRATION: The Senate's relay camp. The / convoy rolls in at dusk.
+LIVIA: Four APCs in, four out. I counted / them into the camp.
+LIVIA: A Quaestor who loses count of / anything has nothing left.
+CASSIUS: You rode in that truck the whole / way. Was it that dull?
+LIVIA: It was restful. I read the eleven / ledgers. I recommend it.
 KLAUS: What do they say?
-LIVIA: That the Senate's grain / contracts were signed on a single day.
+LIVIA: That the Senate's grain contracts / were all signed on a single day.
 LIVIA: Each bears the Finance Board's / seal, on the Consul's authority.
-LIVIA: The payee is the stencil, in care / of a harbour office at the Free Port.
-AURELIA: The Free Port. The same port / Sonja wrote of.
-LIVIA: The first contract is dated / eleven days after the grey harvest.
-LIVIA: No freight house in the world / finds that much grain in eleven days.
-LIVIA: It was already in the barn. / It was waiting for us to be hungry.
-KLAUS: The Consul signed each one.
-LIVIA: His seal is on each one. I / do not say he read them.
-CASSIUS: Varro reads everything. He / reads my sealed letter when I sleep.
+LIVIA: The payee is the stencil, care of / a harbour office at the Free Port.
+AURELIA: The Free Port. The same port Sonja / wrote about.
+LIVIA: The first contract is dated eleven / days after the grey harvest.
+LIVIA: No freight house in the world finds / that much grain in eleven days.
+LIVIA: It was already in the barn. It was / waiting for us to be hungry.
+KLAUS: The Consul signed every one.
+LIVIA: His seal is on every one. I do not / say he read them.
+CASSIUS: Varro reads everything. He reads / my sealed letter while I sleep.
 KLAUS: Cassius.
-CASSIUS: I know. It is a joke. It is / a poor one. I am not laughing.
-KLAUS: Lash and Flak have gone home. / The road is clear.
+CASSIUS: I know. It's a joke. A poor one. / I'm not laughing.
+KLAUS: Lash and Flak have gone home. The / road is clear.
 
 == m11_map
 @SONG co:cassius
-NARRATION: The relay camp. A single lamp, / a sealed letter, past midnight.
-AURELIA: Prefect. You are reading / that letter again.
-CASSIUS: It is a good letter. The / hand is firm. The seal is excellent.
-AURELIA: What does the firm hand / say?
-CASSIUS: Take the north's granaries. / By the sword. If the Legate fails.
-CASSIUS: I am the sword, Aurelia. I / have been the sword for years.
+NARRATION: The relay camp. A single lamp, a / sealed letter, past midnight.
+AURELIA: Prefect. You're reading that / letter again.
+CASSIUS: It's a good letter. The hand is / firm. The seal is excellent.
+AURELIA: And what does the firm hand say?
+CASSIUS: Take the north's granaries. By the / sword. If the Legate fails.
+CASSIUS: I'm the sword, Aurelia. I've been / the sword for years.
 AURELIA: And the granaries?
-CASSIUS: Full of ash, if the jars / mean anything. I would have burned
-CASSIUS: a country for a barn of / dust. I was proud of it.
+CASSIUS: Full of ash, if the jars mean / anything. I'd have burned
+CASSIUS: a country for a barn full of / dust. And I was proud of it.
 KLAUS: I know what it says, Cassius.
-CASSIUS: Of course you do. I showed / you. In the fog, like a fool.
-KLAUS: I know what it says. I also / know what you did at the ford.
-KLAUS: You took the road because the / ruin was a lie. That was your decision.
-CASSIUS: ...Do not make it a / speech, old man.
+CASSIUS: Of course you do. I showed you. In / the fog, like a fool.
+KLAUS: I know what it says. I also know / what you did at the ford.
+KLAUS: You took the road because the ruin / was a lie. That was your decision.
+CASSIUS: ...Don't make it a speech, old / man.
 KLAUS: I will not. Go to sleep.
-CASSIUS: I will keep the letter. In / case I need to remember what I was.
+CASSIUS: I'll keep the letter. In case I / need to remember what I was.
 
 # ---------------------------------------------------------------- M12 Siege of Iron (Blue Moon: Olaf, Andy; Klaus + Aurelia)
 
 == m12_pre
 @SONG aw2:423
-NARRATION: The Iron Bastion, Blue Moon. / Snow to the knee, three rings high.
-AURELIA: Two rings, Legate. The outer / is iron: a pipeline wall.
-AURELIA: Five gates in it. The inner / ring is the keep's rock, four gates.
-AURELIA: The gaps are staggered. I have never / wanted to be a rock more than now.
+NARRATION: The Iron Bastion, Blue Moon. / Snow to the knee, rings on rings.
+AURELIA: Two rings, Legate. The outer one / is iron: a pipeline wall.
+AURELIA: Five gates in it. The inner ring / is the keep's rock, four gates.
+AURELIA: The gaps are staggered. I've never / wanted to be a rock more.
 AURELIA: The town lies between. The wall / has one seam, on the south road.
 AURELIA: Break the seam and the road is / open. Foot can climb the keep's
-AURELIA: rock anywhere. And a missile / silo guards the east approach.
-KLAUS: You are not a rock. You are / the one who knows rocks.
-KLAUS: It is a Tag. You hold the / hammer and I hold the line.
-OLAF: Wah-ha-ha! Visitors! Snow / and visitors! My two favourites!
-OLAF: Olaf of Blue Moon! Welcome to / the Bastion! Mind the cold!
-OLAF: I hear you bought half of / Colin's market. Wonderful!
-KLAUS: Commander Olaf. I am Legate Klaus of / Aurea. We come for the Bastion.
-OLAF: My Bastion! No gap lines up with / the next one. Wah-ha!
-KLAUS: It guards Blue Moon's northern march. / Take it and the frontier stands at the
-KLAUS: Accord's door.
+AURELIA: rock anywhere. And a missile silo / guards the east approach.
+KLAUS: You are not a rock. You are the / one who knows rocks.
+KLAUS: It is a Tag. You hold the hammer, / and I hold the line.
+OLAF: Wah-ha-ha! Visitors! Snow and / visitors! Olaf's two favourites!
+OLAF: Olaf of Blue Moon! Welcome to the / Bastion! Mind the cold!
+OLAF: Olaf hears you bought half of / Colin's market. Wonderful!
+KLAUS: Commander Olaf. I am Legate Klaus / of Aurea. I have come for the Bastion.
+OLAF: Olaf's Bastion! No gap lines up / with the next one. Wah-ha!
+KLAUS: It guards Blue Moon's northern / march. Take it and the frontier
+KLAUS: stands at the Accord's door.
 ANDY: Hi there! Andy, Orange Star! The / Accord lent me to the Bastion.
-ANDY: I repair the walls and the guns / in the corridors. Overnight, mostly!
+ANDY: I repair the walls and the guns in / the corridors. Overnight, mostly!
 ANDY: Hit a wall today, and tomorrow / it's good as new. No trouble at all!
-ANDY: Every corridor between the rings is / covered. And a missile silo guards
-ANDY: the eastern approach. One big / shot! Three points off all near it.
-NARRATION: Snow is falling now, thick / across all three rings.
-AURELIA: A snowfall. The march slows and / fuel burns twice as fast.
-ANDY: Cold's easy on the guns, ma'am! / Snow slows you. It never slows a wrench.
-KLAUS: Then we climb in the snow and / let them count the minutes.
-LIVIA: A hobby, Commander. How / expensive are your repairs?
+ANDY: Every corridor between the rings / is covered. And a missile silo guards
+ANDY: the eastern approach. One big / shot! Three points off everything near.
+NARRATION: Snow is falling now, thick across / both rings.
+AURELIA: Snowfall. The march slows, and / fuel burns twice as fast.
+ANDY: The cold's easy on the guns, / ma'am! Snow slows you. Never a wrench.
+KLAUS: Then we climb in the snow and let / them count the minutes.
+LIVIA: A hobby, Commander. How expensive / are your repairs?
 ANDY: Cheaper than you'd think, ma'am! / Spare parts, elbow grease, a smile!
-LIVIA: I see. I shall be pleased / to bill you for the delay.
-OLAF: I know, I know! But the Bastion / is on a map, and maps are my job!
-OLAF: Take the hill if you can! I / will wave to you from the top!
+LIVIA: I see. I shall be pleased to bill / you for the delay.
+OLAF: Olaf knows, Olaf knows! But the / Bastion's on a map. Maps are his job!
+OLAF: Take the hill if you can! Olaf / will wave to you from the top!
 KLAUS: Aurelia. Plan the climb.
 
 == m12_day5
-NARRATION: Day five. The outer ring / is passed. The guns answer.
-ANDY: There! The gun's back up! A / little oil and it sings. Bless you, ma'am!
-AURELIA: Legate, he mended the gun I / broke at noon. In one afternoon.
-AURELIA: Fine. A gun that mends is a / gun that must be hit twice in a day.
+NARRATION: Day five. The outer ring is / passed. The guns answer.
+ANDY: There! The gun's back up! A little / oil and it sings. Bless you, ma'am!
+AURELIA: Legate, he mended the gun I broke / at noon. In one afternoon.
+AURELIA: Fine. A gun that mends itself is a / gun you hit twice in a day.
 AURELIA: Recons to the flanks. Mark every / flash. Break the walls by dusk.
-AURELIA: Then the crews cannot mend them / overnight. Hit the repairmen first.
-KLAUS: Tag Power on my word. You / hold the hammer. I hold the line.
+AURELIA: Then the crews can't mend them / overnight. Hit the repairmen first.
+KLAUS: Tag Power on my word. You hold the / hammer. I hold the line.
 ANDY: Aw, that's a clever lady! Okay! / I'll fix twice as fast! Watch me!
 
 == m12_post
 @SONG ally2
 NARRATION: The inner ring. The last gap / opens in the snow.
 OLAF: Wah-ha-ha! The inner ring! You / took it, you rascals! Magnificent!
-OLAF: Honestly, I thought you would / sneeze at the outer gap.
-KLAUS: We did not sneeze. We / counted.
+OLAF: Honestly, Olaf thought you'd / sneeze at the outer gap.
+KLAUS: We did not sneeze. We counted.
 ANDY: That was a great siege! I fixed / that wall five times. Five!
-ANDY: Ma'am, your guns hit my walls so / well I'm a little jealous.
-AURELIA: The walls mend overnight, he / tells me. Not these. I made sure.
-OLAF: I surrender! Consider it a / kindness! The snow is melting!
+ANDY: Ma'am, your guns hit my walls so / well, I'm a little jealous.
+AURELIA: The walls mend overnight, he tells / me. Not these. I made sure.
+OLAF: Olaf surrenders! Consider it a / kindness! The snow is melting!
 OLAF: A commander who loses a hill / learns the price of hills!
-OLAF: I have an Accord to explain to. / They are not so merry.
-KLAUS: Commander Olaf. I will say / in the Accord that you held well.
-OLAF: Say that I held badly and laughed! / It is more truthful! Wah-ha!
+OLAF: Olaf has an Accord to explain to. / They are not so merry.
+KLAUS: Commander Olaf. I will tell the / Accord that you held well.
+OLAF: Tell them Olaf held badly and / laughed! It's more truthful! Wah-ha!
 ANDY: I'll vouch for you too, friend. / You never shot my repair crews.
 ANDY: That's good manners. I counted. / Twice. Well, once. I got busy!
-LIVIA: Commander Andy. The / invoice for the delay.
-ANDY: I'll frame it, ma'am! Right / next to my favourite wrench!
+LIVIA: Commander Andy. The invoice for / the delay.
+ANDY: I'll frame it, ma'am! Right next to / my favourite wrench!
 OLAF: Go to the council! Nell is / waiting! Tell her Olaf sent you!
-OLAF: Tell her I lost the Bastion / to honest folk. She will smile.
+OLAF: Tell her Olaf lost the Bastion to / honest folk. She will smile.
 
 == m12_map
 @SONG ally1
-NARRATION: The Accord's council hall, / Orange Star. Nell presides.
-NELL: Order, please. The Allied / Accord hears Legate Klaus of Aurea.
-NELL: Legate, you have the floor. / Please do not take all night.
-KLAUS: I will be brief, Chair. We came for / bread, and took your forts on the way.
+NARRATION: The Accord's council hall, Orange / Star. Nell presides.
+NELL: Order, please. The Allied Accord / hears Legate Klaus of Aurea.
+NELL: Legate, you have the floor. Please / don't take all night.
+KLAUS: I will be brief, Chair. We came for / bread. We took your forts on the way.
 KLAUS: Three summers ago our harvest / failed. Ash fell on our fields.
-KLAUS: Relief came from a freight / house. We followed its stencil.
-KLAUS: It led to Black Hole's yards. / Jars of ash, not grain.
-SASHA: Counterfeit coin. Counterfeit / story. Your Quaestor has charm.
-LIVIA: Commander Sasha. I would / be glad to compare ledgers.
+KLAUS: Relief came from a freight house. / We followed its stencil.
+KLAUS: It led to Black Hole's yards. Jars / of ash, not grain.
+SASHA: Counterfeit coin. A counterfeit / story. Your Quaestor has charm.
+LIVIA: Commander Sasha. I would be glad / to compare ledgers.
 SASHA: ...That will not be necessary.
 JESS: He kept the lanes clean at Isle / Verdant. Drake said so. I believe it.
-MAX: I don't trust talkers. I saw / him at Ironhold. He fights fair.
-NELL: The Accord has heard Legate / Klaus. We do not yet vote.
-NELL: Legate, you are granted safe / passage in our waters. Not our trust.
-NELL: Bring me the one thing I can / read. A ledger, a name, a seal.
-KLAUS: The trail runs to the Free / Port. I will bring you the book.
+MAX: I don't trust talkers. I saw him at / Ironhold. He fights fair.
+NELL: The Accord has heard Legate Klaus. / We don't vote yet.
+NELL: Legate, you have safe passage in / our waters. Not our trust.
+NELL: Bring me the one thing I can read. / A ledger, a name, a seal.
+KLAUS: The trail runs to the Free Port. I / will bring you the book.
