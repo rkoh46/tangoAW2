@@ -2893,7 +2893,8 @@ pub fn sleeping(core: &Core, army: u8) -> bool {
         if *a != army {
             return false;
         }
-        if hqs.iter().any(|&(x, y)| owner_at(core, x, y) != player) {
+        // (a line falls when the player holds its HQ or its army was destroyed: a routed army's HQ is neutral)
+        if hqs.iter().any(|&(x, y)| !matches!(owner_at(core, x, y), o if o == player || o == 0)) {
             return true;
         }
         // The moment the line before it falls the army has neither its wave nor its funds yet (the rout check runs before the trigger that wakes it): no units and no funds is still asleep.

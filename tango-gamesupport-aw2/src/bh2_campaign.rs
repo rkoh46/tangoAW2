@@ -1080,16 +1080,41 @@ fn owned(c: (u8, u8)) -> Cond {
     Cond::OwnerAt { x: c.0, y: c.1, army: 5 }
 }
 
-/// The next nation wakes: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the nation `army`'s troops land and
-/// it gets its funds. The fallen nations stay on the map and fight on.
-fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u8, u8))], takeover: Scene) -> Trigger {
-    let mut all = vec![owned(hq)];
-    all.extend(before.iter().map(|&c| owned(c)));
-    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::AddFunds { army, funds }, stage(army, wave)])
+/// A nation's line has fallen: the player holds its HQ, or the whole army was destroyed (a routed army's HQ turns neutral).
+fn fell(c: (u8, u8)) -> Cond {
+    Cond::Any(vec![owned(c), Cond::OwnerAt { x: c.0, y: c.1, army: 0 }])
+}
+
+/// The next nation wakes: when this stage's line falls ([`fell`]: its HQ taken or its army destroyed; every line before it fallen too: a stage's HQ taken out of order moves nothing), the
+/// nation `army`'s troops land and it gets its war chest (`bank`: its 25,000 and what it saved while it slept). The fallen nations stay on the map and fight on.
+fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, bank: fn(&mut Core), wave: &[(u8, (u8, u8))], takeover: Scene) -> Trigger {
+    let mut all = vec![fell(hq)];
+    all.extend(before.iter().map(|&c| fell(c)));
+    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::Custom(bank), stage(army, wave)])
+}
+
+/// A waking nation's war chest: [`M31_WAKE_FUNDS`] and its savings, `rate` for every day before today (the slower the player, the richer the next line). The savings are held back while it
+/// sleeps (its funds stay 0: crate::custom_campaign::cut_funds, so its bases build nothing) and paid the moment it wakes.
+fn war_chest(core: &mut Core, army: u8, rate: u32) {
+    let day = core.raw_read_16(0x0300_4080, -1).max(1) as u32;
+    let p = crate::five::players(core) + 0x3C * army as u32;
+    let f = core.raw_read_32(p, -1);
+    core.raw_write_32(p, -1, (f + M31_WAKE_FUNDS as u32 + rate * (day - 1)).min(999_999));
+}
+fn olaf_chest(core: &mut Core) {
+    war_chest(core, 2, M31_SAVINGS[0]);
+}
+fn kanbei_chest(core: &mut Core) {
+    war_chest(core, 3, M31_SAVINGS[1]);
+}
+fn eagle_chest(core: &mut Core) {
+    war_chest(core, 4, M31_SAVINGS[2]);
 }
 
 /// What a nation brings when it wakes: its wave is on the field and this bank behind it.
 const M31_WAKE_FUNDS: i32 = 25000;
+/// What Olaf, Kanbei and Eagle save per day while they sleep (paid when they wake: [`war_chest`]).
+const M31_SAVINGS: [u32; 3] = [1000, 1500, 2000];
 
 /// M30 The Orange Line: a free pair against Rachel + Sami (one Orange Star army under a tag pair) at Orange Star's outer defences: two rivers, a trench of woods and a ridge with the Com Tower in its heart, forward bases, Sami's
 /// infantry on the line and Rachel's reserve and production behind it (normal look, rain and so fog).
@@ -1139,13 +1164,13 @@ fn bh2_31() -> MissionDef {
     // (a sleeping nation earns nothing; a fallen one is cut off: crate::custom_campaign::cut_funds)
     m.cut_off = vec![(1, M31_NELL), (2, M31_OLAF), (3, M31_KANBEI)];
     m.triggers = vec![
-        wake(M31_NELL, &[], 2, M31_WAKE_FUNDS, &OLAF_WAVE, txt("m31_takeover_olaf")),
-        wake(M31_OLAF, &[M31_NELL], 3, M31_WAKE_FUNDS, &KANBEI_WAVE, txt("m31_takeover_kanbei")),
-        wake(M31_KANBEI, &[M31_NELL, M31_OLAF], 4, M31_WAKE_FUNDS, &EAGLE_WAVE, txt("m31_takeover_eagle")),
+        wake(M31_NELL, &[], 2, olaf_chest, &OLAF_WAVE, txt("m31_takeover_olaf")),
+        wake(M31_OLAF, &[M31_NELL], 3, kanbei_chest, &KANBEI_WAVE, txt("m31_takeover_kanbei")),
+        wake(M31_KANBEI, &[M31_NELL, M31_OLAF], 4, eagle_chest, &EAGLE_WAVE, txt("m31_takeover_eagle")),
         // Eagle's HQ is the last of stage 1: a scene, then the battle moves on to the Citadel
         Trigger::new(
             When::AfterAction,
-            Cond::All(vec![owned(M31_EAGLE), owned(M31_KANBEI), owned(M31_OLAF), owned(M31_NELL)]),
+            Cond::All(vec![fell(M31_EAGLE), fell(M31_KANBEI), fell(M31_OLAF), fell(M31_NELL)]),
             vec![
                 Action::Scene(txt("m31_switch")),
                 Action::NextStage,

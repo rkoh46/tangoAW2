@@ -588,7 +588,7 @@ NELL: It's the luck, dear boy. It / always glows at the end.
 
 == m31_takeover_olaf
 @SONG co:olaf
-NARRATION: Nell's headquarters falls. / Snow begins to drift down.
+NARRATION: Nell's line breaks. / Snow begins to drift down.
 NELL: I yield a castle, Asuka. Not / my people.
 ASUKA: Understood, Nell. Your people / will be safe.
 NELL(h): Thank you for fighting / properly. It means a lot.
@@ -602,7 +602,7 @@ OLAF: Black Hole! Olaf takes command! / Let the snow fall!
 
 == m31_takeover_kanbei
 @SONG co:kanbei
-NARRATION: Olaf's headquarters falls. / The snow thins. A bell tolls.
+NARRATION: Olaf's line breaks. / The snow thins. A bell tolls.
 OLAF: Blue Moon is... beaten. Bah! / Olaf will not forget this.
 OLAF: Kanbei! The third line is / yours!
 KANBEI: Kanbei stands in your place. / For the table. For honour.
@@ -613,7 +613,7 @@ SENSEI: Easy, youngsters. I'm / providing the airlift. Knees permitting.
 
 == m31_takeover_eagle
 @SONG co:eagle
-NARRATION: Kanbei's headquarters falls. / The sky opens over the Citadel.
+NARRATION: Kanbei's line breaks. / The sky opens over the Citadel.
 KANBEI: Kanbei's line is fallen. / Honour is served. Captain Eagle.
 KANBEI: The fourth line is yours. / The sky is yours.
 EAGLE: Death from above! Last act / of the show! Don't blink!
