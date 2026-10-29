@@ -55,14 +55,11 @@ pub const ARMY_SKIN: Region = (0x0203_C500, 0x10);
 
 /// A mission's stage switch (crate::stage): the stage, the swap's flags, the survivors carried (40 units of 12 bytes) with the player's funds, CO and meters.
 pub const STAGE: Region = (0x0203_DCA0, 0x20 + 12 * 40);
-/// crate::stage: the window's palette banks kept across a stage switch (BG 8 and 13, OBJ 12: 3 x 32 bytes).
-pub const STAGE_PAL: Region = (0x0203_DEA0, 0x60);
 
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
     ("stages: the stage, the swap's flags and the carried survivors (crate::stage)", STAGE),
-    ("stages: the window's palette banks across the swap (crate::stage::keep_window_colours)", STAGE_PAL),
     ("army skin: the colour it sits on and the Teams screen's choices (crate::army_skin::STATE)", ARMY_SKIN),
     ("the map menu's End row, the item chosen, the last cell and the map menu's own item (crate::pvp::END_ROW)", (crate::pvp::END_ROW, 5)),
     ("the waiting player's fog view: scratch call (crate::fog_view)", (crate::fog_view::CALL, 0x58)),

@@ -243,6 +243,10 @@ def bh2_m31_progression(ctx):
             aria = g.units(army=2)
             ctx.check(len(aria) >= 25 and all(u["hp"] >= 10 or u["hp"] == 100 for u in aria), f"Aria's army is {len(aria)} fresh units")
             ctx.log(f"stage 2: Aria's CO id {g.player(2)['co']}, the player's CO {g.player(1)['co']} (carried {g.player(player2)['co']})")
+            ctx.eq(g.player(2)["co"], 93, "Aria commands the Citadel's army (CO 93: her Vengeance and Build Anew)")
+            ctx.eq(g.player(1)["co"], 92, "the player's CO carries over (Asuka, picked on the CO screen)")
+            colours = [e.u8(g.players_base + 0x3C * a + 0x1A) for a in (1, 2)]
+            ctx.eq(colours, [5, 1], "the stage's armies wear their colours: Black Hole and Aria's Orange Star")
             break
         capture(ctx, e, g, d, cell, player)
         settle(e, g, d)
