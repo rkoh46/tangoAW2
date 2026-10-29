@@ -121,7 +121,13 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: |
             ./dist/tangoaw2-x86_64-windows.exe
-            ./dist/tangoaw2-x86_64-windows.pdb
+
+      # Debug symbols stay with the workflow run (Actions artifacts), not on the release page.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tangoaw2-windows-symbols
+          path: ./dist/tangoaw2-x86_64-windows.pdb
+          retention-days: 90
 
   release-mac-arm64:
     runs-on: macos-14
@@ -209,11 +215,15 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          # The .debug sidecar is the split-out DWARF, published for
-          # offline crash symbolication like the Windows .pdb.
           files: |
             ./dist/tangoaw2-x86_64-linux.AppImage
-            ./dist/tangoaw2-x86_64-linux.debug
+
+      # The split-out DWARF stays with the workflow run (Actions artifacts), not on the release page.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tangoaw2-linux-symbols
+          path: ./dist/tangoaw2-x86_64-linux.debug
+          retention-days: 90
 
   release-ios:
     runs-on: macos-14

@@ -2,7 +2,11 @@
 
 ## tangoAW2
 
-- Emerald Sun's four COs (Klaus, Aurelia, Cassius, Livia): portrait art provided by the project owner (`art-src/cos/`, converted to the game's formats in `tango-gamesupport-aw2/art/cos/`).
+- Project owner and lead: rkoh ([rkoh46](https://github.com/rkoh46)).
+- Crumb (Pvt. Pip "Crumb" Hobb): character and art by the project owner (`tango-gamesupport-aw2/art/crumb/`), original.
+- Clone Andy: Andy's art recoloured at run time from the player's own ROM (black clothes, blue skin); no pixels of it are in the repository.
+- Original songs of tangoAW2, written for this project and played with the game's own instrument samples read from the player's ROM, each checked with `aw2dev sound similar` against the games' songs: Crumb's "Marching Off-Step" (`music/es/crumb.m4t`), Clone Andy's "Copy Protocol" (`music/es/cloneandy.m4t`), the Emerald Sun themes (`music/es/`) and Asuka's "Iron Verdict" (below).
+- - Emerald Sun's four COs (Klaus, Aurelia, Cassius, Livia): portrait art provided by the project owner (`art-src/cos/`, converted to the game's formats in `tango-gamesupport-aw2/art/cos/`).
 - Asuka (Sonja after she defects to Black Hole): portrait art provided by the project owner (`art-src/cos/asuka_v2.png`, upscaled pixel art on white, imported by `aw2dev co portrait import` with the pixel-art mode: native grid, background and light fringe cut, one palette keeping her uniform's dark shades, facing right like AW2's COs; nothing redrawn. `asuka_v1.jpg`, the first illustration, stays as the illustration importer's test input). Her theme "Iron Verdict" (`music/es/asuka.m4t`, a guitar-driven rock song; "Defector's March" and two heavier / more melodic takes are in `music/es/alt/`) is an original composition of tangoAW2 (notes written for this project, played with Advance Wars 2's own instrument samples read from the player's ROM; it quotes no song of Advance Wars 2, and `aw2dev sound similar` checks that none of its melodies match Sonja's or Sturm's).
 - Aria (Nell's sister, Commander of the New Accord): portrait art provided by the project owner (`art-src/cos/aria_v1.jpg`, pixel art whose "transparent" background is a checkerboard baked into the JPEG; imported by `aw2dev co portrait import` with the pixel-art mode: native grid, checkerboard removed, one palette, facing right as supplied; nothing redrawn). Her theme is Nell's song for now; her own, "Last Accord", is on the `bh2music` branch.
   The name graphics are set in letters drawn for this project (`devkit/aw2/colib/namefont.py`).
