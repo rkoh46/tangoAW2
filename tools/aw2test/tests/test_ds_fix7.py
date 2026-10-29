@@ -36,8 +36,8 @@ def menu_dialogue_picture(ctx, tilt):
     from aw2test import paths
     from aw2test.emu import Emu
     from aw2test.game import Game
-    os.environ.update({"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"})
-    e = Emu(save=paths.base_save(), ds=True)
+    genv = {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"}     # (the console's own environment: os.environ leaked into every later test of the process)
+    e = Emu(save=paths.base_save(), ds=True, env=genv)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = dc.DsCampaign(g)
@@ -77,8 +77,8 @@ def front_view_picture(ctx, tilt):
     from aw2test import dscampaign as dc, twofront as tf, paths
     from aw2test.emu import Emu
     from aw2test.game import Game
-    os.environ.update({"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"})
-    e = Emu(save=paths.base_save(), ds=True)
+    genv = {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"}     # (the console's own environment: os.environ leaked into every later test of the process)
+    e = Emu(save=paths.base_save(), ds=True, env=genv)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = dc.DsCampaign(g)

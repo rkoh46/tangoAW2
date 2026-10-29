@@ -290,8 +290,7 @@ def dialogue_run(ctx, step):
     from aw2test import paths
     from aw2test.emu import Emu
     from aw2test.game import Game
-    os.environ.update(tw.env(ctx))
-    e = Emu(save=paths.base_save(), ds=True)
+    e = Emu(save=paths.base_save(), ds=True, env=tw.env(ctx))     # (the console's own environment: os.environ leaked into every later test)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = dc.DsCampaign(g)

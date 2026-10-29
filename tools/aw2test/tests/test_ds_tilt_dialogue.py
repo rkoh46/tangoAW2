@@ -14,8 +14,8 @@ OUT = os.environ.get("AW2TEST_FIXES", "")
 
 
 def boxed_picture(ctx, tilt):
-    os.environ.update({"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"})
-    e = Emu(save=paths.base_save(), ds=True)
+    genv = {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1" if tilt else "0", "TANGOAW2_TILT_SNAP": "1"}     # (the console's own environment: os.environ leaked into every later test of the process)
+    e = Emu(save=paths.base_save(), ds=True, env=genv)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = dc.DsCampaign(g)
