@@ -633,8 +633,8 @@ EAGLE: Fine. I lost. I don't have / to like it.
 @WITH HAWKE
 EAGLE: Hawke. Come on. Say something / mean. I'll feel better.
 HAWKE: You were the best opponent I / ever had, Captain.
-EAGLE(s): ...Don't. I want to hate / you cleanly.
-HAWKE: Hatred is cleaner at a / distance. Go. Live.
+EAGLE(s): ...You said that at Evergreen. / I still want to hate you cleanly.
+HAWKE: And I still mean it. / Go. Live.
 @END
 EAGLE: Next time I fly higher. / Count on it.
 NELL: Eagle. Well done. All of / you. All four lines.

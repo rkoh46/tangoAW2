@@ -292,7 +292,7 @@ NARRATION: Ashfall Pass. Yellow Comet's / border. Mount Ember smokes.
 SENSEI: Easy there, youngsters. This / pass is old as I am.
 SENSEI: Green Earth's refugees asked / for a roof. I gave them one.
 JAVIER: And a watchtower! He gave me / a tower! A noble elder!
-SENSEI: Do not love me. Hold the / left gap.
+SENSEI: Don't thank me. Hold the / left gap.
 HAWKE: Sensei. Yellow Comet sealed its / border. You opened a pass.
 SENSEI: Council voted to shut the gate. / I'm old. I forgot where it is.
 HAWKE: The Accord is cracking. And it / is cracking in your pass.
@@ -321,7 +321,7 @@ VON BOLT: Can the mountain be hired?
 SENSEI: She's been paid in ash for a / thousand years. Still working.
 CRUMB: Sir, the mountain is smoking. / Gerald is nervous.
 WICK: Is it all right if I ask / what wakes means?
-MORTAR: Crumb.
+MORTAR: It means run, Wick.
 HAWKE: Two armies, one pass. Cut / them apart.
 
 == m11_day3 | VON BOLT
@@ -372,7 +372,7 @@ HAWKE: Sonja. Yellow Comet's eyes. We / will meet her.
 @SONG enemy1
 HAWKE: Two names on the old rolls. / Koal builds Yellow Comet a road.
 VON BOLT: And Kindle! She owes me / fourteen thousand!
-CRUMB: A farmer says Mr Koal / listens to Sturm and Hawke.
+CRUMB: A farmer says Mr Koal / only cares about two things.
 CRUMB(h): Roads and orders, he said. / I wrote it on my sleeve.
 HAWKE: Roads and orders. Of course. / Kanbei sealed his border to keep
 HAWKE: the crystal. It will not stay / sealed. His daughter runs his spies.

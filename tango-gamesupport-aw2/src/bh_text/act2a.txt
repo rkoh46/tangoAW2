@@ -45,7 +45,7 @@ HAWKE: ...Of course he is.
 == m04_wedge | STURM
 HAWKE: You did not scout the east / valley. A pity. Two tanks.
 HAWKE: They were going to be there / anyway. I merely lit the road.
-MORTAR: Sir, that is a Marshal who / reads his own mail.
+MORTAR: Sir, he knew our route / before we did.
 STURM: Then he reads this. I do not / retreat from a valley.
 
 == m04_day5 | STURM
@@ -89,7 +89,7 @@ HAWKE: Then they will be so good / that I have nothing to correct.
 HAWKE: Every army needs a mind. / I volunteer mine.
 STURM: There is a second folder / under your arm.
 HAWKE: Chapter two. It is not / finished. It will keep.
-STURM: What is in it.
+STURM: What is in it?
 HAWKE: Nothing you need today.
 STURM: Noted.
 HAWKE: I am loyal to the plan, / Lord Sturm. Always the plan.
@@ -127,7 +127,7 @@ HAWKE: This field guards Green / Earth's sea lanes from above.
 HAWKE: Ground the wing, and the / lanes belong to whoever sails.
 MORTAR: Sleeping planes, sir. And / sleeping men.
 WICK: Is it all right if I ask / if the men are in the planes?
-HAWKE: The crews sleep in the / barracks. The tanks are empty.
+HAWKE: The crews sleep in the / barracks. The planes are empty.
 HAWKE: I do not burn men. I burn / aircraft.
 MORTAR: Tell that to the bomber, / Marshal.
 HAWKE: I did not say it was kind. / I said it was necessary.
@@ -159,13 +159,13 @@ CRUMB: It is out, sir. Mostly / out.
 JAVIER: Sound the horns! To arms, / noble Green Earth!
 MORTAR: They woke up, sir.
 WICK: Is it all right to be / terrified in advance?
-HAWKE: Two tanks and an anti-air by / the east road. As modelled.
+HAWKE: Two tanks and an anti-air by / the east road. As expected.
 HAWKE: Do not argue with a horn. / Flank it.
 
 == m05_day6
 JAVIER: Behold, light! A tower must / be seen by every knight!
 JAVIER: Let no foe say Javier hid / his beacon from a fair fight!
-HAWKE: A beacon. Visible for miles. / Helpful, since so are you.
+HAWKE: A beacon. Visible for miles. / How very helpful of him.
 CRUMB(h): Marshal, he lit it for / us. Is that polite?
 HAWKE: Very. I shall return the / favour.
 

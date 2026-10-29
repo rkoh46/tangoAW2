@@ -153,7 +153,7 @@ VON BOLT: Kehh-heh! My favourite / duty!
 VON BOLT: Hold the Foundry for / three days. It will answer.
 VON BOLT: Every shell she spends is / a coin I do not have to spend.
 STURM: Do not lose what is mine.
-VON BOLT: Mine, he says. I am only / renting the lease. Kehh...
+VON BOLT: Mine, he says. I only hold / the lease. Kehh...
 STURM: Failure is a debt, Von / Bolt. I collect.
 
 == m02_day3
@@ -187,7 +187,7 @@ CRUMB: Sir? Dennis is fine. / Can he have a hat?
 STURM: Fine. The machine still / answers to me.
 CRUMB(h): Thank you, sir! He'll / wear it with honour!
 MORTAR: Crumb. It is a machine.
-CRUMB: Honour is not size-specific, / Sergeant.
+CRUMB: Honour comes in all sizes, / Sergeant.
 WICK(s): Is it all right if I / say that was a good point?
 MORTAR: ...Fine. It was a good / point.
 VON BOLT: Kehh... the Foundry / has paid for itself. Nearly.
@@ -201,7 +201,7 @@ CRUMB(h): Dennis has a hat, Sergeant! / It's a bucket!
 MORTAR: Crumb, that bucket is / Colonel Von Bolt's coin pail.
 VON BOLT: My PAIL?! Fifty years / with me! Dust and optimism!
 CRUMB: Then Dennis will keep / them safe, Colonel!
-VON BOLT: Kehh... boot boy... / return it. Rental begins now.
+VON BOLT: Kehh... boot boy... fine. / Keep it. The rent starts today.
 MORTAR: He's naming the machines now. / Let him. It keeps him from the ammo.
 WICK(s): Is it all right if I / name the other one?
 MORTAR: Name it Not Dennis. / Then leave.
@@ -230,7 +230,7 @@ EAGLE: Enough. The Accord does / not argue with salvage thieves.
 EAGLE: You are not an army. You / are a debt collector.
 VON BOLT: Kehh! Eagle, I have / never been so flattered!
 STURM: Von Bolt. The sea.
-VON BOLT: ...The sea. Yes. I am / hating it now, little storm.
+VON BOLT: ...The sea. Yes. I hate it / already, little storm.
 STURM: The Strait is the lane / that feeds the Accord's fence.
 STURM: Cut it, and every warden / on the coast starves of salvage.
 STURM: Break the blockade. Their / sea will be mine by dusk.
@@ -264,7 +264,7 @@ HAWKE: It is rare to meet a general / who plans for the sea.
 VON BOLT: A Marshal! Of Green / Earth! On our radio! Kehh!
 VON BOLT: Does he pay? Does he / owe? I shall inspect him.
 HAWKE: I owe nothing, Colonel. / Others owe me.
-STURM: What do you want, Hawke.
+STURM: What do you want, Hawke?
 HAWKE: A worthy opponent. Fort / Verdant has a road.
 HAWKE: If you can walk it, do / come. I keep coffee for rivals.
 STURM: I will walk it.
@@ -277,7 +277,7 @@ WICK(s): Is it all right if I / admit I was sick twice?
 MORTAR: Wick. Everybody was sick. / The Colonel, in my helmet.
 CRUMB: Sergeant, do you think / the COs ever get scared?
 MORTAR: The tall one doesn't know / how. The old one fears the sea.
-STURM: Private. You carried your / pack through three waves. Why.
+STURM: Private. You carried your / pack through three waves. Why?
 CRUMB: Gerald is in it, sir. And / the soup. I do not leave things.
 STURM: Black Hole does not leave / what is its own behind.
 CRUMB(h): Yes, sir! I know, sir!
