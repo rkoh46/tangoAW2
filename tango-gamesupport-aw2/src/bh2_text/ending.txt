@@ -14,7 +14,7 @@ ARIA: Don't be modest. I'd rather you / were smug. Then I could hate you.
 ASUKA: Aria. I am smug. In writing. / Signed.
 ARIA: ...Hah. That's almost a joke.
 NELL(h): Aria laughed. Oh, my / goodness. Somebody write it down.
-MAX: Ha! She smiled! Big man saw / it! Everybody saw it!
+MAX: Ha! She smiled! I saw it! / Everybody saw it!
 SAMI: Roger. We saw it. Quiet, Max.
 NARRATION: Marshal Hawke steps forward. / Kneels. Not to Asuka. To the ranks.
 HAWKE: Black Hole's Marshal kneels / to the army. Not to a person.
@@ -23,7 +23,7 @@ ASUKA: Marshal. Stand.
 HAWKE: When the army says so, / Commander. Not before.
 SOLDIER: Stand, Marshal! Stand!
 HAWKE: ...Chapter two is finished. / It is called Succession.
-KANBEI: Emperor Kanbei has one / matter. A table stands set in his hall.
+KANBEI: Kanbei has one more matter. / A table is set in his hall.
 KANBEI: The seventh chair has a / scarf. It is warm.
 ASUKA: I will come, Emperor. One day. / To eat. When the work is done.
 KANBEI: Kanbei will keep the soup / warm. For however long it takes.
@@ -37,7 +37,7 @@ SASHA: Olaf. It is a ceremony. Not / a weather event.
 COLIN: I-I think the snow is lovely, / Sis.
 SASHA: ...It is rather lovely.
 VON BOLT: Kehh-heh! Everything / accounted! In the black! Second pick!
-KOAL: One road. Five borders gone. / One camber.
+KOAL: One road now. No borders. / Mind the lane.
 KINDLE: To me, darlings. And to the / audience, I suppose. Applause?
 JUGGER: WAR: CONCLUDED. PURPOSE: / PENDING. HUMOR: FOUND. QUERY: HOW.
 LASH: He laughed! Jugger laughed! / Heehee! Write it down! I taught him!
@@ -49,7 +49,7 @@ CRUMB CO: Ma'am! Quartermaster's log! / I keep Gerald! And the key!
 ASUKA: Commander Hobb. The key is / yours. So is the decision.
 CRUMB CO: Closed, ma'am. Not locked. / In case Sir comes home.
 MORTAR: Crumb. Eat your soup.
-CRUMB CO: Define "soup".
+CRUMB CO: Yes, Sergeant! Two bowls!
 NARRATION: In the depot, a key hums. / At the Obelisk, a door hums with it.
 NARRATION: Closed, not locked. Somewhere / past it, a storm listens. And waits.
 
@@ -120,8 +120,9 @@ CLONE ANDY: Okay! Visitors! I can / fix any-- ...any misunderstanding!
 @PARTNER CLONE ANDY
 [CO2]: Hey! I'm with you! Okay! I / can fix any-- ...yes!
 @END
-WICK: Sergeant. A sentry fired on a / landing boat. By accident.
-MORTAR: Wick. Why is the sentry / looking at me?
+WICK: Sergeant. One of ours fired on / a landing boat. By accident.
+MORTAR: Wick. Tell me it wasn't you.
+WICK: ...Is it all right if it was?
 CASSIUS: They fired! Charge! The / cavalry leads!
 KLAUS: Prefect. Hold. Prefect... / ...He is gone.
 ASUKA: Then we fight. Hold the / depot. Whoever they are.
@@ -131,13 +132,13 @@ ASUKA: Then we fight. Hold the / depot. Whoever they are.
 CASSIUS: The Second Legion's cavalry! / Horses, banners, and me! Faster!
 CASSIUS: I was told to wait, but / waiting is for bankers!
 LIVIA: Prefect. That is a remarkably / expensive charge.
-CASSIUS: Quaestor, I love you! Do / not touch the reins!
+CASSIUS: Quaestor, bill me later! / Do not touch the reins!
 KLAUS: Prefect. The depot has / walls. Horses do not.
 CASSIUS: Then I shall teach the / horses to climb!
 AURELIA: Legate, he is going to / ride into the moat.
 KLAUS: I know. Let him learn it.
 CASSIUS: Ow! The moat is WET!
-ASUKA: Sergeant, note it. They have / a moat. And a Prefect.
+ASUKA: Sergeant, note it. The moat / has claimed a Prefect.
 
 == m32_day5
 @SONG co:aurelia
@@ -148,7 +149,7 @@ ASUKA: A quartermaster who wanted a / basement. Not a wall.
 AURELIA: I like him. I am very sorry / about his wall.
 KLAUS: Fire when ready. Only the / walls. Not the depot.
 AURELIA: Understood. The walls are / gorgeous. They will fall beautifully.
-CRUMB CO: Ma'am Aurelia? Do you / want a biscuit while you work?
+CRUMB CO: Miss Aurelia? Do you / want a biscuit while you work?
 AURELIA: ...Do I? Yes. Thank you. / Oh. Oh, it's hard.
 CRUMB CO: It's from my grandpa. It's / very, very old!
 AURELIA: ...That's quite a good / biscuit, actually.
@@ -178,7 +179,7 @@ FLAK: Flak sorry. Flak ate horse's / oats. Oats good.
 CASSIUS: You ate my horse's OATS?! / ...Were they good oats?
 FLAK: Best oats. Flak thanks horse.
 CASSIUS: ...I like this man. I hate / that I like him.
-AURELIA: Your Doctor built a catapult / out of a typewriter, Legate.
+AURELIA: Your Doctor built a catapult / out of a typewriter, Commander.
 LASH: It had good bones! Heehee! / It threw a very small anvil!
 AURELIA: It threw it eleven paces. / I am almost jealous.
 LIVIA: Marshal. Your ledgers are / meticulous. I should like to read them.
@@ -188,7 +189,7 @@ KLAUS: Commander Asuka. I will ask / once. Who is Hobb?
 CRUMB CO: Me, sir! And my grandpa! / He built a door. Then they erased him.
 CRUMB CO: He left a reserve. In the / depot. I think he fed you, too.
 LIVIA: Three grey harvests. Grain / from a freight with no owner.
-LIVIA: Someone fed us. On purpose. / ...For thirty years. Without a word.
+LIVIA: Someone fed us. On purpose. / And never sent a bill.
 AURELIA: Legate. He was a quartermaster. / Not a general.
 KLAUS: A quartermaster who fed an / army he never met.
 CRUMB CO: Sir. That's what we do. / Hobbs.
