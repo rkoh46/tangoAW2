@@ -17,3 +17,6 @@ Read docs/dev/campaign-scenes.md and docs/AW2.md "BH Campaign".
 
 
 BH2 maps (docs/dev/bh2-maps.md): specs in `five/bh2/spec/`, `aw2dev maps gen --campaign bh2`, `aw2dev maps lint --source bh2`, `aw2dev bh2 pictures` (look at them: MISSION N - Title is burned in, fog off plus the fogged view), `aw2dev bh2 features` (coverage), `aw2dev bh2 check` (world-map flags on land inside their nation; `world_picture::BH2_FLAGS`).
+
+## A mission in stages (a map switch inside one battle)
+Read docs/dev/stages.md. A mission declares `MissionDef::stages` (`StageDef`: map, armies with the player's `CoSpec::Keep`, units, deploy cells, `Carry`, look, weather, triggers, intro) and a trigger ends a stage with `Action::NextStage` (put its scene before it). The survivors, funds and CO meters carry over; five-army and four-army stages both work; a battle saved on a later (four-army) stage resumes on it. Prove it like BH2's M31: harness `bh2_m31_progression`, `bh2_m31_stage_two_suspend_and_resume`, `bh2_m31_switch_is_deterministic` (`tools/aw2test/tests/test_bh2_progression.py`).

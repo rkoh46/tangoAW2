@@ -567,6 +567,8 @@ pub enum CoSpec {
     /// The player leads with this CO (always) and picks the tag partner: the pick screen asks for one CO, who
     /// is never the lead, and the pair is (lead, pick).
     PickPartner(u8),
+    /// (a stage's player army) the CO or pair the player has when the switch comes: carried over from the stage before ([`crate::stage`]).
+    Keep,
 }
 
 /// An army in a mission: colour and CO are independent (Von Bolt can lead
@@ -763,6 +765,9 @@ pub enum Action {
     },
     /// A function of the mission's own.
     Custom(fn(&mut Core)),
+    /// The battle moves on to the mission's next stage ([`MissionDef::stages`]) once the scripts have ended: a fade, the stage's map, armies and units, the player's survivors, the stage's
+    /// intro scene, a fade in. Put the scene that leads to it before it in the same trigger.
+    NextStage,
 }
 
 /// When a trigger is looked at.
@@ -877,6 +882,66 @@ pub struct MissionDef {
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
     /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
+    /// Later stages: the battle moves on in place when [`Action::NextStage`] fires, one stage after another ([`StageDef`], docs/dev/stages.md).
+    pub stages: Vec<StageDef>,
+}
+
+/// Which of the player's surviving units a stage switch carries over ([`StageDef::carry`]).
+#[derive(Clone, Debug)]
+pub enum Carry {
+    /// Every unit the player's army has (at most 50, the cap).
+    All,
+    /// The first `n` (the strongest by value come first).
+    UpTo(u8),
+    /// Only units of these types.
+    Kinds(Vec<u8>),
+}
+
+/// A later stage of a mission (`MissionDef::stages`, docs/dev/stages.md): the battle is swapped in place, by [`Action::NextStage`], to this stage's map with its own armies, COs,
+/// units, structures, look, weather and rules. The player's survivors come along ([`Self::carry`]) onto the declared deploy cells; its funds and CO meters carry over
+/// (or the stage sets the funds). The stage's win ends the mission. A stage has no second front, marches, jams, volcano, onyx, factory or held HQ of its own.
+#[derive(Clone, Debug)]
+pub struct StageDef {
+    pub map: MapSrc,
+    pub props: Vec<Prop>,
+    pub structures: Vec<(Structure, u8, u8)>,
+    /// The stage's own units (the player's army's are the carried ones: declare none for it).
+    pub units: Vec<UnitDef>,
+    /// The stage's armies (the player's first, or fifth in a five-army stage); the player's CO spec is [`CoSpec::Keep`].
+    pub armies: Vec<ArmyDef>,
+    pub look: u8,
+    pub weather: Weather,
+    pub fog: bool,
+    pub triggers: Vec<Trigger>,
+    /// Before the stage's first turn (after the switch) / after its win.
+    pub intro: Scene,
+    pub victory: Scene,
+    /// Where the survivors land: in this order, each on the nearest free cell it can enter.
+    pub deploy: Vec<(u8, u8)>,
+    pub carry: Carry,
+    /// The player's funds in the stage: None carries them over.
+    pub funds: Option<i32>,
+}
+
+impl StageDef {
+    pub fn new(map: MapSrc) -> StageDef {
+        StageDef {
+            map,
+            props: Vec::new(),
+            structures: Vec::new(),
+            units: Vec::new(),
+            armies: Vec::new(),
+            look: 0,
+            weather: Weather::Clear,
+            fog: false,
+            triggers: Vec::new(),
+            intro: Scene::default(),
+            victory: Scene::default(),
+            deploy: Vec::new(),
+            carry: Carry::All,
+            funds: None,
+        }
+    }
 }
 
 /// A named unit (of the mission's deployment, or spawned with a name by an
@@ -997,6 +1062,7 @@ impl MissionDef {
             held_hq: None,
             held_more: Vec::new(),
             skin: None,
+            stages: Vec::new(),
         }
     }
 }
@@ -1185,6 +1251,8 @@ pub const FIELDS_UNIT: u32 = 0xBCB0_0000;
 const SPAWNED: u8 = 100;
 /// [`TAKE_OVER`] | army: the army's CO is replaced (arg: CO | meter percent << 8).
 pub const TAKE_OVER: u32 = 0xBCC0_0000;
+/// [`STAGE_NEXT`]: the mission goes on to its next stage ([`crate::stage`]).
+pub const STAGE_NEXT: u32 = 0xBCE0_0000;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;
@@ -1595,6 +1663,7 @@ fn co_ids(spec: CoSpec) -> ((u8, u8), (u8, u8)) {
         CoSpec::Pick => ((NO_CO, NO_CO), (0x1C, 0)),
         CoSpec::PickPair => ((NO_CO, NO_CO), (0x1C, 0x1C)),
         CoSpec::PickPartner(_) => ((NO_CO, NO_CO), (0x1C, 0)),
+        CoSpec::Keep => ((NO_CO, NO_CO), (0, 0)),
     }
 }
 
@@ -1650,6 +1719,24 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     for &(i, f) in &fronts {
         records.push(MissionRecord::Second(i, f));
     }
+    // The stages after the fronts: record n + fronts + k.
+    let mut stage_records: Vec<Vec<u8>> = vec![Vec::new(); n];
+    let mut stage_runtime: Vec<Vec<StageRuntime>> = vec![Vec::new(); n];
+    for (i, m) in def.missions.iter().enumerate() {
+        for (k, st) in m.stages.iter().enumerate() {
+            let rec = records.len();
+            if rec >= 255 {
+                return Err("too many records (missions, fronts and stages)".into());
+            }
+            stage_records[i].push(rec as u8);
+            stage_runtime[i].push(StageRuntime {
+                deploy: st.deploy.clone(),
+                carry: st.carry.clone(),
+                funds: st.funds,
+            });
+            records.push(MissionRecord::Stage(i, k, st));
+        }
+    }
     let mut second_index: HashMap<usize, u8> = HashMap::new();
     for (k, &(i, _)) in fronts.iter().enumerate() {
         second_index.insert(i, (n + k) as u8);
@@ -1664,6 +1751,12 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
             MissionRecord::Second(i, f) => {
                 let m = &def.missions[*i];
                 let (hd, info) = compile_second(&mut cx, core, def, *i, rec_index, m, f)?;
+                cx.built.headers.push((rec_index as u8, hd));
+                cx.built.missions.push(info);
+            }
+            MissionRecord::Stage(i, k, st) => {
+                let m = &def.missions[*i];
+                let (hd, info) = compile_stage(&mut cx, core, def, *i, *k, rec_index, m, st)?;
                 cx.built.headers.push((rec_index as u8, hd));
                 cx.built.missions.push(info);
             }
@@ -1792,6 +1885,8 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
         skin_army: def.missions.iter().map(|m| m.skin).collect(),
+        stage_records,
+        stages: stage_runtime,
         secret: if def.secret_mission.is_empty() {
             None
         } else {
@@ -1816,6 +1911,8 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
 enum MissionRecord<'a> {
     Main(usize, &'a MissionDef),
     Second(usize, &'a FrontDef),
+    /// A later stage of mission `.0` (its `.1`-th), compiled as a mission of its own ([`compile_stage`]).
+    Stage(usize, usize, &'a StageDef),
 }
 
 fn prologue_script(
@@ -2056,6 +2153,10 @@ fn compile_mission(
                     let s = cx.stub(Magic::Call(CUSTOM_FN | (cx.fns.len() as u32 - 1), 0));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
+                Action::NextStage => {
+                    let s = cx.stub(Magic::Call(STAGE_NEXT, 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
                 Action::Scene(s) => cmds.extend(cx.scene_cmds(s, SceneEnd::Fade)?),
                 Action::AddFunds { army, funds } => {
                     let s = cx.stub(Magic::Call(FUNDS_ADD | *army as u32, *funds as u32));
@@ -2234,10 +2335,12 @@ fn compile_mission(
         _ => None,
     };
     native.setup = m.setup;
+    native.keep = m.armies.get(if five { 4 } else { 0 }).is_some_and(|a| a.co == CoSpec::Keep);
     if five {
         let (co, partner) = match m.armies[4].co {
             CoSpec::Fixed(c) => (c, NO_CO),
             CoSpec::Pair(a, b) => (a, b),
+            CoSpec::Keep => (NO_CO, NO_CO),
             CoSpec::Pick | CoSpec::PickPair => {
                 // (the player picks on the CO screen's army 1 pick; army 1 is a fixed ally)
                 let CoSpec::Fixed(ally) = m.armies[0].co else {
@@ -2295,6 +2398,53 @@ fn compile_mission(
     Ok((hd, info))
 }
 
+/// A stage compiled as a mission of its own (a record after the fronts): its map, armies, units, rules and scenes; the mission's key and title. Its named units are its own
+/// (a latch bit of the mission's, told apart as a second front's are).
+#[allow(clippy::too_many_arguments)]
+fn compile_stage(
+    cx: &mut Compiler,
+    core: &Core,
+    def: &CampaignDef,
+    index: usize,
+    k: usize,
+    rec_index: usize,
+    m: &MissionDef,
+    st: &StageDef,
+) -> Result<([u8; 0x5C], MissionInfo), Error> {
+    let mut s = MissionDef::new(m.key, m.title);
+    s.objective = m.objective;
+    s.map = st.map.clone();
+    s.props = st.props.clone();
+    s.structures = st.structures.clone();
+    s.units = st.units.clone();
+    s.look = st.look;
+    s.weather = st.weather;
+    s.fog = st.fog;
+    s.triggers = st.triggers.clone();
+    s.intro = st.intro.clone();
+    s.victory = st.victory.clone();
+    s.armies = st.armies.clone();
+    s.rank_days = m.rank_days;
+    s.music = m.music;
+    let before: Vec<(usize, &'static str)> = cx.units.keys().copied().collect();
+    let (hd, mut info) = compile_mission(cx, core, def, index, rec_index, &s, None)?;
+    for (kk, v) in cx.units.iter_mut() {
+        if !before.contains(kk) {
+            v.2 |= SECOND_FRONT;
+        }
+    }
+    info.name = format!("{} (stage {})", m.title, k + 2);
+    info.info_text = 0;
+    info.day_limit = 0;
+    info.two_front = None;
+    info.pool = Vec::new();
+    if let Some(n) = info.native.as_mut() {
+        n.pool = Vec::new();
+        n.setup = false;
+    }
+    Ok((hd, info))
+}
+
 fn two_front_of(second: u8, f: &FrontDef) -> Result<TwoFront, Error> {
     let mut cos = [NO_CO; 4];
     for (k, c) in f.cos.iter().enumerate() {
@@ -2303,7 +2453,7 @@ fn two_front_of(second: u8, f: &FrontDef) -> Result<TwoFront, Error> {
             CoSpec::Fixed(c) => *c,
             CoSpec::Pair(a, _) => *a,
             CoSpec::None => NO_CO,
-            CoSpec::PickPair | CoSpec::PickPartner(_) => return Err("a second front picks one CO per army".into()),
+            CoSpec::PickPair | CoSpec::PickPartner(_) | CoSpec::Keep => return Err("a second front picks one CO per army".into()),
         };
     }
     Ok(TwoFront {
@@ -2503,7 +2653,7 @@ pub fn owner_at(core: &Core, x: u8, y: u8) -> u8 {
 /// stay gone ([`LATCH`]).
 pub fn tick(core: &mut Core) {
     // (a swap of the fronts empties the slots for a moment: no death is told then)
-    if crate::two_front::swapping(core) {
+    if crate::two_front::swapping(core) || crate::stage::swapping(core) {
         return;
     }
     let src = crate::ds_campaign::source(core);
@@ -3052,6 +3202,7 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             crate::tag::replace_co(core, army, co, charge);
             0
         }
+        Magic::Call(STAGE_NEXT, _) => crate::stage::request(core),
         Magic::Call(f, _) if f & 0xFFF0_0000 == CUSTOM_FN => {
             let src = crate::ds_campaign::source(core);
             let func = RULES

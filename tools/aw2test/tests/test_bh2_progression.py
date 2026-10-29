@@ -1,4 +1,4 @@
-"""BH2 M30 The Last Accord, both maps (development build, crate::bh2_campaign): the final mission played through, a picture at each stage (`-k bh2_m30_progression`).
+"""BH2 M31 The Last Accord, one mission in two stages (development build, crate::bh2_campaign): the final mission played through, a picture at each stage (`-k bh2_m31_progression`).
 
 Part one (bh2_30, five armies: Nell's Orange Star 1, Olaf's Blue Moon 2, Kanbei's Yellow Comet 3, Eagle's Green Earth 4, the player's Black Hole 5) is entered through its CO screen, deployed and played with real captures:
 a player's Infantry is put on the next HQ one capture point from done and captures it (the game's own capture, its ownership change, the held-HQ rule and the trigger lists that follow it). After each capture the harness
@@ -13,6 +13,8 @@ from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2
 from aw2test import dscampaign as dc
 from aw2test import stitch
+from aw2test.emu import Emu
+from aw2test.game import Game
 from aw2test.harness import test
 from tests.test_bh2_review import home, save
 from tests.test_bh_review import Quiet
@@ -98,7 +100,7 @@ def sheet(ctx, frames, path):
     H = rows * (h + text_h) + (rows + 1) * pad + 44
     out = Image.new("RGB", (W, H), (18, 20, 28))
     d = ImageDraw.Draw(out)
-    d.text((pad, 12), "M30 The Last Accord, both maps: the whole final mission played with real captures (the game's own pictures)", fill=(255, 220, 90), font=f1)
+    d.text((pad, 12), "M31 The Last Accord, one mission in two stages: played with real captures (the game's own pictures)", fill=(255, 220, 90), font=f1)
     for i, ((p, info), im) in enumerate(zip(frames, ims)):
         cx, cy = i % cols, i // cols
         ox, oy = pad + cx * (w + pad), 44 + pad + cy * (h + text_h + pad)
@@ -136,41 +138,98 @@ def marks(done, nxt):
     return out
 
 
-@test(name="bh2_m30_progression", modes=("ds",))
-def bh2_m30_progression(ctx):
-    n = 30
+def nation_of(a):
+    return {2: "Olaf's Blue Moon", 3: "Kanbei's Yellow Comet", 4: "Eagle's Green Earth"}[a]
+
+
+STAGE_AT = 0x0203_DCA0          # crate::ram_map::STAGE: +0 the stage the battle is on (0 the mission's own)
+FIVE_ON = 0x0203_0206           # tangoAW2's five-army switch (2: a custom campaign's five-army mission)
+
+
+def stage_of(e):
+    return e.u8(STAGE_AT)
+
+
+def signature(units):
+    """The units' identity for the carry-over check: type, HP, ammo and fuel (positions change)."""
+    return sorted((u["type"], u["hp"], u["ammo"], u["fuel"]) for u in units)
+
+
+def wait_stage(ctx, e, g, d, k, frames=3000):
+    """Through the scenes and the swap's fades until the battle is on stage k and the cursor answers."""
+    for _ in range(frames // 20):
+        if stage_of(e) != k and d.scripts_running():
+            e.press("A", 4)
+        e.wait(15)
+        if stage_of(e) == k and e.u8(STAGE_AT + 1) == 0 and d.in_battle():
+            break      # (the stage's own opening scene, if it has one, is for the caller)
+    g._units_base = g._players_base = None
+
+
+@test(name="bh2_m31_progression", modes=("ds",))
+def bh2_m31_progression(ctx):
+    """M31 The Last Accord, one mission in two stages: the gauntlet's four captures, then Eagle's fall moves the battle in place to the Last Citadel (the stage switch, crate::stage): the survivors, funds and
+    COs carry over, Aria's fresh army is the new enemy, and capturing her HQ wins the campaign. One continuous run; the frames go on one sheet (m31_progression.png)."""
+    n = 31
     e, g, d = b2.enter(ctx, n)
     w, h = d.size()
     d.leave_setup()
-    a2.intro(ctx, e, d, "m25", (0,))
+    a2.intro(ctx, e, d, "m31", (0,))
     d.wait_control()
     g._units_base = g._players_base = None
     player = 5
     frames = []
     prev = counts(g, (1, 2, 3, 4))
     ctx.log(f"start: units by army {prev}, HQ owners {[owner(e, *c) for _, c, _, _ in HQS]}")
+    ctx.eq(stage_of(e), 0, "the battle starts on stage 0")
     ctx.check([owner(e, *c) for _, c, _, _ in HQS] == [1, 2, 3, 4], "each nation owns its own HQ at the start (armies 1..4)")
     ctx.check(prev[1] >= 20 and all(0 < prev[a] <= 5 for a in (2, 3, 4)), f"Nell's army is whole; the other nations are a few holding units each: {prev}")
 
     def shoot(tag):
         home(g, e)
-        return stitch.stitch(Quiet(ctx), g, f"m25_{tag}", w, h)
+        return stitch.stitch(Quiet(ctx), g, f"m31_{tag}", w, h)
 
     frames.append((shoot("stage1"), {"title": "Start: Nell's Orange Star holds the river plateau", "marks": marks(0, 0), "lines": [
         f"Five armies: Orange Star (Nell) {prev[1]} units; Blue Moon (Olaf) {prev[2]}, Yellow Comet (Kanbei) {prev[3]} and Green Earth (Eagle) {prev[4]} are a few holding units round their HQs: dormant, no property but the HQ, no production.",
         "The next HQ to take is 1 Nell (8,8). No pipes: the Marne, the Sere, the lakes and the highland ring are the defences."]}))
     for k, (name, cell, army, nation) in enumerate(HQS):
-        capture(ctx, e, g, d, cell, player)
         last = k == len(HQS) - 1
         if last:
-            pic = dialogue_pic(ctx, e, d, "m25_scene")
-            settle(e, g, d)
-            ended = bool(e.u8(dc.LAST_RESULT)) or not d.in_battle()
-            ctx.check(ended, "Eagle's HQ taken after the other three: part one ends in a win (the scene, then the world map)")
+            g._units_base = g._players_base = None
+            mine = g.units(army=player)
+            funds = g.player(player)["raw"]
+            sig_before = signature(mine)
+            n_before = len(mine)
+            funds_before = int.from_bytes(funds[0:4], "little")
+            capture(ctx, e, g, d, cell, player)
+            pic = dialogue_pic(ctx, e, d, "m31_scene")
             ctx.check(pic is not None, "the scene after Eagle's fall was shown")
-            frames.append((pic, {"title": "Eagle's HQ falls: the scene, then part one is won", "plain": True, "lines": [
-                "Taking 4 Eagle (38,20) with every earlier HQ already taken plays a short scene (Eagle, then Aria) and wins part one; the campaign goes on to part two, Aria's citadel."]}))
+            frames.append((pic, {"title": "Eagle's HQ falls: the scene before the switch", "plain": True, "lines": [
+                "Taking 4 Eagle (38,20) with every earlier HQ already taken plays a short scene (Eagle, then Aria) and the battle moves on, in place, to the Last Citadel: a fade, a new map, no world map, no results."]}))
+            wait_stage(ctx, e, g, d, 1)
+            ctx.eq(stage_of(e), 1, "the battle is on stage 1 (the Last Citadel) after the switch")
+            ctx.eq(e.u8(FIVE_ON), 0, "the five-army game is off on the four-army stage")
+            ctx.check(not e.u8(dc.LAST_RESULT), "no result screen: the mission goes on")
+            ctx.eq(d.mission(), 30, "the mission is still M31")
+            player2 = 1
+            mine2 = g.units(army=player2)
+            ctx.log(f"carried: {n_before} before, {len(mine2)} after; funds before {funds_before}")
+            ctx.eq(len(mine2), min(n_before, 40), "every survivor came along (count)")
+            ctx.eq(signature(mine2), sorted(sig_before)[: len(mine2)] if n_before > 40 else sig_before, "the survivors keep their type, HP, ammo and fuel")
+            deploy = []
+            for line in open(os.path.join(os.path.dirname(__file__), "..", "..", "..", "tango-gamesupport-aw2", "five", "bh2", "bh2_31b.txt")):
+                f = line.split()
+                if len(f) >= 5 and f[0] == "unit" and f[1] == "1":
+                    deploy.append((int(f[3]), int(f[4])))
+            far = [(u["x"], u["y"]) for u in mine2 if min(abs(u["x"] - x) + abs(u["y"] - y) for x, y in deploy) > 6]
+            ctx.check(not far, f"every survivor stands on or near a deploy cell (the camp): far ones {far}")
+            funds_after = int.from_bytes(g.player(player2)["raw"][0:4], "little")
+            ctx.check(funds_after >= funds_before, f"the player's funds carry over ({funds_before} -> {funds_after})")
+            aria = g.units(army=2)
+            ctx.check(len(aria) >= 25 and all(u["hp"] >= 10 or u["hp"] == 100 for u in aria), f"Aria's army is {len(aria)} fresh units")
+            ctx.log(f"stage 2: Aria's CO id {g.player(2)['co']}, the player's CO {g.player(1)['co']} (carried {g.player(player2)['co']})")
             break
+        capture(ctx, e, g, d, cell, player)
         settle(e, g, d)
         cur = counts(g, (1, 2, 3, 4))
         woke = k + 2
@@ -183,28 +242,20 @@ def bh2_m30_progression(ctx):
             f"{name}'s HQ (taken): {ARMY_NAMES[woke]} wakes and lands {cur[woke] - prev[woke]} units ({cur[woke]} in all). The fallen nations stay on the map: units by army {cur}.",
             f"The next HQ to take is {k + 2} {HQS[k + 1][0]} {HQS[k + 1][1]}; HQ owners now {[owner(e, *c) for _, c, _, _ in HQS]} (1..4 their nations, 5 the player)."]}))
         prev = cur
-    e.close()
-    # part two: the next mission
-    e, g, d = b2.enter(ctx, 31)
-    w, h = d.size()
-    d.leave_setup()
-    scene = dialogue_pic(ctx, e, d, "m25b_scene")
+    # stage 2: the Last Citadel, on the same battle
+    scene = dialogue_pic(ctx, e, d, "m31b_scene")
     d.wait_control()
     g._units_base = g._players_base = None
-    aria = len(g.units(army=2))
-    ctx.log(f"part two: Aria's army {aria} units, CO id {g.player(2)['co']}")
-    ctx.check(aria >= 25 and all(u["hp"] >= 10 or u["hp"] == 100 for u in g.units(army=2)), f"Aria's army is {aria} fresh units")
-    frames.append((scene, {"title": "Part two, the map swap: The Last Citadel opens with Aria", "plain": True, "lines": [
-        "The campaign moves to the second map: the opening scene (Aria, then Asuka). Aria (Orange Star; her CO is the placeholder until the Aria CO lands) leads a revived army of brand-new full-strength units."]}))
+    frames.append((scene, {"title": "The switch: The Last Citadel opens with Aria", "plain": True, "lines": [
+        "The same battle, on the second map: Aria's scene, the survivors on the deploy cells in the south-west camp, Aria (Orange Star; her CO is the placeholder until the Aria CO lands) leading a revived army of brand-new full-strength units."]}))
     home(g, e)
-    full = stitch.stitch(Quiet(ctx), g, "m25b_full", w, h)
-    frames.append((full, {"title": "Part two, the whole map: Aria's fortress on high ground", "marks": [("Aria's HQ", (33, 5), "next")], "lines": [
-        f"{aria} units on the plateau (Megatanks, Neotanks, Md Tanks, rockets, missiles, Fighters and a Bomber). Approaches: the Aisne's five bridges and the passes (west, south, east). No pipes.",
-        "The player re-forms in the south-west camp: the engine cannot carry survivors from map 1 (see the report)."]}))
+    full = stitch.stitch(Quiet(ctx), g, "m31b_full", w, h)
+    frames.append((full, {"title": "Stage 2, the whole map: Aria's fortress on high ground", "marks": [("Aria's HQ", (33, 5), "next")], "lines": [
+        f"{len(g.units(army=2))} units on the plateau, the player's {len(g.units(army=1))} survivors in the camp. Approaches: the Aisne's bridges and the passes. No pipes."]}))
     capture(ctx, e, g, d, (33, 5), 1)
     shots = []
     for k in range(6):
-        shots.append(a2.pic(ctx, e, f"m25b_win{k}"))
+        shots.append(a2.pic(ctx, e, f"m31b_win{k}"))
         e.wait(40)
     ended = bool(e.u8(dc.LAST_RESULT)) or not d.in_battle()
     ctx.check(ended, "Aria's HQ taken: the campaign's final mission is won")
@@ -215,14 +266,10 @@ def bh2_m30_progression(ctx):
     e.close()
     out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
     os.makedirs(out, exist_ok=True)
-    sheet(ctx, frames, os.path.join(out, "m25_progression_v2.png"))
+    sheet(ctx, frames, os.path.join(out, "m31_progression.png"))
     for i, (p, _) in enumerate(frames):
         save(ctx, p, n, f"stage{i + 1}")
-    ctx.log("wrote " + os.path.join(out, "m25_progression_v2.png"))
-
-
-def nation_of(a):
-    return {2: "Olaf's Blue Moon", 3: "Kanbei's Yellow Comet", 4: "Eagle's Green Earth"}[a]
+    ctx.log("wrote " + os.path.join(out, "m31_progression.png"))
 
 
 @test(name="bh2_m6_towers_and_eagle", modes=("ds",))
@@ -270,3 +317,102 @@ def bh2_m2_crate_reaches_the_depot(ctx):
         e.wait(30)
     ctx.check(bool(e.u8(dc.LAST_RESULT)) or not d.in_battle(), "the crate on the goal tile wins the mission")
     e.close()
+
+
+def play_to_stage_two(ctx):
+    """M31 entered, deployed, the four HQs captured, the switch done: (emu, game, driver) on stage 1 (the Last Citadel)."""
+    e, g, d = b2.enter(ctx, 31)
+    d.leave_setup()
+    a2.intro(ctx, e, d, "m31", (0,))
+    d.wait_control()
+    g._units_base = g._players_base = None
+    home(g, e)
+    e.wait(60)
+    for k, (name, cell, army, nation) in enumerate(HQS):
+        capture(ctx, e, g, d, cell, 5)
+        if k < len(HQS) - 1:
+            settle(e, g, d)
+    wait_stage(ctx, e, g, d, 1)
+    d.dialogue()
+    d.wait_control()
+    g._units_base = g._players_base = None
+    ctx.require(stage_of(e) == 1, "the battle is on stage 1")
+    return e, g, d
+
+
+@test(name="bh2_m31_stage_two_suspend_and_resume", modes=("ds",))
+def bh2_m31_stage_two_suspend_and_resume(ctx):
+    """A battle saved on stage 2 (map menu > Save), a reboot, Continue: it comes back on stage 2 (the Last Citadel): the stage number, the four-army game, Aria's army and HQ, the player's survivors, and
+    capturing Aria's HQ still wins. Costs: the record gains five bytes (a mark and the stage) after AW2's block; no new Flash sector."""
+    from aw2test import saves
+    e, g, d = play_to_stage_two(ctx)
+    mine = signature(g.units(army=1))
+    aria = len(g.units(army=2))
+    ctx.log("before the save: players " + str([(a, g.player(a)['raw'][0x14:0x16].hex(), g.player(a)['raw'][0x1B], g.player(a)['raw'][0x1A], g.player(a)['raw'][0x2A]) for a in range(1, 5)]))
+    names = saves.suspend(g)
+    ctx.check("Save" in names, f"Save on the map menu of stage 2 ({names})")
+    saved = saves.flash(e, os.path.join(ctx.out, "saved"))
+    e.close()
+    e = Emu(save=saved.path, ds=ctx.ds, env=dict(b2.ENV))
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = b2.Bh2Campaign(g)
+    d.open_campaign_box()
+    d.chooser_row(b2.CHOOSER_ROW)
+    e.press("A", 8)
+    e.wait(30)
+    d.box_row(0)
+    e.press("A", 8)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1500, step=10), "Continue: the battle")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    ctx.eq(stage_of(e), 1, "resumed on stage 2 (the stage number came back)")
+    ctx.eq(e.u8(FIVE_ON), 0, "the four-army game is on")
+    ctx.eq(d.mission(), 30, "the mission is M31")
+    ctx.eq(len(g.units(army=2)), aria, "Aria's army as saved")
+    ctx.eq(signature(g.units(army=1)), mine, "the player's units as saved")
+    ctx.eq(owner(e, 33, 5), 2, "Aria's HQ is on the map")
+    capture(ctx, e, g, d, (33, 5), 1)
+    ctx.eq(owner(e, 33, 5), 1, "Aria's HQ is the player's after the capture")
+    for _ in range(60):
+        if e.u8(dc.LAST_RESULT) or not d.in_battle():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(40)
+    ctx.log(f"result {e.u8(dc.LAST_RESULT)} in_battle {d.in_battle()} state {e.u16(0x030032D8)} army {e.u8(0x030033EC)} scripts {d.scripts_running()} players {[ (a, g.player(a)['raw'][0x14:0x16].hex(), g.player(a)['raw'][0x1B]) for a in range(1,4)]}")
+    ctx.check(bool(e.u8(dc.LAST_RESULT)) or not d.in_battle(), "after the resume, Aria's HQ taken wins the mission")
+    e.close()
+
+
+def stage_fingerprint(e, g):
+    """What the switch decides, read back: the unit tables of both armies, the players, gPlaySt, the stage state, the map's unit plane and the random number state."""
+    import hashlib
+    h = hashlib.sha256()
+    h.update(bytes(e.read(g.units_base, 12 * 256)))
+    h.update(bytes(e.read(g.players_base, 0x3C * 6)))
+    h.update(bytes(e.read(0x0300_3FC0, 0x48)))
+    h.update(bytes(e.read(STAGE_AT, 0x20)))
+    h.update(bytes(e.read(0x0201_E450 + 0x12, 0xA10)))
+    h.update(bytes(e.read(0x0300_1FD4, 4)))
+    return h.hexdigest()
+
+
+@test(name="bh2_m31_switch_is_deterministic", modes=("ds",))
+def bh2_m31_switch_is_deterministic(ctx):
+    """The stage switch reads and writes only emulated RAM (no clock, no random number): the same inputs from the same start give the same battle, byte for byte, on stage 2 (what netplay peers and
+    a replay need). Two independent runs of the whole mission up to the switch and a few turns of the new stage compare their fingerprints."""
+    prints = []
+    for run in range(2):
+        e, g, d = play_to_stage_two(ctx)
+        g._units_base = g._players_base = None
+        # (a few actions on the new stage: the survivors wait in place, then the turn ends and the computer's turn runs)
+        mine = [u for u in g.units(army=1) if u["type"] in (3, 5, 10)][:3]
+        for u in mine:
+            g.wait_unit(u["x"], u["y"])
+        g.end_turn(human=1)
+        g._units_base = g._players_base = None
+        prints.append((stage_fingerprint(e, g), e.u16(dc.DAY), len(g.units(army=2))))
+        ctx.log(f"run {run + 1}: {prints[-1]}")
+        e.close()
+    ctx.eq(prints[0], prints[1], "two runs give the same battle after the switch and a computer turn")

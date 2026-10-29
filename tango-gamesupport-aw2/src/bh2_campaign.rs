@@ -5,8 +5,8 @@
 //! It is a campaign of the Campaign chooser ([`available`]; the release toggle [`RELEASED`]). Its record lives in the BH Campaign's Flash slot 13, after the BH record
 //! (`campaign_model::Source::save_offset`); a mission saved halfway shares slot 12 (`suspend::source_tag`).
 //!
-//! TODO(map-switch merge): M30 is now "The Orange Line" (a new map) and the gauntlet plus Aria's citadel become the one finale mission M31 (a mid-battle map switch). Until then the
-//! scenes of M30 and of M31's opening, takeovers, switch and second stage are not asked for ([`TODO_SCENES`]); only `m31_post` and the epilogue are wired.
+//! M30 "The Orange Line" and M31 "The Last Accord" (one mission in two stages: the gauntlet, then Aria's citadel after a mid-battle map switch, docs/dev/stages.md) are wired like the rest;
+//! every scene of the dialogue files is asked for ([`TODO_SCENES`] is empty).
 
 use mgba::core::Core;
 
@@ -57,23 +57,8 @@ pub fn available(core: &Core) -> bool {
     crate::ds_weather::is_on(core) && dev_flag()
 }
 
-/// The scenes of the dialogue files that no mission asks for yet (the map-switch merge wires them); `every_dialogue_scene_is_used` allows exactly these.
-pub const TODO_SCENES: [&str; 14] = [
-    "m30_pre",
-    "m30_day5",
-    "m30_post",
-    "m30_map",
-    "m31_pre",
-    "m31_day5",
-    "m31_takeover_olaf",
-    "m31_takeover_kanbei",
-    "m31_takeover_eagle",
-    "m31_switch",
-    "m31_stage2",
-    "m31_day6",
-    "m31_day9",
-    "m31_day12",
-];
+/// The scenes of the dialogue files that no mission asks for yet (none: the map-switch merge wired the rest); `every_dialogue_scene_is_used` allows exactly these.
+pub const TODO_SCENES: [&str; 0] = [];
 
 /// The roster, in unlock order: the eleven Black Hole officers the dialogue expects, all open (Sturm is never a free pick: he is forced with Asuka in M5 only).
 pub const ROSTER: [(u8, bool); 11] = [
@@ -1000,12 +985,12 @@ fn bh2_29() -> MissionDef {
     m
 }
 
-/// M30's four HQs (the map's tiles `1`..`4`): Nell's at (8,8) is the first line; the others are held until the last. The player (Black Hole) is the fifth army.
-const M30_NELL: (u8, u8) = (8, 8);
-const M30_OLAF: (u8, u8) = (24, 6);
-const M30_KANBEI: (u8, u8) = (39, 6);
-const M30_EAGLE: (u8, u8) = (38, 20);
-/// Aria's CO id: the new Orange Star commander of part two (CO 93, `crate::aria`).
+/// M31 stage 1's four HQs (the map's tiles `1`..`4`): Nell's at (8,8) is the first line; the others are held until the last. The player (Black Hole) is the fifth army.
+const M31_NELL: (u8, u8) = (8, 8);
+const M31_OLAF: (u8, u8) = (24, 6);
+const M31_KANBEI: (u8, u8) = (39, 6);
+const M31_EAGLE: (u8, u8) = (38, 20);
+/// Aria's CO id: the new Orange Star commander of the finale's stage 2 (CO 93, `crate::aria`).
 const ARIA_CO: u8 = crate::co_new::ARIA;
 
 /// Each nation's troops land when the stage before it falls (cells in its zone, free of start units): (kind, cell). The nation's army is present from the start
@@ -1081,19 +1066,45 @@ fn owned(c: (u8, u8)) -> Cond {
 
 /// The next nation wakes: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the nation `army`'s troops land and
 /// it gets its funds. The fallen nations stay on the map and fight on.
-fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
+fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u8, u8))], takeover: Scene) -> Trigger {
     let mut all = vec![owned(hq)];
     all.extend(before.iter().map(|&c| owned(c)));
-    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::AddFunds { army, funds }, stage(army, wave)])
+    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::AddFunds { army, funds }, stage(army, wave)])
 }
 
-/// M30 The Last Accord, part one: the final mission's first map. Asuka + a free partner (Black Hole, the fifth army) against the four nations of the Accord, each an army of its own colour: Nell's Orange Star
-/// (army 1), then Olaf's Blue Moon (2), Kanbei's Yellow Comet (3) and Eagle's Green Earth (4), allied. Each later nation is present but dormant (a few holding units round its HQ, no property but the HQ) until
-/// the HQ before it falls; Eagle's HQ ends part one (a scene, then the win) and part two (Aria's citadel, `bh2_31`) follows. No time limit, no Black Hole inventions on the Allied side.
+/// M30 The Orange Line: a free pair against Rachel + Sami (one Orange Star army under a tag pair) at Orange Star's outer defences: two rivers, a trench of woods and a ridge with the Com Tower in its heart, forward bases, Sami's
+/// infantry on the line and Rachel's reserve and production behind it (normal look, rain and so fog).
 fn bh2_30() -> MissionDef {
-    let mut m = MissionDef::new("bh2_30", "The Last Accord");
-    m.objective = "Break Nell's line, then Olaf's, Kanbei's and Eagle's.";
+    let mut m = MissionDef::new("bh2_30", "The Orange Line");
+    m.objective = "Break the line at the trench's Com Tower, cross the east river and take Rachel's HQ.";
     m.map = MapSrc::Built("bh2_30");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::RACHEL, co::SAMI)).funds(20000),
+    ];
+    m.units = deployment("bh2_30");
+    m.weather = Weather::Rain; // (the rain forces fog)
+    m.fog = true;
+    m.rank_days = 24;
+    m.intro = txt("m30_pre");
+    m.victory = txt("m30_post");
+    m.after = txt("m30_map");
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m30_day5"))]));
+    m.flag = flag(30);
+    m.stars = 3;
+    m.needs = Needs::All(vec!["bh2_29"]);
+    m
+}
+
+/// M31 The Last Accord, the final mission, in two stages on one battle (docs/dev/stages.md). Stage 1 (the gauntlet map `bh2_31`): Asuka + a free partner (Black Hole, the fifth army) against the four nations
+/// of the Accord, each an army of its own colour: Nell's Orange Star (army 1), then Olaf's Blue Moon (2), Kanbei's Yellow Comet (3) and Eagle's Green Earth (4), allied. Each later nation is present but dormant
+/// (a few holding units round its HQ, no property but the HQ) until the HQ before it falls. Eagle's HQ ends stage 1: a scene, then the battle moves in place to stage 2, The Last Citadel (`bh2_31b`): Aria
+/// (Orange Star) leads a revived army of brand-new full-strength units on a plateau fortress; the player's survivors, funds and COs come with it. Capturing Aria's HQ wins the campaign. No time limit, no
+/// Black Hole inventions on the Allied side.
+fn bh2_31() -> MissionDef {
+    let mut m = MissionDef::new("bh2_31", "The Last Accord");
+    m.objective = "Break Nell's line, then Olaf's, Kanbei's and Eagle's, and take the Last Citadel from Aria.";
+    m.map = MapSrc::Built("bh2_31");
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).team(1).funds(40000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(0),
@@ -1101,55 +1112,47 @@ fn bh2_30() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(1).funds(0),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(30000),
     ];
-    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("bh2_30"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("bh2_31"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
     m.rank_days = 40;
-    m.held_hq = Some(M30_NELL);
-    m.held_more = vec![M30_OLAF, M30_KANBEI, M30_EAGLE];
+    m.held_hq = Some(M31_NELL);
+    m.held_more = vec![M31_OLAF, M31_KANBEI, M31_EAGLE];
     m.triggers = vec![
-        wake(M30_NELL, &[], 2, 90000, &OLAF_WAVE),
-        wake(M30_OLAF, &[M30_NELL], 3, 90000, &KANBEI_WAVE),
-        wake(M30_KANBEI, &[M30_NELL, M30_OLAF], 4, 90000, &EAGLE_WAVE),
-        // Eagle's HQ is the last of part one: a scene, then the win (part two follows)
-        after(
-            Cond::All(vec![owned(M30_EAGLE), owned(M30_KANBEI), owned(M30_OLAF), owned(M30_NELL)]),
+        wake(M31_NELL, &[], 2, 90000, &OLAF_WAVE, txt("m31_takeover_olaf")),
+        wake(M31_OLAF, &[M31_NELL], 3, 90000, &KANBEI_WAVE, txt("m31_takeover_kanbei")),
+        wake(M31_KANBEI, &[M31_NELL, M31_OLAF], 4, 90000, &EAGLE_WAVE, txt("m31_takeover_eagle")),
+        // Eagle's HQ is the last of stage 1: a scene, then the battle moves on to the Citadel
+        Trigger::new(
+            When::AfterAction,
+            Cond::All(vec![owned(M31_EAGLE), owned(M31_KANBEI), owned(M31_OLAF), owned(M31_NELL)]),
             vec![
-                Action::Scene(Scene::new(vec![
-                    Line::say(co::EAGLE, "The Accord's last wing is down. We held the sky as long as we could."),
-                    Line::say(ARIA_CO, "Then it is mine to hold. Let them come to the citadel."),
-                ])),
-                Action::Win,
+                Action::Scene(txt("m31_switch")),
+                Action::NextStage,
             ],
         ),
     ];
-    // TODO(map-switch merge): this gauntlet becomes the first stage of M31 (m31_pre, m31_day5, m31_takeover_*, m31_switch, m31_stage2); M30 is the new "The Orange Line" (m30_*)
-    m.flag = flag(30);
-    m.stars = 3;
-    m.needs = Needs::All(vec!["bh2_29"]);
-    m
-}
-
-/// M30 part two, The Last Citadel: the final mission's second map. Aria (Orange Star), a revived army of brand-new full-strength units, holds a fortress on a plateau of high ground; Asuka + a free partner
-/// come over the Aisne's bridges and up the passes. Capturing her HQ or routing her army wins the campaign.
-fn bh2_31() -> MissionDef {
-    let mut m = MissionDef::new("bh2_31", "The Last Citadel");
-    m.objective = "Cross the Aisne, climb the passes and take Aria's HQ.";
-    m.map = MapSrc::Built("bh2_31");
-    m.armies = vec![
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPartner(crate::co_new::ASUKA)).funds(30000),
+    // Stage 2: the Last Citadel. The player's army (the map's own units are replaced by the survivors, who land on the cells the map deploys Black Hole on).
+    let citadel = deployment("bh2_31b");
+    let mut st = StageDef::new(MapSrc::Built("bh2_31b"));
+    st.deploy = citadel.iter().filter(|u| u.army == 1).map(|u| (u.x, u.y)).collect();
+    st.units = citadel.into_iter().filter(|u| u.army == 2).collect();
+    st.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Keep),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(ARIA_CO)).funds(90000),
     ];
-    m.units = deployment("bh2_31");
-    m.look = 1; // the Snow look: the citadel stands on high ground (and M31 is no look twin of M30)
-    m.rank_days = 40;
-    m.intro = Scene::new(vec![
-        Line::say(ARIA_CO, "Every unit here is new, and every one is mine. The Accord does not end at the lakes."),
-        Line::say(crate::co_new::ASUKA, "Then we take it from the top, one pass at a time."),
-    ])
-    .with_song(Some(crate::campaign_music::Track::Own(ARIA_CO))); // (Aria's song, until the finale's m31_pre is wired)
-    m.victory = txt("m31_post");
+    st.look = 1; // the Snow look: the citadel stands on high ground (and the stage is no look twin of the gauntlet's)
+    st.intro = txt("m31_stage2");
+    st.victory = txt("m31_post");
+    st.triggers = vec![
+        on_day(6, None, vec![Action::Scene(txt("m31_day6"))]),
+        on_day(9, None, vec![Action::Scene(txt("m31_day9"))]),
+        on_day(12, None, vec![Action::Scene(txt("m31_day12"))]),
+    ];
+    st.carry = Carry::All;
     // the epilogue on the world map after the last win; the credits follow (`def`)
     m.after = crate::bh2_text::chain(&["epilogue", "epilogue_toasts"]);
-    // (the days 6, 9 and 12 belong to the finale's second stage: TODO_SCENES)
+    m.intro = txt("m31_pre");
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m31_day5"))]));
+    m.stages = vec![st];
     m.flag = flag(31);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_30"]);
@@ -1347,12 +1350,16 @@ mod tests {
         assert_eq!(at(&d, "bh2_28").triggers.len(), 8, "four waves, the day-10 win and the day-3, 5 and 6 scenes");
         assert_eq!(at(&d, "bh2_28").day_limit, 0);
         assert_eq!(at(&d, "bh2_29").armies.len(), 3);
-        let m30 = at(&d, "bh2_30");
-        assert!(m30.held_hq.is_some() && m30.held_more.len() == 3);
-        assert_eq!(m30.triggers.len(), 4, "three wakes and the win");
-        assert_eq!(m30.armies.len(), 5);
-        assert_eq!(m30.day_limit, 0);
+        let m31 = at(&d, "bh2_31");
+        assert!(m31.held_hq.is_some() && m31.held_more.len() == 3);
+        assert_eq!(m31.triggers.len(), 5, "three wakes, the switch and the day-5 scene");
+        assert_eq!(m31.armies.len(), 5);
+        assert_eq!(m31.day_limit, 0);
+        assert_eq!(m31.stages.len(), 1, "the Last Citadel is stage 2 of M31");
+        assert_eq!(m31.stages[0].armies.len(), 2);
+        assert!(!m31.stages[0].deploy.is_empty() && m31.stages[0].units.iter().all(|u| u.army == 2));
         assert_eq!(at(&d, "bh2_32").triggers.len(), 6, "three waves and their day scenes");
+        assert_eq!(m31.stages[0].triggers.len(), 3, "days 6, 9 and 12 on stage 2");
     }
 
     /// Every cell a wave or a stage names is ground (sea for M32's fleet) and free of start units; M30's stage HQs are the map's `Q` tiles.
@@ -1375,10 +1382,10 @@ mod tests {
         free("bh2_32", &M32_SIEGE, false);
         free("bh2_32", &M32_FLEET, true);
         for w in [&OLAF_WAVE[..], &KANBEI_WAVE[..], &EAGLE_WAVE[..]] {
-            free("bh2_30", &w.iter().map(|&(_, c)| c).collect::<Vec<_>>(), false);
+            free("bh2_31", &w.iter().map(|&(_, c)| c).collect::<Vec<_>>(), false);
         }
         let hq = |c: (u8, u8)| c;
-        assert_eq!([hq(M30_NELL), M30_OLAF, M30_KANBEI, M30_EAGLE], [(8, 8), (24, 6), (39, 6), (38, 20)]);
+        assert_eq!([hq(M31_NELL), M31_OLAF, M31_KANBEI, M31_EAGLE], [(8, 8), (24, 6), (39, 6), (38, 20)]);
     }
 
     /// M12's half-strength number is half of Kanbei's start, and the airlift's cells are free of start units.
@@ -1458,8 +1465,7 @@ mod tests {
         for (k, c) in forced {
             assert_eq!(lead(k).map(|l| l.0), Some(c), "{k}'s lead");
         }
-        assert_eq!(lead("bh2_31").map(|l| l.0), Some(asuka));
-        for k in ["bh2_03", "bh2_06", "bh2_07", "bh2_09", "bh2_11", "bh2_14", "bh2_19", "bh2_20", "bh2_21", "bh2_25", "bh2_29", "bh2_30", "bh2_32"] {
+        for k in ["bh2_03", "bh2_06", "bh2_07", "bh2_09", "bh2_11", "bh2_14", "bh2_19", "bh2_20", "bh2_21", "bh2_25", "bh2_29", "bh2_30", "bh2_31", "bh2_32"] {
             assert!(lead(k).is_none(), "{k} is a free pick");
         }
     }
@@ -1474,7 +1480,8 @@ mod tests {
         assert!(d.credits.iter().any(|c| c.secret) && d.credits.iter().any(|c| !c.secret));
         assert!(!at(&d, "bh2_31").after.lines.is_empty() && !at(&d, "bh2_32").after.lines.is_empty());
         for m in &d.missions {
-            assert!(!m.intro.lines.is_empty() && !m.victory.lines.is_empty() || m.key == "bh2_30", "{} has its pre and post scenes", m.key);
+            let post = if m.stages.is_empty() { &m.victory } else { &m.stages[0].victory };
+            assert!(!m.intro.lines.is_empty() && !post.lines.is_empty(), "{} has its pre and post scenes", m.key);
         }
     }
 
@@ -1483,7 +1490,7 @@ mod tests {
     fn aria_is_co_93_in_the_final_mission() {
         assert_eq!(ARIA_CO, 93);
         let d = def();
-        assert!(matches!(&at(&d, "bh2_31").armies[1].co, CoSpec::Fixed(93)));
+        assert!(matches!(&at(&d, "bh2_31").stages[0].armies[1].co, CoSpec::Fixed(93)), "Aria leads stage 2 of the finale");
     }
 
     /// The release toggle shows the campaign; the text ids of every scene fit the compiler's budget.

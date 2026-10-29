@@ -33,7 +33,7 @@ STEALTH, BBOMB, AA, MIS, FTR, BMB, BBOAT, BCO, TCO, BS, CR, LAN, SUB, CARR = 12,
 # colours
 OS, BM, GE, YC, BH = 1, 2, 3, 4, 5
 # (the maps renumbered in the 31-mission plan keep their old names as the seed of their random choices, so every approved map is drawn as before)
-SEED_NAME = {'bh2_09': 'bh2_06', 'bh2_10': 'bh2_07', 'bh2_11': 'bh2_08', 'bh2_12': 'bh2_09', 'bh2_13': 'bh2_10', 'bh2_16': 'bh2_11', 'bh2_17': 'bh2_12', 'bh2_18': 'bh2_13', 'bh2_19': 'bh2_14', 'bh2_20': 'bh2_15', 'bh2_21': 'bh2_16', 'bh2_22': 'bh2_17', 'bh2_23': 'bh2_18', 'bh2_24': 'bh2_19', 'bh2_25': 'bh2_20', 'bh2_26': 'bh2_21', 'bh2_27': 'bh2_22', 'bh2_28': 'bh2_23', 'bh2_29': 'bh2_24', 'bh2_30': 'bh2_25', 'bh2_32': 'bh2_26', 'bh2_13b': 'bh2_10b', 'bh2_25b': 'bh2_20b', 'bh2_31': 'bh2_25b'}
+SEED_NAME = {'bh2_09': 'bh2_06', 'bh2_10': 'bh2_07', 'bh2_11': 'bh2_08', 'bh2_12': 'bh2_09', 'bh2_13': 'bh2_10', 'bh2_16': 'bh2_11', 'bh2_17': 'bh2_12', 'bh2_18': 'bh2_13', 'bh2_19': 'bh2_14', 'bh2_20': 'bh2_15', 'bh2_21': 'bh2_16', 'bh2_22': 'bh2_17', 'bh2_23': 'bh2_18', 'bh2_24': 'bh2_19', 'bh2_25': 'bh2_20', 'bh2_26': 'bh2_21', 'bh2_27': 'bh2_22', 'bh2_28': 'bh2_23', 'bh2_29': 'bh2_24', 'bh2_31': 'bh2_25', 'bh2_32': 'bh2_26', 'bh2_13b': 'bh2_10b', 'bh2_25b': 'bh2_20b', 'bh2_31b': 'bh2_25b'}
 INVENTION_CHARS = set("SNWELvnFVDXOM#")
 WATER = set("~r,")
 

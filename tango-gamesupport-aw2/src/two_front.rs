@@ -1459,6 +1459,26 @@ fn setup_second(core: &mut Core, b: &Battle) {
 /// controllers and the units sent to it.
 /// The map's two unit planes (each cell: the id of the unit on it, 0 none) made from the front now on the screen: the
 /// front left kept its units' ids there, and its units blocked the way on this one as unseen units (a "Trap!").
+pub(crate) fn rebuild_planes(core: &mut Core) {
+    unit_planes(core)
+}
+
+/// Whether a unit of type `t` can stand on a cell of terrain class `class` (its movement chart's cost is neither 0 nor 0xFF).
+pub(crate) fn unit_may_stand(core: &Core, t: u8, class: u8) -> bool {
+    let cos = core.raw_read_32(0x0801_F8E4, -1);
+    let chart = core.raw_read_32(cos + 0x50 + 0x104, -1);
+    let movement = core.raw_read_8(crate::roster::table(core) + 0x5C * t as u32 + 0x19, -1) as u32;
+    let c = core.raw_read_8(chart + 32 * movement + (class & 0x1F) as u32, -1);
+    c != 0xFF && c != 0
+}
+
+/// This module's own state as a battle starts afresh (no rain fog rule, no CO skills, no stun): a stage switch's new battle.
+pub(crate) fn fresh_extras(core: &mut Core) {
+    let mut e = vec![0u8; EXTRA_LEN as usize];
+    e[EX_STUN as usize..].copy_from_slice(&vec![0u8; crate::co_powers::STUN_STATE_LEN]);
+    set_extras(core, &e);
+}
+
 fn unit_planes(core: &mut Core) {
     const PLANES: [u32; 2] = [MAP + 0x12, MAP + 0x51A];
     let (w, h) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
@@ -1472,7 +1492,8 @@ fn unit_planes(core: &mut Core) {
         }
     }
     let base = core.raw_read_32(UNITS_PTR, -1);
-    for id in 1..4 * 64u32 {
+    let total = if crate::five::active(core) { 5 * 51u32 } else { 4 * 64u32 };
+    for id in 1..total {
         let at = base + 12 * id;
         let kind = core.raw_read_8(at, -1);
         // (a record that is no unit's, left by a swap before the capture's block was cleared: emptied)

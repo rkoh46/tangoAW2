@@ -158,6 +158,7 @@ pub mod tag_thunder;
 pub mod tag_ui;
 pub mod test_aid;
 pub mod title_card;
+pub mod stage;
 pub mod two_front;
 pub mod unit_actions;
 pub mod unit_names;

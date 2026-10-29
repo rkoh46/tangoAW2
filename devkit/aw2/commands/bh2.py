@@ -4,7 +4,7 @@
   bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png
   bh2 integration [--out PNG]  the proof sheet of the harness's frames (chooser, prologue, world map, a scene per act, Aria's CO select)
   bh2 silhouettes             the silhouette check (no two maps alike, no oval blobs; docs/dev/bh2-maps.md)
-  bh2 difficulty              the static difficulty score of every mission (M30 must be the hardest by 10%)
+  bh2 difficulty              the static difficulty score of every mission (M31 must be the hardest by 10%)
   bh2 features                the feature coverage table (properties, terrain, inventions per map) and what no map uses yet
   bh2 check                   the world-map flag check (every mission flag on land inside its nation) and the pipeline checks (specs up to date, lint clean)
 Maps: `aw2dev maps gen --campaign bh2`, `aw2dev maps lint --source bh2`.
@@ -72,8 +72,8 @@ def difficulty(a):
         print(l)
     scores = sorted(((sc, n) for n, t, nm, sc, sp in rs), reverse=True)
     top, second = scores[0], scores[1]
-    ok = top[1] == 30 and top[0] >= second[0] * 1.10
-    util.say(f"hardest: M{top[1]} ({top[0]}), next M{second[1]} ({second[0]}): " + ("M30 leads by a clear margin" if ok else "M30 is NOT clearly the hardest"))
+    ok = top[1] == 31 and top[0] >= second[0] * 1.10
+    util.say(f"hardest: M{top[1]} ({top[0]}), next M{second[1]} ({second[0]}): " + ("M31 leads by a clear margin" if ok else "M31 is NOT clearly the hardest"))
     return 0 if ok else 1
 
 

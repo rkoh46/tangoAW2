@@ -168,7 +168,7 @@ def draw(m, mission, title, fog=False, cell=CELL, subtitle=""):
     return img
 
 
-def write_all(out_dir, with_fog=(1, 9, 13, 17, 18, 22, 25)):
+def write_all(out_dir, with_fog=(1, 9, 13, 17, 18, 22, 25, 30)):
     """m01.png .. (full map, fog OFF, labelled), the fog views listed in `with_fog`, one contact sheet an act (`act1_sheet.png`, `act2_sheet.png`). Returns the paths."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
