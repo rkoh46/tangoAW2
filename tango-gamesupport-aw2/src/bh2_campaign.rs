@@ -5,8 +5,8 @@
 //! It is a campaign of the Campaign chooser ([`available`]; the release toggle [`RELEASED`]). Its record lives in the BH Campaign's Flash slot 13, after the BH record
 //! (`campaign_model::Source::save_offset`); a mission saved halfway shares slot 12 (`suspend::source_tag`).
 //!
-//! TODO(map-switch merge): the mid-battle map switch joins M30 and M31 into one mission. Until then these scenes of `src/bh2_text/act5.txt` are not asked for
-//! ([`TODO_SCENES`]): the three `m30_takeover_*` scenes (Nell to Olaf to Kanbei to Eagle; today the stages wake with `wake`) and `m30_map` (the world-map scene after M30).
+//! TODO(map-switch merge): M30 is now "The Orange Line" (a new map) and the gauntlet plus Aria's citadel become the one finale mission M31 (a mid-battle map switch). Until then the
+//! scenes of M30 and of M31's opening, takeovers, switch and second stage are not asked for ([`TODO_SCENES`]); only `m31_post` and the epilogue are wired.
 
 use mgba::core::Core;
 
@@ -58,7 +58,22 @@ pub fn available(core: &Core) -> bool {
 }
 
 /// The scenes of the dialogue files that no mission asks for yet (the map-switch merge wires them); `every_dialogue_scene_is_used` allows exactly these.
-pub const TODO_SCENES: [&str; 4] = ["m30_takeover_olaf", "m30_takeover_kanbei", "m30_takeover_eagle", "m30_map"];
+pub const TODO_SCENES: [&str; 14] = [
+    "m30_pre",
+    "m30_day5",
+    "m30_post",
+    "m30_map",
+    "m31_pre",
+    "m31_day5",
+    "m31_takeover_olaf",
+    "m31_takeover_kanbei",
+    "m31_takeover_eagle",
+    "m31_switch",
+    "m31_stage2",
+    "m31_day6",
+    "m31_day9",
+    "m31_day12",
+];
 
 /// The roster, in unlock order: the eleven Black Hole officers the dialogue expects, all open (Sturm is never a free pick: he is forced with Asuka in M5 only).
 pub const ROSTER: [(u8, bool); 11] = [
@@ -1098,14 +1113,15 @@ fn bh2_30() -> MissionDef {
         after(
             Cond::All(vec![owned(M30_EAGLE), owned(M30_KANBEI), owned(M30_OLAF), owned(M30_NELL)]),
             vec![
-                Action::Scene(txt("m30_post")),
+                Action::Scene(Scene::new(vec![
+                    Line::say(co::EAGLE, "The Accord's last wing is down. We held the sky as long as we could."),
+                    Line::say(ARIA_CO, "Then it is mine to hold. Let them come to the citadel."),
+                ])),
                 Action::Win,
             ],
         ),
     ];
-    m.intro = txt("m30_pre");
-    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m30_day5"))]));
-    // TODO(map-switch merge): m30_takeover_olaf / _kanbei / _eagle (with `wake`'s waves) and m30_map; see bh2_text_todo()
+    // TODO(map-switch merge): this gauntlet becomes the first stage of M31 (m31_pre, m31_day5, m31_takeover_*, m31_switch, m31_stage2); M30 is the new "The Orange Line" (m30_*)
     m.flag = flag(30);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_29"]);
@@ -1125,13 +1141,15 @@ fn bh2_31() -> MissionDef {
     m.units = deployment("bh2_31");
     m.look = 1; // the Snow look: the citadel stands on high ground (and M31 is no look twin of M30)
     m.rank_days = 40;
-    m.intro = txt("m31_pre");
+    m.intro = Scene::new(vec![
+        Line::say(ARIA_CO, "Every unit here is new, and every one is mine. The Accord does not end at the lakes."),
+        Line::say(crate::co_new::ASUKA, "Then we take it from the top, one pass at a time."),
+    ])
+    .with_song(Some(crate::campaign_music::Track::Own(ARIA_CO))); // (Aria's song, until the finale's m31_pre is wired)
     m.victory = txt("m31_post");
     // the epilogue on the world map after the last win; the credits follow (`def`)
     m.after = crate::bh2_text::chain(&["epilogue", "epilogue_toasts"]);
-    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m31_day6"))]));
-    m.triggers.push(on_day(9, None, vec![Action::Scene(txt("m31_day9"))]));
-    m.triggers.push(on_day(12, None, vec![Action::Scene(txt("m31_day12"))]));
+    // (the days 6, 9 and 12 belong to the finale's second stage: TODO_SCENES)
     m.flag = flag(31);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_30"]);
@@ -1331,7 +1349,7 @@ mod tests {
         assert_eq!(at(&d, "bh2_29").armies.len(), 3);
         let m30 = at(&d, "bh2_30");
         assert!(m30.held_hq.is_some() && m30.held_more.len() == 3);
-        assert_eq!(m30.triggers.len(), 5, "three wakes, the win and the day-5 scene");
+        assert_eq!(m30.triggers.len(), 4, "three wakes and the win");
         assert_eq!(m30.armies.len(), 5);
         assert_eq!(m30.day_limit, 0);
         assert_eq!(at(&d, "bh2_32").triggers.len(), 6, "three waves and their day scenes");
