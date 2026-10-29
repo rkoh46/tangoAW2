@@ -126,7 +126,7 @@ class Ctx:
             tower_fp += snap - 1 if snap else 3 * self.properties(g, u["army"])
         tower_def = self.rules.tower(p["co"], p["co_mode"], 1) * towers
         if p["co"] == 93 and st["co_abilities"]:
-            v = damage.aria_vengeance(u["hp"])    # Aria's Vengeance: attack and defence by the unit's HP (crate::aria::vengeance)
+            v = damage.aria_vengeance(u["hp"], u["type"])    # Aria's Vengeance: attack and defence by the unit's HP (crate::aria::vengeance)
             tower_fp += v
             tower_def += v
         return damage.Side(

@@ -688,7 +688,7 @@ fn defence_total(core: &mut Core) {
     // Aria's Vengeance defends too: the defending unit's own HP (crate::aria::vengeance), before AW2's cap
     let army = battle_army(core, bu);
     if (1..=5).contains(&army) && army_co(core, army).0 == crate::co_new::ARIA && abilities_on(core) && (0x0200_0000..0x0204_0000).contains(&unit) {
-        let v = crate::aria::vengeance(core.raw_read_8(unit + 4, -1) & 0x7F);
+        let v = crate::aria::vengeance_for(core.raw_read_8(unit, -1), core.raw_read_8(unit + 4, -1) & 0x7F);
         let cpu = core.gba_mut().cpu_mut();
         let r1 = cpu.gpr(1);
         cpu.set_gpr(1, r1 + v);

@@ -1,4 +1,4 @@
-"""`aw2dev co sheet vengeance`: Aria's Vengeance (units with 8 HP or less attack and defend harder: +25% at 8 HP .. +70% at 1) in the game's own damage forecasts: runs tools/aw2test/tests/test_aria_compare.py (the forecast box's number of 7 matchups at 10, 8 and 5
+"""`aw2dev co sheet vengeance`: Aria's Vengeance (units with 8 HP or less attack and defend harder: +25% at 8 HP .. +85% at 1) in the game's own damage forecasts: runs tools/aw2test/tests/test_aria_compare.py (the forecast box's number of 7 matchups at 10, 8 and 5
 displayed HP for Andy, Aria and Aria in Build Anew, each checked against the damage formula) and writes the table (.md) and a picture sheet of the forecast boxes (.png)."""
 import json, subprocess, sys
 from pathlib import Path

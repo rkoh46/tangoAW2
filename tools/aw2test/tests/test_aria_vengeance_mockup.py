@@ -9,6 +9,8 @@ from aw2test import coverify as cv
 
 HPS = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]
 ROW = 7
+KIND = os.environ.get("AW2TEST_VENGEANCE_UNIT", "tank")       # (the unit shown: tank, or megatank for the highest defence)
+ATTACKER = os.environ.get("AW2TEST_VENGEANCE_ATTACKER", "tank")
 
 
 @test(modes=("ds",))
@@ -17,7 +19,7 @@ def aria_vengeance_mockup_frames(ctx):
         raise Skip("AW2TEST_VENGEANCE_MOCKUP not set")
     m = ctx.map()
     for k in range(len(HPS)):
-        m.unit(1, "tank", 2 + k, ROW)
+        m.unit(1, KIND, 2 + k, ROW)
     for k in range(5):
         m.unit(2, "tank", 3 + 2 * k, ROW - 3)
     m.unit(1, "recon", 13, ROW + 5)            # (a spare unit: its Wait makes AW2 redraw the units, HP digits and icons included)
@@ -85,9 +87,9 @@ def aria_vengeance_mockup_forecast(ctx):
     if os.environ.get("AW2TEST_VENGEANCE_MOCKUP") != "1":
         raise Skip("AW2TEST_VENGEANCE_MOCKUP not set")
     m = ctx.map()
-    targets = [(4, 80), (8, 50), (12, 10)]
+    targets = [(3, 80), (7, 50), (11, 20), (15, 10)]
     for x, _ in targets:
-        m.unit(1, "tank", x, ROW).unit(2, "tank", x, ROW + 1)
+        m.unit(1, KIND, x, ROW).unit(2, ATTACKER, x, ROW + 1)
     g = ctx.start(m, ["aria", "andy"], humans=(1, 2), env=cv.ENV)
     for x, hp in targets:
         ctx.set_hp(g, x, ROW, hp)

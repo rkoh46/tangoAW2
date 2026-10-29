@@ -161,7 +161,7 @@ fn side_firepower(core: &Core, bu: u32) -> i32 {
         // Aria's Vengeance: a unit with 8 HP or less (displayed) attacks harder, by its HP (crate::aria::VENGEANCE)
         let unit = core.raw_read_32(bu, -1);
         if (0x0200_0000..0x0204_0000).contains(&unit) {
-            add += crate::aria::vengeance(core.raw_read_8(unit + 4, -1) & 0x7F);
+            add += crate::aria::vengeance_for(core.raw_read_8(unit, -1), core.raw_read_8(unit + 4, -1) & 0x7F);
         }
     }
     add += crate::tag::firepower(core, army);

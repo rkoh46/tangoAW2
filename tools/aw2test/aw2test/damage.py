@@ -54,11 +54,14 @@ def crumb_bonus(mode, unit_type, which):
 ARIA = 93
 
 
-ARIA_VENGEANCE = [70, 60, 50, 45, 40, 35, 30, 25]     # crate::aria::VENGEANCE: 1..8 displayed HP
+ARIA_VENGEANCE = [85, 75, 50, 45, 40, 35, 30, 25]     # crate::aria::VENGEANCE: 1..8 displayed HP
 
 
-def aria_vengeance(hp):
-    """Aria's Vengeance % (firepower and defence alike) for a unit of `hp` internal HP: 1..8 displayed HP (tenths rounded up) from the table, 9 and 10 nothing."""
+def aria_vengeance(hp, unit_type=None):
+    """Aria's Vengeance % (firepower and defence alike) for a unit of `hp` internal HP: 1..8 displayed HP (tenths rounded up) from the table, 9 and 10 nothing; an Oozium never."""
+    from . import rom as _rom
+    if unit_type is not None and unit_type == _rom.unit_id("oozium"):
+        return 0
     shown = (hp + 9) // 10
     return ARIA_VENGEANCE[shown - 1] if hp > 0 and shown <= 8 else 0
 
