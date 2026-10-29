@@ -102,9 +102,12 @@ fn release(core: &mut Core) {
         return;
     }
     let bank = st - 1;
-    let saved = read_bytes(core, STATE + 0x10, 32);
-    for base in [PAL_BUFFER, PAL_RAM] {
-        core.raw_write_range(base + 32 * bank, -1, &saved);
+    // (when the bank is no longer ours the game wrote it again, for what now refers to it: that stays)
+    if bank_bytes(core, bank) == ramp_palette() {
+        let saved = read_bytes(core, STATE + 0x10, 32);
+        for base in [PAL_BUFFER, PAL_RAM] {
+            core.raw_write_range(base + 32 * bank, -1, &saved);
+        }
     }
     core.raw_write_8(STATE, -1, 0);
 }

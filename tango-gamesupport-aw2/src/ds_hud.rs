@@ -1146,7 +1146,9 @@ fn native_sign(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         if mine {
             core.raw_write_8(WIN_TOP, -1, orig);
         }
-        core.raw_write_8(crate::aria_sign::STATE + 1, -1, 0);
+        if held {
+            core.raw_write_8(crate::aria_sign::STATE + 1, -1, 0);
+        }
         return at;
     };
     let lift = crate::aria_sign::STRIP_H;
