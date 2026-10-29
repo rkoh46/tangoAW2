@@ -213,6 +213,7 @@ def bh2_m31_progression(ctx):
         if last:
             g._units_base = g._players_base = None
             mine = g.units(army=player)
+            e.w32(g.players_base + 0x3C * player, 200000)      # (a player who hoarded: the cap applies)
             funds = g.player(player)["raw"]
             sig_before = signature(mine)
             n_before = len(mine)
@@ -240,7 +241,8 @@ def bh2_m31_progression(ctx):
             far = [(u["x"], u["y"]) for u in mine2 if min(abs(u["x"] - x) + abs(u["y"] - y) for x, y in deploy) > 6]
             ctx.check(not far, f"every survivor stands on or near a deploy cell (the camp): far ones {far}")
             funds_after = int.from_bytes(g.player(player2)["raw"][0:4], "little")
-            ctx.check(funds_after >= funds_before, f"the player's funds carry over ({funds_before} -> {funds_after})")
+            ctx.eq(funds_after, min(funds_before, 50000), f"the player's funds carry over, at most 50,000 ({funds_before} -> {funds_after})")
+            ctx.eq(int.from_bytes(g.player(2)["raw"][0:4], "little"), 100000, "Aria holds the Citadel with 100,000")
             aria = g.units(army=2)
             ctx.check(len(aria) >= 25 and all(u["hp"] >= 10 or u["hp"] == 100 for u in aria), f"Aria's army is {len(aria)} fresh units")
             ctx.log(f"stage 2: Aria's CO id {g.player(2)['co']}, the player's CO {g.player(1)['co']} (carried {g.player(player2)['co']})")

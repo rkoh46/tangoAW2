@@ -1115,6 +1115,9 @@ fn eagle_chest(core: &mut Core) {
 const M31_WAKE_FUNDS: i32 = 25000;
 /// What Olaf, Kanbei and Eagle save per day while they sleep (paid when they wake: [`war_chest`]).
 const M31_SAVINGS: [u32; 3] = [1000, 1500, 2000];
+/// The most funds the player carries from the gauntlet to the Last Citadel, and what Aria holds it with.
+const M31_CARRY_CAP: u32 = 50000;
+const M31_ARIA_FUNDS: u32 = 100000;
 
 /// M30 The Orange Line: a free pair against Rachel + Sami (one Orange Star army under a tag pair) at Orange Star's outer defences: two rivers, a trench of woods and a ridge with the Com Tower in its heart, forward bases, Sami's
 /// infantry on the line and Rachel's reserve and production behind it (normal look, rain and so fog).
@@ -1190,7 +1193,7 @@ fn bh2_31() -> MissionDef {
     st.units = citadel.into_iter().filter(|u| u.army == 2).collect();
     st.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Keep),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(ARIA_CO)).funds(90000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(ARIA_CO)).funds(M31_ARIA_FUNDS),
     ];
     st.look = 1; // the Snow look: the citadel stands on high ground (and the stage is no look twin of the gauntlet's)
     st.intro = txt("m31_stage2");
@@ -1201,6 +1204,8 @@ fn bh2_31() -> MissionDef {
         on_day(12, None, vec![Action::Scene(txt("m31_day12"))]),
     ];
     st.carry = Carry::All;
+    // (a player who hoarded through the gauntlet brings at most this to the Citadel)
+    st.funds_cap = Some(M31_CARRY_CAP);
     // the epilogue on the world map after the last win; the credits follow (`def`)
     m.after = crate::bh2_text::chain(&["epilogue", "epilogue_toasts"]);
     m.intro = txt("m31_pre");

@@ -123,6 +123,7 @@ pub struct StageRuntime {
     pub deploy: Vec<(u8, u8)>,
     pub carry: crate::custom_campaign::Carry,
     pub funds: Option<i32>,
+    pub funds_cap: Option<u32>,
 }
 
 /// The Black Onyx turned round: Black Hole's own satellite on a day cycle

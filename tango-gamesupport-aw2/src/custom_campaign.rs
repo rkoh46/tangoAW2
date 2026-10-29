@@ -947,6 +947,8 @@ pub struct StageDef {
     pub carry: Carry,
     /// The player's funds in the stage: None carries them over.
     pub funds: Option<i32>,
+    /// The most funds carried over (None: all of them).
+    pub funds_cap: Option<u32>,
 }
 
 impl StageDef {
@@ -966,6 +968,7 @@ impl StageDef {
             deploy: Vec::new(),
             carry: Carry::All,
             funds: None,
+            funds_cap: None,
         }
     }
 }
@@ -1777,6 +1780,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
                 deploy: st.deploy.clone(),
                 carry: st.carry.clone(),
                 funds: st.funds,
+                funds_cap: st.funds_cap,
             });
             records.push(MissionRecord::Stage(i, k, st));
         }

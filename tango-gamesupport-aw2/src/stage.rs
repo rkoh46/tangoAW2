@@ -495,7 +495,8 @@ fn arrive(core: &mut Core) {
         taken.push((x, y));
     }
     let p = players(core) + PLAYER * army;
-    core.raw_write_32(p, -1, rt.funds.map_or(core.raw_read_32(CARRY_FUNDS, -1), |f| f.max(0) as u32));
+    let carried = core.raw_read_32(CARRY_FUNDS, -1).min(rt.funds_cap.unwrap_or(u32::MAX));
+    core.raw_write_32(p, -1, rt.funds.map_or(carried, |f| f.max(0) as u32));
     core.raw_write_32(p + 0x20, -1, core.raw_read_32(CARRY_CHARGE, -1));
     let partner = core.raw_read_8(CARRY_PARTNER, -1);
     if partner != NO_CO {
