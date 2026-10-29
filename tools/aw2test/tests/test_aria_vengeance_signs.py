@@ -511,3 +511,112 @@ def aria_vengeance_signs_no_leak(ctx):
                 check_strip_oam(ctx, g.e, "after the attack", cursor_on_sign(g), (0, 0, 240, 160))
         g.e.close()
     # (the games part after the first attack, the damage differing: the frames are looked at, not compared; what the sprites use is checked above, frame by frame)
+
+
+def faded(c8, y):
+    """A colour after the GBA's brightness increase by y / 16 (5-bit channels)."""
+    out = []
+    for c in c8:
+        c5 = c >> 3
+        out.append(expand(c5 + (((31 - c5) * y) >> 4)))
+    return tuple(out)
+
+
+@test(modes=("ds",))
+def aria_vengeance_signs_fade(ctx):
+    """The game's fades are the GBA's brightness effect (BLDCNT mode 2 / 3 on every layer, BLDY stepping 0..16), not a change of palettes: so a number in the ramp fades with the map exactly as a white one does, the
+    hardware applying it to whatever colour the layer holds. Her Super Power's fade to white is stepped through, frame by frame: at every step the unit palettes (BG 11..15) and the ramp's bank hold the same colours
+    as before the fade (nothing of ours is rewritten to a faded or unfaded value), and the ramp's bank is ours while a tile map of the map screen refers to it."""
+    g = scene(ctx, "aria", KIND)
+    e = g.e
+    banks = {b: e.read(BG_PAL + 32 * b, 32) for b in (11, 12, 13, 14, 15)}
+    g.charge_power(1, "super")
+    g.open_map_menu()
+    g.choose("Super", g.MAP_MENU)
+    steps = set()
+    for _ in range(400):
+        e.wait(1)
+        y = e.u16(0x0400_0054) & 0x1F
+        if e.u16(0x0400_0050) & 0x3F == 0x3F and y:
+            steps.add(y)
+            for b in (11, 13, 14, 15):
+                ctx.check(e.read(BG_PAL + 32 * b, 32) == banks[b], f"fade step {y}/16: unit palette {b} is not changed by the fade")
+    ctx.check(len(steps) >= 8, f"the fade was stepped through ({sorted(steps)})")
+    e.close()
+
+
+def five_scene(ctx, env=None, co="aria"):
+    """A five-army game with fog: her Tanks at 8..1 HP (army 1) in a row, every army's units, a wide mix of terrain (the fog's banks 4..7 and the others), moved units of the other armies (BG palette 9)."""
+    m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0), (4, 0, 19)))
+    m.terrain(15, 15, 0x1B4)
+    m.colours = [5, 1, 2, 3, 4]
+    for a in range(2, 6):
+        m.unit(a, "tank", 1 + a, 3).unit(a, "infantry", 1 + a, 4)
+    for k, t in enumerate(("wood", "mountain", "road", "river", "sea", "city", "bridge", "shoal", "reef", "pipe")):
+        m.terrain(3 + k, 9, t)
+    for k in range(8):
+        m.unit(1, "tank", 2 + k, ROW)
+    g = ctx.start(m, [co, "andy", "max", "olaf", "sami"], humans=(1,), fog=True, env=env or ENV)
+    for k in range(8):
+        ctx.set_hp(g, 2 + k, ROW, 80 - 10 * k)
+    g.e.wait(30)
+    g.goto(2, ROW + 4)
+    g.e.wait(40)
+    return g
+
+
+def bg_banks_referenced(e):
+    refs = set()
+    for i in range(4):
+        c = e.u16(0x0400_0008 + 2 * i)
+        for ent in struct.unpack("<1024H", e.read(0x0600_0000 + ((c >> 8) & 31) * 0x800, 0x800)):
+            if ent & 0x3FF and not 0x340 <= ent & 0x3FF <= 0x347:
+                refs.add(ent >> 12)
+    return refs
+
+
+@test(modes=("ds",))
+def aria_vengeance_signs_worst_case_banks(ctx):
+    """Fog and five armies (the fog's terrain banks, five unit banks, a moved unit's bank 9) and then, by drawing tiles of them on BG0 (a menu's layer), every bank the ramp prefers (4, 5, 6, 7, 1, 3, 2, 11, 9, 10) referenced
+    as well: her 8..1 HP numbers are still in exactly the ramp colours, in the one bank left (8 and 0 are not used for it), and the game's own palettes are as they were in every bank we do not use."""
+    g = five_scene(ctx)
+    e = g.e
+    g.wait_for_input()
+    g.select(7, ROW)
+    g.move_to(7, ROW)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_for_input()
+    g.goto(2, ROW + 4)
+    e.wait(40)
+    cnt = e.u16(0x0400_0008)
+    sb = 0x0600_0000 + ((cnt >> 8) & 31) * 0x800
+    natural = bg_banks_referenced(e)
+    ctx.log(f"banks referenced by the game: {sorted(natural)}")
+    # (the same game with Andy for Aria: the game's own palettes at this point)
+    t = five_scene(ctx, co="andy")
+    t.wait_for_input()
+    t.select(7, ROW)
+    t.move_to(7, ROW)
+    t.choose("Wait", t.ACTION_MENU)
+    t.wait_for_input()
+    t.goto(2, ROW + 4)
+    t.e.wait(40)
+    before = {b: t.e.read(BG_PAL + 32 * b, 32) for b in range(16)}
+    t.e.close()
+    for b in (4, 5, 6, 7, 1, 3, 2, 11, 9, 10):
+        # (BG0's empty screen block: a clear tile of the font run 0x3BF in each bank; the game writes BG0 only for menus)
+        e.w16(sb + 2 * (31 * 32 + b), 0x3BF | (b << 12))
+    e.wait(6)
+    ctx.eq(sorted(bg_banks_referenced(e) & set(range(16)) - {8, 0}), sorted((set((4, 5, 6, 7, 1, 3, 2, 11, 9, 10)) | natural) - {8, 0}), "the worst case: every preferred bank is referenced")
+    path = ctx.shot(g, "worst")
+    im = load(path)
+    for h in range(1, 9):
+        n = sum(1 for p in im.getdata() if p == ramp_rgb(h))
+        ctx.check(n >= 8, f"{h} HP: the number is in {ramp_rgb(h)} ({n} pixels)")
+    used = {b for v in ours(e).values() for b in v}
+    ctx.eq(len(used), 1, f"one bank holds the ramp ({used})")
+    ctx.check(used <= {8}, f"it is the one bank left, 8 ({used})")
+    for b in range(16):
+        if b not in used:
+            ctx.check(e.read(BG_PAL + 32 * b, 32) == before[b], f"bank {b} is the game's as it was")
+    e.close()

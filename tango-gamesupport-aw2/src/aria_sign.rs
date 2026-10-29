@@ -34,7 +34,8 @@ const MAP_POINTER: u32 = 0x0849_9590;
 const UNITS_POINTER: u32 = 0x0849_9594;
 const MOVED_KEY: u32 = 0x0300_3F2C;
 /// BG palette banks tried for the ramp, in order.
-const BANKS: [u32; 5] = [4, 5, 6, 7, 9];
+/// (bank 0 is left out: its colour 0 is the screen's backdrop; 8, 9 and 10 are the menus', a moved unit's in a five-army game and the icons': tried last)
+const BANKS: [u32; 11] = [4, 5, 6, 7, 1, 3, 2, 11, 9, 10, 8];
 
 fn on_map(core: &Core) -> bool {
     crate::ds_battle::on_map(core)
