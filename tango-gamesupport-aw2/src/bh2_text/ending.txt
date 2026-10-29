@@ -6,7 +6,7 @@
 @SONG ending1
 NARRATION: The Last Citadel. The Great / Hall. Dawn. Four banners hang as one.
 ARIA: The Accord's seal. Orange Star's / gold, with all four marks on it.
-ARIA: It has hung in this hall since / the fence. It is heavier than it looks.
+ARIA: It has hung in this hall since / the fence. It's heavier than it looks.
 NELL: We held it for the Accord. The / Accord is gone. It was always paper.
 ARIA: Take it. Not for Sturm. He's / gone. Take it for the work.
 ASUKA: I accept it as a trustee. Not / as a prize.

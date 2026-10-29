@@ -7,8 +7,8 @@
 NARRATION: Orange Star's tent, before / dawn. Aria hands Max a sealed order.
 ARIA: Take the key and the boy. / Alive. Alive, Max.
 MAX: Alive! Got it! Mostly!
-SAMI: Roger. We secure the boy. We / do not break the boy.
-ARIA: Hawke is there. Do not let him / charm you. He charms like a surgeon.
+SAMI: Roger. We secure the boy. We / don't break the boy.
+ARIA: Hawke is there. Don't let him / charm you. He charms like a surgeon.
 MAX: Big man isn't charmed by / anybody!
 SAMI: Max. You adore the Marshal's coat.
 MAX: ...It's a really good coat.
@@ -71,7 +71,7 @@ HAWKE: It is a statement of fact. / Do not put it in writing.
 == m26_post
 @SONG co:max
 MAX(s): Okay! We fall back! Not / because you won!
-SAMI: Roger. Because you have / got something we do not.
+SAMI: Roger. Because you have / got something we don't.
 MAX: What?!
 SAMI: A plan that agrees with / itself, Max.
 MAX: ...Pathetic. I mean, wow.
@@ -195,7 +195,7 @@ ASUKA: It is. I know.
 CRUMB CO: Is that bad?
 ASUKA: It is the beginning. A man who / has nothing to protect is dangerous.
 CRUMB CO: Is he dangerous?
-ASUKA: He is happy. In him, it is / the same thing.
+ASUKA: He is happy. With Von Bolt, / that is the same thing.
 FLAK: Flak gave old man sandwich. / Old man cried. Flak confused.
 VON BOLT: Kehh... I am poor. And I / feel FANTASTIC. Write that down.
 
@@ -411,7 +411,7 @@ ARIA: You held. It's all I wanted. / Sit down. Eat something.
 OLAF: Aria! Blue Moon will take / the second line! Ice and honour!
 KANBEI: Yellow Comet the third. / Kanbei's seal is on page one.
 EAGLE: And the sky is mine. Last / act. Death from above.
-NELL: And I will be the first line. / Don't argue, dear.
+NELL: And I'll be the first line. / Don't argue, dear.
 ARIA: Nell. You don't have to.
 NELL: Yes, I do. Someone has to / be sorry first, in public.
 ARIA: ...Then you're the first. I'll / be the last.
@@ -432,7 +432,7 @@ RACHEL: I can do both. It's rule two.
 ASUKA: Commander Rachel. Commander Sami. / The Line ends today. Step aside.
 RACHEL: Rule one used to say the Accord / is just. I have crossed it out.
 RACHEL: I read your ledger. Twice. / Then I read what Nell signed.
-SAMI: Roger. I signed nothing. I only / saluted. That is its own kind of guilt.
+SAMI: Roger. I signed nothing. I only / saluted. That's its own kind of guilt.
 RACHEL: But my sisters are in that / Citadel. So I stand here. By the book.
 SAMI: And I stand with her. I've got / chocolate and a very stubborn spine.
 @IF ASUKA
@@ -700,11 +700,11 @@ ARIA: Andy's face. Andy's voice. / ...Do your best.
 ARIA: Orange Star, on me! Not one / step back! We end this here!
 
 == m31_day6
-ARIA: Rachel! Left flank! Do not / let them reach the stair!
+ARIA: Rachel! Left flank! Don't / let them reach the stair!
 RACHEL: By the book, Aria! By the / book! ...Your book!
 ARIA: Good. Then burn the other / one!
 NELL: Aria. Breathe.
-ARIA: I am breathing! Loudly!
+ARIA: I'm breathing! Loudly!
 
 == m31_day12
 ARIA: Build anew! BUILD ANEW! / Everyone who has a name, rise!

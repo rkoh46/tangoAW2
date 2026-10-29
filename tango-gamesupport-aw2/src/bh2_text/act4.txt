@@ -11,9 +11,9 @@ ASUKA: Max. Sami. You have until / dawn.
 MAX: Until dawn for what? I don't / negotiate. I punch.
 ASUKA: At dawn, every Allied HQ gets / the Accord's master ledger.
 ASUKA: Four seals. Thirty years. Every / nation, in its own handwriting.
-SAMI: You are bluffing.
+SAMI: You're bluffing.
 ASUKA: I do not bluff. It is in / the post. Already.
-MAX: Treachery! Hiding your shells / in a letter?! That is low!
+MAX: Treachery! Hiding your shells / in a letter?! That's low!
 ASUKA: I return what the Accord / kept from you, Max. For free.
 MAX: I don't care what's in your / book!
 SAMI: Max.
@@ -93,7 +93,7 @@ MAX: Read what?
 ASUKA: Every page. She signed the / first seal. She should hear it.
 SAMI: Roger. Commander Asuka. You / blew the Accord up from inside.
 ASUKA: No, Sami. I handed over / the match. The Accord lit itself.
-SAMI: That is not a defence.
+SAMI: That's not a defence.
 ASUKA: It is not a defence. It is / a fact. Those are different.
 MAX: I hate you. I don't hate you. / I hate that you're right.
 MAX: Grit's calling. Hang on. ...Grit? / ...Yes. ...I know, son.
@@ -121,17 +121,17 @@ NARRATION: Orange Star's castle town. / Rain. A map room above a bakery.
 NARRATION: A woman bends over the plans. / Nell's face. A harder jaw.
 ARIA: Four guards. One window. One / night. Tell me why it fails.
 ANDY: Uh... it's not my best plan?
-ARIA: It is not a plan, it's a hope. / Hope loses.
+ARIA: That's not a plan, it's a hope. / Hope loses.
 RACHEL: By the book, we should wait / for the others to calm down.
 ARIA: Rachel, the book says Nell is / in a tower. Burn the book.
 JAKE: Yo, who's the lady? She sounds / like Nell on a bad day.
-ARIA: I am Aria. Nell's twin. Your / sister, Rachel. The one you forgot.
+ARIA: I'm Aria. Nell's twin. Your / sister, Rachel. The one you forgot.
 RACHEL: I never forgot! You left!
 ARIA: I left to build what the Accord / forgot to. It's built. Come.
 HACHI: Kid, she's "A." Chairs, depots, / the broadcast. Her handwriting.
 ANDY: You wrote "Build anew"?! I / read it a thousand times!
 ARIA: You read it well. Nell kept / the peace so long it became a sentence.
-ARIA: I am done being polite. She / walks out of that tower tonight.
+ARIA: I'm done being polite. She / walks out of that tower tonight.
 NARRATION: Black Hole's side. The tower / is garrisoned. The rain is cold.
 ASUKA: Nell is in the tower. Andy will / come for her. Let him come.
 ASUKA: The CO on the radio holds / the town. I watch the window.
@@ -156,7 +156,7 @@ ADDER: A tower, rain and a rescue? / Photograph the window. No, the other.
 @IF VON BOLT
 VON BOLT: A prisoner! Kehh... an asset! / Never sell her. Rent her.
 @IF CLONE ANDY
-CLONE ANDY: Okay! The tower! Nell! / Is Andy coming? I will... hide.
+CLONE ANDY: Okay! The tower! Nell! / Is Andy coming? I'll... hide.
 @END
 RACHEL: By the book, we take the / town. Then the tower. No gaps.
 ANDY: Hold on, Nell! I'm coming! / Somebody grab the ropes!
@@ -186,7 +186,7 @@ NELL: Commander Asuka. I read the / ledger. It's true. All of it.
 NELL: I signed the first seal. I'll / answer for it. Properly.
 ASUKA: Then answer well, Nell.
 NELL: You don't sound like a monster.
-ASUKA: Monsters file less.
+ASUKA: I have been called worse, Nell. / Usually by people I beat.
 NELL(h): Ha! Oh, I like you. I wish / you were on my side.
 ASUKA: I am on the side of the facts. / They are the only honest party.
 NELL: Then we agree on something. / Andy, come on. We're leaving.
@@ -340,7 +340,7 @@ CRUMB CO: Ma'am. It's humming my name. / I think it's my name.
 ASUKA: Commander. You do not have to / do this.
 CRUMB CO: Yes I do, ma'am. It's my / post. Sergeant says so.
 MORTAR: Crumb.
-CRUMB CO: Sergeant? You said do not / open it.
+CRUMB CO: Sergeant? You said don't / open it.
 MORTAR: I said not until it was / time. It is time. Open it.
 STURM: Hobb. Open it. I am listening.
 CRUMB CO: Yes, sir.
@@ -530,7 +530,7 @@ ADDER: A train in sunset steam. / Photograph me beside it.
 @IF VON BOLT
 VON BOLT: A train! Kehh... freight / pays by weight! How much is it?
 @IF CLONE ANDY
-CLONE ANDY: Okay! A train! Andy's / on it! I will be gentle. I think.
+CLONE ANDY: Okay! A train! Andy's / on it! I'll be gentle. I think.
 @END
 @PARTNER ASUKA
 [CO2]: Front two, the market line. I / shall check the stalls' books as I fight.
@@ -613,7 +613,7 @@ ARIA: She writes tiny and wastes no / margin. I compared the letters.
 ARIA: It's Sonja's hand. Yellow / Comet's daughter, in a black coat.
 KANBEI: ...Kanbei knew. Kanbei kept / silent. It was not betrayal.
 KANBEI: It was a father. Be angry at / her, if you must. Not at him.
-ARIA: That is the worst kind of / enemy. She makes you doubt yourself.
+ARIA: That's the worst kind of / enemy. She makes you doubt yourself.
 ARIA: We fight her at the Last / Citadel. Every colour. Every unit.
 HACHI: A last stand! I'll hold the / market, kid. Free of charge.
 NELL: Aria. I'm so proud of you.

@@ -293,7 +293,7 @@ LASH: Ooh! A fight! A real fight / with a real Obelisk! Heehee!
 == m17_day5
 COLIN: S-Sis! They have an Obelisk! / It's... it's pointing at us!
 SASHA: Colin, breathe. It is a toy. A / large and dangerous toy.
-LASH: It is NOT a toy! It's / a MASTERPIECE!
+LASH: It's NOT a toy! It's / a MASTERPIECE!
 SASHA: It is a frame of black iron / with ambitions.
 
 == m17_post
@@ -492,7 +492,7 @@ CRUMB CO: "Hobb, Philip. Quartermaster / of the Accord's Office of Works."
 CRUMB CO: "Built the inner works of the / Obelisk. Struck from the rolls."
 CRUMB CO: "Heirs: one grandson. Whereabouts / unknown. Item: one biscuit, hardtack."
 CRUMB CO: "Seal of the Office. Issue / number one."
-CRUMB CO: Issue... number one. That's / Gerald. That is GERALD.
+CRUMB CO: Issue... number one. That's / Gerald. That's GERALD.
 CRUMB CO(s): Grandson. Is that me, ma'am? / Am I the grandson?
 ASUKA: Yes, Commander. You are.
 CRUMB CO(s): My grandpa built the / Obelisk. And they erased him.
@@ -526,7 +526,7 @@ ADDER: A biscuit, a journal, a destiny. / Hush. I am moved. Photograph it.
 @IF VON BOLT
 VON BOLT: Hobb! Kehh... I inherited / his shelf! He never wrote me a letter!
 @IF CLONE ANDY
-CLONE ANDY: Okay. Crumb is the last / Hobb. I am the only Andy. We match.
+CLONE ANDY: Okay. Crumb is the last / Hobb. I'm the only Andy. We match.
 @END
 
 == m19_map

@@ -16,7 +16,7 @@ SENSEI: And the seventh?
 KANBEI: ...Kanbei has not decided.
 NARRATION: The Comet Chain. Night. Rain, / fog, and ten thousand paper lanterns.
 NARRATION: The Lantern Night. Yellow / Comet's B Copters sleep at anchor.
-SENSEI: Easy there, youngsters. It's / Lantern Night. Respect the dead.
+SENSEI: Now, now, youngsters. It's / Lantern Night. Er... mind the lights.
 SENSEI: Each light is for someone who / did not come home. Mind your boots.
 ASUKA: Sensei. We are not here for / the festival.
 SENSEI: Nobody ever is. And who's / this? A new face in the rain?
@@ -119,7 +119,7 @@ GRIMM: And who's the fancy lady? / She's got feathers!
 KINDLE: Fancy? Feathers? I am the / event, you powdered bruiser!
 GRIMM: Powdered? That's donut sugar! / Don't touch my sugar!
 KINDLE: Sugar on my stage? Darling, / that is a crime.
-SENSEI: Easy, youngsters. Bridges are / holy. Don't blow all of them.
+SENSEI: Easy, youngsters. Bridges are... / holy, or something. Don't blow them all.
 KOAL: Sensei. Your lane is clear. / Fall back and your garden is safe.
 SENSEI: It's a puddle I liked. You / paved it. We've been over this.
 ASUKA: Koal. Kindle. Eleven bridges, / two armies in the middle.
@@ -151,7 +151,7 @@ KINDLE: Efficient! He said efficient! / The man is a poet!
 KOAL: It is a surveyor's word.
 KINDLE: It is the finest word in / the language. Say it again.
 KOAL: Efficient.
-SENSEI: Aye, you two. Go carefully. / The Table's ahead.
+SENSEI: Aye, you two. Go carefully. The / Table's ahead. Or behind. I forget.
 SENSEI: And mind the Emperor. He's / in no mood to be thanked.
 KINDLE: Darling Sensei, we thank / nobody. We applaud. Thrice.
 SENSEI: ...Sentimental fools. Go.
@@ -195,7 +195,7 @@ JUGGER: CRYSTAL: UNIDENTIFIED. HUM: / MATCHES TARGET. QUERY: SAME HUM.
 @IF FLAK
 FLAK: Flak punches rock! Rock heals / Flak! Win!
 @IF LASH
-LASH: Ooh! Healing crystals! I will / take one apart! Just one! Heehee!
+LASH: Ooh! Healing crystals! I'll / take one apart! Just one! Heehee!
 @IF ADDER
 ADDER: Crystals. They glow, like me. / Photograph us together.
 @IF VON BOLT
@@ -289,7 +289,7 @@ ASUKA: Four Black Cannons, Sensei. / They shell the walls, not the Hall.
 ASUKA: No time limit. I am in no / hurry to finish what I came to do.
 KANBEI: Good. Then Kanbei need not / hurry either.
 KANBEI: Come, Asuka. Let honour judge us.
-ASUKA: Honour. I will file it / under evidence.
+ASUKA: Honour. I will keep that in mind.
 
 == m12_airlift
 @SONG co:sensei
@@ -324,7 +324,7 @@ KANBEI(s): Kanbei signed nothing he read. / Kanbei signed everything he trusted.
 KANBEI: It is the same shame. The / Accord asked, and he kept silent.
 KANBEI: Honour has no manual for / that. Kanbei is still writing one.
 ASUKA: The truth will cost you your / people's trust.
-KANBEI: Then let it cost. A people should / pay dearly for the truth.
+KANBEI: Then let it cost. The truth / should never come cheap.
 KANBEI: Kanbei yields the field. Not / the Table. A place stays set.
 KANBEI: The seventh chair has a / scarf. It will stay. For whoever
 KANBEI: comes to it. Kanbei will not / ask her name.
@@ -338,7 +338,7 @@ KANBEI: Do not thank Kanbei. Win / honourably. It is the only
 KANBEI: thing he ever asked of / anyone he loved.
 NARRATION: Outside, Mortar stands at / the door, his back to the room.
 MORTAR: I never heard anything, ma'am.
-ASUKA: That, Sergeant, is why I / promoted you in my head.
+ASUKA: That, Sergeant, is why I trust / you.
 
 == m12_map
 @SONG ally2
@@ -366,9 +366,9 @@ GRIMM: Har! The other tide's mine! / Whoever's on the radio... hi!
 GRIMM: I'm Grimm! I punch / islands! Bring a snack!
 ASUKA: The east tide goes to the CO / on the radio. Keep Grimm off the strait.
 @IF ASUKA
-ASUKA: Two tides, two lessons. I shall / teach both by the clock.
+ASUKA: Two tides, two fights. I intend / to win both.
 @IF CRUMB CO
-CRUMB CO: Hello, Grimm! I have snacks! / Gerald says do not share the biscuit.
+CRUMB CO: Hello, Grimm! I have snacks! / Gerald says don't share the biscuit.
 @IF HAWKE
 HAWKE: Two fronts, one deadline. / Very well.
 @IF KOAL

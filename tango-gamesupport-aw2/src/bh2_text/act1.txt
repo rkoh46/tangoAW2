@@ -123,21 +123,21 @@ JESS: Whatever is inside, my / ministry's stamp is on its paper.
 JESS: I need to know why I signed / it. Do you understand me?
 ASUKA: I do. When I know, you will / know.
 JESS: Is that a promise?
-ASUKA: It is an invoice.
-JESS: ...Tanks first. Paperwork / after. I will collect.
+ASUKA: It is. I keep those.
+JESS: ...Good. I will be checking. / Tanks first, paperwork after.
 NARRATION: The quay. Dusk. The crate / swings aboard on a long chain.
 CRUMB CO: Ma'am? Can I ask something? / What does "consignee" mean?
 ASUKA: The one a shipment is for. / The one who is meant to open it.
 CRUMB CO: HOBB. So it's for... Hobb? / It's a little bit my name.
 ASUKA: Hobb is a man the Accord / erased. I think you are what is left.
 CRUMB CO(s): I don't have family, ma'am. / I have Gerald. And Sergeant.
-ASUKA: Gerald is a clue, Commander.
+ASUKA: Gerald is also a clue, / Commander.
 CRUMB CO: He is a friend!
-ASUKA: Both are true. It is allowed.
+ASUKA: He can be both.
 CRUMB CO: The mark on his wrapper... / the keyhole. It's on the crate too.
 ASUKA: I know. I have seen it in old / records three times. Never named.
 CRUMB CO(s): Ma'am, what if I'm nobody's / consignee? What if I'm nobody's?
-ASUKA: Then you are mine. A quartermaster / is always somebody's.
+ASUKA: Then you belong to Black Hole. / And to me. That will do.
 CRUMB CO(h): Thank you, ma'am! ...Is that / an order or a nice thing?
 ASUKA: It is an order. The nice / thing is a side effect.
 MORTAR: Crumb. Board the ship.
@@ -249,7 +249,7 @@ JUGGER: CONSIGNEE: SYMBOL. QUERY: / WHO PREFERS A SYMBOL TO A NAME.
 @IF FLAK
 FLAK: Flak not read. Flak saw a / keyhole. Flak saw one. Good eyes.
 @IF LASH
-LASH: A keyhole! There is always a / door! Where is the door? Heehee!
+LASH: A keyhole! There's always a / door! Where is the door? Heehee!
 @IF ADDER
 ADDER: A secret patron? Delicious. / Photograph the keyhole. Left side.
 @IF VON BOLT
@@ -434,7 +434,7 @@ WICK: Is it all right if I say / it was not a battle?
 WICK: It was a weather report. / Everyone just lost.
 MORTAR: Wick. Say that again, and / the General hears.
 ASUKA: The General has heard. And / agrees, Private. It was weather.
-ASUKA: Now we must be the climate.
+ASUKA: Weather passes. We have to / be the ones who stay.
 VON BOLT: Evergreen's treasury! The / harbour ledgers! Second pick!
 JUGGER: EXILE CAPITAL: FALLEN. NEW / CAPITAL: WE ARE. QUERY: WHERE.
 FLAK: Flak ate exile's feast. Good / feast. Flak sorry. Not sorry.
@@ -503,7 +503,7 @@ ASUKA: Captain Eagle. You will find / my fleet there before you.
 EAGLE: Yeah, yeah. You're a lot of / things, lady. Fast is one of them.
 ASUKA: Thank you.
 EAGLE: It wasn't a compliment!
-ASUKA: It was precise. I accept / precision.
+ASUKA: Fast is accurate. I will take it.
 JAVIER: By my honour... she is / either a saint or a siege engine.
 ASUKA: Neither, Sir Javier. A clerk.
 
@@ -514,7 +514,7 @@ MORTAR: Which one?
 WICK: The one next to the crate.
 LASH: Ooh! Lemme see! It hums in / B-flat! Heehee!
 ADDER: Doctor, you are standing in / my light. Move your toys.
-LASH: You are standing in my toys, / Mr Hair!
+LASH: You're standing in my toys, / Mr Hair!
 KOAL: Both of you are standing on / my road. Move.
 ASUKA: Of course it hums. Count / them again, Private.
 
@@ -600,7 +600,7 @@ ADDER: Envelopes with keyhole seals! / I adore a theatrical flap.
 @IF VON BOLT
 VON BOLT: Kehh! Vindicated! I SAID / he never scrubbed a reef! In writing!
 @IF CLONE ANDY
-CLONE ANDY: Okay. Somebody lied to a / nice pirate. I will apologise to him.
+CLONE ANDY: Okay. Somebody lied to a / nice pirate. I'll apologise to him.
 @END
 DRAKE: ...Can I keep the boardwalk?
 ASUKA: You may keep the boardwalk.
@@ -641,9 +641,9 @@ KOAL: I paved two thousand miles. / Nobody ever put a sign on it.
 JESS: It was a good road. I drove / it. That is why this hurts.
 KOAL: Then do not hold the seam.
 JESS: I cannot hold anything else.
-JESS: Koal. You know what a border / is? It is a promise a road breaks.
-KOAL: A border is a road that / stopped. I broke nothing.
-JESS: You broke the Fuel Line. In / advance. I can hear the wrench.
+JESS: You know what a border is, / Koal? A promise. And you break it.
+KOAL: A border is where a road / stops. I broke nothing.
+JESS: You will break the Line. I can / hear the wrench in your belt.
 KOAL: That is the wind in the pipe. / I have not touched it. Yet.
 KOAL: Hold your seams, Commander. I / will respect every one. Until I do not.
 
@@ -694,7 +694,7 @@ KANBEI: A word from a lullaby. It / is nothing. Kanbei is tired.
 OLAF: Ha! We fear a lullaby?! Blue / Moon fears nothing!
 RACHEL: A new letter. "A." again. Same / neat hand. "Common cause. Build anew."
 EAGLE: Who IS this A.? I want to / hate her cleanly.
-SAMI: Roger. We hold the east, one / colour at a time. Until Nell is free.
+SAMI: Roger. We hold the east / until Nell is free.
 NARRATION: On the cushion of the empty / chair, the gavel waits.
 
 == m08_staff
@@ -711,7 +711,7 @@ KOAL: Eleven bridges run the length / of the Chain. I will pave all eleven.
 KINDLE: And I shall accompany him, / darling. Someone must make bridges fun.
 KOAL: Someone must stay in her lane.
 JUGGER: ROSTER: KOAL PLUS KINDLE. / ODDS OF ARGUMENT: 100 PERCENT.
-LASH: Ooh, lanterns! Do they explode? / I will check! Heehee!
+LASH: Ooh, lanterns! Do they explode? / I'll check! Heehee!
 ADDER: A festival! Banners, an / audience, a stage. Which hotel?
 CRUMB CO: Ma'am! I'm staying with the / crate. Gerald says he's got it.
 
