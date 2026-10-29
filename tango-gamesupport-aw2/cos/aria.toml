@@ -18,7 +18,7 @@ stars = { cop = 0, scop = 7 }
 
 [d2d]
 name = "Vengeance"
-text = "All units +3% attack and defense. At 8 HP or less: 28%, up to 64% at 2 HP (6% per HP), 88% at 1 HP."
+text = "Firepower and defense rise 3%. Hurt units fight harder: 28% at 8 HP, up to 64% at 2 HP and 88% at 1 HP."
 # the flat 3% (every unit but an Oozium) is a mod; Vengeance depends on the unit's HP (crate::aria::vengeance): the check below plays it in battle
 mods = [ { units = "all", attack = 3, defence = 3 } ]
 # firepower and defence % at 8, 7, 6, 5, 4, 3, 2, 1 displayed HP (9 and 10: nothing; never an Oozium): crate::aria::VENGEANCE
