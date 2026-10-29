@@ -13,20 +13,20 @@ ASUKA: At dawn, every Allied HQ gets / the Accord's master ledger.
 ASUKA: Four seals. Thirty years. Every / nation, in its own handwriting.
 SAMI: You're bluffing.
 ASUKA: I do not bluff. It is in / the post. Already.
-MAX: Treachery! Hiding your shells / in a letter?! That's low!
+MAX: A letter?! That's your big / weapon? That's low, lady!
 ASUKA: I return what the Accord / kept from you, Max. For free.
 MAX: I don't care what's in your / book!
 SAMI: Max.
 MAX: ...I care a little.
 SAMI: Roger. So do I.
 @IF ASUKA
-ASUKA: Information is cheap to send / and costly to receive. Enjoy.
+ASUKA: Sending it costs nothing. / Reading it will cost them.
 @IF CRUMB CO
 CRUMB CO: Ma'am, that is a lot of mail! / Do I stamp them? Gerald can lick.
 @IF HAWKE
 HAWKE: A leak costs us nothing. It may / cost them everything.
 @IF KOAL
-KOAL: A letter travels faster than / any road. I resent that. Mind the post.
+KOAL: A letter beats any road. / I resent that. Mind the post.
 @IF KINDLE
 KINDLE: A scandal, darlings! Across / four nations! Divine!
 @IF JUGGER
@@ -76,12 +76,12 @@ JESS: Olaf, I read the same page. / My stamp is on it too.
 JAVIER: Hark! My towers stand on / a keyhole! I demand to know why!
 KANBEI: Kanbei's seal. On the first / page. Kanbei was a fool.
 EAGLE: So who's supposed to be mad / at who here? I'm lost.
-GRIT: Ayup. All of us. At each / other. Reckon that's the plan.
+GRIT: All of us, at each other. / Reckon that was the plan.
 MAX: Everybody shut up! You're / ruining my fight!
 SAMI: Max. Look. Blue Moon's guns / are leaving the plains.
 MAX: What?! The big blue guy's / leaving?!
 SAMI: Roger. The Accord is breaking.
-MAX: ...Pathetic.
+MAX: ...Unbelievable.
 
 == m20_post
 @SONG co:max
@@ -96,7 +96,7 @@ ASUKA: No, Sami. I handed over / the match. The Accord lit itself.
 SAMI: That's not a defence.
 ASUKA: It is not a defence. It is / a fact. Those are different.
 MAX: I hate you. I don't hate you. / I hate that you're right.
-MAX: Grit's calling. Hang on. ...Grit? / ...Yes. ...I know, son.
+MAX: Grit's calling. Hang on. ...Grit? / ...Yeah. ...Yeah, I know.
 SAMI: Max.
 MAX: He says don't read it in front / of the troops. Too late!
 SAMI: Roger. Fall back to the tower. / We get Nell. We fix this.
@@ -108,7 +108,7 @@ ASUKA: Of course they are. They paid / each other for thirty years.
 WICK: Is it all right if I say / I feel sorry for them?
 ASUKA: You may feel what you like, / Private. Just keep your rifle clean.
 WICK: ...Yes, ma'am. Is it all right / if I feel sorry for us too?
-ASUKA: Yes. That is the correct / ratio.
+ASUKA: Yes. That is only fair.
 VON BOLT: A leak! Free of charge! / Kehh... who undercut me?!
 ASUKA: I did, Colonel. For effect.
 VON BOLT: For EFFECT?! I charge for / effect!
@@ -192,10 +192,10 @@ ASUKA: I am on the side of the facts. / They are the only honest party.
 NELL: Then we agree on something. / Andy, come on. We're leaving.
 ANDY: Thanks, Black Hole lady! ...I / mean... you're still the enemy!
 ASUKA: Go, Andy. Bring her home.
-HAWKE: You let her go. I record that / as a mistake.
+HAWKE: You let her go. That was / a mistake.
 ASUKA: A caged Nell guards nothing. / A free Nell argues with her allies.
 ASUKA: And I want them arguing.
-HAWKE: A deliberate one, I see. Very / well.
+HAWKE: A deliberate one, I see. / Very well.
 HAWKE: Her file is a single line, / by the way. "Aria. Nell's twin."
 HAWKE: Raised east of the fence. I / distrust a woman with no file.
 ASUKA: You are describing me, Marshal.
@@ -224,9 +224,9 @@ ANDY: I heard that! Who's out there?!
 ANDY: That's my voice! That's my / face! Show yourself!
 CLONE ANDY: Hi. It's me. I mean, it's / Clone Andy. ...Hi, Andy.
 ANDY: You've got my face.
-CLONE ANDY: I know. It was roomy. I'm / sorry. I picked a name.
+CLONE ANDY: I know. I'm sorry. I didn't / pick it. I did pick a name, though.
 ANDY: You can't have my name!
-CLONE ANDY: I did not take the / name. I took "Clone". It's mine.
+CLONE ANDY: I didn't steal your / name. "Clone" is the part that's mine.
 ANDY: It's not funny.
 CLONE ANDY: It's a little funny.
 ANDY: ...A little.
@@ -346,7 +346,7 @@ STURM: Hobb. Open it. I am listening.
 CRUMB CO: Yes, sir.
 NARRATION: Crumb lifts Gerald to the / keyhole mark. It fits. A click.
 NARRATION: The crate sighs open. Inside, / a bronze key. A canvas journal.
-ASUKA: The key. Long as an arm. A / keyhole for a bow.
+ASUKA: A key as long as my arm.
 NARRATION: She reaches for it. It is / cold as a well. She withdraws.
 ASUKA: It refuses me.
 CRUMB CO: It's warm. Like a hand. / Ma'am, it's like a hand.
@@ -359,20 +359,20 @@ STURM: Read the book, Hobb.
 CRUMB CO: "Journal of Quartermaster / Philip Hobb. Office of Works."
 CRUMB CO: "The Accord asked me to build / a door. I said yes. They pay well."
 CRUMB CO: "Day 40. It is built. It is / not a door to any room I know."
-CRUMB CO: "Day 61. A man came through at / dusk. Tall. Cold. One word. Mine."
+CRUMB CO: "Day 61. A man came through at / dusk. Tall, cold. He said: Mine."
 ASUKA: Sturm.
 CRUMB CO: "Day 62. They want it sealed. / The man walked to the coast, and the
 CRUMB CO: world fell to him. Then he went / back, to fetch the rest."
 CRUMB CO: "Day 63. I sealed it behind / him. The Accord wished to burn it."
-CRUMB CO: "A door that cannot open is a / wall. A wall that will not burn, a vow."
+CRUMB CO: "It would not burn. So I / locked it, and made a promise."
 CRUMB CO: "Day 70. The Accord strikes me / from the rolls. They bury the door
 CRUMB CO: under an Obelisk and a fence. / I made a key. Only my blood turns it."
 CRUMB CO: "If the door must open again, / let a Hobb decide. If it must close,
 CRUMB CO: let the same. Day 71. I left / my last biscuit with the child."
 CRUMB CO: "Issue number one. The seal is / the key to the crate. He will know."
 CRUMB CO: "He is a good boy. I have not / met him."
-CRUMB CO(s): He didn't meet me, ma'am. / He wrote me a biscuit.
-ASUKA: He wrote you a journal, / Commander. The longest letter I know.
+CRUMB CO(s): He never met me, ma'am. / But he left me a biscuit.
+ASUKA: He left you this as well, / Commander. A very long letter.
 STURM: Where is the door?
 ASUKA: Under your feet, Lord Sturm. / It is the Obelisk.
 STURM: I know. Bring the key.
@@ -402,7 +402,7 @@ HACHI(s): Kid, I didn't know about / the grandson. I'd never have sold it.
 HACHI: I'll tell Aria you've got / the key. She'll want a word.
 HACHI: She'll be loud. Don't take / it personal.
 ASUKA: I look forward to it, Hachi.
-JAKE: Yo, that was wild. Neotanks! / Respect, black lady.
+JAKE: Yo, that was wild. Neotanks! / Respect, lady in black.
 JAKE: But we're comin' back. Big time. / Count on it.
 CRUMB CO: I'm sorry about the cellar, / Mr Hachi.
 HACHI: Kid. Don't be. Keep it. It's / a good basement.
@@ -433,7 +433,7 @@ ASUKA: ...Noted, Lord Sturm.
 @SONG co:adder
 NARRATION: Orange Star's skies and coast. / Bomber, fighter, and a long beach.
 ADDER: Ladies and gentlemen: the star / arrives. Mind the cape.
-RACHEL: By the book: an air force / needs an airfield. Delete the airfield.
+RACHEL: By the book: an air force / needs an airfield. Take it out.
 JAKE: Yo, pretty boy! Wanna dance?
 ADDER: Pretty boy? Kneel before Adder.
 RACHEL: Rule six: a pilot is only / as brave as his fuel.
@@ -443,10 +443,10 @@ ADDER: Hairspray, you tank-driving brute, / is a delicate mist of ambition.
 RACHEL: Jake, don't engage. Rule one: / do not answer the pilot.
 JAKE: Rule one is boring, Rach!
 KINDLE: Darling Adder! I hear they / gave you a sky. Try not to scorch it.
-ADDER: Kindle! Madam! Go and light a / candle in someone else's wing.
-ASUKA: Adder. They will answer your / sky. Be careful.
+ADDER: Kindle! Madam! Go and set / fire to someone else's wing.
+ASUKA: Adder. They will be ready / for you. Be careful.
 ADDER: Careful? Darling General, I am / never careful. I am photographed.
-HAWKE: Adder. Your angles, please. / Orange Star has real anti-air.
+HAWKE: Adder. Watch your approach. / Orange Star has real anti-air.
 ADDER: Marshal, I am delighted to be / criticised by a gentleman.
 RACHEL: By the book: hold the coast. / The beach is ours. The sky is not.
 JAKE: Nah, Rach. The sky is nobody's. / Yo, flak crews, pick a target!
@@ -463,22 +463,22 @@ ADDER: I will write it in!
 == m24_post
 @SONG co:adder
 ADDER(s): My wing. My lovely, / lovely wing. Grounded by a book.
-RACHEL: Rule seven: an air force is / only as good as its fields.
-ADDER: I concede the point. Their / answer is real. I dislike it.
-ADDER: It is also excellent. Photograph / the flak. Now.
+RACHEL: Rule four: an air force is / only as good as its fields.
+ADDER: I concede. Their anti-air / is real. I hate it.
+ADDER: It is also magnificent. / Someone photograph that flak.
 JAKE: Yo, good flyin', pretty boy. / You were smooth up there.
 ADDER: Pretty! Say it twice!
 JAKE: Pretty. Pretty boy.
 RACHEL: Rule: never admire the / enemy.
 JAKE: Rule: break rules, Rach.
 RACHEL: ...Commander Asuka. My / sister left the tower.
-ASUKA: Your sister is safe, Rachel. / Both are.
+ASUKA: Your sister is safe, Rachel. / So is the other one.
 RACHEL: ...Both. Thank you. That / was not in the book either.
 ASUKA: The book is short.
 RACHEL: Rule eight. It's new. "When / the enemy keeps her word, say so."
 ASUKA: I accept the rule.
 HAWKE: Adder. The cape survived?
-ADDER: Marshal, the cape is the / only survivor of the war.
+ADDER: Marshal, the cape survived. / My pride did not.
 KINDLE: Darling Adder! Wonderful! / You flew like a firework. A damp one.
 ADDER: Kindle! Madam! One day, I / shall be more fabulous than you.
 KINDLE: Darling, you have been / saying that for years.
@@ -489,7 +489,7 @@ KINDLE: ...Today it was a little true.
 @SONG enemy1
 MORTAR: Ma'am. Adder has asked if / the beach is open to the press.
 ASUKA: There is no press, Sergeant.
-MORTAR: He says to produce one.
+MORTAR: He says to find one.
 WICK: Is it all right if I'm / the press?
 ASUKA: Yes, Private. Take notes. He / will want to be quoted.
 KINDLE: Darling Adder! I shall be / the press. I will say: adequate.
@@ -506,7 +506,7 @@ ANDY: Okay! The train! Nobody touches / the train! It's got children on it!
 HACHI: Closing-down sale, kid! Everything / half off but the train!
 ASUKA: Eleven cars. Hawke weighed it at / the Rail Yard. It was far too heavy.
 ASUKA: Door-seal machinery, from Lab 7. / Project 17. I mean to capture it.
-HAWKE: The weight was too great for / children. The manifest lied.
+HAWKE: Too heavy for children / alone. The manifest lied.
 ANDY: It's not lying! It's got / kids and it's got a machine!
 ANDY: Both are true! Okay?!
 @IF ASUKA
@@ -514,7 +514,7 @@ ASUKA: A train on a rail has no / second option. I find that restful.
 @IF CRUMB CO
 CRUMB CO: Is it a nice train, ma'am? / Gerald loves trains.
 @IF HAWKE
-HAWKE: A train cannot leave its rails. / I shall approach.
+HAWKE: A train cannot leave its / rails. It will wait for me.
 @IF KOAL
 KOAL: Rails are roads with opinions. / I will remove the opinions.
 @IF KINDLE
@@ -528,7 +528,7 @@ LASH: Ooh, a train! Can I blow up / the tracks? Just the second one!
 @IF ADDER
 ADDER: A train in sunset steam. / Photograph me beside it.
 @IF VON BOLT
-VON BOLT: A train! Kehh... freight / pays by weight! How much is it?
+VON BOLT: A train! Kehh... freight / pays by weight! What's it carry?
 @IF CLONE ANDY
 CLONE ANDY: Okay! A train! Andy's / on it! I'll be gentle. I think.
 @END
@@ -580,7 +580,7 @@ NARRATION: The heavy train, captured. / Eleven cars, steam, and silence.
 ASUKA: Open the third car.
 NARRATION: Crates of bolted steel and / a mass of black machinery.
 ASUKA: A seal machine. A frame of / rails and clamps. For one door.
-HAWKE: I said it was heavy. I / underestimated.
+HAWKE: I said it was heavy. I / did not say how heavy.
 ASUKA: Project 17. They meant to / push him back and weld it shut.
 CRUMB CO: Ma'am? If they weld the / door shut, who's on the other side?
 ASUKA: Whoever the storm came from.
@@ -621,7 +621,7 @@ ARIA: Don't be proud, Nell. Be / angry. For both of us.
 
 == m24_day3
 JAKE: Yo, pretty boy! Your wing's / low! Wanna land?
-ADDER: Wing? Madam, it's called a / formation. It is deliberate!
+ADDER: Wobbly? Boy, it's called a / formation. It is deliberate!
 JAKE: It's wobbly, bro!
 ADDER: I shall have you know, I / wobble on purpose.
 RACHEL: Jake. Focus.
@@ -650,11 +650,11 @@ ASUKA: The train is ours. The key is / ours. The Allies know both.
 HAWKE: They will come. The only / question is where, and in what order.
 ASUKA: The depot first. The HQ second. / The Obelisk last. Always the door.
 VON BOLT: Kehh... my vault will / empty before they reach it.
-ASUKA: Then save the truth for the / day it does, Colonel.
-VON BOLT: Truth! I never keep any. / It costs too much to store.
+ASUKA: Then spend wisely, Colonel. / We need every coin.
+VON BOLT: Wisely! Kehh! I have never / spent a coin any other way.
 JUGGER: THE KEY. THE MACHINE. THE / BOY. THREE ASSETS. ONE DOOR.
 LASH: Ooh, a seal machine! ...It has / no handle. How do you turn it on?
-KINDLE: Darlings, what a finale! / Everything converges on a door.
+KINDLE: Darlings, what a finale! / Everything ends at one door.
 FLAK: Flak guards boy. Boy has key. / Flak guards key. Simple.
 CRUMB CO: Ma'am? What happens if I / turn the key? Really?
 ASUKA: Nobody knows, Commander. That / is why you decide, and not me.
