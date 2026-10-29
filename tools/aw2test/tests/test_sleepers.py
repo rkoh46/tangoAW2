@@ -25,7 +25,7 @@ def alive(e, g, army):
 def bh2_m31_hidden_lines_are_off_the_battlefield(ctx):
     """The gauntlet engine (MissionDef::hidden): while Nell fights, Olaf, Kanbei and Eagle are not on the battlefield: no HQ (their cells plain), no units, no funds, no turn (the turn goes from Nell to
     the player, day after day). Nell's HQ taken on day 10: Olaf's HQ is built on his island, his zone's neutral towns become his, his wave lands, he plays (the computer's) and has his war chest
-    (25,000 and nine days' savings at 1,000); Kanbei and Eagle stay hidden."""
+    (25,000 and nine days' savings at 1,000); a base the player raided first is taken back, wave units whose cells the player stands on land on the nearest free cells; Kanbei and Eagle stay hidden."""
     e, g, d = b2.enter(ctx, 31)
     d.leave_setup()
     a2.intro(ctx, e, d, "m31", (0,))
@@ -57,6 +57,16 @@ def bh2_m31_hidden_lines_are_off_the_battlefield(ctx):
     ctx.check(set(seen) <= {1, 5}, f"only Nell and the player take turns ({seen})")
     d.wait_control()
     g._units_base = g._players_base = None
+    # the player raids first: takes the island's base (23,5) and stands on three of Olaf's landing cells and his HQ's cell
+    bp.capture(ctx, e, g, d, (23, 5), 5)
+    bp.settle(e, g, d)
+    d.wait_control()
+    g._units_base = g._players_base = None
+    ctx.eq(bp.owner(e, 23, 5), 5, "the player took the island's base before Olaf came")
+    blockers = [u for u in g.units(army=5) if not u["flags"] & 0x08 and (u["x"], u["y"]) != (23, 5)][:4]
+    for u, cell in zip(blockers, [(24, 9), (17, 6), (18, 10), (24, 6)]):
+        d.place_unit(u, *cell)
+    e.wait(4)
     e.w16(0x0300_4080, 10)
     bp.capture(ctx, e, g, d, bp.HQS[0][1], 5)
     bp.settle(e, g, d)
@@ -64,7 +74,9 @@ def bh2_m31_hidden_lines_are_off_the_battlefield(ctx):
     ctx.eq(bp.owner(e, 24, 6), 2, "Olaf's HQ is built on his island (24,6)")
     towns = sum(1 for y in range(1, 14) for x in range(16, 31) if bp.owner(e, x, y) == 2)
     ctx.check(towns >= 8, f"his lake country's towns are his ({towns})")
-    ctx.check(len(g.units(army=2)) >= 20, f"his wave landed ({len(g.units(army=2))} units)")
+    ctx.eq(len(g.units(army=2)), 21, "his whole wave landed (21 units), those whose cells were taken on the nearest free cells")
+    ctx.eq(bp.owner(e, 23, 5), 2, "he took the raided base back")
+    ctx.check(all(g.unit_at(*c) is not None and g.unit_at(*c)["army"] == 5 for c in [(24, 9), (17, 6), (18, 10)]), "the player's units still stand where they were")
     ctx.eq(e.u8(p(2) + 0x1B), 2, "he is in the battle (the computer's)")
     ctx.eq(e.u32(p(2)), 34000, "his war chest: 25,000 and 9 x 1,000 saved")
     ctx.eq((e.u8(p(2) + 0x2D), e.u8(p(2) + 0x2E)), (24, 6), "his record knows his HQ")

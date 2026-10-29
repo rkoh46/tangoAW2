@@ -2937,6 +2937,44 @@ pub fn cut_funds(core: &mut Core) {
     }
 }
 
+/// Where a spawned unit of `kind` (for the army whose turn the spawn is set to) lands: its own cell if no unit stands there, else the nearest free cell (by distance, then row, then
+/// column) within 4 that the unit can enter.
+fn landing(core: &Core, x: u8, y: u8, kind: u8) -> Option<(u8, u8)> {
+    let (w, h) = (core.raw_read_16(MAP, -1) as i32, core.raw_read_16(MAP + 2, -1) as i32);
+    let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+    let free = |cx: i32, cy: i32| {
+        if cx < 0 || cy < 0 || cx >= w || cy >= h {
+            return false;
+        }
+        let row = core.raw_read_16(MAP + 0x417A + 2 * cy as u32, -1) as u32;
+        core.raw_read_8(MAP + 0x12 + row + cx as u32, -1) == 0
+    };
+    if free(x as i32, y as i32) {
+        return Some((x, y));
+    }
+    let mut best = None;
+    for r in 1..=4i32 {
+        for dy in -r..=r {
+            for dx in -r..=r {
+                if dx.abs() + dy.abs() != r {
+                    continue;
+                }
+                let (cx, cy) = (x as i32 + dx, y as i32 + dy);
+                if free(cx, cy) && !matches!(crate::oozium::move_cost(core, army, kind, cx, cy), 0 | 0xFF) {
+                    let k = (cy, cx);
+                    if best.map_or(true, |b: (i32, i32)| k < b) {
+                        best = Some(k);
+                    }
+                }
+            }
+        }
+        if let Some((cy, cx)) = best {
+            return Some((cx as u8, cy as u8));
+        }
+    }
+    None
+}
+
 /// A gauntlet line has fallen at (x, y) ([`Cond::LineFallen`]): the player holds it, or it is a neutral property (its army was destroyed and its HQ turned neutral). A plain cell is a
 /// hidden line not revealed yet.
 pub fn line_fallen(core: &Core, x: u8, y: u8) -> bool {
@@ -2960,7 +2998,8 @@ fn hidden_lines(core: &Core) -> Vec<Hidden> {
         .unwrap_or_default()
 }
 
-/// [`Action::Reveal`]: the hidden line of `army` comes onto the battlefield (the computer plays it), its HQ is built on its cell and the neutral properties of its zone become its own;
+/// [`Action::Reveal`]: the hidden line of `army` comes onto the battlefield (the computer plays it), its HQ is built on its cell and every property of its zone (towers included,
+/// the player's too, not the HQs) becomes its own;
 /// the map on screen is redrawn (the cells off screen are drawn when the camera reaches them).
 fn reveal(core: &mut Core, army: u8) {
     let Some(h) = hidden_lines(core).into_iter().find(|h| h.army == army) else { return };
@@ -2979,8 +3018,9 @@ fn reveal(core: &mut Core, army: u8) {
         for x in h.zone.x0..=h.zone.x1.min(w as u8 - 1) {
             let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
             let tile = core.raw_read_16(MAP + 0xA22 + 2 * (row + x as u32), -1);
-            if let Some((kind, 0)) = crate::five::property_tile(tile) {
-                if kind != 0 && kind != 5 {
+            // (every property of its zone becomes its own, the player's too: a base raided before it came is taken back; HQs stay whose they are)
+            if let Some((kind, owner)) = crate::five::property_tile(tile) {
+                if kind != 0 && owner != army as usize {
                     put(core, x, y, kind);
                 }
             }
@@ -3001,8 +3041,8 @@ fn reveal(core: &mut Core, army: u8) {
     }
     core.raw_write_8(p + 0x2D, -1, h.hq.0);
     core.raw_write_8(p + 0x2E, -1, h.hq.1);
-    for k in 1..=4 {
-        core.raw_write_8(p + 0xB + k as u32, -1, kinds[k] as u8);
+    for k in 1..=5 {
+        core.raw_write_8(p + 0xB + k as u32, -1, kinds[k] as u8);       // (+0xC bases, cities, airports, ports, +0x10 towers)
     }
     core.raw_write_32(p + 8, -1, 1000 * kinds[..5].iter().sum::<u32>());
     crate::wasteland::render_map(core);
@@ -3383,10 +3423,10 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
         }
         Magic::Call(SPAWN, packed) => {
             let (x, y, kind) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8);
-            let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
-            if core.raw_read_8(MAP + 0x12 + row + x as u32, -1) != 0 {
+            // (a cell already taken: the unit lands on the nearest free cell it can stand on, within 4; none: it does not come)
+            let Some((x, y)) = landing(core, x, y, kind) else {
                 return 0;
-            }
+            };
             let cpu = core.gba_mut().cpu_mut();
             cpu.set_gpr(0, x as i32);
             cpu.set_gpr(1, y as i32);

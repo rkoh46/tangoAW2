@@ -114,6 +114,11 @@ def compare_whole(ctx, a, b, label):
             def live(t):
                 return b"".join(t[i:i + 12] if t[i] else bytes(12) for i in range(0, len(t), 12))
             a, b = dict(a, units=live(a["units"])), dict(b, units=live(b["units"]))
+        if k == "players":
+            # (AW2's own Lab count, +0x10 of each record, is not reset when the game recounts, so a resumed game counts a tower twice; tangoAW2 counts towers itself, crate::com_tower::towers)
+            def no_labs(t):
+                return b"".join(t[i:i + 0x10] + b"\0" + t[i + 0x11:i + size] for i in range(0, len(t), size))
+            a, b = dict(a, players=no_labs(a["players"])), dict(b, players=no_labs(b["players"]))
         diff = [i // size for i in range(len(a[k])) if a[k][i] != b[k][i]]
         ctx.check(not diff, f"{label}: the {k} table byte for byte (records differing {sorted(set(diff))[:12]})")
         for r in sorted(set(diff))[:6]:
