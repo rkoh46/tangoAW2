@@ -115,6 +115,22 @@ def s_asuka(fog):
     return pokes, turns
 
 
+def s_aria(fog):
+    # Aria (CO 93: the CO byte of each player block, +0x1D of the game's own table at 0x02023284 + 0x3C an army: a 2-army game's table is not at 0x02030000, the five-army rooms') for both armies, units at 8, 5, 2 and 1 displayed HP on both sides next to each other. Each army in turn: the cursor over her wounded units (the HP numbers in the
+    # ramp on the map, the strip on the unit window), then an attack with the forecast open on a wounded target (the strip above the window, the DAMAGE box lifted), the attack, a second one: every peer must hash alike
+    # (frames and state) through the rollbacks that happen while the signs are on screen (docs/dev/aria.md "The signs")
+    pokes = ["when army=1 day=1 idle do poke 0x020232DD 5D", "when army=1 day=1 idle do poke 0x02023319 5D",
+             "when army=1 day=1 idle do unit 1 inf 8 3 80", "when army=1 day=1 idle do unit 2 inf 10 3 50", "when army=1 day=1 idle do unit 1 tank 8 5 20", "when army=1 day=1 idle do unit 2 tank 10 5 10",
+             "when army=1 day=1 idle do unit 1 inf 6 8 10", "when army=1 day=1 idle do unit 2 inf 12 8 80", "when army=1 day=1 idle do unit 1 tank 4 11 50", "when army=1 day=1 idle do unit 2 tank 14 11 20"]
+    look = goto(8, 3) + ["wait 40"] + goto(8, 5) + ["wait 40"] + goto(6, 8) + ["wait 40"] + goto(10, 3) + ["wait 40"]
+    fire1 = goto(8, 3) + A(30) + goto(9, 3) + A(60) + A(40) + ["wait 150"] + A(300)      # (Fire, the target: the forecast is open 150 frames, then the attack)
+    fire2 = goto(8, 5) + A(30) + goto(9, 5) + A(60) + A(40) + ["wait 150"] + A(300)
+    look2 = goto(9, 3) + ["wait 20"] + goto(9, 5) + ["wait 20"] + goto(10, 3) + ["wait 20"] + goto(10, 5) + ["wait 20"] + goto(6, 8) + ["wait 20"]
+    fire3 = goto(10, 5) + A(30) + goto(10, 5) + A(60) + A(40) + ["wait 100"] + A(300)      # (her Tank at 1 HP fires at the Tank beside it)
+    turns = [(0, look + fire1 + fire2), (1, look2 + fire3), (0, look2), (1, [])]
+    return pokes, turns
+
+
 def s_swap(fog):
     # 2P with Dual Strike tag pairs: army 1 chooses Change (CO SWAP) from the map menu (CO, Intel, Options, Save, Change, End): the swap plays on
     # the mover's window and must show on the waiting window; army 2 does the same on its turn
@@ -394,7 +410,7 @@ def s_p2k(fog):
     return [], [(0, [])]
 
 
-SCEN = {"asuka": s_asuka, "swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, "g2iv": s_g2iv, "g2hv": s_g2hv, "g2h": s_g2h, "p4k": s_p4k, "p2k": s_p2k, "hq3m": s_hq3m, "g4k": s_g4k, "g2k": s_g2k, "g4s": s_g4s, "hq3p": s_hq3p, "dropb": s_dropb, "big5": s_big5, "big5attack": s_big5attack, "hq4": s_hq4, "hq5": s_hq5, "hq3k": s_hq3k, "hq3h": s_hq3h, "hq3l": s_hq3l, "hq5h": s_hq5h, "hq3": s_hq3, "moveview": s_moveview, "move": s_move, "capture": s_capture, "build": s_build, "attack": s_attack, "power": s_power,
+SCEN = {"aria": s_aria, "asuka": s_asuka, "swap": s_swap, "tagpower": s_tagpower, "super": s_super, "g2i": s_g2i, "g2iv": s_g2iv, "g2hv": s_g2hv, "g2h": s_g2h, "p4k": s_p4k, "p2k": s_p2k, "hq3m": s_hq3m, "g4k": s_g4k, "g2k": s_g2k, "g4s": s_g4s, "hq3p": s_hq3p, "dropb": s_dropb, "big5": s_big5, "big5attack": s_big5attack, "hq4": s_hq4, "hq5": s_hq5, "hq3k": s_hq3k, "hq3h": s_hq3h, "hq3l": s_hq3l, "hq5h": s_hq5h, "hq3": s_hq3, "moveview": s_moveview, "move": s_move, "capture": s_capture, "build": s_build, "attack": s_attack, "power": s_power,
         "load": s_load, "yield": s_yield, "mash": s_mash}
 
 

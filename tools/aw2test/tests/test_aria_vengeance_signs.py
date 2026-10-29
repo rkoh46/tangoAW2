@@ -620,3 +620,56 @@ def aria_vengeance_signs_worst_case_banks(ctx):
         if b not in used:
             ctx.check(e.read(BG_PAL + 32 * b, 32) == before[b], f"bank {b} is the game's as it was")
     e.close()
+
+
+PEEKS = [(0x0600_0000 + 30 * 0x800, 0x800), (0x0600_0000 + 32 * 0x340, 32 * 8), (0x0500_0000, 0x200), (0x0300_20C0, 0x200), (0x0700_0000, 0x400),
+         (0x0601_0000, 32 * 1024), (0x0203_C3A0, 0x30), (0x0203_B000, 0x280), (0x0300_2B40, 0x20), (0x0300_2EFC, 4)]
+
+
+@test(modes=("ds",))
+def aria_vengeance_signs_netplay(ctx):
+    """Rollback safety: the match's inputs (her wounded Tanks, the cursor over one, then an enemy forecast on another left open) are replayed on two rollback peers (aw2_netplay_script: delayed inputs, rollbacks, the
+    peers' hashes compared) and the picture's state they end on, read on peer 0 -- BG1's tile map, our digit tiles, the BG and OBJ palettes and their buffers, OAM, all OBJ tiles, the signs' EWRAM (state, the tiles kept),
+    the window shadows -- is what the offline console shows after the same inputs. Nothing of the signs may live outside the console's own memory."""
+    # (the replay's pad is seat 0's alone: Andy is army 1 and attacks Aria's wounded units of army 2)
+    m = ctx.map()
+    targets = [(3, 80), (7, 50), (11, 20), (15, 10)]
+    for x, _ in targets:
+        m.unit(2, KIND, x, ROW).unit(1, ATTACKER, x, ROW + 1)
+    g = ctx.start(m, ["andy", os.environ.get("NP_CO", "aria")], humans=(1,), env=ENV)
+    for x, hp in targets:
+        ctx.set_hp(g, x, ROW, hp)
+    g.e.wait(30)
+    for x, _ in targets:
+        g.goto(x, ROW)
+        g.e.wait(20)
+    x = 7
+    g.select(x, ROW + 1)
+    g.move_to(x, ROW + 1)
+    g.choose("Fire", g.ACTION_MENU)
+    g.e.wait(60)
+    offline = {a: g.e.read(a, n) for a, n in PEEKS}
+    ok, peers, text = ctx.netplay_replay(g, PEEKS, env=ENV)
+    ctx.check(ok, "both rollback peers' hashes are identical through the replay")
+    st = strip_sprites(g.e)
+    ctx.check(st != [], "the forecast's strip is up at the end")
+    base = st[0][5] if st else 0
+    bank = next(iter({b for v in ours(g.e).values() for b in v}))
+    # (the cursor, the animated tiles and palettes differ by phase between a peer and the offline console, with or without Aria: only what the signs own is compared)
+    parts = {
+        "BG1 tile map": (0x0600_F000, 0x800, 0, 0x800),
+        "our digit tiles": (0x0600_0000 + 32 * 0x340, 256, 0, 256),
+        "the ramp's palette bank": (0x0500_0000, 0x200, 32 * bank, 32),
+        "... and its buffer": (0x0300_20C0, 0x200, 32 * bank, 32),
+        "the signs' state in EWRAM": (0x0203_C3A0, 0x30, 0, 0x30),
+        "the tiles kept under the strip": (0x0203_B000, 0x280, 0, 0x280),
+        "the window shadows": (0x0300_2B40, 0x20, 0, 0x20),
+        "the strip's tiles": (0x0601_0000, 32 * 1024, 32 * base, 640),
+    }
+    for name, (a, n, off, ln) in parts.items():
+        peer = peers.get(next(x for x, y in PEEKS if x == a))
+        ctx.check(peer[off:off + ln] == offline[a][off:off + ln], f"peer 0's {name} equal the offline console's")
+    oam_peer = peers[0x0700_0000]
+    for (i, *_rest) in st:
+        ctx.check(oam_peer[8 * i:8 * i + 6] == offline[0x0700_0000][8 * i:8 * i + 6], f"peer 0's strip sprite {i} in OAM equals the offline console's")
+    g.e.close()
