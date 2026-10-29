@@ -162,8 +162,8 @@ pub(crate) fn digit_tiles() -> Option<&'static [u8]> {
 
 /// The strip above the unit window ([`crate::aria_sign`]) this frame: its height (0 none), for the damage box to stand above it.
 static SIGN_H: AtomicI32 = AtomicI32::new(0);
-/// Its OBJ tiles: 20 of the free ones of a battle (776..795: 16 for "Vengeance", 4 for the number).
-const T_SIGN: u16 = 776;
+/// Its OBJ tiles: 20 that only the full-screen battle scenes write (892..911: found by surveying the OBJ tiles written on the map and in the scenes over the suite; the power animations and every map effect keep to 700..890): 16 for "Vengeance", 4 for the number.
+const T_SIGN: u16 = 892;
 
 fn art() -> Option<&'static Art> {
     ART.get_or_init(|| {
