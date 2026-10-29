@@ -234,7 +234,7 @@ GRIT: Reckon the door is humming. / Do you hear that, Drake?
 DRAKE: I hear a lot of humming. I'm / trying not to think about it.
 KOAL: Four roads to the Obelisk. All / repaved. Mind the lane, Captain.
 KINDLE: The glow is so flattering, / darlings. I shall stand beside it.
-JUGGER: DOOR HUM: 124 HERTZ. SAME AS / CRATE, CRYSTAL, AND HIM.
+JUGGER: DOOR HUM: 41 HERTZ. SAME AS / CRATE, CRYSTAL, AND HIM.
 FLAK: Flak guards boy. Boy has key. / Flak not eat key.
 LASH: The hum is a perfect fifth! / Heehee! I want to hug it!
 ADDER: The door at dusk. A star walks / through. Photograph it, someone!

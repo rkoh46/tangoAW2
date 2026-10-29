@@ -92,7 +92,7 @@ FLAK: Flak sank big boat! Big boat / was loud! Now it is quiet!
 
 == m20_post
 @SONG enemy1
-OLAF(s): Gnn! The harbour freezes / and a hero thaws...
+OLAF(s): Gnn! My harbour! My / beautiful frozen harbour!
 OLAF: This is an outrage! A quay / cannot simply be ... taken!
 STURM: It was taken. You are / standing on it.
 OLAF: Hmph! Blue Moon never / stoops! We are a nation of iron!
@@ -299,7 +299,7 @@ JUGGER: STATUS: DECOMMISSIONED BY / MEMO 0412. READ: TOO LITERAL.
 JUGGER: I HAVE KEPT THE MEMO. IT / WAS THE ONLY THING ISSUED TO ME.
 SASHA: Jugger, the memo was a / formality. Contracts expire.
 JUGGER: AFFIRMATIVE. MINE DOES / NOT. THAT IS THE DIFFERENCE.
-SASHA: Then you are not unhappy, / Colonel? You merely moved?
+SASHA: Then you are not unhappy, / Unit 77? You merely moved?
 JUGGER: QUERY: UNHAPPY. DEFINITION / UNKNOWN. PREFERENCE: THIS ONE.
 OLAF: Ungrateful machines! Soup / is a kind of loyalty!
 OLAF: Colin! Where are you? / Colin! Come and watch Olaf!
@@ -342,7 +342,7 @@ STURM: Do not thank me. Pay / for the soup you owe Flak.
 SASHA: Itemised. Delightful. I / shall not forget it.
 OLAF: Black Hole... you are not / as cold as the snow.
 OLAF: But you took my Flak and / my Jugger for your cause!
-OLAF: Blue Moon made them! Blue / Moon FED them! How dare you!
+OLAF: Blue Moon FED them! And they / bite the hand! How dare you!
 JUGGER: HAND: NOT BITTEN. HAND: / NEVER ISSUED. CONTRACT: NONE.
 OLAF: What?!
 JUGGER: CORRECTION: I DID NOT / BITE. I WAS PAID TO WAIT.
@@ -350,7 +350,7 @@ FLAK: Flak bit one coin! Only / one! It was bad coin!
 SASHA: Olaf. That is enough. They / are right. We did waste them.
 SASHA: Thirty years of iron. All / sold to people who fenced us.
 OLAF: Sasha...
-SASHA: Blue Moon has three / harbours less and one palace less.
+SASHA: Blue Moon has three fewer / harbours, and one fewer palace.
 SASHA: I have counted the cost. / Do not make me count it again.
 STURM: Three flags. One remains. / Orange Star does not sell.
 SASHA: No. Nell does not sell. / She gives. It is worse.
@@ -379,9 +379,9 @@ SAMI: Roger, Max. But a chair needs / a plan. Where is the line, grunts?
 GRIT: Reckon the line melted, Sami. / The robot I babysat took the gate.
 SENSEI: Back in my day we had a / fence that stayed put. Youngsters.
 GRIMM: Har! And who pays for the / fence, pencil necks? Not Green Earth.
-JAVIER: Hark! By my honour, Green / Earth's towers did not glare!
+JAVIER: Hark! By my honour, Green / Earth's towers did not fall in vain!
 OLAF: BLUE MOON demands its / palace back! It is an OUTRAGE!
-SASHA: Olaf. Sit. The fence cost / eleven harbours. I am counting.
+SASHA: Olaf. Sit. The fence cost / three harbours. I am counting.
 COLIN: Um... they were ours. The / big robot. Does anything stop them?
 ANDY: Nell, let me go east. I can / hit them before the gate!
 NELL: We do not sit, dear one. We / gather. Every colour, every nation.

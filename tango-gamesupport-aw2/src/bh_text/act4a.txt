@@ -38,7 +38,7 @@ KOAL: A machine that follows / lanes. I approve.
 JUGGER: LANES: ADEQUATE. / SHOULDERS: UNKNOWN.
 KOAL: Three metres wide, machine. / Learn it.
 @WITH HAWKE
-HAWKE: A frozen foundry, one guard, / no relief. This was mismanaged.
+HAWKE: A frozen foundry, one guard, / no relief. Somebody mismanaged this.
 JUGGER: QUERY: WHO IS "SOMEBODY"?
 HAWKE: A committee.
 JUGGER: COMMITTEE: UNKNOWN UNIT. / HOSTILE?
@@ -273,7 +273,7 @@ JUGGER: GERALD: STATUS: SURVIVED. / BITE MARKS: 1. DENTIN: FLAK'S.
 FLAK: Biscuit tickles Flak's tooth. / Like a bell. Hee?
 CRUMB(s): He does that. Sometimes. / I never know why.
 MORTAR: Crumb. Eat your soup.
-HAWKE: Chapter four, I think. / Nothing in it is written yet.
+HAWKE: Chapter four has a second / line now. "Hide the biscuits."
 @WITH KINDLE
 KINDLE: Darling, he ate three / pastries standing up. I am flattered.
 @END

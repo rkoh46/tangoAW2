@@ -23,7 +23,7 @@ GRIMM: The Council sealed 'em all / last spring. Koal hasn't slept.
 KOAL: Two thousand miles of road, / and a gate bolted across it.
 KOAL: A road that ends in a gate / is a driveway. I built a driveway.
 KOAL: The Council pays me to build / and then to stop.
-KOAL: I wish to build and not / stop. No one will let me.
+KOAL: I want to build and not / stop. Nobody lets me.
 @WITH STURM
 STURM: Yellow Comet seals its / borders and calls it safety.
 STURM: Its roads lead to a wall. / Mine will lead through it.
@@ -252,7 +252,7 @@ CRUMB: Gerald says she counted. / Gerald counts, so he'd know.
 @SONG pinch
 NARRATION: Yellow Comet highlands. / Night. The radio crackles.
 CRUMB(s): Sir? Crumb here. I am / slightly surrounded.
-HAWKE: Where.
+HAWKE: Where?
 CRUMB: Highlands, west of the / highway. Eight of them. Ten.
 CRUMB: Twelve. Some are waving. / I do not think it is friendly.
 HAWKE: How does a runner end up / west of the highway?
@@ -442,7 +442,7 @@ STURM: Your daughter's report / was correct.
 KANBEI: Sonja is never wrong!
 STURM: Then she knew how this / ends. Ask her why she let it.
 KANBEI: ...What?
-STURM: Nothing. A storm talks. / Go and pray, Kanbei.
+STURM: Nothing. Go to your Keep, / Kanbei.
 SONJA: Father. Withdraw to the / Keep. The ground is better.
 KANBEI: Sonja counsels retreat! / Kanbei does not retreat.
 KANBEI: Kanbei REPOSITIONS, with / honour, to better ground!
@@ -523,7 +523,7 @@ KANBEI(s): Kanbei is beaten. The / Keep is yours.
 KINDLE: Ahaha! Lights! Somebody / bring the lights!
 KANBEI: Spare my people, storm. / That is my only request.
 STURM: They are mine now. Harm / none of what is mine.
-KANBEI: ...Then I will bow.
+KANBEI: ...Then Kanbei will bow.
 SENSEI: Kanbei. Up. A bow is for / the funeral, not the lunch.
 KANBEI: Teacher, Kanbei has lost / the capital of his house!
 SENSEI: You lost a fort. I lost / a hip in worse. Lunch.
