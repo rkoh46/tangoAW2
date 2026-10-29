@@ -929,6 +929,7 @@ fn bh2_31() -> MissionDef {
     m.rank_days = 40;
     m.held_hq = Some(M31_NELL);
     m.held_more = vec![M31_OLAF, M31_KANBEI, M31_EAGLE];
+    m.sleepers = vec![(2, vec![M31_NELL]), (3, vec![M31_NELL, M31_OLAF]), (4, vec![M31_NELL, M31_OLAF, M31_KANBEI])];
     m.triggers = vec![
         asleep(2, &[M31_NELL]),
         asleep(3, &[M31_NELL, M31_OLAF]),
