@@ -888,6 +888,8 @@ pub struct MissionDef {
     pub held_hq: Option<(u8, u8)>,
     /// More held HQs (a gauntlet's stage HQs: every one but the last is held; BH2's M25).
     pub held_more: Vec<(u8, u8)>,
+    /// Sleeping armies of a gauntlet: (army, the HQs the player must hold before it wakes). Until then the army cannot be defeated by losing its units (its holders may be killed; its wave still lands and fights).
+    pub sleepers: Vec<(u8, Vec<(u8, u8)>)>,
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
     /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
@@ -1070,6 +1072,7 @@ impl MissionDef {
             jams: Vec::new(),
             held_hq: None,
             held_more: Vec::new(),
+            sleepers: Vec::new(),
             skin: None,
             stages: Vec::new(),
         }
@@ -1896,6 +1899,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         jams: def.missions.iter().map(|m| m.jams.clone()).collect(),
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
+        sleepers: def.missions.iter().map(|m| m.sleepers.clone()).collect(),
         skin_army: def.missions.iter().map(|m| m.skin).collect(),
         stage_records,
         stages: stage_runtime,
@@ -2830,7 +2834,46 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
 /// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
 /// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    Vec::new()
+    vec![(DEFEAT_ARMY_BODY, Box::new(defeat_army))]
+}
+
+/// `DefeatArmy(army, code)` (`sub_08028894`) past its prologue, and its epilogue: a sleeping army ([`MissionDef::sleepers`]) is not defeated for having no units left (AW2 asks with code 2 when the last unit dies; its HQ is held, so
+/// the HQ's own defeat never comes), so its holding units can be killed and its wave still lands and fights when it wakes.
+const DEFEAT_ARMY_BODY: u32 = 0x0802_8896;
+const DEFEAT_ARMY_EPILOGUE: u32 = 0x0802_88C8;
+fn defeat_army(core: &mut Core) {
+    let (army, code) = {
+        let cpu = core.gba().cpu();
+        (cpu.gpr(4) as u32 & 0xFF, cpu.gpr(5) as u32)
+    };
+    let _ = code;
+    if sleeping(core, army as u8) {
+        core.gba_mut().cpu_mut().set_thumb_pc(DEFEAT_ARMY_EPILOGUE);
+    }
+}
+
+/// Whether `army` is one of this mission's sleepers still asleep: some HQ before it is not the player's yet (stage 1 only).
+pub fn sleeping(core: &Core, army: u8) -> bool {
+    if !crate::ds_campaign::active(core) || crate::stage::stage(core) > 0 {
+        return false;
+    }
+    let Some(list) = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.sleepers.get(crate::ds_campaign::mission(core) as usize).cloned()))
+    else {
+        return false;
+    };
+    let player = if crate::five::active(core) { 5 } else { 1 };
+    list.iter().any(|(a, hqs)| {
+        if *a != army {
+            return false;
+        }
+        if hqs.iter().any(|&(x, y)| owner_at(core, x, y) != player) {
+            return true;
+        }
+        // The moment the line before it falls the army has neither its wave nor its funds yet (the rout check runs before the trigger that wakes it): no units and no funds is still asleep.
+        let funds = core.raw_read_32(core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army as u32, -1);
+        funds == 0 && units_of(core, army).is_empty()
+    })
 }
 
 const MAP_STATE: u32 = 0x0300_32D8;

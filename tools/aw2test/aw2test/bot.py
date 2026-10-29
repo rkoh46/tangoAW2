@@ -71,7 +71,7 @@ def domain(t):
 
 class Bot:
     def __init__(self, d, log=None, protect=(), hold=(), goals=(), structures=False, stance="auto", rush=False, seed=None, build=None,
-                 finish=None, garrison=False, ooze=False, hazards=(), seams=(), nearest=False, hunt=False, cap=20):
+                 finish=None, garrison=False, ooze=False, hazards=(), seams=(), nearest=False, hunt=False, cap=20, own_structures=False):
         """`protect`: unit types to keep out of harm (they wait where they
         are, or step away from enemies); `hold`: types that never move;
         `goals`: cells the mission is won on (capturers head there first);
@@ -86,6 +86,8 @@ class Bot:
         while it can be finished off, and the unit on the enemy HQ comes
         first)."""
         self.d, self.g, self.e = d, d.g, d.e
+        # `own_structures`: the structures on the map are the player's own (Black Hole's crystals beside its camp): they are no targets.
+        self.own_structures = own_structures
         self.log = log or (lambda s: None)
         self.protect = set(protect)
         self.hold = set(hold)
@@ -487,7 +489,7 @@ class Bot:
 
     def targets(self, army):
         out = list(self.enemies(army))
-        for s in self.structures():
+        for s in ([] if self.own_structures else self.structures()):
             out.append({"x": s["x"], "y": s["y"], "hp": s["hp"], "type": STRUCTURE_AS, "structure": True})
         for (x, y) in self.intact_seams():
             out.append({"x": x, "y": y, "hp": 99, "type": STRUCTURE_AS, "structure": True, "seam": True})
