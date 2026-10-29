@@ -468,7 +468,7 @@ VON BOLT: ...I did find them. Third / drawer. With a bookmark. Kehh.
 SONJA: My father's code is a wall. I / counted its bricks. Yours is a storm.
 STURM: You are not Black Hole.
 SONJA: Not yet. Test me.
-STURM: Why.
+STURM: Why?
 SONJA: Because something under / your voice answers that crate.
 SONJA: I want to hear what it / says.
 HAWKE: A spy joins the house she / robbed. I do not trust her.
@@ -530,8 +530,8 @@ HAWKE: Of whoever stands when / the storm finally rests.
 JUGGER: ALERT. ALLIED BAND SIGNAL. / SOURCE: RAIL YARD. LAST TRAIN.
 JUGGER: VOICE MATCH: ANDY. / CONFIDENCE: 87 PERCENT.
 JUGGER: TEXT: "ALL COLOURS EAST. / THE FENCE IS DOWN. BUILD ANEW."
-SONJA: Four nations, regrouping. / Under a mechanic. I would answer.
-NARRATION: The lid trembles. A voice, / thin as wire: "...Hobb. Door's open."
+SONJA: Andy's voice. Not Andy's / words. Someone else wrote that.
+NARRATION: The lid trembles. A voice, / thin as wire: "...Hobb. The door."
 CRUMB CO: Gerald? Did you hear / that?
 STURM: I heard it from the corridor. / Whatever it is, it is mine.
 NARRATION: "...The storm was only the / first knock." Gerald's mark warms.

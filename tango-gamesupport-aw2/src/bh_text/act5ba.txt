@@ -192,7 +192,7 @@ LASH: Project Echo. He is very / sad. Nobody visits him.
 LASH: I wrote his first line and / got bored. Heehee... Heehee.
 HAWKE: Remember that. And keep the / toys indoors.
 LASH: Heehee. Never.
-STURM: Corporal. Your biscuit. Is / it armed?
+STURM: Private. Your biscuit. Is / it armed?
 CRUMB(h): No, sir! Only crumbs.
 STURM: See that it stays so.
 
@@ -262,7 +262,7 @@ FLAK: Flak pay. Flak pay with / smash.
 @IF JUGGER
 JUGGER: AIRFRAME COUNT: 31. WIND: / 9 KNOTS. HAIR: IRRELEVANT.
 ADDER: Hair is never irrelevant, / you tin cupboard.
-JUGGER: QUERY: SUBJECT IS HAIR / A WEAPON?
+JUGGER: QUERY: IS HAIR / A WEAPON?
 ADDER: Always.
 @IF LASH
 LASH: Planes! Ooh, shiny planes! / Can I put a bomb in one?
@@ -377,7 +377,7 @@ SAMI(s): ...You never even liked / us. Not one bit.
 ADDER: I like you, Sami. You are / a wonderful background.
 SAMI: Background!
 SAMI: Fine. Go. Fly for the dark / side, soot and all.
-ADDER: Not one more word / near the cape.
+ADDER: Not one word about the / cape, darling.
 SAMI: Max will hear about this. / And Nell. And everybody.
 ADDER: I accept. My profile / deserves better.
 ADDER: Let it be known: the villains / finally have style.
@@ -457,7 +457,7 @@ KOAL: Port Road: two lanes, one / crane, no shoulder. Mind the lane.
 SAMI: It's a harbour, Koal.
 KOAL: It is a road that floats.
 @IF STURM
-STURM: Sami. Nell's wall. Nell's / hammer is elsewhere. Stand down.
+STURM: Sami. Nell's wall, without / Nell's hammer. Stand down.
 SAMI: Never! Orange Star never / quits!
 STURM: Then Orange Star will learn / how a harbour kneels.
 @IF ADDER
@@ -593,7 +593,7 @@ HAWKE: Three radios. Three plans. / Find the seam, and pull.
 JAKE: Hey! I heard that!
 HAWKE: You were meant to. It is / courtesy.
 @IF STURM
-STURM: Nations that could not share / a table share a trench. How long.
+STURM: Nations that could not share / a table share a trench. How long?
 JAKE: As long as it takes, storm / guy! Yo!
 STURM: Then I will measure it.
 @IF VON BOLT
@@ -638,7 +638,7 @@ JAKE: Ha! We'll hold! You watch!
 @PARTNER KINDLE
 [CO2]: Darling, the little one is / mine. I want to see him cry.
 @PARTNER ADDER
-[CO2]: Do try to shoot the one / with the hat, Hawke. He is shiny.
+[CO2]: Do try to shoot the one / with the hat, darling. It's shiny.
 @END
 CRUMB: Sir, the Orange Star one / waved at me.
 MORTAR: Crumb. Do not wave back.
@@ -681,7 +681,7 @@ NELL: She said you were loud, / Grimm. She meant it kindly.
 GRIMM: Har! That's the same / thing!
 NELL: Jake. The Orange Gate. All / of you. I need every one of you.
 JAKE: We'll be there. All three / flags. We're the Last Alliance.
-NELL: No. You're the first, dear. / The first of the new fence.
+NELL: No. You're the first, dear. / The first of something new.
 @IF HAWKE
 HAWKE: She calls them boys. It is / effective.
 HAWKE: Mark it. A coalition that / loses a field and keeps its line
