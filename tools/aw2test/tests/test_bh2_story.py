@@ -204,3 +204,49 @@ def prologue_boxes():
         elif cur and l and not l.startswith(("@", "#")) and ": " in l:
             scenes[cur].append(l)
     return [scenes[k] for k in ("prologue", "prologue_castle", "prologue_allies", "prologue_turn")]
+
+
+@test(modes=("ds",))
+def story_trace_bh_prologue_frames(ctx):
+    """BH CAMPAIGN (BH1), New: the prologue box by box, as `story_trace_bh2_prologue_frames` does for BH2 (one typed-out picture a box, up to mission 1's battle). `prologue_NNN.bmp` and
+    `prologue.json` go to the output folder; `aw2dev bh2 prologue-sheet --bh1` makes the contact sheet."""
+    import json
+    from aw2test import bhcampaign as bh
+    e = Emu(save=paths.base_save(), ds=True)
+    g = Game(e, ctx.image)
+    d = bh.BhCampaign(g)
+    d.open_campaign_box()
+    d.chooser_row(bh.CHOOSER_ROW)
+    e.press("A", 8)
+    e.wait(30)
+    d.box_row(1)
+    e.wait(30)
+    e.press("A", 8)
+    out = out_dir(ctx)
+    os.makedirs(out, exist_ok=True)
+    rows, kept, dup = [], None, 0
+    for _ in range(3000):
+        e.press("A", 4)
+        e.wait(20)
+        prev, still = None, 0
+        for _ in range(40):
+            bmp = e.shot(os.path.join(out, "prologue_cur"))
+            cur = Image.open(bmp).convert("RGB")
+            still = still + 1 if prev is not None and pixel_diff(prev, cur) <= ARROW_PIXELS else 0
+            prev = cur
+            if still >= 3:
+                break
+            e.wait(15)
+        t = story.clean(d.text_shown())
+        if t and (kept is None or pixel_diff(kept, cur) > ARROW_PIXELS) and not (rows and rows[-1]["text"] == t):
+            name = f"prologue_{len(rows):03d}.bmp"
+            os.replace(bmp, os.path.join(out, name))
+            rows.append({"n": len(rows), "text": t, "song": e.u16(story.SONG), "shot": name})
+            kept, dup = cur, 0
+        else:
+            dup += 1
+        if len(rows) >= 24 or dup > 60:          # (the prologue pages, then mission 1's opening dialogue in the battle)
+            break
+    json.dump(rows, open(os.path.join(out, "prologue.json"), "w"), indent=1)
+    ctx.check(len(rows) >= 10, f"{len(rows)} prologue boxes")
+    e.close()
