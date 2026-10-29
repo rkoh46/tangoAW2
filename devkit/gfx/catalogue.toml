@@ -16,7 +16,8 @@ shots = ["ho{1..5}_s0"]
 checks = ["same", "golden", "tiles", "palette"]
 variants = { plain = {}, pack = { ds = true, env = { AW2_SHARED_ART = "1" } } }
 same = [{ variants = ["plain", "pack"], region = [0, 50, 240, 60], tolerance = 0.0 }]
-golden = { tolerance = 0.002 }
+# ignore: the PRESS A BUTTON line bobs 105..108 px high, its phase follows the wall clock (pad time), so it cannot be compared; the NEXT TURN / army rows, the tile guard and `same` still are
+golden = { tolerance = 0.002, ignore = [[0, 98, 240, 30]] }
 # OBJ tiles 989..1004 and 1007..1022 are the game's font (OBJ charblock at VRAM 0x10000, 32 bytes a tile)
 guard = [{ name = "font OBJ tiles 989..1022", dump = "ho1", range = [0x17BA0, 0x17FE0] }]
 

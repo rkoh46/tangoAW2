@@ -1,4 +1,4 @@
-# 5 seats, Fog on: a full round of five turns (each mover opens the map menu and ends its turn with End, the fourth row in a five-army battle, the next seat dismisses the hand-off, army 5 hands to 1). At the idle map and with the menu open the mover shows the console picture (its cursor, its menu) and no waiting seat does. Run without AW2_SAMPLE (pictures are taken in seat order); AW2_MERGE_CHECK=1 prints which seat the console takes keys from.
+# 5 seats, Fog on: a full round of five turns (each mover opens the map menu and ends its turn with End, the fifth row (CO, Intel, Options, Save, End), the next seat dismisses the hand-off, army 5 hands to 1). At the idle map and with the menu open the mover shows the console picture (its cursor, its menu) and no waiting seat does. Run without AW2_SAMPLE (pictures are taken in seat order); AW2_MERGE_CHECK=1 prints which seat the console takes keys from.
 n 5
 until maparmies=5 100
 wait 60
@@ -56,7 +56,8 @@ wait 10
 press 0 DOWN
 wait 10
 press 0 DOWN
-wait 10
+wait 3
+press 0 DOWN
 press 0 A
 until turnended 30
 wait 40
@@ -79,7 +80,8 @@ wait 10
 press 1 DOWN
 wait 10
 press 1 DOWN
-wait 10
+wait 3
+press 1 DOWN
 press 1 A
 until turnended 30
 wait 40
@@ -102,7 +104,8 @@ wait 10
 press 2 DOWN
 wait 10
 press 2 DOWN
-wait 10
+wait 3
+press 2 DOWN
 press 2 A
 until turnended 30
 wait 40
@@ -125,7 +128,8 @@ wait 10
 press 3 DOWN
 wait 10
 press 3 DOWN
-wait 10
+wait 3
+press 3 DOWN
 press 3 A
 until turnended 30
 wait 40
@@ -148,7 +152,8 @@ wait 10
 press 4 DOWN
 wait 10
 press 4 DOWN
-wait 10
+wait 3
+press 4 DOWN
 press 4 A
 until turnended 30
 wait 40
