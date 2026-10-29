@@ -187,7 +187,7 @@ pub fn onyx_spec(core: &Core) -> Option<crate::campaign_model::OnyxDef> {
 
 /// The mission's volcano hazard (a custom campaign's, crate::hazard).
 pub fn volcano_spec(core: &Core) -> Option<crate::campaign_model::VolcanoDef> {
-    if !active(core) || is_ds(core) || !in_battle(core) {
+    if !active(core) || is_ds(core) || !in_battle(core) || crate::stage::stage(core) > 0 {
         return None;
     }
     let c = campaign(core)?;
@@ -235,7 +235,7 @@ pub fn is_held_hq(core: &Core, x: u8, y: u8) -> bool {
     if held_hq(core) == Some((x, y)) {
         return true;
     }
-    if !active(core) || is_ds(core) || !in_battle(core) {
+    if !active(core) || is_ds(core) || !in_battle(core) || crate::stage::stage(core) > 0 {
         return false;
     }
     campaign(core)
@@ -278,6 +278,7 @@ fn mission_start(core: &mut Core) {
     }
     let index = core.raw_read_8(MISSION, -1) as usize;
     log::info!("campaign: mission {} starts (index {index})", index + 1);
+    crate::stage::reset(core);
     PROMPTED.store(false, std::sync::atomic::Ordering::Relaxed);
     // A replay (Free Play) plays the mission's triggers again: the once-latches
     // its first win left in the record are lifted for the battle (the end of
@@ -290,7 +291,7 @@ fn mission_start(core: &mut Core) {
         }
     }
     let five = campaign(core)
-        .and_then(|c| c.model.built.missions.get(index))
+        .and_then(|c| c.model.built.missions.get(crate::stage::record(core)))
         .and_then(|m| m.native.as_ref())
         .and_then(|n| n.five);
     match five {
@@ -833,6 +834,13 @@ fn big_table(core: &Core) -> Option<u32> {
 }
 
 /// The mission being played (its index).
+/// A compiled header into the battle's map table entry (a stage switch, [`crate::stage`]).
+pub fn write_header(core: &mut Core, header: &[u8; 0x5C]) {
+    if let Some(table) = big_table(core) {
+        core.raw_write_range(table + ENTRY * data::MAP_ID as u32, -1, header);
+    }
+}
+
 pub fn mission(core: &Core) -> u8 {
     core.raw_read_8(MISSION, -1)
 }
@@ -1584,7 +1592,7 @@ pub fn map_start(core: &mut Core) {
     if !active(core) || core.raw_read_8(MAP_ID, -1) != data::MAP_ID {
         return;
     }
-    let Some(main) = campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(MISSION, -1) as usize))
+    let Some(main) = campaign(core).and_then(|c| c.model.built.missions.get(crate::stage::record(core)))
     else {
         return;
     };
@@ -1609,6 +1617,7 @@ pub fn map_start(core: &mut Core) {
     // Dual Strike's Setup phase before day 1 (crate::setup_phase).
     crate::setup_phase::map_start(core, player_picks(main) && main.native.as_ref().is_none_or(|n| n.setup));
     crate::two_front::map_start(core);
+    crate::stage::map_start(core);
     crate::onyx::map_start(core);
     // (a battle's first day, the main front: the custom campaign's side table starts empty)
     if core.raw_read_16(0x0300_4080, -1) <= 1 && !crate::two_front::second_live(core) {
@@ -1639,7 +1648,7 @@ pub fn tag_pairs(core: &Core) -> Vec<(u32, u8, u8)> {
     if !active(core) || core.raw_read_8(MAP_ID, -1) != data::MAP_ID {
         return Vec::new();
     }
-    let Some(m) = campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(MISSION, -1) as usize)) else {
+    let Some(m) = campaign(core).and_then(|c| c.model.built.missions.get(crate::stage::record(core))) else {
         return Vec::new();
     };
     if m.two_front.is_some() {
@@ -1678,7 +1687,7 @@ pub fn mission_info(core: &Core) -> Option<&'static data::MissionInfo> {
     if !active(core) || core.raw_read_8(MAP_ID, -1) != data::MAP_ID {
         return None;
     }
-    campaign(core).and_then(|c| c.model.built.missions.get(core.raw_read_8(MISSION, -1) as usize))
+    campaign(core).and_then(|c| c.model.built.missions.get(crate::stage::record(core)))
 }
 
 /// Who plays each army (player +0x1B: 1 the player, 2 the computer): in
@@ -1686,7 +1695,7 @@ pub fn mission_info(core: &Core) -> Option<&'static data::MissionInfo> {
 /// picks (0x1C); the others (Jake's Trial's Rachel, every Black Hole army)
 /// are the computer's. AW2's campaign would give the player every army
 /// not in Black Hole's colours.
-fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
+pub(crate) fn set_controllers(core: &mut Core, m: &data::MissionInfo) {
     let players = core.raw_read_32(0x0849_9598, -1);
     let player = if m.native.as_ref().is_some_and(|n| n.five.is_some()) {
         5
@@ -1844,6 +1853,10 @@ fn landing(core: &mut Core) {
     // Two-front battles' own stubs (crate::two_front).
     if id & 0xFF00_0000 == crate::two_front::MAGIC {
         return crate::two_front::magic(core, id);
+    }
+    // A mission's stage switch (crate::stage).
+    if id & 0xFF00_0000 == crate::stage::MAGIC {
+        return crate::stage::magic(core, id);
     }
     // The Setup phase's (crate::setup_phase).
     if id & 0xFF00_0000 == crate::setup_phase::MAGIC {

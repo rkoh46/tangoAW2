@@ -246,7 +246,13 @@ fn save_write(core: &mut Core) {
     // A battle on two fronts (crate::two_front): the front not on the
     // screen and the battle's state follow the block (the slot takes more
     // than one sector: AW2's writer splits a record in 0xFAD-byte parts).
-    if let Some(fronts) = crate::two_front::saved_state(core) {
+    if let Some(k) = crate::stage::saved_state(core) {
+        // A mission saved on a later stage (crate::stage): a mark and the stage number follow the block (5 bytes of the record).
+        let mut t = crate::stage::SAVED_MARK.to_le_bytes().to_vec();
+        t.push(k);
+        core.raw_write_range(BLOCK + BLOCK_SIZE, -1, &t);
+        core.gba_mut().cpu_mut().set_gpr(2, (BLOCK_SIZE + t.len() as u32) as i32);
+    } else if let Some(fronts) = crate::two_front::saved_state(core) {
         let mut t = FRONTS_MARK.to_le_bytes().to_vec();
         t.extend_from_slice(&fronts);
         core.raw_write_range(BLOCK + BLOCK_SIZE, -1, &t);
@@ -277,6 +283,12 @@ fn applied_ds(core: &mut Core) {
     core.raw_write_range(crate::ds_campaign::FLAGS, -1, &b[8..24]);
     core.raw_write_range(crate::ds_campaign_rules::MTE_TOLD, -1, &b[24..24 + DS_MTE_LEN as usize]);
     crate::onyx::restore(core, &b[24 + DS_MTE_LEN as usize..]);
+    // A mission saved on a later stage: the stage number.
+    if core.raw_read_32(BLOCK + BLOCK_SIZE, -1) == crate::stage::SAVED_MARK {
+        let k = core.raw_read_8(BLOCK + BLOCK_SIZE + 4, -1);
+        crate::stage::restore_saved(core, k);
+        core.raw_write_32(BLOCK + BLOCK_SIZE, -1, 0);
+    }
     // A two-front battle's other front and state (saved after the block).
     if core.raw_read_32(BLOCK + BLOCK_SIZE, -1) == FRONTS_MARK {
         let mut f = vec![0u8; crate::two_front::SAVED_LEN as usize];
@@ -348,6 +360,10 @@ pub fn resume_mid(core: &mut Core, slot: u8) {
         if u32::from_le_bytes(mark) == FRONTS_MARK {
             let live = core.raw_read_8(at + 4, -1);
             crate::two_front::continue_on(core, live);
+        }
+        if u32::from_le_bytes(mark) == crate::stage::SAVED_MARK {
+            let k = core.raw_read_8(at + 4, -1);
+            crate::stage::continue_on(core, k);
         }
     }
     let cpu = core.gba_mut().cpu_mut();

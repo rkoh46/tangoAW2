@@ -85,8 +85,8 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 27 | Von Bolt's Note | Orange Star sea fortress | **Forced:** Von Bolt + a free partner (Tag) | Jess + Colin | The sealed note is opened. **BF**, against a fortress strong enough to take it. |
 | 28 | Where the Map Ends | The Obelisk, west | **Forced:** Asuka + Crumb (Tag) | Drake + Grit (an Allied strike force to destroy the Obelisk) | Crumb's key opens the door. Sturm walks through it into the storm, leaving Black Hole to Asuka: "Hold my world." You hold the Obelisk until the storm passes (a day limit). Sturm is gone, not beaten: an open hook. |
 | 29 | The Gate of Colours | Orange Star's outer capital | Free pair | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M32.** |
-| 30 | **The Last Accord** | The Accord's citadel, a huge map | **Forced:** Asuka + a free partner (Tag) | **Gauntlet: Nell, then Olaf, Kanbei and Eagle, then a new Orange Star CO** | **The final mission**, scripted like BH1's Nell-to-Andy takeover but longer, with no time limit. Nell holds the citadel. As you break each line, fresh armies arrive and the next CO takes command from a new HQ: Olaf's Blue Moon with snow, Kanbei's Yellow Comet elite, then Eagle's air fleet. When all four have fallen, a **new Orange Star CO** (art from the owner) takes the last stand. The Allies use **no Black Hole inventions**: their walls are terrain, numbers and reinforcements. Your own inventions may stand on your side. |
-| 31 | **The Last Citadel** | Aria's fortress on high ground (the second map of the final mission) | **Forced:** Asuka + a free partner | Aria (Orange Star, revived army) | Plateau fortress behind three passes and a river with five bridges; no pipes. Capture her HQ to win the campaign. |
+| 30 | *(reserved)* | Orange Star's outer defences | Free pair | Rachel + Sami | A slot for one more mission, between the Gate of Colours (M29) and the final battle; designed later. |
+| 31 | **The Last Accord** | The Accord's continent, then Aria's citadel on high ground | Free pair | Nell, then Olaf, Kanbei, Eagle (each their own army), then Aria | **The final mission, one battle in two stages** (docs/dev/stages.md): the gauntlet map, then Eagle's fall moves the battle in place to the Last Citadel with the player's survivors, and Aria's fresh army holds it. |
 | **Secret 26** | **Through the Door** | Black Hole's island (south-west): Emerald Sun lands on Black Hole's home | Free pair | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out lands on Black Hole's own island. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
 
 **Counts**
@@ -163,7 +163,7 @@ These apply to all 32 missions, not just Act I:
 | 29 | Desert | Clear |
 | 30 | Normal (citadel), huge, no fog | Clear, then weather with each commander (Olaf's snow) |
 | 32 | Desert (Black Hole's island) | Clear |
-| 31 (part two of the final mission) | Snow (the high citadel), no fog | Clear |
+| 31 stage 2 (the Last Citadel) | Snow (the high citadel), no fog | Clear |
 
 ## 5. Ending and credits
 

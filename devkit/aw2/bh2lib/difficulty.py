@@ -85,20 +85,24 @@ def maps_numbers():
 
 def rows():
     """[(mission number, title, numbers, score)] for every BH2 mission."""
-    from . import MISSIONS, FRONT2
+    from . import MISSIONS, FRONT2, STAGE2
     bodies, consts, _ = _bodies()
     nums = maps_numbers()
     out = []
     for n, (name, title) in sorted(MISSIONS.items()):
-        maps = [name] + ([FRONT2[n]] if n in FRONT2 else [])
+        maps = [name] + ([FRONT2[n]] if n in FRONT2 else []) + ([STAGE2[n]] if n in STAGE2 else [])
         pv = ev = 0
         owned_p = owned_e = pipes = 0
         kinds = set()
         for mp in maps:
+            if mp not in nums:
+                continue                                  # (a reserved slot has no map of its own)
             units, owned, pp, n_armies = nums[mp]
             if not units:
                 continue
             me = 5 if n_armies == 5 else 1                    # (a five-army mission's player is the fifth army)
+            if mp in STAGE2.values():                       # (a later stage's player army is the survivors: counted once, on the first map)
+                me = 0
             pv += sum(COST.get(k, 0) * c for k, c in units.get(me, {}).items())
             for a in [a for a in range(1, n_armies + 1) if a != me and (n_armies == 5 or a != 1)]:
                 ev += sum(COST.get(k, 0) * c for k, c in units.get(a, {}).items())
@@ -117,16 +121,6 @@ def rows():
         nm = {"player_value": pv, "enemy_value": ev, "force": ev / max(pv, 1), "economy": ee / max(pe, 1), "fortified": round(min(1.0, pipes / 60), 2), "pressure": len(kinds) / 3.0}
         nm.update({"pe": pe, "ee": ee, "kinds": kinds})
         out.append((n, title, nm, esd.static_score(nm), len(sk)))
-    # the final mission is both maps (M30 part one and M31 part two) together: its row replaces M30's, summing the two maps' forces, funds and fields
-    one = next(r for r in out if r[0] == 30)
-    two = next(r for r in out if r[0] == 31)
-    a, b = one[2], two[2]
-    kinds = a["kinds"] | b["kinds"]
-    nm = {"player_value": a["player_value"] + b["player_value"], "enemy_value": a["enemy_value"] + b["enemy_value"], "pe": a["pe"] + b["pe"], "ee": a["ee"] + b["ee"], "fortified": max(a["fortified"], b["fortified"]), "pressure": len(kinds) / 3.0}
-    nm["force"] = nm["enemy_value"] / max(nm["player_value"], 1)
-    nm["economy"] = nm["ee"] / max(nm["pe"], 1)
-    out = [r for r in out if r[0] != 30]
-    out.append((30, "The Last Accord (both maps)", nm, esd.static_score(nm), one[4] + two[4]))
     return sorted(out, key=lambda r: r[0])
 
 

@@ -34,6 +34,7 @@ pub(crate) fn regions() -> Vec<(u32, u32, String)> {
         "two_front: code and menus",
     );
     add(crate::setup_phase::ROM, crate::setup_phase::ROM_END, "setup_phase");
+    add(crate::stage::ROM, crate::stage::ROM_END, "stage: the switch's stubs and script");
     add(
         crate::onyx::ROM,
         crate::onyx::ROM_SENTINEL + 4,

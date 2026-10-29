@@ -103,9 +103,20 @@ pub struct Custom {
     pub held_more: Vec<Vec<(u8, u8)>>,
     /// Per mission: a skin an army wears ([`crate::custom_campaign::MissionDef::skin`]).
     pub skin_army: Vec<Option<(u8, usize)>>,
+    /// Per mission: the records of its later stages (in order), and each stage's carry-over rules ([`crate::stage`]).
+    pub stage_records: Vec<Vec<u8>>,
+    pub stages: Vec<Vec<StageRuntime>>,
     /// The secret mission (index): its win shows the staff roll's secret
     /// sections.
     pub secret: Option<u8>,
+}
+
+/// What a stage switch does with the player's army ([`crate::custom_campaign::StageDef`]).
+#[derive(Clone, Debug)]
+pub struct StageRuntime {
+    pub deploy: Vec<(u8, u8)>,
+    pub carry: crate::custom_campaign::Carry,
+    pub funds: Option<i32>,
 }
 
 /// The Black Onyx turned round: Black Hole's own satellite on a day cycle
@@ -574,6 +585,8 @@ pub struct Native {
     /// The Setup phase (scout the map, then Deploy) before day 1 when the
     /// player picks a CO ([`crate::setup_phase`]).
     pub setup: bool,
+    /// A stage's player army keeps the CO (or pair) it had when the switch came ([`crate::stage`]).
+    pub keep: bool,
 }
 
 /// "No CO" in [`Native::cos`].

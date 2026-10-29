@@ -4,9 +4,9 @@ The BH2 Campaign (docs/BH2_CAMPAIGN.md) plays Black Hole against the Allies on t
 Python spec, the spec writes a text map, `five/bhmap.py` turns the text maps into Rust data. Nothing is registered in a menu yet: maps and pictures come first. No ROM content is stored;
 the ROM is read at run time for tile choices and the lint.
 
-## Numbering (31 missions + the secret 32)
+## Numbering (31 missions + the secret 32; M30 is a reserved slot)
 
-Mission n is `bh2_NN` (the map and its spec); a second front is `bh2_NNb` (M4, M13, M25). M6, M7, M8, M14 and M15 are new; the approved maps were renamed with their numbers and drawn as before (`esmaplib.SEED_NAME` keeps their old names as the seed of their random choices). M30 is the first map of the final mission, M31 the second (Aria's citadel), M32 the secret mission (it opens after M29). Lint rule HQ01: an army has one HQ (no `Q` tile) in any BH2 map.
+Mission n is `bh2_NN` (the map and its spec); a second front is `bh2_NNb` (M4, M13, M25). M6, M7, M8, M14 and M15 are new; the approved maps were renamed with their numbers and drawn as before (`esmaplib.SEED_NAME` keeps their old names as the seed of their random choices). M31 is the final mission: two maps in one battle (`bh2_31` the gauntlet, `bh2_31b` Aria's citadel, a stage of it); M30 is reserved for a mission to come (a stand-in on M29's map that opens only after M31); M32 is the secret mission (it opens after M29). Lint rule HQ01: an army has one HQ (no `Q` tile) in any BH2 map.
 
 ## Files
 | Path | What |

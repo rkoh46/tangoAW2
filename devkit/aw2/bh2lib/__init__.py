@@ -36,11 +36,12 @@ MISSIONS = {
     27: ("bh2_27", "Von Bolt's Note"),
     28: ("bh2_28", "Where the Map Ends"),
     29: ("bh2_29", "The Gate of Colours"),
-    30: ("bh2_30", "The Last Accord"),
-    31: ("bh2_31", "The Last Citadel"),
+    30: ("bh2_30", "(reserved)"),
+    31: ("bh2_31", "The Last Accord"),
     32: ("bh2_32", "Through the Door"),
 }
 FRONT2 = {4: "bh2_04b", 13: "bh2_13b", 25: "bh2_25b"}          # a two-front mission's second map
+STAGE2 = {31: "bh2_31b"}                                        # a mission's later stage's map (the battle moves on to it in place, crate::stage)
 
 # game colour id -> RGB (1 Orange Star, 2 Blue Moon, 3 Green Earth, 4 Yellow Comet, 5 Black Hole)
 COLOUR = {1: (240, 130, 30), 2: (60, 110, 240), 3: (50, 170, 70), 4: (240, 210, 40), 5: (140, 60, 190)}

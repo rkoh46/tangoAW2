@@ -23,6 +23,7 @@ fn co_text(c: &CoSpec) -> String {
         CoSpec::Pick => "pick".into(),
         CoSpec::PickPair => "pickpair".into(),
         CoSpec::PickPartner(a) => format!("{a}+pick"),
+        CoSpec::Keep => "kept".into(),
     }
 }
 

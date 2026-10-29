@@ -4748,7 +4748,7 @@ pub static MAPS: &[BuiltMap] = &[
         ],
     },
     BuiltMap {
-        name: "bh2_30",
+        name: "bh2_31",
         width: 46,
         height: 28,
         armies: 5,
@@ -4951,7 +4951,7 @@ pub static MAPS: &[BuiltMap] = &[
         ],
     },
     BuiltMap {
-        name: "bh2_31",
+        name: "bh2_31b",
         width: 46,
         height: 28,
         armies: 2,
