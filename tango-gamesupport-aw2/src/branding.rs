@@ -277,6 +277,7 @@ pub fn flush(core: &mut Core) {
         return;
     }
     crate::obelisk::north_swap(core, start, at);
+    crate::aria_sign::map_flush(core);
     crate::volcano::recolour(core, start, at);
     crate::mode_menu::remap(core, start, at);
     at = crate::design::flush_sprites(core, at, end);
