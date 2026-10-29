@@ -179,13 +179,13 @@ def save_versus_suspend_wasteland_design(ctx):
     ctx.eq(g2.player(1)["co"], 79, "army 1's CO (Jake)")
 
 
-def no_save_on_map_menu(ctx, g, label):
-    """A five-army battle: Save is not on the map menu; a day played writes
+def save_on_map_menu(ctx, g, label):
+    """A five-army battle: Save is on the map menu (the fifth army follows AW2's block, tests/test_five_suspend.py); a day played writes
     nothing to Flash."""
     e = g.e
     before = saves.flash(e, out(ctx, f"{label}_before"))
     names = g.map_menu_names()
-    ctx.check("Save" not in names, f"{label}: no Save on the map menu ({names})")
+    ctx.check("Save" in names, f"{label}: Save is on the map menu ({names})")
     g.end_turn(human=1)
     ctx.check(not g.battle_over(), f"{label}: a day played")
     after = saves.flash(e, out(ctx, f"{label}_after"))
@@ -193,24 +193,24 @@ def no_save_on_map_menu(ctx, g, label):
 
 
 @test()
-def save_hidden_five_army_design(ctx):
-    """A five-army design map (Black Hole the fifth): Save hidden, nothing
+def save_offered_five_army_design(ctx):
+    """A five-army design map (Black Hole the fifth): Save offered, nothing
     written in a day."""
     m = ctx.map(hq=((1, 0, 0), (2, 29, 19), (3, 29, 0), (4, 0, 19)))
     m.terrain(15, 10, 0x1B4)
     m.unit(5, "infantry", 16, 10)
     m.colours = [5, 1, 2, 3, 4]
     g = ctx.start(m, None)
-    no_save_on_map_menu(ctx, g, "five-army design")
+    save_on_map_menu(ctx, g, "five-army design")
 
 
 @test(modes=("ds",))
-def save_hidden_five_army_maps(ctx):
-    """tangoAW2's 5P maps (Five Seas, Black Rampart): Save hidden, nothing
+def save_offered_five_army_maps(ctx):
+    """tangoAW2's 5P maps (Five Seas, Black Rampart): Save offered, nothing
     written to Flash in a day."""
     for name in ("Five Seas", "Black Rampart"):
         e, g = versus_on(ctx, name)
-        no_save_on_map_menu(ctx, g, name)
+        save_on_map_menu(ctx, g, name)
         e.close()
 
 

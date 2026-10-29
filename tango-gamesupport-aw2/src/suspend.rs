@@ -218,6 +218,85 @@ fn save_start(core: &mut Core) {
 }
 
 fn save_write(core: &mut Core) {
+    save_write_aw2(core);
+    five_save(core);
+}
+
+/// A five-army battle's record after the block ([`crate::five::saved_state`]): +0 [`FIVE_MARK`], +4 its length (u16), +6 a hash of AW2's part of the block (the battle it
+/// belongs to: a record left in the staging buffer by another save never matches another battle's block), then the state. It follows whatever else the block carries (the pairs'
+/// tail, the stage's mark): [`FIVE_AT`] lists where a reader looks.
+const FIVE_MARK: u32 = 0x3556_4946; // "FIV5"
+const FIVE_HEAD: u32 = 10;
+const FIVE_AT: [u32; 2] = [BLOCK_SIZE, BLOCK_SIZE + TAG_LEN];
+/// The staging buffer's size and the most a record may take (two Flash sectors, 0xFAD bytes each).
+const STAGING: u32 = 0x2000;
+const SLOT_MAX: u32 = 2 * 0xFAD;
+
+fn five_save(core: &mut Core) {
+    // (the slot writer's length is r2)
+    let len = core.gba().cpu().gpr(2) as u32;
+    // A record from an earlier save is out of the buffer first, wherever a reader would look.
+    for at in FIVE_AT {
+        if core.raw_read_32(BLOCK + at, -1) == FIVE_MARK {
+            core.raw_write_32(BLOCK + at, -1, 0);
+        }
+    }
+    let Some(state) = crate::five::saved_state(core) else {
+        return;
+    };
+    if !(BLOCK_SIZE..=BLOCK_SIZE + TAG_LEN).contains(&len) && len != BLOCK_SIZE + 5 {
+        return;
+    }
+    let total = len + FIVE_HEAD + state.len() as u32;
+    if total > STAGING.min(SLOT_MAX) {
+        return;
+    }
+    let mut r = Vec::with_capacity(state.len() + FIVE_HEAD as usize);
+    r.extend_from_slice(&FIVE_MARK.to_le_bytes());
+    r.extend_from_slice(&(state.len() as u16).to_le_bytes());
+    r.extend_from_slice(&block_hash(core).to_le_bytes());
+    r.extend_from_slice(&state);
+    core.raw_write_range(BLOCK + len, -1, &r);
+    core.gba_mut().cpu_mut().set_gpr(2, total as i32);
+}
+
+/// The block just applied: a five-army battle saved with it comes back (the game is five-army again, its tables as saved). The record is taken once.
+fn five_restore(core: &mut Core) {
+    let hash = block_hash(core);
+    for at in FIVE_AT {
+        let a = BLOCK + at;
+        // (bytes: the length and the hash are not aligned in the buffer)
+        let mut h = [0u8; FIVE_HEAD as usize];
+        core.raw_read_range(a, -1, &mut h);
+        if u32::from_le_bytes(h[0..4].try_into().unwrap()) != FIVE_MARK || u32::from_le_bytes(h[6..10].try_into().unwrap()) != hash {
+            continue;
+        }
+        let n = u16::from_le_bytes([h[4], h[5]]) as usize;
+        if n == 0 || a + FIVE_HEAD + n as u32 > BLOCK + STAGING {
+            continue;
+        }
+        let mut b = vec![0u8; n];
+        core.raw_read_range(a + FIVE_HEAD, -1, &mut b);
+        core.raw_write_32(a, -1, 0);
+        crate::five::restore_saved(core, &b);
+        return;
+    }
+}
+
+/// What a suspended game's record holds, for `aw2dev save inspect`: the mark's place, the battle's hash, the five-army state's length.
+pub fn five_record_in(block: &[u8], tag_len: usize) -> Option<(usize, u32, usize)> {
+    let _ = tag_len;
+    FIVE_AT.iter().find_map(|&at| {
+        let at = at as usize;
+        if block.len() < at + FIVE_HEAD as usize || u32::from_le_bytes(block[at..at + 4].try_into().ok()?) != FIVE_MARK {
+            return None;
+        }
+        let n = u16::from_le_bytes(block[at + 4..at + 6].try_into().ok()?) as usize;
+        Some((at, u32::from_le_bytes(block[at + 6..at + 10].try_into().ok()?), n))
+    })
+}
+
+fn save_write_aw2(core: &mut Core) {
     if is_on(core) && core.gba().cpu().gpr(2) as u32 == BLOCK_WRITE && tag_tail_ok(core) {
         core.gba_mut().cpu_mut().set_gpr(2, (BLOCK_WRITE + TAG_LEN) as i32);
     }
@@ -528,6 +607,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (
             APPLIED,
             Box::new(|core: &mut Core| {
+                five_restore(core);
                 applied_survival(core);
                 applied(core);
                 applied_ds(core);

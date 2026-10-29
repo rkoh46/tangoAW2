@@ -295,12 +295,8 @@ imm 0805D466 0xff | cmp r0, #0x40
 imm 0805D548 0xff | cmp r0, #0x40
 imm 0805D572 0xff | cmp r0, #0x40
 
-# ---- no suspend saves in a 5-army game (the save holds four armies);
-# resuming an ordinary suspended game switches the patches off first ----
-fn 08016D30 no_save | push {r4, r5, r6, r7, lr}
-# The map menu's Save item (menu table entry 0849AB64: hide test, then
-# on-select 0802CFC0, text 0x90B) hides in link games; hide it here too.
-fn 0802C644 hide_save | ldr r0, [pc, #0xc]
+# ---- a 5-army game saves like any other (crate::suspend: the fifth army follows AW2's block);
+# resuming switches the patches off for AW2's own apply and back on after it ----
 
 # ---- army -> property owner bits, army bits, capture tiles ----
 word 0802139C OWNERS
