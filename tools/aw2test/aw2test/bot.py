@@ -618,6 +618,8 @@ class Bot:
         else:
             goals = [(s["x"], s["y"]) for s in targets if s.get("structure")] if self.structures_goal else []
             goals = goals or self.intact_seams() or self.goals or [(f["x"], f["y"]) for f in foes] or [p for p, _ in self.targets_for_capture(army, props)][:4]
+            # (a unit that cannot capture keeps off the goal cells: parked on an HQ it would keep the Infantry out for good)
+            free = [c for c in free if c not in self.goals] or free
         if not goals:
             return ("stay", here, None)
         attack = self.aggressive(army)

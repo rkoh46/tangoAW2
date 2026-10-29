@@ -2858,7 +2858,8 @@ fn defeat_army(core: &mut Core) {
 }
 
 /// At each army's turn start, just after its income came in (the Black Factory's hook, `factory::at_turn_start`): a sleeping army ([`MissionDef::sleepers`]) or one cut off
-/// ([`MissionDef::cut_off`]: the player holds its HQ) has its funds taken back to 0 (stage 1 only). Done here, not by a repeating trigger: AW2 runs a turn-start event entry once.
+/// ([`MissionDef::cut_off`]: the player holds its HQ) has its funds taken back to 0 (stage 1 only). Done here, not by a repeating trigger: in the five-army gauntlet a repeating turn-start SetFunds took the funds back on day 1 only (test_m31_asleep_funds.py; BH1's repeating triggers do repeat:
+/// `bh_act2_m6_carrier_launches_every_third_day`), and here the cut comes right after the army's own income, on its own turn.
 pub fn cut_funds(core: &mut Core) {
     if !crate::ds_campaign::active(core) || crate::stage::stage(core) > 0 {
         return;

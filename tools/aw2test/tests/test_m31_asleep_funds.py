@@ -1,5 +1,5 @@
 """M31: a sleeping nation earns nothing (crate::custom_campaign::cut_funds): over five days (the player ends each turn at once), Olaf's, Kanbei's and Eagle's funds are 0 at every look, their own turns
-included (each HQ's income is taken back as it comes in), while Nell's HQ stands; the day-5 scene is logged too (a turn-start event entry runs once: why the cut is not a repeating trigger)."""
+included (each HQ's income is taken back as it comes in), while Nell's HQ stands; the day-5 scene is logged too (a repeating turn-start SetFunds took the funds back on day 1 only: why the cut is crate::custom_campaign::cut_funds)."""
 
 from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2

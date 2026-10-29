@@ -78,3 +78,47 @@ def bh2_m31_sleeping_nation_survives_losing_its_holders(ctx):
     ctx.check(alive(e, g, 2), "Olaf is alive after waking")
     ctx.check(e.u32(g.players_base + 0x3C * 2) >= 20000, f"and has his funds ({e.u32(g.players_base + 0x3C * 2)})")
     e.close()
+
+
+@test(name="bh2_m31_nell_routed_before_her_hq_falls", modes=("ds",))
+def bh2_m31_nell_routed_before_her_hq_falls(ctx):
+    """Nell's whole army dies before her HQ is taken (the game's own rout check, on a real attack): what her HQ is then, and whether taking it still wakes Olaf (the gauntlet must go on)."""
+    e, g, d = b2.enter(ctx, 31)
+    d.leave_setup()
+    a2.intro(ctx, e, d, "m31", (0,))
+    d.wait_control()
+    g._units_base = g._players_base = None
+    from tests.test_bh2_review import home
+    home(g, e)
+    e.wait(60)
+    nell = g.units(army=1)
+    for u in nell[1:]:
+        d.remove_unit(u)
+    g._units_base = g._players_base = None
+    last = g.units(army=1)[0]
+    a = g.unit_addr(last["id"])
+    e.w16(a + 4, (e.u16(a + 4) & ~0x7F) | 1)
+    att = next(u for u in g.units(army=5) if u["type"] == 1 and not u["flags"] & 0x08)
+    aa = g.unit_addr(att["id"])
+    e.w8(aa, 4)
+    e.w8(aa + 1, 0)
+    spot = next(c for c in ((last["x"] + 1, last["y"]), (last["x"] - 1, last["y"]), (last["x"], last["y"] + 1), (last["x"], last["y"] - 1)) if g.unit_at(*c) is None and bp.owner(e, *c) != 1 or g.unit_at(*c) is None)
+    d.place_unit(g.unit(att["id"]), *spot)
+    e.wait(4)
+    d.dialogue()
+    g.attack(spot, spot, (last["x"], last["y"]))
+    bp.settle(e, g, d)
+    g._units_base = g._players_base = None
+    row = e.u16(dc.MAP + 0x417A + 2 * 8)
+    tile = e.u16(dc.MAP + 0xA22 + 2 * (row + 8))
+    p1 = g.players_base + 0x3C
+    ctx.log(f"Nell routed: units {len(g.units(army=1))}, defeated {e.u16(p1 + 0x14)}, HQ (8,8) owner {bp.owner(e, 8, 8)} tile {tile:#x} class {e.u8(dc.MAP + 0x1432 + row + 8) & 0x1F:#x}, result {e.u8(dc.LAST_RESULT)}")
+    ctx.shot(g, "nell_routed")
+    ctx.check(not e.u8(dc.LAST_RESULT), "the mission goes on")
+    bp.capture(ctx, e, g, d, (8, 8), 5)
+    bp.settle(e, g, d)
+    g._units_base = g._players_base = None
+    ctx.log(f"after the capture: HQ owner {bp.owner(e, 8, 8)}, Olaf units {len(g.units(army=2))}")
+    ctx.eq(bp.owner(e, 8, 8), 5, "the player holds Nell's HQ")
+    ctx.check(len(g.units(army=2)) >= 10, f"Olaf's wave landed ({len(g.units(army=2))} units)")
+    e.close()

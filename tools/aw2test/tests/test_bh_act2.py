@@ -1063,3 +1063,36 @@ def _acts(n):
 
 for _n in MISSIONS:
     _acts(_n)
+
+
+@test(modes=("ds",))
+def bh_act2_m6_carrier_launches_every_third_day(ctx):
+    """M6: the Carrier launches a Fighter at (24,10) every third day from day 5 (a repeating turn-start trigger, `EveryDays { n: 3, from: 5 }`): with the player ending each turn at once, a fresh Fighter
+    stands on (24,10) at the player's turn on days 5, 8 and 11 (a repeating trigger fires more than once)."""
+    e, g, d, spec = load_mission(ctx, 6)
+    d.pick_mission()
+    d.choose_cos(1)
+    g._units_base = g._players_base = None
+    seen = []
+    for _ in range(40):
+        d.wait_control()
+        g._units_base = g._players_base = None
+        day = e.u16(DAY)
+        u = g.unit_at(24, 10)
+        if u is not None and u["army"] == 2 and u["type"] == 16:
+            seen.append(day)
+        ctx.log(f"day {day}: at (24,10) {u and (u['army'], u['type'])}")
+        if day >= 12 or e.u8(dc.LAST_RESULT):
+            break
+        try:
+            a2.end_turn(e, g, d)
+        except Exception as ex:
+            ctx.log(f"end turn: {ex}")
+        for _ in range(600):     # (the computer's turn and a day's scene, answered with A)
+            if d.in_battle() and not d.scripts_running() and g.current_army() == 1 and e.u16(DAY) != day:
+                break
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(20)
+    ctx.eq([x for x in seen if x in (5, 8, 11)], [5, 8, 11], f"a Fighter launched on days 5, 8 and 11 (seen on {seen})")
+    e.close()
