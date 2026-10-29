@@ -11,12 +11,12 @@ NARRATION: The second harvest was / greyer. The third did not come.
 NARRATION: Then the relief grain / arrived. Cheap. On time.
 NARRATION: Crates from HOBB Grain / and Freight. No office, no owner.
 NARRATION: A stencil on every crate, / a stamp on every bill.
-NARRATION: The Consul Varro found the / money, and did not ask whence.
+NARRATION: The Consul Varro found the / money, and did not ask from where.
 NARRATION: The Senate was in debt to / a name, and it sent two letters.
 NARRATION: To the Legate Klaus, in / writing: find who feeds us.
 NARRATION: To the Prefect Cassius, / sealed: if there is nobody,
 NARRATION: take the north's granaries. / Do not wait for permission.
-NARRATION: The legions sailed under a / green sun on white, to conquer a road.
+NARRATION: The legions sailed north, / under a green sun on white.
 NARRATION: They marched because / the bread stopped.
 
 # ---------------------------------------------------------------- M1 Landfall (Klaus; enemy Jess)
@@ -57,7 +57,7 @@ CASSIUS: Then let me ride ashore! One / charge and the fort is ours!
 KLAUS: Your horses are sick. You land / with the second wave.
 CASSIUS: Second wave! I was born / first wave, old man!
 AURELIA: A horse in forty paces of / surf is an expensive way to drown.
-CASSIUS: Do not "Prefect" me with that / face, Aurelia. I can hear it.
+CASSIUS: Do not make that face at me, / Aurelia. I can hear it.
 AURELIA: I did not say it. I was / thinking it very loudly.
 KLAUS: Infantry and Mech first, with / the Recon beside them.
 KLAUS: APCs carry the wounded. The / Anti-Air tank follows. Wings may come.
@@ -71,22 +71,22 @@ AURELIA: Ramps down. May the sun / be kind to the first man ashore.
 KLAUS: The sun is not who I worry / about. That is a fort. Move.
 
 == m01_day2
-JESS: Hey, you down on my beach! / Who are you folks, anyway?
-JESS: Flag's got a sun on it. Ours / has a sun on it. Mine's greener.
+JESS: You, on my beach! Green Earth / Coastal Watch. Identify yourselves!
+JESS: Your flag has a sun on it. / So does ours. Ours is greener.
 KLAUS: We are Aurea. We come for / answers. We will take the coast.
-JESS: Answers? Honey, you landed with / tanks on a farm coast.
-JESS: Take it up with the Co-op. / Politely. Not off a barge.
+JESS: Answers don't come off a / barge with tanks on it.
+JESS: You want to talk, send an / envoy. Unarmed.
 KLAUS: I tried the white flag. / Your cruiser read it as a target.
-JESS: ...Yeah. That one's on Drake. / Still not getting past me.
+JESS: ...That one's on Drake. You / still aren't getting past me.
 
 == m01_post
 @SONG ally2
-JESS(s): Okay. Okay! You got the road, / the gate, the whole fort.
-JESS: My boys are out the back door. / I am the last one in.
+JESS(s): That's the road, the gate / and the fort. All right.
+JESS: My crews are out the back. / I'm the last one here.
 KLAUS: Lay down your arms. You will / be treated as a soldier.
-JESS: Nope. I am going out the back / door, too. Reload and come back.
+JESS: No. I'm leaving too. We'll / reload and come back.
 KLAUS: I will not stop you. I do not / hunt a retreating warden.
-JESS: Huh. That is not how invaders / do it. They chase.
+JESS: Huh. Invaders usually chase.
 KLAUS: I am an invader, Warden. I / will not pretend otherwise.
 KLAUS: I am also looking for a cargo. / Your coast is the first place I look.
 JESS: You came from the sea. So did / the last invasion.
@@ -148,7 +148,7 @@ LEGIONARY: Legate, the line is / formed on the crest. Waiting.
 KLAUS: Shields to the front. Rear / rank, lift. Roof them over.
 LEGIONARY: Tortoise formation! / Locked shields, sir!
 CASSIUS: A turtle. You have built / a turtle. On a dune.
-KLAUS: A dune that does not run. / Arrows come off it like rain.
+KLAUS: A dune that does not run. / Shells come off it like rain.
 KLAUS: Three ridges, three passes. Eagle's / wings and Jess's tanks break on them.
 AURELIA: I am just an engineer, but / a turtle is a load-bearing animal.
 KLAUS: Then we are in good hands. / Each man holds his square of sand.
@@ -165,12 +165,12 @@ EAGLE: Death from above! Oh, a / tortoise! Never seen one with guns.
 AURELIA: Legate, planes. Four, / maybe five. Low and fast.
 KLAUS: Anti-air, form up.
 LEGIONARY: Anti-air, form up! / Missiles to the crest! Roof high!
-EAGLE: Hold on, that is a very good / turtle. I will drop a few bombs. Hm.
+EAGLE: Huh. That's a really good / turtle. Bombs away anyway!
 
 == m02_post
 @SONG ally2
 EAGLE: Retreat! Not defeat, just / surprise... backwards!
-JESS: We pull back. Dunes are yours. / Do not get comfortable.
+JESS: Pull back! The dunes are yours, / Legate. Don't get comfortable.
 AURELIA: Radio, Legate. Causeway is / open. Eight days to the hour.
 KLAUS: To the hour. Good.
 CASSIUS: Now? May I ride, finally?
@@ -190,7 +190,7 @@ KLAUS: Black Hole. I do not know / the name. They fear it.
 CASSIUS: We are blamed for a / stranger's crimes! How flattering.
 KLAUS: It means they will not hear / us until we prove otherwise.
 KLAUS: The coast is ours to the ridge. / Now we march into the province.
-KLAUS: The road is long. The war has / just become a conversation.
+KLAUS: The road is long. And they / think we are someone else.
 
 == m02_map
 @SONG ally2
@@ -199,10 +199,10 @@ SOLDIER GE: Please. Please do not / eat me, sir.
 KLAUS: We do not eat prisoners. We / feed them. Sit.
 SOLDIER GE: ...Sit? Really? I was / told you were all cannibals.
 LIVIA: Four denarii, for one bowl / of mercy. Charged to the Senate.
-KLAUS: Charged to me. What is your / name, soldier?
-KLAUS: Corporal. You said you were / told we ate our captives.
+KLAUS: Charged to me. Eat, Corporal.
+KLAUS: You said you were told / we ate our captives.
 SOLDIER GE: That's the story in the / barracks, sir. Raiders. Green fleet.
-KLAUS: We take towns and forts, not farms. / We want the fields. Ours are grey.
+KLAUS: We take forts, not farms. / Our own fields have gone grey.
 SOLDIER GE: Grey? Ours too, sir. At / the cape. Two summers, now.
 SOLDIER GE: Ash on the wind. The old / folks say it comes from the north.
 KLAUS: Two summers. Ours was three. / ...You had it after us.
@@ -244,7 +244,7 @@ AURELIA: Rain is fog. Their gunners see / me and I cannot spot a single gun.
 LIVIA: Wet roads, wet powder, wet boots. / I shall add a line for umbrellas.
 KLAUS: Then the Recon goes first, and / slowly. We find the guns by hand.
 KLAUS: That is a plan.
-AURELIA: It is a start. A plan has / more steps, usually a ladder.
+AURELIA: It is a start. A siege / needs more steps. Ladders, mostly.
 KLAUS: This is not a promotion. It / is a ladder. Climb.
 AURELIA: Climbing. Gates, the Muro river, / the towers, the keep.
 LIVIA: A wall costs more to build / than to knock down. This is true
@@ -413,7 +413,7 @@ KLAUS: You will ride behind the / vanguard. In the second rank.
 CASSIUS: Second rank! You are / keeping me out of the glory.
 KLAUS: I am keeping you alive. It / is the same thing, most days.
 CASSIUS: Old man, you are exactly / the sort who rides in front.
-KLAUS: Yes. And I am older, so I / bury fewer people.
+KLAUS: Yes. I am older. I have / buried enough young men.
 CASSIUS: Then I will ride between. / Third rank. Second and a half.
 LIVIA: Gentlemen. Your quarrel has / cost the Legion four hours.
 LIVIA: I bill it equally. Half to the / Legate, half to the Prefect.
