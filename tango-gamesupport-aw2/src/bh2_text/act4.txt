@@ -440,7 +440,7 @@ RACHEL: Rule six: a pilot is only / as brave as his fuel.
 ADDER: Fuel is for ordinary men, my / dear. I run on adoration.
 JAKE: Yo, you run on hairspray!
 ADDER: Hairspray, you tank-driving brute, / is a delicate mist of ambition.
-RACHEL: Jake, don't engage. Rule one: / do not answer the pilot.
+RACHEL: Jake, don't engage. Rule one: / do not answer insults.
 JAKE: Rule one is boring, Rach!
 KINDLE: Darling Adder! I hear they / gave you a sky. Try not to scorch it.
 ADDER: Kindle! Madam! Go and set / fire to someone else's wing.
@@ -463,7 +463,7 @@ ADDER: I will write it in!
 == m24_post
 @SONG co:adder
 ADDER(s): My wing. My lovely, / lovely wing. Grounded by a book.
-RACHEL: Rule four: an air force is / only as good as its fields.
+RACHEL: Rule three: an air force is / only as good as its fields.
 ADDER: I concede. Their anti-air / is real. I hate it.
 ADDER: It is also magnificent. / Someone photograph that flak.
 JAKE: Yo, good flyin', pretty boy. / You were smooth up there.
