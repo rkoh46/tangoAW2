@@ -98,7 +98,7 @@ NELL: Oh, dear one. You have his eyes. / Eat something, too.
 CLONE ANDY(s): Nobody ever told me to / eat something.
 NELL: Then I'll tell you twice.
 @IF CRUMB CO
-CRUMB CO: Ma'am Nell! It's Pip Hobb! / I... I'm so sorry about all this.
+CRUMB CO: Miss Nell! It's Pip Hobb! / I... I'm so sorry about all this.
 NELL: Pip? You're very young to be / commanding armies, dear.
 CRUMB CO: I'm very new, ma'am. I have / a biscuit. Gerald, say hello.
 NELL: Hello, Gerald. And how old are / you?
@@ -139,7 +139,7 @@ SAMI: That too. Roger.
 
 == m29_post
 @SONG sturm
-NELL(s): The Gate holds no longer. Max, / Sami: fall back. Now.
+NELL(s): The Gate is lost. Max, / Sami: fall back. Now.
 MAX: Nell! I'm staying with you! I'm / not leaving you on the wall!
 NELL: Max. Look at me. It isn't a / request.
 MAX: ...Nell.
@@ -205,7 +205,7 @@ ANDY: I'm done sitting in a room, Nell! / Every hour here's another mile for him
 NELL: You're listening. It's the harder / job. Leave last, Andy. Not first.
 NELL: The Accord was a table with four / legs, dears. Three got kicked out.
 HACHI: Evening, youngsters. I closed the / shop. Sign says "Back Soon".
-NELL: Then plan the rematch with me. / The last train leaves the Rail Yard.
+NELL: Then help me plan, Hachi. / The last train leaves the Rail Yard.
 NELL: Children, medics, the Accord's seal / and maps. It goes east. Past the maps.
 ANDY: What do I do?
 NELL: Hold the platform until the / whistle. Then follow.
@@ -223,7 +223,7 @@ NARRATION: The Orange Castle. Three walls, / a moat, and the last light on.
 NELL: Black Hole. You took the Gate. I / didn't stop you. Not really.
 NELL: I held it long enough for the / roads to empty. You know that.
 STURM: I know.
-NELL: You've taken four nations. You / took them kindly, mostly.
+NELL: You've taken three nations. You / took them kindly, mostly.
 NELL: I won't hate you. I can't. But I / will stop you, Sturm.
 NELL: Behind me are ten thousand / people. Bakers. Teachers. Children.
 STURM: You hold them with a wall.
@@ -246,14 +246,14 @@ ANDY: I know. That's what hurts.
 NELL: You're welcome at my table, / dear. Whatever happens. That stays.
 CLONE ANDY(s): ...I kept the mug, Nell. / I'd like to keep it.
 @WITH CRUMB CO
-CRUMB CO: Ma'am Nell? Did you eat?
+CRUMB CO: Miss Nell? Did you eat?
 NELL: I did, Pip. Did you?
 CRUMB CO: Gerald did. He had most / of a crumb.
 NELL: Then look after him. And / yourself.
 @END
 NELL: Sturm. If you win, be kind / to them.
 STURM: Kindness is for the kneeling. The / conquered are kept.
-NELL: Kept is a start. People grow in / the dark, Sturm. Give them a window.
+NELL: Kept is a start. Nobody grows in / the dark, Sturm. Give them a window.
 STURM: I will give them a flag.
 NELL: Then a window with a flag in it. / Let it learn.
 @IF STURM
@@ -398,7 +398,7 @@ SOLDIER: It was heavy, sir. Heavier / than children.
 STURM: Let it go.
 @WITH HAWKE
 HAWKE: Eleven cars. The manifest says / children. The weight says more.
-HAWKE: I did not say follow. I / said I counted.
+HAWKE: I will not follow it. But I / have counted it.
 @WITH CLONE ANDY
 CLONE ANDY: Andy. You did it right. / Better than I would have.
 ANDY: Don't be kind. ...Thank you.
@@ -470,7 +470,7 @@ STURM: The world is mine. The storm / rests. ...Do not read into it.
 HAWKE: Marshal's note. Chapter two of / the doctrine: "Succession".
 HAWKE: A good army outlives its founder. / I am merely thorough.
 STURM: Noted.
-NARRATION: In the depot, a crate hums. / Stencilled "HOBB, P." and no-map mark.
+NARRATION: In the depot, a crate hums. / Stencilled "HOBB, P.", and a keyhole.
 CRUMB: Gerald? That crate is for ME.
 MORTAR: Crumb. Do not open it.
-NARRATION: Somewhere past the maps, a / door has opened.
+NARRATION: Somewhere past the maps, a / door is waiting.
