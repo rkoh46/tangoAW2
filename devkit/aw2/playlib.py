@@ -42,3 +42,39 @@ def contact_sheet(rep, out, cols=3, cw=360):
         dr.text((x + 4, y + 3), label, fill=(240, 220, 120))
     im.save(out)
     return out
+
+
+def wave_sheet(rep, out):
+    """--waves: each whole-map picture beside a table of every army's units by type and funds at that moment (one row per picture)."""
+    from PIL import Image, ImageDraw
+    rows = []
+    for w in rep["waves"]:
+        if w.get("path") and os.path.exists(w["path"]):
+            rows.append((Image.open(w["path"]).convert("RGB"), w))
+    if not rows:
+        return None
+    mw = max(im.width for im, _ in rows)
+    panel = 520
+    hs = [max(im.height, 40 + 14 * sum(2 + len(f["types"]) // 3 for f in w["forces"].values())) + 30 for im, w in rows]
+    sheet = Image.new("RGB", (mw + panel, sum(hs)), (20, 20, 28))
+    dr = ImageDraw.Draw(sheet)
+    y = 0
+    for (im, w), h in zip(rows, hs):
+        names = rep.get("armies", {}).get(str(w["stage"]), rep.get("armies", {}).get(w["stage"], {}))
+        dr.text((6, y + 6), f"day {w['day']}, stage {w['stage']}: {w['why']}", fill=(240, 220, 120))
+        sheet.paste(im, (0, y + 24))
+        ty = y + 24
+        for a in sorted(w["forces"], key=int):
+            f = w["forces"][a]
+            name = names.get(str(a), names.get(int(a), f"army {a}"))
+            dr.text((mw + 10, ty), f"{name}: {f['units']} units, {f.get('funds', 0):,} G", fill=(255, 255, 255))
+            ty += 14
+            types = sorted(f["types"].items(), key=lambda kv: -kv[1])
+            for i in range(0, len(types), 3):
+                dr.text((mw + 22, ty), ",  ".join(f"{k} x{v}" for k, v in types[i:i + 3]), fill=(190, 190, 205))
+                ty += 14
+            ty += 6
+        y += h
+        dr.line([(0, y - 1), (mw + panel, y - 1)], fill=(80, 80, 100))
+    sheet.save(out)
+    return out

@@ -9,3 +9,7 @@
 The report: the outcome and the reason, the days taken, the takeovers and stage switches reached (each with a picture), each army's units and funds at the start of every day, the stalls (three days in which nothing changed, or
 the day limit) and a contact sheet of the key moments: the start, each takeover, the switch, a stall, the end. Missions need a `HQS` row (the HQs whose takeover is photographed, by stage). Test:
 `playthrough_report_formats` (the Markdown); the run itself is opt-in (`AW2TEST_PLAY_MISSION`), like `campaign sim`.
+
+`--god` heals the player's units to full every half second (the player cannot lose): it shows every wave and stage of a mission, never whether the mission can be won (judge that from runs without it and from a human
+playtest). `--waves` (with `--player bot`) takes a whole-map picture at the start and on the player's turn after each wave lands (an army's units jump by five or more), with every army's units by type and
+funds, and composes `waves.png` (`playlib.wave_sheet`); `ARMIES` in `tests/test_playthrough.py` names the armies by mission and stage. The run writes `progress.log` beside its pictures as it goes (`tail -f` it).

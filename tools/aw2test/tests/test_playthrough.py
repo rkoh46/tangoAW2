@@ -16,6 +16,8 @@ from aw2test.harness import test
 NS = [int(x) for x in os.environ.get("AW2TEST_PLAY_MISSION", "").replace(",", " ").split()]
 DAYS = int(os.environ.get("AW2TEST_PLAY_DAYS", "60"))
 OUT = os.environ.get("AW2TEST_PLAY_OUT")
+GOD = os.environ.get("AW2TEST_PLAY_GOD") == "1"            # the player's units are healed to full every half second (watch every wave land: the player cannot lose)
+WAVE_MAPS = os.environ.get("AW2TEST_PLAY_WAVE_MAPS") == "1"  # a whole-map picture at the start and each time an army's units jump (a wave landed), with every army's units by type and funds
 PLAYER = os.environ.get("AW2TEST_PLAY_PLAYER", "cpu")      # cpu: the game's computer plays the player's army too; bot: aw2test.bot.Bot plays it through the pad (goals: the HQs)
 STAGE_AT = 0x0203_DCA0
 FIVE_ON = 0x0203_0206
@@ -27,6 +29,8 @@ _spec.loader.exec_module(bp)
 del harness.TESTS[_n:]
 
 # The HQs whose takeover a picture is taken of, by mission and stage: (name, cell).
+# The armies' names on the wave sheet, by mission and stage.
+ARMIES = {31: {1: {1: "Nell (Orange Star)", 2: "Olaf (Blue Moon)", 3: "Kanbei (Yellow Comet)", 4: "Eagle (Green Earth)", 5: "Black Hole (player)"}}}
 HQS = {31: {0: bp.HQS and [(n, c) for n, c, _, _ in bp.HQS], 1: [("Aria", (33, 5))]}}
 
 
@@ -35,11 +39,42 @@ def owners(e, cells):
 
 
 def take_over(g, e):
-    """Every human army becomes the computer's (the player's armies change with the stage)."""
-    p = g.players_base
+    """Every human army becomes the computer's (the player's armies change with the stage); returns the armies taken over."""
+    p, took = g.players_base, set()
     for a in range(1, 6):
         if e.u8(p + 0x3C * a + 0x1B) == 1:
             e.w8(p + 0x3C * a + 0x1B, 2)
+            took.add(a)
+    return took
+
+
+def humans(g, e):
+    p = g.players_base
+    return {a for a in range(1, 6) if e.u8(p + 0x3C * a + 0x1B) == 1}
+
+
+def heal(g, armies):
+    """--god: every living unit of these armies back to 100 HP."""
+    for u in g.units():
+        if u["army"] in armies and 0 < u["hp"] < 100:
+            a = g.unit_addr(u["id"])
+            w = g.e.u16(a + 4)
+            g.e.w16(a + 4, (w & ~0x7F) | 100)
+
+
+def forces(g, e):
+    """Every army's units by type and funds: {army: {"funds": f, "units": n, "types": {name: n}}}."""
+    from aw2test import rom
+    p, out = g.players_base, {}
+    for u in g.units():
+        r = out.setdefault(u["army"], {"units": 0, "types": {}})
+        r["units"] += 1
+        name = rom.UNIT_NAMES.get(u["type"], str(u["type"]))
+        r["types"][name] = r["types"].get(name, 0) + 1
+    for a in range(1, 6):
+        if a in out or e.u8(p + 0x3C * a + 0x1B):
+            out.setdefault(a, {"units": 0, "types": {}})["funds"] = e.u32(p + 0x3C * a)
+    return out
 
 
 def snapshot(g, e):
@@ -54,6 +89,13 @@ def snapshot(g, e):
 
 
 def run(ctx, n):
+    prog = open(os.path.join(ctx.out, "progress.log"), "w", buffering=1)   # the log as it happens (a long run can be followed: tail -f)
+    log0 = ctx.log
+
+    def log(msg):
+        log0(msg)
+        prog.write(f"{msg}\n")
+    ctx.log = log
     e, g, d = b2.enter(ctx, n)
     d.leave_setup()
     a2.intro(ctx, e, d, f"m{n}", (0,))
@@ -66,6 +108,16 @@ def run(ctx, n):
     cells = {k: v for k, v in HQS.get(n, {}).items()}
     held = owners(e, cells.get(stage, []))
     frames, max_frames = 0, 3_000_000
+    gods = humans(g, e)
+    waves, want_map, last_counts = [], ["the start"], {}
+
+    def wave_map(why):
+        from aw2test import cpuprobe
+        name = f"wave_{len(waves):02d}"
+        g._units_base = g._players_base = None
+        path = cpuprobe.whole_map(ctx, e, g, d, n, name)
+        waves.append({"file": name, "path": path, "why": why, "day": e.u16(dc.DAY), "stage": e.u8(STAGE_AT) + 1, "forces": forces(g, e)})
+        ctx.log(f"wave map {name} day {e.u16(dc.DAY)}: {why}")
 
     def shot(name, why):
         ctx.shot(g, name)
@@ -82,11 +134,38 @@ def run(ctx, n):
         if e.u8(dc.LAST_RESULT):
             break
         g._units_base = g._players_base = None
+        if d.in_battle():
+            if GOD:
+                gods |= humans(g, e)
+                heal(g, gods)
+            if WAVE_MAPS and not d.scripts_running():
+                counts = {}
+                for u in g.units():
+                    counts[u["army"]] = counts.get(u["army"], 0) + 1
+                for a, c in counts.items():
+                    if c - last_counts.get(a, 0) >= 5 and last_counts:
+                        want_map.append(f"army {a} landed: {last_counts.get(a, 0)} -> {c} units")
+                last_counts = counts
         if bot is None and d.in_battle() and e.u32(0x0849_9598) != 0:
-            take_over(g, e)
+            gods |= take_over(g, e)
         elif bot is not None and d.in_battle() and not d.scripts_running():
             army = g.current_army()
+            if army != getattr(run, "_last_army", None):
+                run._last_army = army
+                ctx.log(f"turn: army {army} (control {e.u8(g.players_base + 0x3C * army + 0x1B) if 1 <= army <= 5 else '-'}) day {e.u16(dc.DAY)}")
             if 1 <= army <= 5 and e.u8(g.players_base + 0x3C * army + 0x1B) == 1:
+                if want_map:
+                    why = "; ".join(want_map)
+                    want_map.clear()
+                    for k in range(6):     # the day's banner and the turn's start: the cursor is free a moment later
+                        e.wait(90)
+                        try:
+                            d.wait_control()
+                            wave_map(why)
+                            break
+                        except Exception as ex:
+                            ctx.log(f"wave map (try {k + 1}): {ex}")
+                    last_counts = {}
                 try:
                     bot.play_turn(army)
                     e.wait(40)
@@ -135,7 +214,7 @@ def run(ctx, n):
     r = d.last_result()
     shot("end", "the end")
     row = {"mission": n, "title": b2.TITLES[n], "player": PLAYER, "result": {1: "won", 2: "lost"}.get(r["result"], "none"), "days": e.u16(dc.DAY) - day0 + 1, "frames": frames,
-           "reason": d.end_reason() if r["result"] else None, "stages_reached": stage + 1, "events": events, "daily": days, "stalls": stalls, "shots": shots,
+           "reason": d.end_reason() if r["result"] else None, "stages_reached": stage + 1, "events": events, "daily": days, "stalls": stalls, "shots": shots, "god": GOD, "waves": waves, "armies": ARMIES.get(n, {}),
            "dir": ctx.out}
     ctx.log(json.dumps({k: v for k, v in row.items() if k not in ("daily", "shots")}))
     if OUT:

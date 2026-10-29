@@ -48,6 +48,8 @@ def register(sub):
     a.add_argument("mission", type=int)
     a.add_argument("--player", default="cpu", choices=["cpu", "bot"], help="cpu: the game's computer plays the player's army too; bot: the test player (aw2test.bot) through the pad, going for the HQs")
     a.add_argument("--days", type=int, default=60, help="the day limit over all stages")
+    a.add_argument("--god", action="store_true", help="the player's units are healed to full every half second: the player cannot lose, so every wave and stage can be watched")
+    a.add_argument("--waves", action="store_true", help="a whole-map picture at the start and each time an army lands a wave (on the player's next turn; needs --player bot), with every army's units by type and funds (waves.png)")
     a.add_argument("--out", help="the folder for report.md, report.json and contact.png (default devkit/work/campaign/playthrough/<campaign>-m<N>)")
     a.set_defaults(fn=playthrough)
     a = cs.add_parser("difficulty", help="the Emerald Sun missions' difficulty scores (static numbers and the sims' results)")
@@ -73,11 +75,11 @@ def register(sub):
 def playthrough(a):
     """tests/test_playthrough.py in a harness run; then Markdown and a contact sheet from its JSON (docs/dev/playthrough.md)."""
     from .. import playlib
-    out = Path(a.out) if a.out else cfg.REPO / "devkit" / "work" / "campaign" / "playthrough" / f"{a.campaign}-m{a.mission}-{a.player}"
+    out = Path(a.out) if a.out else cfg.REPO / "devkit" / "work" / "campaign" / "playthrough" / (f"{a.campaign}-m{a.mission}-{a.player}" + ("-god" if a.god else ""))
     out.mkdir(parents=True, exist_ok=True)
     js = out / "report.json"
     js.unlink(missing_ok=True)
-    env = dict(os.environ, AW2TEST_PLAY_MISSION=str(a.mission), AW2TEST_PLAY_PLAYER=a.player, AW2TEST_PLAY_DAYS=str(a.days), AW2TEST_PLAY_OUT=str(js))
+    env = dict(os.environ, AW2TEST_PLAY_MISSION=str(a.mission), AW2TEST_PLAY_PLAYER=a.player, AW2TEST_PLAY_DAYS=str(a.days), AW2TEST_PLAY_OUT=str(js), AW2TEST_PLAY_GOD="1" if a.god else "0", AW2TEST_PLAY_WAVE_MAPS="1" if a.waves else "0")
     run = cfg.REPO / "tools" / "aw2test" / "run.py"
     subprocess.run([sys.executable, str(run), "-k", f"playthrough_m{a.mission}", "--mode", "ds"], env=env, cwd=cfg.REPO)
     if not js.exists():
@@ -86,6 +88,8 @@ def playthrough(a):
     rep = json.loads(js.read_text())
     (out / "report.md").write_text(playlib.markdown(rep))
     sheet = playlib.contact_sheet(rep, str(out / "contact.png"))
+    if rep.get("waves"):
+        print("waves sheet", playlib.wave_sheet(rep, str(out / "waves.png")))
     print(playlib.markdown(rep))
     print(f"report {out / 'report.md'}" + (f", contact sheet {sheet}" if sheet else ""))
     return 0
