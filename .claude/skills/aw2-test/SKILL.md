@@ -15,3 +15,9 @@ description: Pick and run the right tangoAW2 checks for a change (lib tests, off
 4. A small fix the user will playtest: skip suites; `./aw2dev build --release && ./aw2dev install-mac`.
 5. Respect politeness (one live run at a time, local signalling, never close the user's app, delete captures and `target/` when done).
 6. Waiting for a long run: `./aw2dev wait PID` or `./aw2dev wait LOG --text "passed in"` (never `until ! pgrep -f ...`: it matches its own shell and never ends).
+
+## Looking into a save
+
+`aw2dev save inspect FILE.sav` (a save the harness left, e.g. `tools/aw2test/out/ds/<test>/saved.sav`) lists the suspended games and, for a five-army battle, the record after AW2's block (`docs/dev/five-suspend.md`):
+whether its hash matches the block (a record that does not is never applied), each army's funds / CO / unit count and the Flash sectors used. A new suspend-and-resume test compares the battle byte for byte
+(`tests/test_five_suspend.py` `whole_battle`, `compare_whole`).

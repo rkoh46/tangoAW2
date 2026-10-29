@@ -636,6 +636,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_five_army_record_fits_the_slot() {
+        // AW2's block, the pairs' tail, the record's head and the worst case of the state (every unit id in use): two Flash sectors.
+        let worst = BLOCK_SIZE + TAG_LEN + FIVE_HEAD + crate::five::SAVED_MAX as u32;
+        assert!(worst <= SLOT_MAX, "{worst} bytes");
+        assert!(worst <= STAGING);
+        // (the reader's places are inside the buffer)
+        assert!(FIVE_AT.iter().all(|&a| a + FIVE_HEAD < STAGING));
+    }
+
+    #[test]
     fn tail_fits_the_block() {
         assert!(TAIL + TAIL_LEN <= BLOCK + BLOCK_LEN);
         assert!(DS_AT + DS_LEN <= BLOCK + BLOCK_LEN);

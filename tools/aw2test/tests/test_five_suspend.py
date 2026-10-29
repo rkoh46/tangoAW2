@@ -265,3 +265,27 @@ def five_record_never_leaks_into_another_battle(ctx):
     g2.wait_for_input()
     ctx.eq(e2.u8(FIVE_ON), 0, "no five-army game came back with the normal one")
     saves.compare_snapshots(ctx, snap, saves.snapshot(g2), "the normal game after Continue")
+
+
+@test(name="five_versus_builtin_maps_suspend_and_resume", modes=("ds",))
+def five_versus_builtin_maps_suspend_and_resume(ctx):
+    """tangoAW2's own 5P maps (Five Seas, Black Rampart) chosen like a player (offline Versus, the map list): one day played, saved, a reboot, Continue: the same five-army battle (every army's block and unit, byte for byte)."""
+    from tests.test_save_integrity import versus_on
+    for name in ("Five Seas", "Black Rampart"):
+        e, g = versus_on(ctx, name)
+        g.wait_for_input()
+        g.end_turn(human=1)
+        before = whole_battle(g)
+        saves.suspend(g)
+        saved = saves.flash(e, os.path.join(ctx.out, name.replace(" ", "_")))
+        ctx.check(not saved.problems(), f"{name}: every slot passes its check ({saved.problems()})")
+        ctx.log(f"{name}: the Versus slot holds {len(saved.slot(4))} bytes")
+        e.close()
+        e2, g2 = boot(ctx, saved.path)
+        saves.to_select_mode(e2)
+        saves.versus_continue(g2)
+        ctx.eq(e2.u8(FIVE_ON), 1, f"{name}: five-army game after Continue")
+        compare_whole(ctx, before, whole_battle(g2), f"{name} resumed")
+        g2.end_turn(human=before["army"])
+        ctx.check(not g2.battle_over(), f"{name}: the resumed battle goes on")
+        e2.close()

@@ -6,6 +6,8 @@
                                             photograph the chooser at each entry (AW2, DS, BH, BH2 and Emerald Sun placeholders) and the "Coming soon" boxes
   campaign sheets | sim | difficulty | check | dialogue   the Emerald Sun Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
                                             the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
+  campaign playthrough bh2 N [--player cpu|bot] [--days D]   a BH2 mission played to its end in the harness (the computer on every side, or the test player for the player's army), with a report (days, outcome,
+                                            takeovers and stage switches, units and funds by day, stalls) and a contact sheet of the key moments (docs/dev/playthrough.md)
   campaign worldmap [--out PNG] [--no-run]  the world-map tests with pictures, then es_world_map.png: the map at three stages with the nodes labelled, the flag states, the unlock moments
   campaign trace [--mission N ...]          play the missions in the offline harness (CO screen, card, intro, forced win, victory, results, map scenes) and
                                             sample every 20 frames: song, fade, text, screen, the sound's loudness; prints scene -> song and flags silent gaps
@@ -41,6 +43,13 @@ def register(sub):
     a.add_argument("-j", "--jobs", type=int, default=0, help="missions played at once (default: half the cores)")
     a.add_argument("-v", "--verbose", action="store_true")
     a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).sim(a))
+    a = cs.add_parser("playthrough", help="play a BH2 mission to the end in the harness (the computer on every side, or the test player for the player's army), day by day, with a report and a contact sheet")
+    a.add_argument("campaign", choices=["bh2"])
+    a.add_argument("mission", type=int)
+    a.add_argument("--player", default="cpu", choices=["cpu", "bot"], help="cpu: the game's computer plays the player's army too; bot: the test player (aw2test.bot) through the pad, going for the HQs")
+    a.add_argument("--days", type=int, default=60, help="the day limit over all stages")
+    a.add_argument("--out", help="the folder for report.md, report.json and contact.png (default devkit/work/campaign/playthrough/<campaign>-m<N>)")
+    a.set_defaults(fn=playthrough)
     a = cs.add_parser("difficulty", help="the Emerald Sun missions' difficulty scores (static numbers and the sims' results)")
     a.add_argument("--require-final", action="store_true", help="exit 1 unless M16 is clearly the hardest")
     a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).difficulty_cmd(a))
@@ -59,6 +68,27 @@ def register(sub):
     a.add_argument("--out")
     a.add_argument("--campaign", default="bh", choices=["bh", "es"])
     a.set_defaults(fn=trace)
+
+
+def playthrough(a):
+    """tests/test_playthrough.py in a harness run; then Markdown and a contact sheet from its JSON (docs/dev/playthrough.md)."""
+    from .. import playlib
+    out = Path(a.out) if a.out else cfg.REPO / "devkit" / "work" / "campaign" / "playthrough" / f"{a.campaign}-m{a.mission}-{a.player}"
+    out.mkdir(parents=True, exist_ok=True)
+    js = out / "report.json"
+    js.unlink(missing_ok=True)
+    env = dict(os.environ, AW2TEST_PLAY_MISSION=str(a.mission), AW2TEST_PLAY_PLAYER=a.player, AW2TEST_PLAY_DAYS=str(a.days), AW2TEST_PLAY_OUT=str(js))
+    run = cfg.REPO / "tools" / "aw2test" / "run.py"
+    subprocess.run([sys.executable, str(run), "-k", f"playthrough_m{a.mission}", "--mode", "ds"], env=env, cwd=cfg.REPO)
+    if not js.exists():
+        print("no report: the run did not finish")
+        return 1
+    rep = json.loads(js.read_text())
+    (out / "report.md").write_text(playlib.markdown(rep))
+    sheet = playlib.contact_sheet(rep, str(out / "contact.png"))
+    print(playlib.markdown(rep))
+    print(f"report {out / 'report.md'}" + (f", contact sheet {sheet}" if sheet else ""))
+    return 0
 
 
 def scene_rows(campaign="bh"):

@@ -20,3 +20,12 @@ BH2 maps (docs/dev/bh2-maps.md): specs in `five/bh2/spec/`, `aw2dev maps gen --c
 
 ## A mission in stages (a map switch inside one battle)
 Read docs/dev/stages.md. A mission declares `MissionDef::stages` (`StageDef`: map, armies with the player's `CoSpec::Keep`, units, deploy cells, `Carry`, look, weather, triggers, intro) and a trigger ends a stage with `Action::NextStage` (put its scene before it). The survivors, funds and CO meters carry over; five-army and four-army stages both work; a battle saved on a later (four-army) stage resumes on it. Prove it like BH2's M31: harness `bh2_m31_progression`, `bh2_m31_stage_two_suspend_and_resume`, `bh2_m31_switch_is_deterministic` (`tools/aw2test/tests/test_bh2_progression.py`).
+
+## Tools for a mission with stages or five armies
+
+- `aw2dev stage next <mission>`: plays the mission to its stage switch and prints what the switch did (units and funds before and after, the player's units carried, the meter); a mission with stages needs a row in
+  `tools/aw2test/tests/test_stage_tool.py` `STAGE_TRIGGERS`. `aw2dev stage show FILE.sav`: the stage a suspended game was saved on.
+- `aw2dev save inspect FILE.sav`: every suspended game of a save, AW2's block, the marks after it and a five-army battle's record (hash match, armies, unit counts, Flash sectors). A five-army mission is suspendable
+  (`docs/dev/five-suspend.md`); add its suspend-and-resume check beside `tests/test_five_suspend.py` (the byte-for-byte `whole_battle` comparison).
+- `aw2dev campaign playthrough bh2 <N> [--player cpu|bot]`: the mission played to its end in the harness, day by day: report, units and funds by day, takeovers, stage switches, stalls, a contact sheet
+  (`docs/dev/playthrough.md`). Add the mission's HQ cells to `tests/test_playthrough.py` `HQS` for pictures of each takeover.
