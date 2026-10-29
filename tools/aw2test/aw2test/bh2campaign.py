@@ -139,3 +139,16 @@ def enter(ctx, n, env=None, save=None):
     ctx.eq(d.mission(), n - 1, f"M{n}: its own mission was entered")
     g._units_base = g._players_base = None
     return e, g, d
+
+
+def to_player_turn(e, g, d, army=5, frames=24000):
+    """Presses A through the scripts (a mission's opening scene) until it is the player's turn (`army`, the fifth in M31) with nothing running: a five-army mission's computer turns go by first."""
+    for _ in range(frames // 20):
+        if d.scripts_running():
+            e.press("A", 4)
+        elif g.current_army() == army and d.in_battle():
+            e.wait(30)
+            if g.current_army() == army and not d.scripts_running():
+                break
+        e.wait(16)
+    g._units_base = g._players_base = None
