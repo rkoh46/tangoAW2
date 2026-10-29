@@ -19,10 +19,10 @@ NARRATION: The Lantern Night. Yellow / Comet's B Copters sleep at anchor.
 SENSEI: Now, now, youngsters. It's / Lantern Night. Er... mind the lights.
 SENSEI: Each light is for someone who / did not come home. Mind your boots.
 ASUKA: Sensei. We did not come for / the festival.
-SENSEI: Nobody ever is. And who's / this? A new face in the rain?
+SENSEI: Nobody ever does. And who's / this? A new face in the rain?
 SENSEI: Hm. I know that coat. I know / that walk. Whose is it?
 ASUKA: Asuka. Black Hole. Your fleet / is at anchor under the lanterns.
-ASUKA: A night raid. Rain, fog and / paper light. I hold your roster.
+ASUKA: This is a night raid, Sensei. / I already have your roster.
 SENSEI: Do you now. Only my / quartermaster holds that roster.
 ASUKA: He files in triplicate. Like / all of Yellow Comet.
 SENSEI: Aye. Like all of us.
@@ -111,7 +111,7 @@ NARRATION: Yellow Comet's long island. / A highway of bridges runs its length.
 KOAL: Eleven bridges. Three spans / each. Mind the lane.
 KINDLE: Eleven bridges, darling? Eleven / entrances. I do love an entrance.
 KOAL: You will stay in your lane. / You are not the Highway.
-KINDLE: Darling, I am every highway. / I merely let others pave me.
+KINDLE: Darling, every road leads to / me. I merely let others pave it.
 GRIMM: Har! Who's on my road?! Koal! / Road man! I hired you!
 KOAL: You never paid.
 GRIMM: Invoice me! I'll pay in / punches!
@@ -164,7 +164,7 @@ KINDLE: Twelve years of fire. And / he used the second-best brush.
 KOAL: I was thanked for the highway. / In writing. They never built the sign.
 KINDLE: Two people a nation thanked, / and then forgot what to do with.
 KOAL: Yes.
-KINDLE: Now we have a flag, and a / General who tracks our grudges.
+KINDLE: Now we have a flag, and a / General who remembers our names.
 KOAL: Mind the lane, Kindle.
 KINDLE: Always, darling. It is the / most romantic thing you say.
 
@@ -285,7 +285,7 @@ KANBEI: The Table was built for / guests. Kanbei has not met them all.
 SENSEI: Easy, youngsters. Mind the / crockery.
 KANBEI: Sensei. Hold the sky. Kanbei / holds the ground. And the Table.
 SENSEI: Aye. And what does the lady / hold?
-ASUKA: Four Black Cannons, Sensei. / They shell the walls, not the Hall.
+ASUKA: Two Black Cannons, Sensei. / They shell the walls, not the Hall.
 ASUKA: No time limit. I am in no hurry / to finish this.
 KANBEI: Good. Then Kanbei need not / hurry either.
 KANBEI: Come, Asuka. Let honour judge us.
@@ -422,7 +422,7 @@ KANBEI: ...Lunch.
 SENSEI: Thank you, girl. I mean / Commander. I forget.
 ASUKA: Of course, Sensei. Forgetting / is a mercy.
 MORTAR: Ma'am. The Chain is taken. / Four nations. Two left standing.
-ASUKA: Two and a half. One is angry. / The other is hiding.
+ASUKA: Two. One is angry. The / other is hiding.
 MORTAR: Who is hiding?
 ASUKA: Blue Moon. Hiding behind its / border, counting its iron.
 
@@ -447,7 +447,7 @@ JESS: Yellow Comet is down. Green / Earth is down. Who is next?
 OLAF: Blue Moon! Olaf will hold the / border with ice and honour!
 GRIT: Reckon honour is cold comfort, / Olaf. She cut the Line in a day.
 ANDY: Okay. I'm done sitting. I / want to go to the tower. For Nell.
-MAX: Big man says go! The tower has / four guards and a window!
+MAX: Then let's go! That tower's got / four guards and one window!
 RACHEL: A new letter from "A." again. / It says: "Be patient. I come soon."
 JAVIER: Hark! Whoever writes so / neatly, I should like to challenge!
 JESS: I keep asking myself why one / clerk writes like she has all the time
