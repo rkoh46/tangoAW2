@@ -443,7 +443,8 @@ fn side_unit(core: &Core, side: u32) -> Option<u32> {
 fn side_class(core: &Core, side: u32) -> Option<u8> {
     let u = side_unit(core, side)?;
     let (x, y) = (core.raw_read_8(u + 2, -1) as u32, core.raw_read_8(u + 3, -1) as u32);
-    if x >= 30 || y >= 30 {
+    // (the map's own size: tangoAW2's maps are up to 64 wide; past column 30 the fights on M31's 46-wide map had the plain backdrop)
+    if x >= core.raw_read_16(MAP, -1) as u32 || y >= core.raw_read_16(MAP + 2, -1) as u32 {
         return None;
     }
     let row = core.raw_read_16(MAP_ROWS + 2 * y, -1) as u32;

@@ -62,10 +62,11 @@ pub fn towers(core: &Core, army: u32) -> u32 {
 
 fn count_towers(core: &mut Core) {
     let mut n = [0u8; 5];
+    // (the whole map: tangoAW2's maps are up to 64 wide and 40 tall; a tower past column 30 counted for nobody on M31's 46-wide map)
     let (w, h) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
-    for y in 0..h.min(30) {
+    for y in 0..h.min(40) {
         let row = core.raw_read_16(ROWS + 2 * y, -1) as u32;
-        for x in 0..w.min(30) {
+        for x in 0..w.min(64) {
             let c = core.raw_read_8(CLASSES + row + x, -1);
             let owner = (c >> 5) as usize;
             if c & 0x1F == LAB && (1..=5).contains(&owner) {
@@ -359,7 +360,7 @@ pub fn show(core: &mut Core) {
 
 fn map_has(core: &Core, tile: u16) -> bool {
     let (w, h) = (core.raw_read_16(MAP, -1) as u32, core.raw_read_16(MAP + 2, -1) as u32);
-    (0..h.min(30)).any(|y| (0..w.min(30)).any(|x| crate::obelisk::tile_at(core, x, y) == tile))
+    (0..h.min(40)).any(|y| (0..w.min(64)).any(|x| crate::obelisk::tile_at(core, x, y) == tile))
 }
 
 /// Sprite tiles the Design Room's editor never uses (the end of
@@ -510,7 +511,8 @@ const ROWS: u32 = MAP + 0x417A;
 
 /// Whether the map cell (x, y) is a Com Tower now.
 pub fn tower_at(core: &Core, x: u32, y: u32) -> bool {
-    if !active(core) || x >= 30 || y >= 30 {
+    // (the map's own size: tangoAW2's maps are up to 64 wide; a tower past column 30 read as a Lab on M31's 46-wide map)
+    if !active(core) || x >= core.raw_read_16(MAP, -1) as u32 || y >= core.raw_read_16(MAP + 2, -1) as u32 {
         return false;
     }
     let row = core.raw_read_16(ROWS + 2 * y, -1) as u32;
