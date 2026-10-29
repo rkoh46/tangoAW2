@@ -7,6 +7,9 @@ SONGS = ["klaus", "aurelia", "cassius", "livia", "varro"]
 REF = ["kanbei", "sensei", "hawke", "jess", "andy", "olaf", "drake", "colin", "eagle", "grit"]   # AW2's own CO themes, for the level comparison
 MUSIC_DIR = cfg.REPO / "tango-gamesupport-aw2" / "music" / "es"
 RULES = dict(loop_min=45.0, loop_max=90.0, peak_voices=6, tracks=8, bytes=48 * 1024)
+# the BH2 credits roll (slot 201) is a staff-roll song, not a battle theme (AW2's own roll is 160 s): its loop may run to 120 s, the same allowance as
+# the Rust test every_source_compiles_and_has_the_right_shape (docs/dev/music-kit.md)
+LOOP_MAX_BY_SONG = {"credits": 120.0}
 
 
 def song_lines(path, rom_for_refs=False):
@@ -207,8 +210,9 @@ def run_tool(dirpath=None, files=()):
 
 def broken_rules(j):
     bad = []
-    if not RULES["loop_min"] <= j["loop_s"] <= RULES["loop_max"]:
-        bad.append(f"the loop is {j['loop_s']:.1f} s (AW2's themes: {RULES['loop_min']:.0f} to {RULES['loop_max']:.0f})")
+    loop_max = LOOP_MAX_BY_SONG.get(j.get("name"), RULES["loop_max"])
+    if not RULES["loop_min"] <= j["loop_s"] <= loop_max:
+        bad.append(f"the loop is {j['loop_s']:.1f} s (AW2's themes: {RULES['loop_min']:.0f} to {loop_max:.0f})")
     if j["peak_voices"] > RULES["peak_voices"]:
         bad.append(f"{j['peak_voices']} notes at once, first at tick {j.get('peak_at')} = bar {j.get('peak_at', 0) // 96 + 1} of 4/4 (AW2 mixes {RULES['peak_voices']} channels)")
     if len(j["tracks"]) > RULES["tracks"]:
