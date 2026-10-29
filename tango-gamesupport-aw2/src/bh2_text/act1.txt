@@ -148,11 +148,11 @@ MORTAR: ...Yes. Do it quietly.
 @SONG sturm
 STURM: The crate.
 ASUKA: Aboard. Sailing east with / my fleet.
-STURM: Does it hum.
+STURM: Does it hum?
 ASUKA: At sea, less. As if it were / listening to the water.
 STURM: Noted. Keep it near the boy.
 ASUKA: It already is. It prefers / him.
-STURM: Why.
+STURM: Why?
 ASUKA: That is what I mean to / find out, Lord Sturm.
 STURM: Do.
 

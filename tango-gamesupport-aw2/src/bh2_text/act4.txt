@@ -373,7 +373,7 @@ CRUMB CO: "Issue number one. The seal is / the key to the crate. He will know."
 CRUMB CO: "He is a good boy. I have not / met him."
 CRUMB CO(s): He didn't meet me, ma'am. / He wrote me a biscuit.
 ASUKA: He wrote you a journal, / Commander. The longest letter I know.
-STURM: Where is the door.
+STURM: Where is the door?
 ASUKA: Under your feet, Lord Sturm. / It is the Obelisk.
 STURM: I know. Bring the key.
 ASUKA: It turns only for Commander / Hobb.
@@ -418,7 +418,7 @@ MORTAR: Soup. Now.
 
 == m23_map
 @SONG sturm
-STURM: The key. Where is it.
+STURM: The key. Where is it?
 ASUKA: In Commander Hobb's hand. It / turns for no one else.
 STURM: The Obelisk is ready. Send / both west.
 ASUKA: Lord Sturm. The Allies know. / They will come for the door.
