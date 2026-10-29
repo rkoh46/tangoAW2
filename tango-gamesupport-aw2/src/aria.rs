@@ -12,8 +12,8 @@
 //!
 //! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
 //! |---|---|---|
-//! | Attack | +3% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
-//! | Defence | +3% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
+//! | Attack | +5% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
+//! | Defence | +5% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
 //! | HP | | +3 to every unit |
 //! | Luck, movement | the game's own | |
 //!
@@ -34,7 +34,7 @@ pub const STARS: (u32, u32) = (0, 7);
 pub const VENGEANCE_HP: u8 = 8;
 pub const VENGEANCE: [i32; 8] = [85, 61, 55, 49, 43, 37, 31, 25];
 /// Her flat bonus: every unit of hers (not an Oozium: no CO changes one, `co_roster::stat`) attacks and defends this much harder (percent), at every HP and power level.
-pub const FLAT: i32 = 3;
+pub const FLAT: i32 = 5;
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -87,8 +87,8 @@ mod tests {
         for t in [MOVE, crate::co_roster::RANGE] {
             assert_eq!([0, 1, 2].map(|m| bonus(m, t)), [0, 0, 0]);
         }
-        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [3, 3, 3], "a flat 3% defence");
-        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [3, 3, 23], "a flat 3% attack, Build Anew's 20% on top");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [5, 5, 5], "a flat 5% defence");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [5, 5, 25], "a flat 5% attack, Build Anew's 20% on top");
         assert!(crate::co_new::is_new(ARIA) && crate::co_new::is_own(ARIA) && !crate::es_co::is_es(ARIA));
         assert!(crate::co_new::listed(ARIA), "in every Versus list");
         assert_eq!(crate::co_new::like(ARIA), LIKE);

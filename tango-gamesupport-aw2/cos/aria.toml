@@ -1,5 +1,5 @@
 # Aria, Commander of the New Accord (docs/dev/co-kit.md, docs/dev/aria.md). Nell's sister, an Orange Star CO: the final opponent of the BH2 Campaign (docs/BH2_CAMPAIGN.md section 9, branch bh2design)
-# and Asuka's mirror. Her numbers are her own (src/aria.rs): +3% attack and defence for every unit; Vengeance (a unit on 8 HP or less attacks and defends harder, +25% at 8 HP up to +85% at 1); only a Super Power: heals 3 and +20% attack.
+# and Asuka's mirror. Her numbers are her own (src/aria.rs): +5% attack and defence for every unit; Vengeance (a unit on 8 HP or less attacks and defends harder, +25% at 8 HP up to +85% at 1); only a Super Power: heals 3 and +20% attack.
 # Not in the Emerald Sun Campaign.
 id = "aria"
 name = "Aria"
@@ -18,9 +18,9 @@ stars = { cop = 0, scop = 7 }
 
 [d2d]
 name = "Vengeance"
-text = "Firepower and defense rise 3%. Hurt units fight harder: 28% at 8 HP, up to 64% at 2 HP and 88% at 1 HP."
-# the flat 3% (every unit but an Oozium) is a mod; Vengeance depends on the unit's HP (crate::aria::vengeance): the check below plays it in battle
-mods = [ { units = "all", attack = 3, defence = 3 } ]
+text = "Firepower and defense rise 5%. Hurt units fight harder: 30% at 8 HP, up to 66% at 2 HP and 90% at 1 HP."
+# the flat 5% (every unit but an Oozium) is a mod; Vengeance depends on the unit's HP (crate::aria::vengeance): the check below plays it in battle
+mods = [ { units = "all", attack = 5, defence = 5 } ]
 # firepower and defence % at 8, 7, 6, 5, 4, 3, 2, 1 displayed HP (9 and 10: nothing; never an Oozium): crate::aria::VENGEANCE
 vengeance = { hp = 8, percent = [25, 31, 37, 43, 49, 55, 61, 85] }
 
