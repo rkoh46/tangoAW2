@@ -4,45 +4,45 @@
 
 == epilogue
 @SONG ending1
-NARRATION: The Last Citadel. The Great / Hall. Dawn. Four banners hang as one.
+NARRATION: Dawn in the Last Citadel's / Great Hall. Four banners hang as one.
 ARIA: The Accord's seal. Orange Star's / gold, with all four marks on it.
-ARIA: It has hung in this hall since / the fence. It's heavier than it looks.
-NELL: We held it for the Accord. The / Accord is gone. It was always paper.
+ARIA: It's hung in this hall since the / fence went up. It's heavier than it looks.
+NELL: We kept it for the Accord. The / Accord is gone. It was always paper.
 ARIA: Take it. Not for Sturm. He's / gone. Take it for the work.
 ASUKA: I accept it as a trustee. Not / as a prize.
 ARIA: Don't be modest. I'd rather you / were smug. Then I could hate you.
-ASUKA: Aria. I am smug. In writing. / Signed.
+ASUKA: Aria, I am smug. In writing. / Signed.
 ARIA: ...Hah. That's almost a joke.
-NELL(h): Aria laughed. Oh, my / goodness. Somebody write it down.
+NELL(h): Aria laughed! Oh, my / goodness. Somebody write it down.
 MAX: Ha! She smiled! I saw it! / Everybody saw it!
 SAMI: Roger. We saw it. Quiet, Max.
-NARRATION: Marshal Hawke steps forward. / Kneels. Not to Asuka. To the ranks.
-HAWKE: Black Hole's Marshal kneels / to the army. Not to a person.
-HAWKE: A person ends. The army / does not.
-ASUKA: Marshal. Stand.
+NARRATION: Marshal Hawke steps forward / and kneels. Not to Asuka. To the ranks.
+HAWKE: Black Hole's Marshal kneels to / the army. Not to a person.
+HAWKE: A person ends. The army does / not.
+ASUKA: Marshal. Stand up.
 HAWKE: When the army says so, / Commander. Not before.
 SOLDIER: Stand, Marshal! Stand!
-HAWKE: ...Chapter two is finished. / It is called Succession.
-KANBEI: Kanbei has one more matter. / A table is set in his hall.
-KANBEI: The seventh chair has a / scarf. It is warm.
+HAWKE: ...Chapter Two is finished. It / is called Succession.
+KANBEI: Kanbei has one more matter. A / table is set in his hall.
+KANBEI: The seventh chair has a scarf / on it. It is warm.
 ASUKA: I will come, Emperor. One day. / To eat. When the work is done.
-KANBEI: Kanbei will keep the soup / warm. For however long it takes.
+KANBEI: Kanbei will keep the soup warm. / However long it takes.
 SENSEI: Old men forget, you know. / Mostly. Sometimes the right things.
 == epilogue_toasts
 @SONG ending1
-JAKE: Yo, I never saw so many / sad people smile at once.
+JAKE: Yo, I never saw so many sad / people smile at once.
 RACHEL: By the book, that's allowed.
 OLAF: Blue Moon salutes! With snow! / Olaf brought a great deal of snow!
-SASHA: Olaf. It is a ceremony. Not / a weather event.
-COLIN: I-I think the snow is lovely, / Sis.
+SASHA: Olaf. It is a ceremony, not a / weather event.
+COLIN: I-I think the snow's lovely, / Sis.
 SASHA: ...It is rather lovely.
-VON BOLT: Kehh-heh! Everything / accounted! In the black! Second pick!
+VON BOLT: Kehh-heh! Every coin / accounted for! In the black!
 KOAL: One road now. No borders. / Mind the lane.
 KINDLE: To me, darlings. And to the / audience, I suppose. Applause?
-JUGGER: WAR: CONCLUDED. PURPOSE: / PENDING. HUMOR: FOUND. QUERY: HOW.
+JUGGER: WAR: OVER. PURPOSE: PENDING. / HUMOUR: FOUND. QUERY: HOW.
 LASH: He laughed! Jugger laughed! / Heehee! Write it down! I taught him!
 FLAK: Flak full. Flak sleepy. Good / war. Boss good.
-ADDER: Photographed from every angle. / All of them mine. Again.
+ADDER: Photographed from every angle. / Every one of them mine. Again.
 CLONE ANDY: Clone Andy. That's me. / ...And I can fix anything.
 ANDY(h): He can, too. I watched.
 CRUMB CO: Ma'am! Quartermaster's log! / I keep Gerald! And the key!
@@ -50,166 +50,166 @@ ASUKA: Commander Hobb. The key is / yours. So is the decision.
 CRUMB CO: Closed, ma'am. Not locked. / In case Sir comes home.
 MORTAR: Crumb. Eat your soup.
 CRUMB CO: Yes, Sergeant! Two bowls!
-NARRATION: In the depot, a key hums. / At the Obelisk, a door hums with it.
-NARRATION: Closed, not locked. Somewhere / past it, a storm listens. And waits.
+NARRATION: In the depot, a key hums. At / the Obelisk, a door hums with it.
+NARRATION: Closed, not locked. Beyond it, / a storm listens. And waits.
 
 # ---------------------------------------------------------------- M32 Through the Door (secret; FREE PAIR; Emerald Sun lands on Black Hole's island)
 
 == m32_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:klaus
-NARRATION: Black Hole's island, the home / shore. Desert, wind, and strange sails.
+NARRATION: Black Hole's home island. / Desert, wind, and strange sails.
 KLAUS: Legate Klaus of the Emerald / Sun. We followed the black light.
-KLAUS: It brought us the last leagues. / We did not choose this shore.
+KLAUS: It carried us the last leagues. / We did not choose this shore.
 ASUKA: Legate. This is Black Hole's / island. You are trespassing.
-KLAUS: We were told this is where the / stencil leads. The stencil reads HOBB.
-CRUMB CO: That's me, sir! I'm the / Hobb! Hello! Gerald says hello!
+KLAUS: We were told the stencil leads / here. The stencil reads HOBB.
+CRUMB CO: That's me, sir! I'm the Hobb! / Hello! Gerald says hello!
 LIVIA: Commander. The stamp on your / crates is the stamp on our freight bills.
-LIVIA: Three years of grain. Paid by / nobody. Signed by no creditor.
-AURELIA: Same nails, too, Legate. / I checked. The nails never lie.
-CASSIUS: Same boring shore, you / mean. Can we fight yet?
+LIVIA: Three years of grain. Paid for by / nobody. Signed by no creditor.
+AURELIA: Same nails, too, Legate. I / checked. Nails never lie.
+CASSIUS: Same boring shore, you mean. / Can we fight yet?
 KLAUS: Prefect. We are guests.
 CASSIUS: Guests with horses!
 ASUKA: You came a long way.
-KLAUS: Eleven days of sea in a / single night. Aurelia measured.
-AURELIA: Twice. The answer was / still wrong.
-ASUKA: That was the door. It is / closed now.
-KLAUS: We noticed. We cannot go / back the way we came.
+KLAUS: Eleven days of sea in a single / night. Aurelia measured it.
+AURELIA: Twice. The answer was still / wrong.
+ASUKA: That was the door. It is closed / now.
+KLAUS: We noticed. We cannot go back / the way we came.
 @IF ASUKA
-ASUKA: A legion at my door, with the / same stencil. I do enjoy a coincidence.
+ASUKA: A legion at my door with the / same stencil. I do enjoy a coincidence.
 @IF CRUMB CO
-CRUMB CO: Ma'am, they're nice! They / have horses! Can I pet one?
+CRUMB CO: Ma'am, they're nice! They've got / horses! Can I pet one?
 @IF HAWKE
 HAWKE: An unknown army, and a / disciplined one. That is a concern.
 @IF KOAL
-KOAL: Legion roads. I know the trade. / We shall have much to discuss.
+KOAL: Legion roads. I know the trade. / We will have much to discuss.
 @IF KINDLE
 KINDLE: A fleet of strangers, darlings! / A new audience! I cannot wait.
 @IF JUGGER
-JUGGER: FOREIGN ARMY: LOGGED. HUMOR: / NOT FOUND. THREAT: UNDEFINED.
+JUGGER: FOREIGN ARMY: LOGGED. HUMOUR: / NOT FOUND. THREAT: UNDEFINED.
 @IF FLAK
-FLAK: Big horses! Flak likes horses! / Flak smashes horses? ...Maybe not.
+FLAK: Big horses! Flak likes horses! / Flak smash horses? ...Maybe not.
 @IF LASH
-LASH: Ooh! New enemies! New toys! / Do they have a catapult? Heehee!
+LASH: Ooh! New enemies! New toys! Do / they have a catapult? Heehee!
 @IF ADDER
-ADDER: A legion in gold armour. They / know their lighting. I approve.
+ADDER: A legion in gold armour. They / understand lighting. I approve.
 @IF VON BOLT
 VON BOLT: Kehh... foreigners! A new / currency! What do they pay in?
 @IF CLONE ANDY
-CLONE ANDY: Okay! Visitors! I can / fix any-- ...any misunderstanding!
+CLONE ANDY: Okay! Visitors! I can fix / any-- ...any misunderstanding!
 @END
 @PARTNER ASUKA
-[CO2]: I shall speak for Black Hole. / You hold the line. Politely.
+[CO2]: I will speak for Black Hole. You / hold the line. Politely.
 @PARTNER CRUMB CO
 [CO2]: Hello, Legate! The depot's not / that scary! I made soup!
 @PARTNER HAWKE
-[CO2]: Legate. We fight for the / island. After that, we negotiate.
+[CO2]: Legate. First we fight for the / island. Then we negotiate.
 @PARTNER KOAL
-[CO2]: Fine. A road for you. A / road for us. Mind the lane.
+[CO2]: Fine. A road for you, a road for / us. Mind the lane.
 @PARTNER KINDLE
 [CO2]: Darlings, welcome to the show. / Pay at the door. Applaud at the end.
 @PARTNER JUGGER
 [CO2]: PARTNER: PRESENT. FOREIGNERS: / CONFIRMED. PROCEED WITH CAUTION.
 @PARTNER FLAK
-[CO2]: Flak guards boss! New guys / big! Flak ready!
+[CO2]: Flak guards boss! New guys big! / Flak ready!
 @PARTNER LASH
 [CO2]: Partner! Ooh! Strangers! I / brought sixteen new toys! Heehee!
 @PARTNER ADDER
 [CO2]: A fine duet. I take the sky. / You take the visitors.
 @PARTNER VON BOLT
-[CO2]: Partner! Kehh-heh! Let us / charge the strangers rent. Sixty-forty.
+[CO2]: Partner! Kehh-heh! We charge the / strangers rent. Sixty-forty.
 @PARTNER CLONE ANDY
-[CO2]: Hey! I'm with you! Okay! I / can fix any-- ...yes!
+[CO2]: Hey! I'm with you! Okay! I can / fix any-- ...yes!
 @END
 WICK: Sergeant. One of ours fired on / a landing boat. By accident.
-MORTAR: Wick. Tell me it wasn't you.
+MORTAR: Wick. Tell me it was not you.
 WICK: ...Is it all right if it was?
 CASSIUS: They fired! Charge! The / cavalry leads!
 KLAUS: Prefect. Hold. Prefect... / ...He is gone.
-ASUKA: Then we fight. Hold the / depot. Whoever they are.
+ASUKA: Then we fight. Hold the depot, / whoever they are.
 
 == m32_day3
 @SONG co:cassius
 CASSIUS: The Second Legion's cavalry! / Horses, banners, and me! Faster!
-CASSIUS: I was told to wait, but / waiting is for bankers!
+CASSIUS: I was told to wait, but waiting / is for bankers!
 LIVIA: Prefect. That is a remarkably / expensive charge.
-CASSIUS: Quaestor, bill me later! / Do not touch the reins!
-KLAUS: Prefect. The depot has / walls. Horses do not.
-CASSIUS: Then I shall teach the / horses to climb!
-AURELIA: Legate, he is going to / ride into the moat.
-KLAUS: I know. Let him learn it.
+CASSIUS: Quaestor, bill me later! Hands / off the reins!
+KLAUS: Prefect. The depot has walls. / Horses do not climb.
+CASSIUS: Then I shall teach them to!
+AURELIA: Legate, he is going to ride / into the moat.
+KLAUS: I know. Let him learn.
 CASSIUS: Ow! The moat is WET!
-ASUKA: Sergeant, note it. The moat / has claimed a Prefect.
+ASUKA: Sergeant, note it. The moat has / claimed a Prefect.
 
 == m32_day5
 @SONG co:aurelia
-AURELIA: Siege engines are up, / Legate. Rams at forty paces.
-AURELIA: The depot walls are old. Good / stone. Two metres, laid with no mortar.
+AURELIA: Siege engines are up, Legate. / Rams at forty paces.
+AURELIA: The depot walls are old. Good / stone, two metres, and no mortar.
 AURELIA: Who builds without mortar?
-ASUKA: A quartermaster who wanted a / basement. Not a wall.
+ASUKA: A quartermaster who wanted a / basement, not a wall.
 AURELIA: I like him. I am very sorry / about his wall.
-KLAUS: Fire when ready. Only the / walls. Not the depot.
+KLAUS: Fire when ready. The walls only. / Not the depot.
 AURELIA: Understood. The walls are / gorgeous. They will fall beautifully.
-CRUMB CO: Miss Aurelia? Do you / want a biscuit while you work?
-AURELIA: ...Do I? Yes. Thank you. / Oh. Oh, it's hard.
-CRUMB CO: It's from my grandpa. It's / very, very old!
-AURELIA: ...That's quite a good / biscuit, actually.
+CRUMB CO: Miss Aurelia? Would you like a / biscuit while you work?
+AURELIA: ...Would I? Yes. Thank you. / Oh. Oh, it is hard.
+CRUMB CO: It's from my grandpa. It's very, / very old!
+AURELIA: ...It is quite a good biscuit, / actually.
 
 == m32_day7
 @SONG co:livia
-LIVIA: The fleet has arrived. Every / ship. On time. I do prefer that.
-LIVIA: The shoreline is under our / guns. Terms may now be discussed.
-VON BOLT: Terms! Kehh-heh! A lady / who speaks my language!
-LIVIA: Colonel. Your fence rates on / the Cinder Coast were eleven per cent.
+LIVIA: The fleet has arrived. Every / ship, on time. I do prefer that.
+LIVIA: Your shoreline is under our / guns. Terms may now be discussed.
+VON BOLT: Terms! Kehh-heh! A lady who / speaks my language!
+LIVIA: Colonel. Your fence rates on the / Cinder Coast were eleven percent.
 LIVIA: That would be illegal in Aurea.
-VON BOLT: Aurea? Where is Aurea? / Does it have a market?
+VON BOLT: Aurea? Where is Aurea? Does it / have a market?
 LIVIA: It has a Senate, and a ledger.
 VON BOLT: A ledger! Show me! Kehh... / show me, show me!
-LIVIA: ...Colonel, you are the first / man to ask me that with joy.
+LIVIA: ...Colonel, you are the first man / to ask me that with joy.
 VON BOLT: I am old. Joy is cheap. I / recommend it.
 CRUMB CO: Ma'am, she wants to talk.
-ASUKA: She wants to be paid. It is / a fine instinct.
+ASUKA: She wants to be paid. It is a / fine instinct.
 
 == m32_post
 @SONG co:klaus
 KLAUS: The depot holds. The shore / holds. ...So do we.
-ASUKA: Legate Klaus. Enough. Both / armies are standing. Neither wins.
-KLAUS: I know. Prefect Cassius has / lost three horses and his temper.
-CASSIUS: Two horses! The third / sulked!
+ASUKA: Legate Klaus. Enough. Both / armies stand. Neither wins.
+KLAUS: I know. Prefect Cassius has lost / three horses and his temper.
+CASSIUS: Two horses! The third one / sulked!
 FLAK: Flak sorry. Flak ate horse's / oats. Oats good.
 CASSIUS: You ate my horse's OATS?! / ...Were they good oats?
 FLAK: Best oats. Flak thanks horse.
-CASSIUS: ...I like this man. I hate / that I like him.
+CASSIUS: ...I like this man. I hate that / I like him.
 AURELIA: Your Doctor built a catapult / out of a typewriter, Commander.
-LASH: It had good bones! Heehee! / It threw a very small anvil!
-AURELIA: It threw it eleven paces. / I am almost jealous.
+LASH: It had good bones! Heehee! It / threw a very small anvil!
+AURELIA: Eleven paces. I am almost / jealous.
 LIVIA: Marshal. Your ledgers are / meticulous. I should like to read them.
-HAWKE: Quaestor. Mine belong to the army, / yours to the Senate. Shall we trade?
+HAWKE: Quaestor. Mine belong to the / army, yours to the Senate. A trade?
 LIVIA: ...Terms accepted.
 KLAUS: Commander Asuka. I will ask / once. Who is Hobb?
-CRUMB CO: Me, sir! And my grandpa! / He built a door. Then they erased him.
-CRUMB CO: He left a reserve. In the / depot. I think he fed you, too.
-LIVIA: Three grey harvests. Grain / from a freight with no owner.
-LIVIA: Someone fed us. On purpose. / And never sent a bill.
+CRUMB CO: Me, sir! And my grandpa! He / built a door. Then they erased him.
+CRUMB CO: He left a reserve in the depot. / I think he fed you, too.
+LIVIA: Three grey harvests. Grain from / a freighter with no owner.
+LIVIA: Someone fed us on purpose, and / never sent a bill.
 AURELIA: Legate. He was a quartermaster. / Not a general.
-KLAUS: A quartermaster who fed an / army he never met.
-CRUMB CO: Sir. That's what we do. / Hobbs.
+KLAUS: A quartermaster who fed an army / he never met.
+CRUMB CO: Sir. That's what we do. Hobbs.
 KLAUS: ...Commander Hobb. I owe your / family a debt. I have no coin.
 LIVIA: I do. We shall discuss terms.
 ASUKA: Legate. The door is closed, not / locked. You may leave when you wish.
 HAWKE: Legate. You fought for a shore / you did not choose. I respect that.
 KLAUS: Marshal. We honour discipline. / It is the only currency we trust.
-KLAUS: We shall not leave yet. We / will camp at the edge of your map.
-KLAUS: We will watch. And we will / ask. Politely. For the rest.
+KLAUS: We will not leave yet. We will / camp at the edge of your map.
+KLAUS: We will watch. And we will ask, / politely, for the rest.
 ASUKA: I look forward to being asked.
 
 == m32_epilogue
 @SONG ending2
-NARRATION: The edge of the map, at / dusk. An Emerald Sun camp on a cliff.
-AURELIA: Legate. The sun has set on / us twice already.
+NARRATION: The edge of the map at dusk. / An Emerald Sun camp on a cliff.
+AURELIA: Legate. The sun has set on us / twice already.
 KLAUS: The sun does not set, Engineer. / It waits.
 LIVIA: For what, Legate?
-KLAUS: For the door to be asked / again.
+KLAUS: For the door to be asked again.
 CASSIUS: And if it is not?
 KLAUS: Then we ask it ourselves.
-NARRATION: Far away, in a depot, a / key hums once. Gerald's mark warms.
-NARRATION: The sun does not set. / It waits.
+NARRATION: Far away, in a depot, a key / hums once. Gerald's mark warms.
+NARRATION: The sun does not set. It waits.
