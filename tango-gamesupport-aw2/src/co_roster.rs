@@ -683,7 +683,16 @@ fn defence_total(core: &mut Core) {
     if !is_on(core) {
         return;
     }
-    let unit = core.raw_read_32(core.gba().cpu().gpr(5) as u32, -1);
+    let bu = core.gba().cpu().gpr(5) as u32;
+    let unit = core.raw_read_32(bu, -1);
+    // Aria's Vengeance defends too: the defending unit's own HP (crate::aria::vengeance), before AW2's cap
+    let army = battle_army(core, bu);
+    if (1..=5).contains(&army) && army_co(core, army).0 == crate::co_new::ARIA && abilities_on(core) && (0x0200_0000..0x0204_0000).contains(&unit) {
+        let v = crate::aria::vengeance(core.raw_read_8(unit + 4, -1) & 0x7F);
+        let cpu = core.gba_mut().cpu_mut();
+        let r1 = cpu.gpr(1);
+        cpu.set_gpr(1, r1 + v);
+    }
     if crate::oozium::immune(core, unit) {
         let cpu = core.gba_mut().cpu_mut();
         let (r1, power) = (cpu.gpr(1), cpu.gpr(8));

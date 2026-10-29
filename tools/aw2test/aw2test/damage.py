@@ -54,9 +54,18 @@ def crumb_bonus(mode, unit_type, which):
 ARIA = 93
 
 
+ARIA_VENGEANCE = [70, 60, 50, 45, 40, 35, 30, 25]     # crate::aria::VENGEANCE: 1..8 displayed HP
+
+
+def aria_vengeance(hp):
+    """Aria's Vengeance % (firepower and defence alike) for a unit of `hp` internal HP: 1..8 displayed HP (tenths rounded up) from the table, 9 and 10 nothing."""
+    shown = (hp + 9) // 10
+    return ARIA_VENGEANCE[shown - 1] if hp > 0 and shown <= 8 else 0
+
+
 def aria_bonus(mode, which):
     """Aria's own numbers (crate::aria::bonus) on every unit: the Super Power (mode 2; she has no CO Power) +20% firepower, nothing else, with the +10% firepower every power adds. Vengeance (a unit on
-    5 HP or less +20%) depends on the unit: `Ctx.side` adds it."""
+    8 HP or less, attack and defence by its HP) depends on the unit: `Ctx.side` adds it ([`aria_vengeance`])."""
     v = {0: 20 if mode == 2 else 0}.get(which, 0)
     if which == 0 and mode > 0:
         v += 10

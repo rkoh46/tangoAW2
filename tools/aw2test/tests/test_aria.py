@@ -1,7 +1,8 @@
 """Aria (CO 93, crate::aria): Nell's sister, an Orange Star CO with only a Super Power (docs/dev/aria.md). The numbers every CO has (attack, defence, move, heal, meter, Tag Power) are played by
 `aw2dev co verify aria` (tests/test_co_verify.py) against `cos/aria.toml`; this file proves the rest with numbers from the game:
     - the CO table's row: 0 stars for the CO Power, 7 for the Super Power, the game's own luck, Orange Star's style and colour bytes, her texts and quote slots;
-    - Vengeance: a unit on 8 HP or less (displayed) attacks 25% harder, 9 HP and up does not, in every power level, as attacker and as counterattacker, checked against the calculator's ranges;
+    - Vengeance: a unit on 8 HP or less (displayed) attacks and defends harder by its HP (+25% at 8 .. +50% at 3, +60% at 2, +70% at 1), 9 and 10 HP do not, in every power level, as attacker,
+      as counterattacker and as defender, checked against the calculator's ranges;
     - no CO Power: the map menu never offers "Power" and offers "Super" at 7 stars, the CPU plays her with a Super Power only;
     - Build Anew heals 3 HP, adds 20% firepower and nothing else (no move, no funds);
     - the Orange Star HQ is drawn for her."""
@@ -112,21 +113,21 @@ def aria_cpu_uses_only_her_super_power(ctx):
 
 
 @test(modes=("ds",))
-def aria_vengeance_adds_twenty_five_percent_to_a_unit_on_eight_hp_or_less(ctx):
-    """Vengeance: Aria's Tanks at 100, 90, 81, 80, 71, 10 internal HP (10, 9, 9, 8, 8, 1 displayed) each hit an Infantry; every loss is inside the calculator's range, and the range differs between 9 and 8
-    displayed HP by the 25% (the calculator adds it for 80 and under, `Ctx.side`). The same at the Super Power level (Build Anew's 20% on top) and as the counterattacker of Andy's hit."""
+def aria_vengeance_scales_with_hp(ctx):
+    """Vengeance: Aria's Tanks at 100, 90, 81 internal HP (10, 9, 9 displayed: nothing) and 80, 71, 60, 50, 40, 30, 20, 10 (8 down to 1) each hit an Infantry; every loss is inside the calculator's range
+    (`Ctx.side` adds damage.aria_vengeance), and 9 HP gets no boost while 8 does. The same at the Super Power level (Build Anew's 20% on top) and as the counterattacker of Andy's hit."""
     from aw2test import coverify as cv
     for mode in (0, 2):
         m = ctx.map()
-        hps = [100, 90, 81, 80, 71, 10]
+        hps = [100, 90, 81, 80, 71, 60, 50, 40, 30, 20, 10]
         for k, _ in enumerate(hps):
-            m.unit(1, "tank", 3 + 3 * k, 10).unit(2, "infantry", 3 + 3 * k, 11)
+            m.unit(1, "tank", 2 + 2 * k, 10).unit(2, "infantry", 2 + 2 * k, 11)
         g = ctx.start(m, ["aria", "andy"], env=cv.ENV)
         if mode:
             ctx.power(g, 1, "super")
         ranges = {}
         for k, hp in enumerate(hps):
-            x = 3 + 3 * k
+            x = 2 + 2 * k
             ctx.set_hp(g, x, 10, hp)
             a, d = g.unit_at(x, 10), g.unit_at(x, 11)
             out = damage.strike(ctx.rules, ctx.side(g, a, terrain=g.terrain_class(x, 10)), ctx.side(g, d), 1, True, a["hp"])
@@ -137,6 +138,7 @@ def aria_vengeance_adds_twenty_five_percent_to_a_unit_on_eight_hp_or_less(ctx):
             ctx.check(loss in out.losses, f"mode {mode}, Tank at {hp} HP: loss {loss} inside the calculator's {sorted(out.losses)}")
         # 9 displayed HP (81, 90) has no Vengeance and 8 (80) does: the calculator's range at 80 HP has 25% more per bar
         ctx.check(max(ranges[80]) * 9 > max(ranges[81]) * 8, "Vengeance shows: 80 HP hits harder per bar than 81")
+        ctx.eq([damage.aria_vengeance(h) for h in hps], [0, 0, 0, 25, 25, 35, 40, 45, 50, 60, 70], "the calculator's table: nothing at 9 and 10 HP")
         g.e.close()
     # the counterattack: Andy's Infantry hits Aria's Tank (at 100, 80 and 86 internal HP) and she counters; the counter is worked out from the HP the hit left (the unit record's), Vengeance included:
     # a Tank hit from 86 (9 displayed) down to 8 displayed counters with +25%
@@ -162,6 +164,30 @@ def aria_vengeance_adds_twenty_five_percent_to_a_unit_on_eight_hp_or_less(ctx):
         ctx.log(f"Aria's Tank {hp} -> {after_dfd['hp']} HP after the hit; her counter cost the Infantry {got}; calculator {sorted(counter.losses)}")
         ctx.check(got in counter.losses, f"Aria's Tank {hp} -> {after_dfd['hp']} HP counterattacks with the HP the hit left: loss {got} inside {sorted(counter.losses)}")
         g.e.close()
+
+
+@test(modes=("ds",))
+def aria_vengeance_defends_too(ctx):
+    """Vengeance defends: Andy's Tanks hit Aria's Tanks at 100, 90 (no boost) and 80, 60, 40, 20 internal HP (+25, +35, +45, +60% defence); every loss is inside the calculator's range, the defence
+    included (`Ctx.side`'s temp defence, AW2's cap at 200), and a 9 HP Tank of hers takes the plain hit."""
+    from aw2test import coverify as cv
+    m = ctx.map()
+    hps = [100, 90, 80, 60, 40, 20]
+    for k, _ in enumerate(hps):
+        m.unit(1, "tank", 3 + 3 * k, 10).unit(2, "tank", 3 + 3 * k, 11)
+    g = ctx.start(m, ["aria", "andy"], humans=(1, 2), env=cv.ENV)
+    for k, hp in enumerate(hps):
+        ctx.set_hp(g, 3 + 3 * k, 10, hp)
+    g.end_turn(human=2)
+    for k, hp in enumerate(hps):
+        x = 3 + 3 * k
+        a, d = g.unit_at(x, 11), g.unit_at(x, 10)
+        out = damage.strike(ctx.rules, ctx.side(g, a), ctx.side(g, d, terrain=g.terrain_class(x, 10)), 1, True, a["hp"])
+        g.attack((x, 11), (x, 11), (x, 10))
+        after = g.unit_at(x, 10)
+        loss = hp - (after["hp"] if after else 0)
+        ctx.check(loss in out.losses, f"Aria's Tank at {hp} HP (Vengeance {damage.aria_vengeance(hp)}% defence): loss {loss} inside the calculator's {sorted(out.losses)}")
+    g.e.close()
 
 
 @test(modes=("ds",))

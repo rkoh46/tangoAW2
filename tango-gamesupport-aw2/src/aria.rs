@@ -2,8 +2,9 @@
 //! project owner's picture, imported by `aw2dev co portrait import`). The final opponent of the BH2 Campaign and Asuka's mirror.
 //!
 //! Her kit is two small rules, both her own:
-//! - **Vengeance** (day to day, every level): a unit of hers with [`VENGEANCE_HP`] (8) HP or less (displayed HP, so 80 or less of the unit's 100) attacks [`VENGEANCE_ATTACK`]% harder ([`vengeance`], added in
-//!   `com_tower::side_firepower` to the battle's base damage like the other per-unit firepower terms, so the forecast and the CPU's estimates agree).
+//! - **Vengeance** (day to day, every level): a unit of hers with [`VENGEANCE_HP`] (8) HP or less (displayed HP, so 80 or less of the unit's 100) attacks AND defends harder, the more the lower its HP
+//!   ([`VENGEANCE`]: +25% at 8, 5% more for each HP lost down to +50% at 3, then +60% at 2 and +70% at 1; 9 and 10 HP nothing). [`vengeance`] is added to the battle's firepower in
+//!   `com_tower::side_firepower` (like the other per-unit terms, so the forecast and the CPU's estimates agree) and to the defender's total defence in `co_roster::defence_total` (under AW2's 200 cap).
 //! - **Build Anew** (Super Power, [`STARS`] 7 stars): every unit of hers recovers [`HEAL`] HP (`es_co::each_unit`: `RepairUnit(unit, 3, 0)`, for free) and attacks [`SCOP_ATTACK`]% harder (`stat`, on
 //!   top of the power's own +10%). Nothing else: no defence, move or funds bonus.
 //! - **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt: her CO row has 0 stars for it, so the map menu has no Power entry, the meter has one mark and the CO page says she has none. The computer
@@ -11,9 +12,10 @@
 //!
 //! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
 //! |---|---|---|
-//! | Attack | +25% for a unit on 8 HP or less | +20% for every unit (and the power's own +10%) |
+//! | Attack | +25% at 8 HP .. +50% at 3, +60% at 2, +70% at 1 | +20% for every unit (and the power's own +10%) |
+//! | Defence | the same as attack, by the unit's HP | the power's own +10% defence |
 //! | HP | | +3 to every unit |
-//! | Luck, movement, defence | the game's own | the power's own +10% defence |
+//! | Luck, movement | the game's own | |
 //!
 //! Stars: no CO Power, Super Power 7 (63000 meter points at 9000 a star). Not in the Emerald Sun Campaign and reserved for the BH2 Campaign (M25).
 
@@ -28,9 +30,9 @@ pub const AI_LIKE: u8 = 11;
 pub const NO_COP_LIKE: u8 = 10;
 /// Stars of her CO Power (none) and of her Super Power in all.
 pub const STARS: (u32, u32) = (0, 7);
-/// Vengeance: displayed HP at or under which a unit attacks harder, and by how much (percent).
+/// Vengeance: displayed HP at or under which a unit attacks and defends harder, and by how much (percent, for attack and defence alike) at 1..8 displayed HP.
 pub const VENGEANCE_HP: u8 = 8;
-pub const VENGEANCE_ATTACK: i32 = 25;
+pub const VENGEANCE: [i32; 8] = [70, 60, 50, 45, 40, 35, 30, 25];
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -50,11 +52,11 @@ pub fn bonus(mode: u8, field: usize) -> i32 {
     }
 }
 
-/// Vengeance's firepower % for a unit with `hp` (the unit record's 0..100 HP): 25 at 8 displayed HP or less, else 0.
+/// Vengeance's firepower and defence % for a unit with `hp` (the unit record's 0..100 HP; displayed HP is its tenths rounded up): [`VENGEANCE`] at 1..8 displayed HP, 0 at 9 and 10 (and for a dead unit).
 pub fn vengeance(hp: u8) -> i32 {
-    let shown = (hp as u32 + 9) / 10;
-    if hp > 0 && shown <= VENGEANCE_HP as u32 {
-        VENGEANCE_ATTACK
+    let shown = (hp as usize + 9) / 10;
+    if hp > 0 && shown <= VENGEANCE_HP as usize {
+        VENGEANCE[shown - 1]
     } else {
         0
     }
@@ -83,7 +85,9 @@ mod tests {
     #[test]
     fn vengeance_is_eight_displayed_hp_or_less() {
         // displayed HP is the unit's HP in tenths, rounded up: 71..80 show 8, 81..90 show 9
-        assert_eq!([100, 90, 81, 80, 71, 40, 10, 1].map(vengeance), [0, 0, 0, 25, 25, 25, 25, 25]);
+        assert_eq!([100, 91, 90, 81].map(vengeance), [0, 0, 0, 0], "9 and 10 HP: nothing");
+        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(vengeance), [25, 30, 35, 40, 45, 50, 60, 70], "8 HP down to 1");
+        assert_eq!([71, 61, 51, 41, 31, 21, 11, 1].map(vengeance), [25, 30, 35, 40, 45, 50, 60, 70], "the same displayed HP");
         assert_eq!(vengeance(0), 0, "a dead unit");
     }
 

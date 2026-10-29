@@ -9,12 +9,13 @@ Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos
 ## What she does (the owner's redesign: two small rules of her own)
 | | **Vengeance** (day to day) | **Build Anew** (Super Power, 7 stars) |
 |---|---|---|
-| Attack | a unit with 8 HP or less (displayed) attacks 25% harder | every unit +20% (and the power's own +10% / +10%) |
+| Attack and defence | a unit with 8 HP or less (displayed) attacks and defends harder: +25% at 8 HP, 5% more per HP lost (+50% at 3), +60% at 2, +70% at 1; 9 and 10 HP nothing | every unit +20% attack (and the power's own +10% / +10%) |
 | HP | | every unit recovers 3 HP (`RepairUnit(unit, 3, 0)`, free) |
-| Luck, movement, defence | the game's own (Asuka keeps Nell's luck and Sturm's movement) | nothing more |
-- **Vengeance** is a per-unit firepower term: `aria::vengeance(hp)` (25 for 1..80 internal HP, i.e. 8 displayed or less) added in `com_tower::side_firepower` with the other terms of a battle's base damage (Com Towers, skills),
-  so the forecast, the attack and the counterattack agree; the HP is the unit record's at the time the strike is worked out (a counterattack uses the HP the hit left). `data.py` has no mod for it: `cos/aria.toml` says
-  `vengeance = { hp = 8, attack = 25 }` and the test calculator adds it in `Ctx.side`.
+| Luck, movement | the game's own (Asuka keeps Nell's luck and Sturm's movement) | nothing more |
+- **Vengeance** is a per-unit term: `aria::vengeance(hp)` (`aria::VENGEANCE` by displayed HP, the unit's HP in tenths rounded up) added to the firepower in `com_tower::side_firepower` with the other terms of a
+  battle's base damage (Com Towers, skills) and to the defender's total defence in `co_roster::defence_total` (before AW2's 200 cap), so the forecast, the attack, the counterattack and the defence agree; the HP is
+  the unit record's at the time the strike is worked out (a counterattack uses the HP the hit left). `data.py` has no mod for it: `cos/aria.toml` says `vengeance = { hp = 8, percent = [25, .., 70] }` and the test
+  calculator adds it to firepower and defence in `Ctx.side` (`damage.aria_vengeance`). Tests: `aria_vengeance_scales_with_hp`, `aria_vengeance_defends_too`.
 - **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt. Her CO row has 0 stars for it (`aria::STARS = (0, 7)`), which is all the game needs: the map menu has no "Power" entry (and "Super" appears at exactly
   7 x 9000, +20% each use), the HUD meter has a mark for the Super Power only, the CO page says she has none (the text is `[cop] text` in her data file, the wording of the page AW2 writes for Sturm), the
   CPU plays her with Von Bolt's profile (`ds_ai::template_of` -> 11) and Sturm's power settings in her row (`co_roster::new_row`): a Super Power as soon as the meter allows, never a CO Power. Her CO Power
