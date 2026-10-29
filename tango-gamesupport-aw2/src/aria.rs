@@ -3,7 +3,7 @@
 //!
 //! Her kit is two small rules, both her own:
 //! - **Vengeance** (day to day, every level): a unit of hers with [`VENGEANCE_HP`] (8) HP or less (displayed HP, so 80 or less of the unit's 100) attacks AND defends harder, the more the lower its HP
-//!   ([`VENGEANCE`]: +25% at 8, 5% more for each HP lost down to +50% at 3, then +75% at 2 and +85% at 1; 9 and 10 HP nothing; an Oozium never). [`vengeance`] is added to the battle's firepower in
+//!   ([`VENGEANCE`]: +25% at 8, 6% more for each HP lost down to +61% at 2, then +85% at 1; 9 and 10 HP nothing; an Oozium never). [`vengeance`] is added to the battle's firepower in
 //!   `com_tower::side_firepower` (like the other per-unit terms, so the forecast and the CPU's estimates agree) and to the defender's total defence in `co_roster::defence_total` (under AW2's 200 cap).
 //! - **Build Anew** (Super Power, [`STARS`] 7 stars): every unit of hers recovers [`HEAL`] HP (`es_co::each_unit`: `RepairUnit(unit, 3, 0)`, for free) and attacks [`SCOP_ATTACK`]% harder (`stat`, on
 //!   top of the power's own +10%). Nothing else: no defence, move or funds bonus.
@@ -12,7 +12,7 @@
 //!
 //! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
 //! |---|---|---|
-//! | Attack | +25% at 8 HP .. +50% at 3, +75% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
+//! | Attack | +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
 //! | Defence | the same as attack, by the unit's HP | the power's own +10% defence |
 //! | HP | | +3 to every unit |
 //! | Luck, movement | the game's own | |
@@ -32,7 +32,7 @@ pub const NO_COP_LIKE: u8 = 10;
 pub const STARS: (u32, u32) = (0, 7);
 /// Vengeance: displayed HP at or under which a unit attacks and defends harder, and by how much (percent, for attack and defence alike) at 1..8 displayed HP.
 pub const VENGEANCE_HP: u8 = 8;
-pub const VENGEANCE: [i32; 8] = [85, 75, 50, 45, 40, 35, 30, 25];
+pub const VENGEANCE: [i32; 8] = [85, 61, 55, 49, 43, 37, 31, 25];
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -96,8 +96,8 @@ mod tests {
     fn vengeance_is_eight_displayed_hp_or_less() {
         // displayed HP is the unit's HP in tenths, rounded up: 71..80 show 8, 81..90 show 9
         assert_eq!([100, 91, 90, 81].map(vengeance), [0, 0, 0, 0], "9 and 10 HP: nothing");
-        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(vengeance), [25, 30, 35, 40, 45, 50, 75, 85], "8 HP down to 1");
-        assert_eq!([71, 61, 51, 41, 31, 21, 11, 1].map(vengeance), [25, 30, 35, 40, 45, 50, 75, 85], "the same displayed HP");
+        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(vengeance), [25, 31, 37, 43, 49, 55, 61, 85], "8 HP down to 1");
+        assert_eq!([71, 61, 51, 41, 31, 21, 11, 1].map(vengeance), [25, 31, 37, 43, 49, 55, 61, 85], "the same displayed HP");
         assert_eq!(vengeance(0), 0, "a dead unit");
         assert_eq!(vengeance_for(crate::roster::OOZIUM, 10), 0, "an Oozium never");
         assert_eq!(vengeance_for(4, 10), 85);

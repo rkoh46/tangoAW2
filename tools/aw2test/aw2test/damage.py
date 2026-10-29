@@ -54,7 +54,7 @@ def crumb_bonus(mode, unit_type, which):
 ARIA = 93
 
 
-ARIA_VENGEANCE = [85, 75, 50, 45, 40, 35, 30, 25]     # crate::aria::VENGEANCE: 1..8 displayed HP
+ARIA_VENGEANCE = [85, 61, 55, 49, 43, 37, 31, 25]     # crate::aria::VENGEANCE: 1..8 displayed HP
 
 
 def aria_vengeance(hp, unit_type=None):
@@ -120,6 +120,10 @@ def hp_bars(hp):
     return div(hp - 1, 10) + 1 if hp > 0 else 0
 
 
+# crate::roster::NEW: tangoAW2 id -> (the AW2 unit it is made like, its class, its domain): Megatank, Piperunner, Stealth, Black Bomb, Black Boat, Carrier, Oozium.
+NEW_UNITS_LIKE = {4: (3, 1, 4), 9: (11, 1, 8), 12: (16, 2, 0x10), 13: (17, 2, 0x10), 18: (23, 4, 0x20), 26: (21, 4, 0x20), 27: (3, 1, 4)}
+
+
 class Rules:
     """Where the numbers come from: a unit chart and CO/terrain tables.
 
@@ -146,7 +150,19 @@ class Rules:
         return src.damage_row(att, weapon)[dfd]
 
     def unit(self, t):
-        return self.image.unit(t)
+        """The unit's stats as the game has them: AW2's record; with the pack (crate::roster) Dual Strike's move, ammo, vision, range, fuel and cost
+        (crate::ds_units::ds_fields: AW2 +0x0A..+0x10 from Dual Strike +0x10..+0x16), and for the 7 new units the record of the AW2 unit they are made like,
+        with their own class and domain (crate::roster::NEW). (Before, the new units read AW2's empty slots: a Megatank had no range or ammo, so no cannon.)"""
+        if self.chart is None:
+            return self.image.unit(t)
+        like = NEW_UNITS_LIKE.get(t)
+        u = dict(self.image.unit(like[0] if like else t))
+        if like:
+            u["unit_class"], u["domain"] = like[1], like[2]
+        ds = self.chart.record(t)
+        u.update(move=ds[0x10], ammo=ds[0x11], vision=ds[0x12], min_range=ds[0x14], max_range=ds[0x15], fuel=ds[0x16],
+                 cost=10 * (int.from_bytes(ds[0x0C:0x10], "little") & 0xFFFF))
+        return u
 
     def co_bonus(self, co, mode, unit_type, which):
         if self.chart is not None and unit_type == OOZIUM:

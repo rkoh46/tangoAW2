@@ -18,11 +18,11 @@ stars = { cop = 0, scop = 7 }
 
 [d2d]
 name = "Vengeance"
-text = "Units at 8 HP or less gain firepower and defense: 25% at 8 HP rising to 50% at 3 HP. Then 75% at 2 HP and 85% at 1 HP."
+text = "All units at 8 HP or less gain attack and defense: 25% at 8 HP, growing 6% per HP lost until 2 HP. Then 85% at 1 HP."
 # no mods: the bonus depends on the unit's HP (crate::aria::vengeance); the check below plays it in battle
 mods = []
 # firepower and defence % at 8, 7, 6, 5, 4, 3, 2, 1 displayed HP (9 and 10: nothing; never an Oozium): crate::aria::VENGEANCE
-vengeance = { hp = 8, percent = [25, 30, 35, 40, 45, 50, 75, 85] }
+vengeance = { hp = 8, percent = [25, 31, 37, 43, 49, 55, 61, 85] }
 
 [cop]
 # No CO Power (stars.cop = 0): the CO page says so, as AW2 says of Sturm.

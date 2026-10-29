@@ -141,7 +141,7 @@ def lettering(frames):
 # "+" and "%" in the window digits' style (2-pixel strokes, the digits' 6 rows), drawn: the window has neither
 PLUS_ROWS = ["..##..", "..##..", "######", "######", "..##..", "..##.."]
 PERCENT_ROWS = ["##...#", "##..#.", "...#..", "..#...", ".#..##", "#...##"]
-VENGEANCE_PCT = {8: 25, 7: 30, 6: 35, 5: 40, 4: 45, 3: 50, 2: 75, 1: 85}
+VENGEANCE_PCT = {8: 25, 7: 31, 6: 37, 5: 43, 4: 49, 3: 55, 2: 61, 1: 85}
 
 
 def digits(frames):
@@ -325,13 +325,15 @@ def sheet_e(frames, words, fcdir, out):
             recolour_digit(row, x, RAMP[hp])
     box = (16 * 2 - CAM_X - 4, TANK_Y - 9, 16 * 12 - CAM_X + 4, TANK_Y + 16)
     wins = []
-    for hp in (9, 8, 5, 1):
+    for hp in (9, 8, 2, 1):
         im = Image.open(os.path.join(frames, f"panel_hp{hp}.bmp")).convert("RGB")
         wins.append((f"{hp} HP" + ("  (no Vengeance)" if hp > 8 else f"  +{VENGEANCE_PCT[hp]}%"), im if hp > 8 else option_d(im, words, VENGEANCE_PCT[hp], frames)))
     fcs = []
-    for hp in (8, 5, 1):
-        im = Image.open(os.path.join(fcdir, f"fc_hp{hp}.bmp")).convert("RGB")
-        fcs.append((f"Andy targets her {hp} HP Tank", forecast(im, words, frames, VENGEANCE_PCT[hp])))
+    unit = os.environ.get("AW2TEST_VENGEANCE_UNIT", "tank").capitalize()
+    for hp in (8, 5, 2, 1):
+        if os.path.exists(os.path.join(fcdir, f"fc_hp{hp}.bmp")):
+            im = Image.open(os.path.join(fcdir, f"fc_hp{hp}.bmp")).convert("RGB")
+            fcs.append((f"Andy's {unit} targets her {hp} HP {unit}", forecast(im, words, frames, VENGEANCE_PCT[hp])))
     sc = 6
     cw, ch = (box[2] - box[0]) * sc, (box[3] - box[1]) * sc
     crop = (150, 40, 240, 160)

@@ -1,7 +1,7 @@
 """Aria (CO 93, crate::aria): Nell's sister, an Orange Star CO with only a Super Power (docs/dev/aria.md). The numbers every CO has (attack, defence, move, heal, meter, Tag Power) are played by
 `aw2dev co verify aria` (tests/test_co_verify.py) against `cos/aria.toml`; this file proves the rest with numbers from the game:
     - the CO table's row: 0 stars for the CO Power, 7 for the Super Power, the game's own luck, Orange Star's style and colour bytes, her texts and quote slots;
-    - Vengeance: a unit on 8 HP or less (displayed) attacks and defends harder by its HP (+25% at 8 .. +50% at 3, +75% at 2, +85% at 1; never an Oozium), 9 and 10 HP do not, in every power level, as attacker,
+    - Vengeance: a unit on 8 HP or less (displayed) attacks and defends harder by its HP (+25% at 8, 6% more per HP lost to +61% at 2, +85% at 1; never an Oozium), 9 and 10 HP do not, in every power level, as attacker,
       as counterattacker and as defender, checked against the calculator's ranges;
     - no CO Power: the map menu never offers "Power" and offers "Super" at 7 stars, the CPU plays her with a Super Power only;
     - Build Anew heals 3 HP, adds 20% firepower and nothing else (no move, no funds);
@@ -138,7 +138,7 @@ def aria_vengeance_scales_with_hp(ctx):
             ctx.check(loss in out.losses, f"mode {mode}, Tank at {hp} HP: loss {loss} inside the calculator's {sorted(out.losses)}")
         # 9 displayed HP (81, 90) has no Vengeance and 8 (80) does: the calculator's range at 80 HP has 25% more per bar
         ctx.check(max(ranges[80]) * 9 > max(ranges[81]) * 8, "Vengeance shows: 80 HP hits harder per bar than 81")
-        ctx.eq([damage.aria_vengeance(h) for h in hps], [0, 0, 0, 25, 25, 35, 40, 45, 50, 75, 85], "the calculator's table: nothing at 9 and 10 HP")
+        ctx.eq([damage.aria_vengeance(h) for h in hps], [0, 0, 0, 25, 25, 37, 43, 49, 55, 61, 85], "the calculator's table: nothing at 9 and 10 HP")
         g.e.close()
     # the counterattack: Andy's Infantry hits Aria's Tank (at 100, 80 and 86 internal HP) and she counters; the counter is worked out from the HP the hit left (the unit record's), Vengeance included:
     # a Tank hit from 86 (9 displayed) down to 8 displayed counters with +25%
@@ -168,7 +168,7 @@ def aria_vengeance_scales_with_hp(ctx):
 
 @test(modes=("ds",))
 def aria_vengeance_defends_too(ctx):
-    """Vengeance defends: Andy's Tanks hit Aria's Tanks at 100, 90 (no boost) and 80, 60, 40, 20 internal HP (+25, +35, +45, +75% defence); every loss is inside the calculator's range, the defence
+    """Vengeance defends: Andy's Tanks hit Aria's Tanks at 100, 90 (no boost) and 80, 60, 40, 20 internal HP (+25, +37, +49, +61% defence); every loss is inside the calculator's range, the defence
     included (`Ctx.side`'s temp defence, AW2's cap at 200), and a 9 HP Tank of hers takes the plain hit."""
     from aw2test import coverify as cv
     m = ctx.map()
