@@ -55,6 +55,19 @@ def capture(ctx, e, g, d, cell, army):
     e.wait(120)
 
 
+def to_player_turn(e, g, d, frames=24000):
+    """Presses A through the scripts until it is the player's (army 5's) turn with nothing running: the computer's turns of the four nations go by."""
+    for _ in range(frames // 20):
+        if d.scripts_running():
+            e.press("A", 4)
+        elif g.current_army() == 5 and d.in_battle():
+            e.wait(30)
+            if g.current_army() == 5 and not d.scripts_running():
+                break
+        e.wait(16)
+    g._units_base = g._players_base = None
+
+
 def settle(e, g, d, frames=6000):
     for _ in range(frames // 40):
         if d.scripts_running():
@@ -175,6 +188,7 @@ def bh2_m31_progression(ctx):
     w, h = d.size()
     d.leave_setup()
     a2.intro(ctx, e, d, "m31", (0,))
+    to_player_turn(e, g, d)     # (the finale's own opening scene, m31_pre, runs to its end; the four nations' computer turns pass)
     d.wait_control()
     g._units_base = g._players_base = None
     player = 5
@@ -247,15 +261,20 @@ def bh2_m31_progression(ctx):
     d.wait_control()
     g._units_base = g._players_base = None
     frames.append((scene, {"title": "The switch: The Last Citadel opens with Aria", "plain": True, "lines": [
-        "The same battle, on the second map: Aria's scene, the survivors on the deploy cells in the south-west camp, Aria (Orange Star; her CO is the placeholder until the Aria CO lands) leading a revived army of brand-new full-strength units."]}))
+        "The same battle, on the second map: Aria's scene, the survivors on the deploy cells in the south-west camp, Aria (Orange Star, CO 93) leading a revived army of brand-new full-strength units."]}))
     home(g, e)
     full = stitch.stitch(Quiet(ctx), g, "m31b_full", w, h)
     frames.append((full, {"title": "Stage 2, the whole map: Aria's fortress on high ground", "marks": [("Aria's HQ", (33, 5), "next")], "lines": [
         f"{len(g.units(army=2))} units on the plateau, the player's {len(g.units(army=1))} survivors in the camp. Approaches: the Aisne's bridges and the passes. No pipes."]}))
     capture(ctx, e, g, d, (33, 5), 1)
     shots = []
-    for k in range(6):
-        shots.append(a2.pic(ctx, e, f"m31b_win{k}"))
+    for k in range(120):          # (the victory scene, m31_post, is dialogue: A through its boxes until the battle is over)
+        if k < 6:
+            shots.append(a2.pic(ctx, e, f"m31b_win{k}"))
+        if bool(e.u8(dc.LAST_RESULT)) or not d.in_battle():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
         e.wait(40)
     ended = bool(e.u8(dc.LAST_RESULT)) or not d.in_battle()
     ctx.check(ended, "Aria's HQ taken: the campaign's final mission is won")
@@ -324,6 +343,7 @@ def play_to_stage_two(ctx):
     e, g, d = b2.enter(ctx, 31)
     d.leave_setup()
     a2.intro(ctx, e, d, "m31", (0,))
+    to_player_turn(e, g, d)     # (the finale's own opening scene, m31_pre, runs to its end; the four nations' computer turns pass)
     d.wait_control()
     g._units_base = g._players_base = None
     home(g, e)

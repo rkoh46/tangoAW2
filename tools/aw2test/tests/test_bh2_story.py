@@ -12,7 +12,7 @@ from aw2test.harness import test
 from tests.test_bh_story import out_dir
 
 # one mission per act (I: the opening, II: Sensei, III: Lash and the Blue Moon pair, IV: Clone Andy, V: Asuka + Hawke), the final mission's Aria and the secret M32
-ACT_MISSIONS = [1, 9, 17, 22, 26, 31, 32]
+ACT_MISSIONS = [1, 9, 17, 22, 26, 30, 31, 32]
 QUIET = 60                 # (story.scenes: a sample under this RMS is silent)
 
 
