@@ -879,6 +879,17 @@ const F22: [(u8, [u8; 3]); 14] = [
     (16, [unit::INFANTRY, unit::MD_TANK, unit::ARTILLERY]),
 ];
 
+/// Black Hole's (army 1's) funds, from the players table.
+fn funds_of_player(core: &Core) -> u32 {
+    let p = core.raw_read_32(0x0849_9598, -1) + 0x3C;
+    core.raw_read_32(p, -1)
+}
+
+/// M27: day 6 or later and Black Hole's funds (Von Bolt's vault) are under 500: the vault is empty.
+fn vault_empty(core: &mut Core) -> bool {
+    day(core) >= 6 && funds_of_player(core) < 500
+}
+
 /// Colin's treasury: the fortress's central city on M27's map (the map's `treasury` note, the city west of the keep). Black Hole's capture of it opens Sonja's sealed note.
 const M27_TREASURY: (u8, u8) = (18, 20);
 
@@ -900,13 +911,21 @@ fn bh2_27() -> MissionDef {
     m.after = crate::bh2_text::chain(&["m27_map"]);
     m.triggers.push(on_day(2, None, vec![Action::Scene(txt("m27_day2"))]));
     m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m27_day5"))]));
-    // Colin's treasury: when Black Hole captures the fortress's central city, the sealed note is opened (`m27_vault_empty`), Von Bolt sells Jess the truth (`m27_sale`) and Colin's funds are 0:
-    // the Allies cannot buy again. The mission is won the normal way (the HQ or a rout).
+    // Sonja's note is "for the day your vault is empty": Von Bolt's. From day 6, when Black Hole's funds are under 500, he opens it (`m27_vault_empty`). It wins nothing.
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::Custom(vault_empty), vec![Action::Scene(txt("m27_vault_empty"))]));
+    // Colin's treasury (the fortress's central city): its capture sets Colin's funds to 0. With the note opened (the vault is empty now) Von Bolt sells it as the truth (`m27_sale`); if the treasury falls
+    // first, a one-line notice. The win is the normal one (the HQ or a rout).
+    let treasury = Cond::OwnerAt { x: M27_TREASURY.0, y: M27_TREASURY.1, army: 1 };
     m.triggers.push(Trigger::new(
         When::AfterAction,
-        Cond::OwnerAt { x: M27_TREASURY.0, y: M27_TREASURY.1, army: 1 },
+        Cond::All(vec![treasury.clone(), Cond::Custom(vault_empty)]),
+        vec![Action::Scene(txt("m27_sale")), Action::SetFunds { army: 2, funds: 0 }],
+    ));
+    m.triggers.push(Trigger::new(
+        When::AfterAction,
+        Cond::All(vec![treasury, Cond::Not(Box::new(Cond::Custom(vault_empty)))]),
         vec![
-            Action::Scene(crate::bh2_text::chain(&["m27_vault_empty", "m27_sale"])),
+            Action::Scene(Scene::new(vec![Line::say(co::COLIN, "The treasury is lost! ...We cannot pay another soldier.")])),
             Action::SetFunds { army: 2, funds: 0 },
         ],
     ));
@@ -1499,18 +1518,22 @@ mod tests {
 
     /// M27's treasury is a city of Orange Star's inside the fortress (the map's `treasury` note), and the trigger is a once-only capture trigger that zeroes Colin's funds and does not win.
     #[test]
-    fn m27_treasury_is_a_marked_orange_star_city_and_its_capture_empties_colins_funds() {
+    fn m27_note_wins_nothing_and_the_treasury_empties_colins_funds() {
         let text = include_str!("../five/bh2/bh2_27.txt");
         assert!(text.contains(&format!("# treasury: ({}, {})", M27_TREASURY.0, M27_TREASURY.1)), "the map marks the treasury");
         let rows: Vec<&str> = text.lines().filter(|l| !l.starts_with('#') && !l.starts_with("map") && !l.starts_with("armies") && !l.starts_with("unit") && !l.is_empty()).collect();
         assert_eq!(rows[M27_TREASURY.1 as usize].as_bytes()[M27_TREASURY.0 as usize], b'C', "an Orange Star city (capital C)");
         let d = def();
         let m = at(&d, "bh2_27");
-        let t = m.triggers.last().expect("the treasury trigger");
-        assert!(t.once, "once");
-        assert!(matches!(&t.cond, Cond::OwnerAt { x: 18, y: 20, army: 1 }));
-        assert!(t.then.iter().any(|a| matches!(a, Action::SetFunds { army: 2, funds: 0 })), "Colin's funds go to 0");
-        assert!(!t.then.iter().any(|a| matches!(a, Action::Win)), "the win is the normal one");
+        // three triggers: the note (funds under 500: no win), the treasury with the note opened (m27_sale) and without (a notice); the last two set Colin's funds to 0; none wins
+        let n = m.triggers.len();
+        let ts = &m.triggers[n - 3..];
+        assert!(ts.iter().all(|t| t.once), "each fires once");
+        assert!(matches!(&ts[0].cond, Cond::Custom(_)) && ts[0].then.len() == 1, "the note's scene alone");
+        for t in &ts[1..] {
+            assert!(t.then.iter().any(|a| matches!(a, Action::SetFunds { army: 2, funds: 0 })), "Colin's funds go to 0");
+        }
+        assert!(ts.iter().all(|t| !t.then.iter().any(|a| matches!(a, Action::Win))), "the win is the normal one");
     }
 
     #[test]
