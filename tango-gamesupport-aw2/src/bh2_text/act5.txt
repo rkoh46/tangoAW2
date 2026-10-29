@@ -1,4 +1,4 @@
-# BH2 dialogue, act5 "Succession": M26 The Second Folder, M27 Von Bolt's Note, M28 Where the Map Ends, M29 The Gate of Colours, M30 The Last Accord, M31 The Last Citadel (format: README.txt).
+# BH2 dialogue, act5 "Succession": M26 The Second Folder, M27 Von Bolt's Note, M28 Where the Map Ends, M29 The Gate of Colours, M30 The Orange Line, M31 The Last Accord (format: README.txt).
 
 # ---------------------------------------------------------------- M26 The Second Folder (Asuka + Hawke fixed; enemy Max + Sami; Black Hole's eastern HQ)
 
@@ -419,9 +419,108 @@ HACHI: I'll hold the kitchen, kids. / Free of charge.
 ARIA: Four lines. Four commanders. / Then me. Build anew.
 NARRATION: Nell touches her sister's / sleeve. Aria does not move away.
 
-# ---------------------------------------------------------------- M30 The Last Accord (FREE PAIR; the gauntlet: Nell, then Olaf, Kanbei and Eagle take command in turn)
+# ---------------------------------------------------------------- M30 The Orange Line (FREE PAIR; enemy Rachel + Sami, the outer defences)
 
 == m30_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:sami
+NARRATION: The Orange Line. Trenches, / wire and wall, a day from the Citadel.
+SAMI: Roger. This is the Line, grunts. / Behind it, the Citadel. In front, them.
+SAMI: Dig in. Dig deeper. Then dig / a joke, because morale needs one.
+RACHEL: By the book, the Line holds / eleven days. We have four. Adapt.
+SAMI: Rachel, kid, put the book down. / Pick up a shovel.
+RACHEL: I can do both. It's rule two.
+ASUKA: Commander Rachel. Commander Sami. / The Line ends today. Step aside.
+RACHEL: Rule one used to say the Accord / is just. I have crossed it out.
+RACHEL: I read your ledger. Twice. / Then I read what Nell signed.
+SAMI: Roger. I signed nothing. I only / saluted. That is its own kind of guilt.
+RACHEL: But my sisters are in that / Citadel. So I stand here. By the book.
+SAMI: And I stand with her. I've got / chocolate and a very stubborn spine.
+@IF ASUKA
+ASUKA: A line is a promise to stand. / I shall audit how long it lasts.
+@IF CRUMB CO
+CRUMB CO: Hello, Miss Rachel! Hello, Miss / Sami! Gerald sends chocolate. Honest!
+@IF HAWKE
+HAWKE: Eleven days, she says. I give / it three. The wire is the real clock.
+@IF KOAL
+KOAL: Trenches. The oldest road, dug / downward. I will mind the lane.
+@IF KINDLE
+KINDLE: Mud, wire and brave girls! / Darlings, what a gritty finale.
+@IF JUGGER
+JUGGER: LINE: ONE. TRENCHES: SIX. / JOKES: PENDING. HUMOR: NOT FOUND.
+@IF FLAK
+FLAK: Flak digs too! Flak digs / for snack! Dirt not snack. Sad.
+@IF LASH
+LASH: Ooh, wire! Wire conducts! I / brought a lot of volts! Heehee!
+@IF ADDER
+ADDER: A trench is no place for a / cape. I shall review it from above.
+@IF VON BOLT
+VON BOLT: A line of defence! Kehh... / who owns the land it stands on?
+@IF CLONE ANDY
+CLONE ANDY: Okay! Trenches! I can fix / any-- ...any wall! Sure!
+@END
+@PARTNER ASUKA
+[CO2]: I read the line. You break it. / We meet in the Citadel.
+@PARTNER CRUMB CO
+[CO2]: Miss Sami! Want a biscuit? It's / very, very old! It's still good!
+@PARTNER HAWKE
+[CO2]: Wire first, then trench. Then / the pretence of a reserve. Begin.
+@PARTNER KOAL
+[CO2]: I will lay a road across the / wire. Wide enough for tanks.
+@PARTNER KINDLE
+[CO2]: Darlings, I shall open with a / flourish. The wire will not mind.
+@PARTNER JUGGER
+[CO2]: PARTNER: PRESENT. WIRE: SIX / BELTS. OPENING: I WILL FIND ONE.
+@PARTNER FLAK
+[CO2]: Flak guards boss! Flak hits / Sami! Sami has chocolate? Flak asks!
+@PARTNER LASH
+[CO2]: Partner! I brought a wire- / cutter that sings! Heehee!
+@PARTNER ADDER
+[CO2]: Together. I take the sky. You / take the mud. Mind my light.
+@PARTNER VON BOLT
+[CO2]: Partner! Kehh-heh! Split the / plunder? Sixty-forty. Mine.
+@PARTNER CLONE ANDY
+[CO2]: I've got your back! Okay! I / can fix any-- ...yes! Sure!
+@END
+SAMI: Roger. Grunts, hold the wire. / Nobody leaves the trench.
+ASUKA: Cut the wire, take the trench. / Then the Citadel.
+
+== m30_day5
+SAMI: Rachel! Left belt's open! Fix / it, kid!
+RACHEL: By the book, I'm fixing it! / Rule four: wire is a conversation!
+SAMI: Rule four is a joke! Tell it / louder!
+RACHEL: Nobody laughs at wire!
+SAMI: They will, once it's cut.
+
+== m30_post
+@SONG co:rachel
+RACHEL(s): The Line is lost. Rule five. / When outnumbered... retreat.
+SAMI: Roger. We fall back to the / Citadel. All of us. In order.
+RACHEL: Commander Asuka. May I ask / one question? Not by the book.
+ASUKA: You may, Rachel.
+RACHEL: Did you mean it? The ledger. / Was it the truth, or a weapon?
+ASUKA: Both. A truth can be a weapon. / It does not stop being true.
+RACHEL: ...That is a rule I did not / have. Rule nine. I'll write it.
+SAMI: Roger. And another for the / record. The Citadel is Aria's.
+SAMI: She wrote the broadcast. She / does not retreat. She has one speed.
+RACHEL: She is my sister. And Nell's. / She is also very frightening.
+ASUKA: I have read her letters. I / find her magnificent.
+SAMI: Don't tell her that. She'll / hit you. Harder.
+RACHEL: By the book, Aria shouts first / and cries second. Be ready for both.
+
+== m30_map
+@SONG enemy1
+MORTAR: Ma'am. The Line is cut. The / Citadel is one march away.
+HAWKE: Four commanders in a gauntlet, / and a fifth behind them. I concur.
+ASUKA: Marshal, how do you rate Aria?
+HAWKE: I rate her as I rate you. As / the person who must not win.
+KINDLE: Darlings, a final act! I / have already ordered the bouquet.
+LASH: Ooh! I brought a spare door! / For the finale! Heehee!
+CRUMB CO: Ma'am, may I stand beside / you at the end? Gerald insists.
+ASUKA: You may, Commander. Bring the / key. And soup.
+
+# ---------------------------------------------------------------- M31 The Last Accord (FREE PAIR; stage 1 the gauntlet: Nell, then Olaf, Kanbei and Eagle take command in turn; map switch; stage 2 Aria)
+
+== m31_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:nell
 NARRATION: The Last Citadel. Four lines / of defence, four commanders, one hall.
 NELL: Good morning. I'm Nell. I'll be / the first line. I'm told it's a joke.
@@ -482,12 +581,12 @@ CLONE ANDY: Okay! Four lines! I can / fix any-- ...anything! Sure!
 NELL: Orange Star! The first line is / held! Not one step back!
 ASUKA: Break the first line. Then / the next. One at a time.
 
-== m30_day5
+== m31_day5
 NELL: Steady, everyone! I was born / lucky! It's rubbing off!
 ANDY: Nell! You're glowing!
 NELL: It's the luck, dear boy. It / always glows at the end.
 
-== m30_takeover_olaf
+== m31_takeover_olaf
 @SONG co:olaf
 NARRATION: Nell's headquarters falls. / A flurry of snow begins to fall.
 NELL: I yield a castle, Asuka. Not / my people.
@@ -501,7 +600,7 @@ OLAF: it back with INTEREST!
 VON BOLT: Kehh-heh! Interest! I / like him already!
 OLAF: Black Hole! Olaf takes command! / Let the snow fall!
 
-== m30_takeover_kanbei
+== m31_takeover_kanbei
 @SONG co:kanbei
 NARRATION: Olaf's headquarters falls. / The snow thins. A bell tolls.
 OLAF: Blue Moon is... held. The / table passes to Yellow Comet.
@@ -512,7 +611,7 @@ ASUKA: Emperor. You answered at the / Table. You owe me nothing.
 KANBEI: Kanbei owes his people. Come, / Commander. Let honour judge us.
 SENSEI: Easy, youngsters. I'm / providing the airlift. Knees permitting.
 
-== m30_takeover_eagle
+== m31_takeover_eagle
 @SONG co:eagle
 NARRATION: Kanbei's headquarters falls. / The sky opens over the Citadel.
 KANBEI: Kanbei's line is fallen. / Honour is served. Captain Eagle.
@@ -527,7 +626,7 @@ HAWKE: I am never nice. I am / accurate.
 EAGLE: Everybody up! Everything / that flies! Full throttle!
 EAGLE: This is it, Black Hole! The / sky's last stand!
 
-== m30_post
+== m31_switch
 @SONG co:eagle
 EAGLE(s): I never lose in the air. / This was ground.
 EAGLE: Okay, okay. I lost. Not / cleanly, but I lost.
@@ -546,20 +645,9 @@ NARRATION: Footsteps in the keep. Fast, / sharp. A woman's.
 HAWKE: I counted four lines. I was / mistaken. There are five.
 ASUKA: The fifth is the one who / wrote the letters.
 
-== m30_map
-@SONG enemy1
-MORTAR: Ma'am. Four lines. All / broken. All with honour.
-ASUKA: Yes. Orange Star, Blue Moon, / Yellow Comet, Green Earth.
-WICK: Is it all right if I think / they're good people?
-ASUKA: They are, Private. It is why / we must do this properly.
-ASUKA: Prepare the army. Whoever / waits in the keep, I will meet her.
-ADDER: Marshal, I shall lead the / charge. In my best cape.
-HAWKE: You will lead from behind it.
-CLONE ANDY: Okay! I'll hold your cape. / I'm good at holding things.
+# ---------------------------------------------------------------- M31 stage 2: Aria's citadel (after the map switch)
 
-# ---------------------------------------------------------------- M31 The Last Citadel (Asuka + a FREE partner fixed; enemy Aria; the final battle)
-
-== m31_pre
+== m31_stage2
 @SONG own:aria
 NARRATION: The Last Citadel, the keep. / A woman in orange waits on the stair.
 NELL: Aria... I'm sorry. I couldn't / hold them.
