@@ -24,11 +24,11 @@ TITLES = {1: "Black Insight", 2: "The Quartermaster's Crate", 3: "Iron Ledger", 
           17: "Lot 42", 18: "Whiteout Harbour", 19: "Thirty Years of Iron", 20: "Every Colour",
           21: "The East Tower", 22: "Echo, Again", 23: "The Door Is Open", 24: "Skyfall",
           25: "The Rail East", 26: "The Second Folder", 27: "Von Bolt's Note", 28: "Where the Map Ends",
-          29: "The Gate of Colours", 30: "(reserved)", 31: "The Last Accord", 32: "Through the Door"}
-FOG = {1, 9, 13, 17, 18, 22, 25}
+          29: "The Gate of Colours", 30: "The Orange Line", 31: "The Last Accord", 32: "Through the Door"}
+FOG = {1, 9, 13, 17, 18, 22, 25, 30}
 FRONT2 = {4, 13, 25}
 # The COs a test player picks (none: a fixed army or pair), in the order the CO screens ask.
-PICKS = {3: [ASUKA], 4: [ASUKA], 6: [ASUKA], 7: [ASUKA], 9: [ASUKA], 11: [ASUKA], 13: [ASUKA], 14: [ASUKA, CRUMB], 17: [ASUKA], 19: [ASUKA, CRUMB], 20: [ASUKA, CRUMB], 21: [ASUKA], 25: [ASUKA, CRUMB], 27: [ASUKA], 29: [ASUKA, CRUMB], 31: [ASUKA, CRUMB], 32: [ASUKA, CRUMB]}      # (M13: front 1 is Asuka's; the pick is front 2's)
+PICKS = {3: [ASUKA], 4: [ASUKA], 6: [ASUKA], 7: [ASUKA], 9: [ASUKA], 11: [ASUKA], 13: [ASUKA], 14: [ASUKA, CRUMB], 17: [ASUKA], 19: [ASUKA, CRUMB], 20: [ASUKA, CRUMB], 21: [ASUKA], 25: [ASUKA, CRUMB], 27: [ASUKA], 29: [ASUKA, CRUMB], 30: [ASUKA, CRUMB], 31: [ASUKA, CRUMB], 32: [ASUKA, CRUMB]}      # (M13: front 1 is Asuka's; the pick is front 2's)
 ROSTER_BITS = 0xFFF               # every officer is open in the development build
 
 

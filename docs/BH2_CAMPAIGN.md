@@ -85,7 +85,7 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 27 | Von Bolt's Note | Orange Star sea fortress | **Forced:** Von Bolt + a free partner (Tag) | Jess + Colin | The sealed note is opened. **BF**, against a fortress strong enough to take it. |
 | 28 | Where the Map Ends | The Obelisk, west | **Forced:** Asuka + Crumb (Tag) | Drake + Grit (an Allied strike force to destroy the Obelisk) | Crumb's key opens the door. Sturm walks through it into the storm, leaving Black Hole to Asuka: "Hold my world." You hold the Obelisk until the storm passes (a day limit). Sturm is gone, not beaten: an open hook. |
 | 29 | The Gate of Colours | Orange Star's outer capital | Free pair | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M32.** |
-| 30 | *(reserved)* | Orange Star's outer defences | Free pair | Rachel + Sami | A slot for one more mission, between the Gate of Colours (M29) and the final battle; designed later. |
+| 30 | The Orange Line | Orange Star's outer defences | Free pair | Rachel + Sami (one Orange Star army, a tag pair) | Between the Gate of Colours and the final battle: two rivers, a trench of woods and a ridge with a Com Tower in its heart, no pipes. Sami's infantry on the line, Rachel's reserve and real production behind it. Rain and fog. |
 | 31 | **The Last Accord** | The Accord's continent, then Aria's citadel on high ground | Free pair | Nell, then Olaf, Kanbei, Eagle (each their own army), then Aria | **The final mission, one battle in two stages** (docs/dev/stages.md): the gauntlet map, then Eagle's fall moves the battle in place to the Last Citadel with the player's survivors, and Aria's fresh army holds it. |
 | **Secret 26** | **Through the Door** | Black Hole's island (south-west): Emerald Sun lands on Black Hole's home | Free pair | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out lands on Black Hole's own island. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
 
@@ -163,6 +163,7 @@ These apply to all 32 missions, not just Act I:
 | 29 | Desert | Clear |
 | 30 | Normal (citadel), huge, no fog | Clear, then weather with each commander (Olaf's snow) |
 | 32 | Desert (Black Hole's island) | Clear |
+| 30 | Normal (the trench and two rivers) | Rain + fog |
 | 31 stage 2 (the Last Citadel) | Snow (the high citadel), no fog | Clear |
 
 ## 5. Ending and credits

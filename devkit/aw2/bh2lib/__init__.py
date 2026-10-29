@@ -36,7 +36,7 @@ MISSIONS = {
     27: ("bh2_27", "Von Bolt's Note"),
     28: ("bh2_28", "Where the Map Ends"),
     29: ("bh2_29", "The Gate of Colours"),
-    30: ("bh2_30", "(reserved)"),
+    30: ("bh2_30", "The Orange Line"),
     31: ("bh2_31", "The Last Accord"),
     32: ("bh2_32", "Through the Door"),
 }

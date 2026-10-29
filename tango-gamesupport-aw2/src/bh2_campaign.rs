@@ -876,22 +876,23 @@ fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u
     Trigger::new(When::AfterAction, Cond::All(all), vec![Action::AddFunds { army, funds }, stage(army, wave)])
 }
 
-/// M30 is reserved: a slot for one more mission (the owner's pick, briefed later). Until it is designed it is a stand-in on M29's map that opens only after the final mission.
+/// M30 The Orange Line: a free pair against Rachel + Sami (one Orange Star army under a tag pair) at Orange Star's outer defences: two rivers, a trench of woods and a ridge with the Com Tower in its heart, forward bases, Sami's
+/// infantry on the line and Rachel's reserve and production behind it (normal look, rain and so fog). Its scenes (`m30_pre`, `m30_post`, `m30_map`) are the text branch's: wire them with `bh2_text::scene` when it lands.
 fn bh2_30() -> MissionDef {
-    let mut m = MissionDef::new("bh2_30", "(reserved)");
-    m.objective = "Reserved for a new mission.";
-    m.map = MapSrc::Built("bh2_29");
+    let mut m = MissionDef::new("bh2_30", "The Orange Line");
+    m.objective = "Break the line at the trench's Com Tower, cross the east river and take Rachel's HQ.";
+    m.map = MapSrc::Built("bh2_30");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(2).funds(16000),
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pair(co::MAX, co::SAMI)).team(2).funds(16000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pair(co::RACHEL, co::SAMI)).funds(20000),
     ];
-    m.units = deployment("bh2_29");
-    m.look = 2;
-    m.rank_days = 22;
+    m.units = deployment("bh2_30");
+    m.weather = Weather::Rain; // (the rain forces fog)
+    m.fog = true;
+    m.rank_days = 24;
     m.flag = flag(30);
     m.stars = 3;
-    m.needs = Needs::All(vec!["bh2_31"]); // (opens after the campaign's end: not part of the story until it is designed)
+    m.needs = Needs::All(vec!["bh2_29"]);
     m
 }
 
@@ -950,7 +951,7 @@ fn bh2_31() -> MissionDef {
     m.stages = vec![st];
     m.flag = flag(31);
     m.stars = 3;
-    m.needs = Needs::All(vec!["bh2_29"]);
+    m.needs = Needs::All(vec!["bh2_30"]);
     m
 }
 
