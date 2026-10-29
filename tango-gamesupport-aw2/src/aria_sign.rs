@@ -494,6 +494,14 @@ impl Strip {
     }
 }
 
+/// The ramp colour (RGB555) of a unit's HP number for a renderer that draws units from their records (the tilted map): `Some` for a unit of Aria's with the sign.
+pub fn unit_ramp(core: &Core, army: u32, kind: u8, hp: u8) -> Option<u16> {
+    if core.raw_read_8(CO_ABILITIES, -1) == 0 || !(1..=5).contains(&army) || crate::co_roster::army_co(core, army).0 != ARIA {
+        return None;
+    }
+    crate::aria::sign(kind, hp).map(|(shown, _)| crate::aria::ramp_colour(shown))
+}
+
 /// The unit under the map cursor, if it is Aria's and has the sign: the percent shown.
 pub fn cursor_percent(core: &Core, unit: u32) -> Option<i32> {
     if core.raw_read_8(CO_ABILITIES, -1) == 0 {

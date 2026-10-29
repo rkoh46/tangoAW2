@@ -3206,6 +3206,17 @@ fn apply_inner(core: &Core, rgba: &[u8], ss: usize) -> Option<Vec<u8>> {
                     }
                 }
             }
+            // Aria's Vengeance: the digit's own ink (colour 1 of the unit's bank) in the ramp, the black box round it kept
+            if let Some(c) = u.ramp {
+                let ink = 0x8000 | (v.pal[u.bank as usize * 16 + 1] & 0x7fff);
+                for y in 8..16usize {
+                    for x in 8..16usize {
+                        if pix[y * 16 + x] == ink {
+                            pix[y * 16 + x] = 0x8000 | c;
+                        }
+                    }
+                }
+            }
             overlay_low_icon(&mut pix, &u, &bgs[2], bgs[1].pri, &v);
             let art_here = art.is_some();
             if let Some(a) = art {
@@ -4066,6 +4077,8 @@ struct RamUnit {
     /// depends on (the facing does not: [`dual_strike_mirrored`]).
     shown_by: u8,
     moved: bool,
+    /// Aria's Vengeance ramp colour for the HP digit ([`crate::aria_sign::unit_ramp`]), if the unit has the sign.
+    ramp: Option<u16>,
     /// Low ammunition (1) and low fuel (2): at most a third of the type's own (the game's
     /// `0x08022618`, which puts the icon in the top-right tile of the cell on BG2).
     low: u8,
@@ -4268,6 +4281,7 @@ fn ram_units(core: &Core) -> Vec<RamUnit> {
             hide_hp,
             icon4,
             low,
+            ramp: if hide_hp { None } else { crate::aria_sign::unit_ramp(core, army as u32, buf[0], (u16::from_le_bytes([buf[4], buf[5]]) & 0x7f) as u8) },
         });
     }
     out

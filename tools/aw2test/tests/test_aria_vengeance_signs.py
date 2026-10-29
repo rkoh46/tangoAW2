@@ -353,3 +353,72 @@ def aria_vengeance_signs_forecast(ctx):
         for tag, res in (("aria", aria), ("andy", andy)):
             for hp, (p, _, _) in res.items():
                 shutil.copy(p, os.path.join(REVIEW, f"{KIND}_fc_{tag}_{shown(hp)}.bmp"))
+
+
+def components(pix, w, h, ok):
+    """8-connected clusters of the pixels (x, y) with ok(colour) in a dict {(x, y): colour}: list of sets."""
+    seen, out = set(), []
+    for p in pix:
+        if p in seen or not ok(pix[p]):
+            continue
+        stack, comp = [p], {p}
+        seen.add(p)
+        while stack:
+            x, y = stack.pop()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (x + dx, y + dy)
+                    if q in pix and q not in seen and ok(pix[q]):
+                        seen.add(q)
+                        comp.add(q)
+                        stack.append(q)
+        out.append(comp)
+    return out
+
+
+def tilt_lut(c5):
+    """The tilt's 3D colour expansion of a 5-bit channel (ds_tilt rgba_lut_3d: 2c + 1 of 63, black 4)."""
+    return (2 * c5 + 1) * 255 // 63 if c5 else 4
+
+
+@test(modes=("ds",))
+def aria_vengeance_signs_tilt(ctx):
+    """Dual Strike's tilted map (host drawn, 4x): the HP numbers of her 8..1 HP Tanks are in exactly the ramp colours (the tilt's colour expansion of mm.RAMP), one cluster each; the twin game (Andy) has none of those
+    colours; the white numbers (9 HP, the Oozium, Andy's Tank, 10 HP has none) stay white: the twin has exactly eight white numbers more."""
+    env = {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1", "TANGOAW2_TILT_SCALE": "4", "TANGOAW2_TILT_TIME": "0"}
+    ENV.update(env)
+    try:
+        shots = {}
+        for co in ("aria", "andy"):
+            g = scene(ctx, co, KIND)
+            for _ in range(12):
+                g.e.shot(os.path.join(ctx.out, "warm"))
+            shots[co] = load(ctx.shot(g, f"{co}_tilt"))
+            g.e.close()
+    finally:
+        for k in env:
+            ENV.pop(k)
+    ia, ib = shots["aria"], shots["andy"]
+    ctx.eq(ia.size, (960, 640), "the tilted picture is 4x")
+    px = lambda im: {(x, y): im.getpixel((x, y)) for y in range(im.height) for x in range(im.width)}
+    pa, pb = px(ia), px(ib)
+    ramp = {tuple(tilt_lut(c >> 3) for c in RAMP[h]): h for h in range(1, 9)}
+    for col, h in ramp.items():
+        na, nb = sum(1 for c in pa.values() if c == col), sum(1 for c in pb.values() if c == col)
+        ctx.check(na >= 100 and nb == 0, f"{h} HP: the tilted number is in {col} ({na} pixels; the twin has {nb})")
+    clusters = components({p: c for p, c in pa.items() if c in ramp}, 960, 640, lambda c: True)
+    big = [c for c in clusters if len(c) >= 100]
+    ctx.eq(len(big), 8, "eight numbers in the ramp, one cluster each")
+    ctx.eq(sorted(ramp[pa[next(iter(c))]] for c in big), list(range(1, 9)), "one for each HP 1..8")
+    # the white numbers: in the band of the Tanks' row (where the ramp clusters are), the twin has eight more white clusters
+    y0 = min(y for c in big for _, y in c) - 40
+    y1 = max(y for c in big for _, y in c) + 40
+    def whites(p):
+        return [c for c in components({q: v for q, v in p.items() if y0 <= q[1] <= y1 and q[0] > 100}, 960, 640, lambda v: v == WHITE) if len(c) >= 40]
+    wa, wb = whites(pa), whites(pb)
+    ctx.eq(len(wb) - len(wa), 8, f"the white numbers left in her row: {len(wa)} (9 HP, Oozium, Andy's Tank) against the twin's {len(wb)}")
+    ctx.check(len(wa) >= 3, "9 HP, the Oozium and Andy's Tank keep white numbers")
+    if REVIEW:
+        os.makedirs(REVIEW, exist_ok=True)
+        ia.crop((0, y0, 960, y1)).save(os.path.join(REVIEW, f"{KIND}_tilt_aria.png"))
+        ib.crop((0, y0, 960, y1)).save(os.path.join(REVIEW, f"{KIND}_tilt_andy.png"))
