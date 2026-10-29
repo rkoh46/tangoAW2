@@ -162,8 +162,19 @@ pub(crate) fn digit_tiles() -> Option<&'static [u8]> {
 
 /// The strip above the unit window ([`crate::aria_sign`]) this frame: its height (0 none), for the damage box to stand above it.
 static SIGN_H: AtomicI32 = AtomicI32::new(0);
-/// Its OBJ tiles: 20 that only the full-screen battle scenes write (892..911: found by surveying the OBJ tiles written on the map and in the scenes over the suite; the power animations and every map effect keep to 700..890): 16 for "Vengeance", 4 for the number.
+/// (tiles for the strip are found each frame, [`crate::aria_sign::place_strip`]; this was the first range tried) Its OBJ tiles: 20 that only the full-screen battle scenes write (892..911: found by surveying the OBJ tiles written on the map and in the scenes over the suite; the power animations and every map effect keep to 700..890): 16 for "Vengeance", 4 for the number.
 const T_SIGN: u16 = 892;
+
+/// The OBJ tiles the frame's game sprites use (first tile, count), hidden ones left out.
+fn used_tiles(list: &[Entry]) -> Vec<(u16, u16)> {
+    list.iter()
+        .filter(|e| !e.hidden())
+        .map(|e| {
+            let (w, h) = e.dims();
+            (e.tile(), ((w * h) / 64).max(1) as u16)
+        })
+        .collect()
+}
 
 fn art() -> Option<&'static Art> {
     ART.get_or_init(|| {
@@ -1026,15 +1037,19 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
         None
     };
     let strip = percent.and_then(|p| crate::aria_sign::Strip::new(core, &a.digits, p));
+    let tile = strip.as_ref().and_then(|st| crate::aria_sign::place_strip(core, &used_tiles(list), st));
+    if tile.is_none() {
+        crate::aria_sign::release_strip(core);
+    }
+    let strip = strip.filter(|_| tile.is_some());
+    let t_sign = tile.unwrap_or(T_SIGN);
     let lift = if strip.is_some() { crate::aria_sign::STRIP_H } else { 0 };
     SIGN_H.store(lift, Ordering::Relaxed);
     if let Some(st) = &strip {
-        write_tiles(core, T_SIGN as u32, &st.line1);
-        write_tiles(core, T_SIGN as u32 + 16, &st.line2);
         let ox1 = px + (w - st.w1) / 2;
-        mine.push(Spr::new(ox1, y0 - 27, 32, 16, T_SIGN, 1).mode(1));
-        mine.push(Spr::new(ox1 + 32, y0 - 27, 32, 16, T_SIGN + 8, 1).mode(1));
-        mine.push(Spr::new(px + (w - st.w2) / 2, y0 - 10, 32, 8, T_SIGN + 16, 1).mode(1));
+        mine.push(Spr::new(ox1, y0 - 27, 32, 16, t_sign, 1).mode(1));
+        mine.push(Spr::new(ox1 + 32, y0 - 27, 32, 16, t_sign + 8, 1).mode(1));
+        mine.push(Spr::new(px + (w - st.w2) / 2, y0 - 10, 32, 8, t_sign + 16, 1).mode(1));
     }
     // The backing: AW2's window, at Dual Strike's rectangle (and the strip's rows above it).
     let (wx0, wx1) = (px, px + w);
@@ -1142,7 +1157,10 @@ fn native_sign(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         core.raw_read_range(OBJ_VRAM + 32 * 976, -1, &mut digits);
         crate::aria_sign::Strip::new(core, &digits, p)
     })();
+    let tile = wanted.as_ref().and_then(|st| crate::aria_sign::place_strip(core, &used_tiles(&list), st));
+    let wanted = wanted.filter(|_| tile.is_some());
     let Some(strip) = wanted else {
+        crate::aria_sign::release_strip(core);
         if mine {
             core.raw_write_8(WIN_TOP, -1, orig);
         }
@@ -1158,15 +1176,14 @@ fn native_sign(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     core.raw_write_8(crate::aria_sign::STATE + 1, -1, 1);
     core.raw_write_8(crate::aria_sign::STATE + 2, -1, top);
     core.raw_write_8(crate::aria_sign::STATE + 3, -1, new_top);
-    write_tiles(core, T_SIGN as u32, &strip.line1);
-    write_tiles(core, T_SIGN as u32 + 16, &strip.line2);
+    let t_sign = tile.unwrap_or(T_SIGN);
     let y1 = top as i32;
     let w = x1 - x0;
     let ox1 = x0 + (w - strip.w1) / 2;
     let sprites = [
-        Spr::new(ox1, y1 - 27, 32, 16, T_SIGN, 1).mode(1),
-        Spr::new(ox1 + 32, y1 - 27, 32, 16, T_SIGN + 8, 1).mode(1),
-        Spr::new(x0 + (w - strip.w2) / 2, y1 - 10, 32, 8, T_SIGN + 16, 1).mode(1),
+        Spr::new(ox1, y1 - 27, 32, 16, t_sign, 1).mode(1),
+        Spr::new(ox1 + 32, y1 - 27, 32, 16, t_sign + 8, 1).mode(1),
+        Spr::new(x0 + (w - strip.w2) / 2, y1 - 10, 32, 8, t_sign + 16, 1).mode(1),
     ];
     // the damage forecast's box (its digits and frame) above the strip
     if let Some(frame) = list
@@ -1246,6 +1263,7 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     match info_flush(core, &list, at, end) {
         Some(n) => at = n,
         None => {
+            crate::aria_sign::release_strip(core);
             digits_restore(core);
             window_release(core);
             PANEL_SIDE.store(0, Ordering::Relaxed);

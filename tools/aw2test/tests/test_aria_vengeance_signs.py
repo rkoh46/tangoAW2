@@ -52,7 +52,7 @@ def shown(hp):
     return (hp + 9) // 10
 
 
-def scene(ctx, co, kind="tank"):
+def scene(ctx, co, kind="tank", env=None):
     """Her Tanks at 10 down to 1 displayed HP in a row (the 6 HP one low on fuel, the 4 HP one without ammunition), an Oozium of hers at 3 HP, Andy's Tank at 5 HP, spare Recons for the units' redraw."""
     m = ctx.map()
     for k in range(len(HPS)):
@@ -61,7 +61,7 @@ def scene(ctx, co, kind="tank"):
     m.unit(2, "tank", 3, ROW - 3)
     m.unit(1, "recon", 13, ROW + 5)
     m.unit(1, "recon", 14, ROW + 5)
-    g = ctx.start(m, [co, "andy"], humans=(1,), env=ENV)
+    g = ctx.start(m, [co, "andy"], humans=(1,), env=env or ENV)
     for k, hp in enumerate(HPS):
         ctx.set_hp(g, 2 + k, ROW, hp)
     ctx.set_hp(g, 13, ROW, 30)
@@ -386,18 +386,13 @@ def aria_vengeance_signs_tilt(ctx):
     """Dual Strike's tilted map (host drawn, 4x): the HP numbers of her 8..1 HP Tanks are in exactly the ramp colours (the tilt's colour expansion of mm.RAMP), one cluster each; the twin game (Andy) has none of those
     colours; the white numbers (9 HP, the Oozium, Andy's Tank, 10 HP has none) stay white: the twin has exactly eight white numbers more."""
     env = {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1", "TANGOAW2_TILT_SCALE": "4", "TANGOAW2_TILT_TIME": "0"}
-    ENV.update(env)
-    try:
-        shots = {}
-        for co in ("aria", "andy"):
-            g = scene(ctx, co, KIND)
-            for _ in range(12):
-                g.e.shot(os.path.join(ctx.out, "warm"))
-            shots[co] = load(ctx.shot(g, f"{co}_tilt"))
-            g.e.close()
-    finally:
-        for k in env:
-            ENV.pop(k)
+    shots = {}
+    for co in ("aria", "andy"):
+        g = scene(ctx, co, KIND, dict(ENV, **env))
+        for _ in range(12):
+            g.e.shot(os.path.join(ctx.out, "warm"))
+        shots[co] = load(ctx.shot(g, f"{co}_tilt"))
+        g.e.close()
     ia, ib = shots["aria"], shots["andy"]
     ctx.eq(ia.size, (960, 640), "the tilted picture is 4x")
     px = lambda im: {(x, y): im.getpixel((x, y)) for y in range(im.height) for x in range(im.width)}
@@ -422,3 +417,97 @@ def aria_vengeance_signs_tilt(ctx):
         os.makedirs(REVIEW, exist_ok=True)
         ia.crop((0, y0, 960, y1)).save(os.path.join(REVIEW, f"{KIND}_tilt_aria.png"))
         ib.crop((0, y0, 960, y1)).save(os.path.join(REVIEW, f"{KIND}_tilt_andy.png"))
+
+
+def oam_entries(e):
+    """Every shown sprite of OAM: (index, y, x, w, h, first tile, palette)."""
+    sizes = {(0, 0): (8, 8), (0, 1): (16, 16), (0, 2): (32, 32), (0, 3): (64, 64), (1, 0): (16, 8), (1, 1): (32, 8), (1, 2): (32, 16), (1, 3): (64, 32),
+             (2, 0): (8, 16), (2, 1): (8, 32), (2, 2): (16, 32), (2, 3): (32, 64)}
+    oam = e.read(OAM, 0x400)
+    out = []
+    for i in range(128):
+        a0, a1, a2 = struct.unpack("<3H", oam[8 * i:8 * i + 6])
+        if (a0 >> 8) & 3 == 2 or (a0 >> 14) == 3:
+            continue
+        w, h = sizes[(a0 >> 14, a1 >> 14)]
+        out.append((i, a0 & 0xFF, a1 & 0x1FF, w, h, a2 & 0x3FF, a2 >> 12))
+    return out
+
+
+def strip_sprites(e):
+    """The strip's own sprites in OAM: its 'Vengeance' pair of 32 x 16 sprites and the number's 32 x 8 (found by their tile order: base, base + 8, base + 16 in palette 1), or []."""
+    ents = [x for x in oam_entries(e) if x[6] == 1 and (x[3], x[4]) in ((32, 16), (32, 8))]
+    for a in ents:
+        b = [x for x in ents if (x[3], x[4]) == (32, 16) and x[5] == a[5] + 8 and x[1] == a[1] and x[2] == a[2] + 32]
+        c = [x for x in ents if (x[3], x[4]) == (32, 8) and x[5] == a[5] + 16]
+        if (a[3], a[4]) == (32, 16) and b and c and c[0][1] == a[1] + 17:
+            return [a, b[0], c[0]]
+    return []
+
+
+def cursor_on_sign(g):
+    """Whether the cursor is on a unit of hers with 8 HP or less (a strip is then due)."""
+    u = g.unit_at(*g.cursor())
+    return bool(u and u["army"] == 1 and u["type"] != 27 and 1 <= (u["hp"] + 9) // 10 <= 8)
+
+
+def check_strip_oam(ctx, e, label, want, box):
+    """The strip's OAM entries are there exactly when `want`, inside `box` (x0, y0, x1, y1), and no other sprite of the frame uses its tiles: nothing of the strip can show on another sprite, nor another's picture in it."""
+    st = strip_sprites(e)
+    ctx.eq(bool(st), want, f"{label}: strip sprites in OAM when expected")
+    if not st:
+        return
+    base = st[0][5]
+    for (_, y, x, w, h, t, pal) in st:
+        # (the lettering is 53 pixels in a 64 pixel sprite: the clear rest may reach a few pixels past the window)
+        ctx.check(box[0] <= x and x + w <= box[2] + 12 and box[1] - 2 <= y and y + h <= box[3] + 1, f"{label}: a strip sprite at {(x, y)} {w}x{h} is inside the strip's box {box}")
+    shown_on_screen = lambda x: x[1] < 160 and x[1] + x[4] > 0 and x[2] < 240 and x[2] + x[3] > 0
+    others = [x for x in oam_entries(e) if x not in st and shown_on_screen(x) and not (x[5] + max(1, x[3] * x[4] // 64) <= base or x[5] >= base + 20)]
+    ctx.check(not others, f"{label}: no other sprite uses the strip's tiles {base}..{base + 19} ({others[:2]})")
+    # and no sprite of the game shows a tile that holds the strip's lettering (the game's own pictures are intact)
+    vram = e.read(0x0601_0000, 1024 * 32)
+    mine = {vram[32 * t:32 * t + 32] for t in range(base, base + 16)} - {bytes(32)}
+    leaked = [x for x in oam_entries(e) if x not in st and shown_on_screen(x) and any(vram[32 * t:32 * t + 32] in mine for t in range(x[5], x[5] + max(1, x[3] * x[4] // 64)))]
+    ctx.check(not leaked, f"{label}: no sprite of the game shows a tile of the lettering ({leaked[:2]})")
+
+
+@test(modes=("ds",))
+def aria_vengeance_signs_no_leak(ctx):
+    """Her Infantry on several rows, Andy's Mech below each: for each, the forecast opens (select the Mech, Fire), B three times, then the attack, and the next. Every frame has the strip's three sprites inside the strip's own box
+    while a forecast of a wounded unit is open and none otherwise, no sprite of the game uses the tiles the strip's sprites do, and the Mechs' pictures are the twin game's."""
+    rows = [(4, 80), (7, 50), (10, 20), (13, 10)]
+    shots = {}
+    for co in ("aria", "andy"):
+        m = ctx.map()
+        for r, _ in rows:
+            m.unit(1, "infantry", 5, r).unit(2, "mech", 5, r + 1)
+        g = ctx.start(m, [co, "andy"], humans=(1, 2), env=ENV)
+        for r, hp in rows:
+            ctx.set_hp(g, 5, r, hp)
+        g.end_turn(human=2)
+        for r, hp in rows:
+            g.select(5, r + 1)
+            g.move_to(5, r + 1)
+            g.choose("Fire", g.ACTION_MENU)
+            g.e.wait(40)
+            shots[(co, r)] = g.e.shot(os.path.join(ctx.out, f"{co}_{r}"))
+            if co == "aria":
+                ia = load(shots[(co, r)])
+                wt = mm.window_top(ia)
+                x0, x1 = mm.window_x(ia)
+                check_strip_oam(ctx, g.e, f"forecast on her {shown(hp)} HP Infantry", True, (x0, wt, x1, wt + STRIP_H))
+            for _ in range(3):
+                g.e.press("B", 4)
+                g.e.wait(10)
+            if co == "aria":
+                check_strip_oam(ctx, g.e, "after the forecast closed", cursor_on_sign(g), (0, 0, 240, 160))
+            g.select(5, r + 1)
+            g.move_to(5, r + 1)
+            g.choose("Fire", g.ACTION_MENU)
+            g.pick_target(5, r)
+            g.wait_for_input()
+            g.e.wait(30)
+            if co == "aria":
+                check_strip_oam(ctx, g.e, "after the attack", cursor_on_sign(g), (0, 0, 240, 160))
+        g.e.close()
+    # (the games part after the first attack, the damage differing: the frames are looked at, not compared; what the sprites use is checked above, frame by frame)

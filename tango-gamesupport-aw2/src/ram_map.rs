@@ -59,6 +59,9 @@ pub const STAGE: Region = (0x0203_DCA0, 0x20 + 12 * 40);
 /// Aria's HP-number ramp on the map (crate::aria_sign): the BG palette bank held plus one, the game's own palette of it.
 pub const ARIA_SIGN: Region = (crate::aria_sign::STATE, crate::aria_sign::STATE_LEN);
 
+/// What was in the OBJ tiles Aria's strip is drawn in while it is on (crate::aria_sign::place_strip).
+pub const ARIA_STRIP_SAVED: Region = (crate::aria_sign::STRIP_SAVED, crate::aria_sign::STRIP_SAVED_LEN);
+
 /// Every region, by owner.
 pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: the map's palettes", BATTLE_MAP_PALETTES),
@@ -120,6 +123,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("CO skills' active bitmaps and the luck / special armies (crate::co_skills::ACTIVE)", (crate::co_skills::ACTIVE, 0x20)),
     ("Teams screen: borrowed tiles while partners show", (0x0203_E800, 0x8A0)),
     ("Aria's Vengeance ramp: the BG palette bank held and the game's colours of it (crate::aria_sign::STATE)", ARIA_SIGN),
+    ("Aria's strip: the OBJ tiles it is drawn over, kept (crate::aria_sign::STRIP_SAVED)", ARIA_STRIP_SAVED),
     ("Rules screen: borrowed label tiles", (0x0203_F100, 0x200)),
     ("Versus rules: saved label tiles", (0x0203_E600, 0x200)),
 ];

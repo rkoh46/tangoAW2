@@ -159,6 +159,7 @@ Original sources of AW2's layout: Xenesis' RAM notes (Wars World News), the Code
 | `0x0203C170` | 0x20 | Battle points: per army 1..4 five bytes (Black Cannons, minicannons, pipe seams, Oozium, Black Crystals), then last bonus (u16) | `battle_points.rs` | R |
 | `0x0203C190` | 0x1A4 | History record (magic word + counters); screen state `0x0203C340` (0x60: tab, top, row, column, signature, saved bank 2 at +0x20) | `history.rs`, `history_ui.rs` | R |
 | `0x0203C3A0` | 0x30 | **Aria's Vengeance on the map** (crate::aria_sign): +0 the BG palette bank holding the HP-number ramp plus one (0: none), +1 / +2 / +3 AW2's own panel window while Aria's strip lifts it (flag, the game's top, ours), +0x10 the game's 32 colour bytes of that bank | `aria_sign.rs` `STATE`, `ds_hud.rs` `native_sign` | R |
+| `0x0203B000` | 0x280 | **Aria's strip: the 20 OBJ tiles it is drawn over, as they were** (crate::aria_sign::place_strip; STATE + 4 is the first tile). Below the room the earlier rows list: the five-army blocks end at `0x02034C00` and nothing of AW2's was found above | `aria_sign.rs` `STRIP_SAVED` | R |
 | `0x0203C400` | 0x100 | **Lobby browser rows**: 9 rows x 28 bytes: code (6), players, seats, flags (1 padlock), name from +9 (zero-terminated) | `online_browse.rs` `ROWS` | R |
 | `0x0203C600` | 1 | Tag Power thunder: what it covers is copied aside (state) | `tag_thunder.rs` | R |
 | `0x0203C601` | 1 | Power music: army `sub_08043DAC` was last called for | `power_music.rs` | R |

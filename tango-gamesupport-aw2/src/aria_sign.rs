@@ -289,6 +289,75 @@ fn claim(core: &mut Core) -> Option<u32> {
     Some(bank)
 }
 
+// --- The strip's OBJ tiles ----------------------------------------------------------------------------
+
+/// The tiles the strip needs: 16 for "Vengeance", 4 for the number.
+const STRIP_TILES: u32 = 20;
+const OBJ_VRAM: u32 = 0x0601_0000;
+/// What was in the strip's 20 tiles while the strip is on (EWRAM, 640 bytes, `ram_map.rs`).
+pub const STRIP_SAVED: u32 = 0x0203_B000;
+pub const STRIP_SAVED_LEN: u32 = 32 * STRIP_TILES;
+
+/// Where the strip's tiles are now (EWRAM, STATE + 4: a tile number, 0 none).
+fn strip_base(core: &Core) -> u32 {
+    core.raw_read_16(STATE + 4, -1) as u32
+}
+
+/// "Vengeance" as sprite tiles (the constant half of a [`Strip`]).
+fn lettering_tiles(core: &Core) -> Option<Vec<u8>> {
+    let letters = lettering(core)?;
+    let (fill, _) = set_line(&letters.iter().map(|l| l.1.clone()).collect::<Vec<_>>());
+    Some(line1_tiles(&render(&fill, 64, 16, 0, -1)))
+}
+
+/// Puts the strip's tiles where no sprite of the game is this frame: a run of 20 OBJ tiles that no sprite of the frame's list uses (`used`: first tile and count of each), preferring an empty one. What was in them is kept in
+/// EWRAM and put back when the strip goes ([`release_strip`]) or a sprite of the game starts to use them (found the same frame, at the flush before the picture is made), so the game's own pictures are never written over
+/// (a used Mech's sprite drew over the lettering, and the lettering over it, when the tiles were a fixed range). If the game wrote the run while it was ours (its "Vengeance" half is not ours any more) the run is the game's and
+/// is left alone. `None` when no run is free (no strip then).
+pub fn place_strip(core: &mut Core, used: &[(u16, u16)], strip: &Strip) -> Option<u16> {
+    let vram = read_bytes(core, OBJ_VRAM, 1024 * 32);
+    let mut taken = vec![false; 1024];
+    for &(t, n) in used {
+        for k in t as usize..(t as usize + n as usize).min(1024) {
+            taken[k] = true;
+        }
+    }
+    let n = STRIP_TILES as usize;
+    let run_free = |b: usize| b + n <= 1024 && !taken[b..b + n].iter().any(|&t| t);
+    let empty = |b: usize| vram[32 * b..32 * (b + n)].iter().all(|&x| x == 0);
+    let prev = strip_base(core) as usize;
+    let ours = |b: usize| vram[32 * b..32 * b + 512] == strip.line1[..];
+    let base = if prev != 0 && run_free(prev) && ours(prev) {
+        prev
+    } else {
+        if prev != 0 {
+            release_strip(core);
+        }
+        // (below the font's tiles, 989..)
+        let b = (640..=980).rev().find(|&b| run_free(b) && empty(b)).or_else(|| (640..=980).rev().find(|&b| run_free(b)))?;
+        core.raw_write_range(STRIP_SAVED, -1, &vram[32 * b..32 * (b + n)]);
+        b
+    };
+    write_if_changed(core, OBJ_VRAM + 32 * base as u32, &strip.line1);
+    write_if_changed(core, OBJ_VRAM + 32 * (base as u32 + 16), &strip.line2);
+    core.raw_write_16(STATE + 4, -1, base as u16);
+    Some(base as u16)
+}
+
+/// The strip's tiles given back (once): what was in them put back, if they are still ours.
+pub fn release_strip(core: &mut Core) {
+    let b = strip_base(core);
+    if b == 0 {
+        return;
+    }
+    core.raw_write_16(STATE + 4, -1, 0);
+    let first = read_bytes(core, OBJ_VRAM + 32 * b, 512);
+    if lettering_tiles(core).is_some_and(|l| l == first) {
+        let saved = read_bytes(core, STRIP_SAVED, 32 * STRIP_TILES as usize);
+        core.raw_write_range(OBJ_VRAM + 32 * b, -1, &saved);
+    }
+}
+
 // --- The window's strip -----------------------------------------------------------------------------
 
 /// The window words the letters come from (AW2's name pictures: 32 x 16 pixels, 4 bits, 1D tiles; index 1 the white, 15 the dark outline): the Tank, the Recon and the Bridge.
@@ -451,6 +520,19 @@ pub struct Strip {
     pub w2: i32,
 }
 
+/// The two 32 x 16 sprites' tiles of a 64 x 16 line: the left half then the right.
+fn line1_tiles(p1: &[u8]) -> Vec<u8> {
+    let mut line1 = Vec::new();
+    for half in 0..2 {
+        let mut sub = vec![0u8; 32 * 16];
+        for y in 0..16 {
+            sub[y * 32..y * 32 + 32].copy_from_slice(&p1[y * 64 + 32 * half..y * 64 + 32 * half + 32]);
+        }
+        line1.extend(to_tiles(&sub, 32, 16));
+    }
+    line1
+}
+
 fn digit_glyph(tile: &[u8]) -> Glyph {
     let mut g = Vec::new();
     for y in 0..8i32 {
@@ -480,14 +562,7 @@ impl Strip {
         // (one row up: the g's outline is the 17th row of the 16-row box the letters are laid out in)
         let p1 = render(&fill1, 64, 16, 0, -1);
         // two sprites: the left half then the right half
-        let mut line1 = Vec::new();
-        for half in 0..2 {
-            let mut sub = vec![0u8; 32 * 16];
-            for y in 0..16 {
-                sub[y * 32..y * 32 + 32].copy_from_slice(&p1[y * 64 + 32 * half..y * 64 + 32 * half + 32]);
-            }
-            line1.extend(to_tiles(&sub, 32, 16));
-        }
+        let line1 = line1_tiles(&p1);
         // (the line's own row 0 is the sprite's row 1: the outline above the digits' top row)
         let line2 = to_tiles(&render(&fill2, 32, 8, 0, 1), 32, 8);
         Some(Strip { line1, w1, line2, w2 })
