@@ -1032,8 +1032,8 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
         write_tiles(core, T_SIGN as u32, &st.line1);
         write_tiles(core, T_SIGN as u32 + 16, &st.line2);
         let ox1 = px + (w - st.w1) / 2;
-        mine.push(Spr::new(ox1, y0 - 28, 32, 16, T_SIGN, 1).mode(1));
-        mine.push(Spr::new(ox1 + 32, y0 - 28, 32, 16, T_SIGN + 8, 1).mode(1));
+        mine.push(Spr::new(ox1, y0 - 27, 32, 16, T_SIGN, 1).mode(1));
+        mine.push(Spr::new(ox1 + 32, y0 - 27, 32, 16, T_SIGN + 8, 1).mode(1));
         mine.push(Spr::new(px + (w - st.w2) / 2, y0 - 10, 32, 8, T_SIGN + 16, 1).mode(1));
     }
     // The backing: AW2's window, at Dual Strike's rectangle (and the strip's rows above it).
@@ -1162,8 +1162,8 @@ fn native_sign(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
     let w = x1 - x0;
     let ox1 = x0 + (w - strip.w1) / 2;
     let sprites = [
-        Spr::new(ox1, y1 - 28, 32, 16, T_SIGN, 1).mode(1),
-        Spr::new(ox1 + 32, y1 - 28, 32, 16, T_SIGN + 8, 1).mode(1),
+        Spr::new(ox1, y1 - 27, 32, 16, T_SIGN, 1).mode(1),
+        Spr::new(ox1 + 32, y1 - 27, 32, 16, T_SIGN + 8, 1).mode(1),
         Spr::new(x0 + (w - strip.w2) / 2, y1 - 10, 32, 8, T_SIGN + 16, 1).mode(1),
     ];
     // the damage forecast's box (its digits and frame) above the strip

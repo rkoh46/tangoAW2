@@ -297,6 +297,8 @@ const WORD_BRIDGE: u32 = 0x0810_7564;
 const V_ROWS: [&str; 9] = ["##...##", "##...##", "##...##", ".##.##.", ".##.##.", ".##.##.", "..###..", "..###..", "...#..."];
 /// The row of the 16-row word box its first row is on.
 const V_TOP: i32 = 5;
+/// Where a name picture's first row is in that box.
+const NAME_ROW: i32 = 2;
 /// "+" and "%" in the digits' style (2-pixel strokes, 6 rows).
 const PLUS_ROWS: [&str; 6] = ["..##..", "..##..", "######", "######", "..##..", "..##.."];
 const PERCENT_ROWS: [&str; 6] = ["##...#", "##..#.", "...#..", "..#...", ".#..##", "#...##"];
@@ -370,14 +372,16 @@ fn lettering(core: &Core) -> Option<Vec<(char, Glyph)>> {
     if recon.len() != 5 || bridge.len() != 4 || tank.len() != 4 {
         return None;
     }
+    // (a name picture's row 0 is the second row of the 16-row box the V's rows are counted in: the panel puts the picture's sprite two rows below the box's top)
+    let low = |g: &Glyph| -> Glyph { g.iter().map(|&(x, y)| (x, y + NAME_ROW)).collect() };
     let pick = |c: char| -> Glyph {
         match c {
             'V' => rows_glyph(&V_ROWS, V_TOP),
-            'e' => recon[1].clone(),
-            'c' => recon[2].clone(),
-            'n' => recon[4].clone(),
-            'g' => bridge[3].clone(),
-            _ => tank[1].clone(),
+            'e' => low(&recon[1]),
+            'c' => low(&recon[2]),
+            'n' => low(&recon[4]),
+            'g' => low(&bridge[3]),
+            _ => low(&tank[1]),
         }
     };
     Some("Vengeance".chars().map(|c| (c, pick(c))).collect())
@@ -470,7 +474,8 @@ impl Strip {
         }
         glyphs.push(rows_glyph(&PERCENT_ROWS, 0));
         let (fill2, w2) = set_line(&glyphs);
-        let p1 = render(&fill1, 64, 16, 0, 0);
+        // (one row up: the g's outline is the 17th row of the 16-row box the letters are laid out in)
+        let p1 = render(&fill1, 64, 16, 0, -1);
         // two sprites: the left half then the right half
         let mut line1 = Vec::new();
         for half in 0..2 {

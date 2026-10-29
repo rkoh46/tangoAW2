@@ -53,6 +53,25 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
 - `co portrait ingame` learned CO Powers: with no CO Power it fills the meter past a Super Power's price and picks "Super" in the map menu; the cut-in of a Super Power comes about 6 s after the quote, so it
   photographs 56 frames; the quote frame is the one with the most text typed.
 
+## The signs (option E: Vengeance shown on the map, the unit window and the damage forecast)
+Approved from the mock-ups of `devkit/aw2/colib/vengeance_mockups.py`; the rule is `aria::sign(type, hp)` (her flat 5% plus `vengeance_for`: 8 HP +30%, 7 +36%, 6 +42%, 5 +48%, 4 +54%, 3 +60%, 2 +66%, 1 +90%; 10 and 9 HP nothing; an Oozium never; only with the CO
+abilities on), and code `aria_sign.rs` with `ds_hud.rs` (`native_sign`, and the strip in `info_flush`). Nothing changes a number or the shared state of the game; everything is in VRAM, palette RAM, the sprite list and `aria_sign::STATE`
+(`ram-map.md`), found again from the unit records every frame, so rollback and save states carry it.
+- **Map**: the HP number of her unit with 8 to 1 displayed HP is drawn in `aria::RAMP` (orange 8, 7, 6, 5, 4, 3, 2, dark red 1), the black box round it kept; the low fuel / ammunition icons (BG2, the cell's top right) and the capture and cargo marks are other tiles of the cell and are
+  not touched. The game draws the number as BG1 tile `0x2A1 + HP` in the unit's army bank (12..15, 11 once moved, 9 for a moved unit in a five-army game). After the game wrote its tile map (the sprite flush, `branding::flush` -> `aria_sign::map_flush`) the digit cell of each such unit
+  (found from the unit record by the plane's arithmetic `ds_tilt` uses: cell = 2 x ((x - camera / 16 + BG3 scroll / 16) & 15) + 1) is pointed at one of our eight tiles, BG tiles `0x340..0x347` (a copy of the game's digit tile with the digit's colour index 1 moved to index HP; the first
+  tiles of a screen block nothing uses: they were empty in every battle screen looked at, and are written only while empty or ours), in a BG palette bank that holds the ramp in 1..8 and black in 15. That bank is the first of 4, 5, 6, 7, 9 that no tile map refers to (4..7 are the fog's
+  terrain banks, 9 the map menu's and a moved unit's in a five-army game); the game's own 32 bytes of it are kept in `STATE` and put back when a tile map starts referring to it or nothing needs the ramp. A cell is changed only where the tile map holds the digit tile of that unit's HP (so never a
+  hidden "?" or a fogged unit), and put back (the bank worked out from the unit record) when the unit stops qualifying (healed, a Tag swap).
+- **Unit window** (cursor on such a unit, AW2's own panel or Dual Strike's HUD): a strip the window's width on top of it in its own fill (the window's top shadow byte is lifted 26 rows, the game's byte kept in `STATE` and put back), "Vengeance" and "+NN%" as three sprites (palette 1, mode 1: the
+  window words' own) in OBJ tiles 776..795. The lettering is built at run time (`Strip::new`): the letters e, c, n of the window word "Recon" (ROM `0x08108764`), g of "Bridge" (`0x08107564`) and a of "Tank" (`0x08108664`) are cut out by their connected white pixels, the digits are the window's own
+  HP-number digits (OBJ tiles 976..985, or Dual Strike's), and V, "+" and "%" are drawn small bitmaps in `aria_sign.rs` (the window has none of them). Nothing of the game's art is stored. No strip for a unit whose HP the game hides.
+- **Damage forecast**: the same strip (the cursor is on the target); the DAMAGE box's frame and digits sprites are moved up by the strip's height. The forecast number is the game's own.
+- Not covered: Dual Strike's tilted map view (`ds_tilt`) draws the units' numbers from the records, so the ramp is not in it yet (the strip is).
+- Tests: `tests/test_aria_vengeance_signs.py` (`-k aria_vengeance_signs`; a twin game with Andy for Aria: the HP numbers of her Tanks at 10..1 HP in the ramp and nothing else of the frame changed, the icons of a low-fuel and a no-ammunition one intact, an Oozium and Andy's Tank
+  unchanged, the tiles and palette bank, the palette given back when healed; the strip equal to the mock-up composer's on 8, 5, 2 and 1 HP and absent on 10 / 9 HP, the Oozium and Andy; the enemy's forecast strip and the DAMAGE box 26 rows higher). `AW2TEST_VENGEANCE_REVIEW=<dir>` keeps the frames for
+  `python3 -m aw2.colib.vengeance_signs_sheet DIR [OUT]` (devkit/), which composes the review sheets from the game's own pictures; `AW2TEST_VENGEANCE_UNIT` / `_ATTACKER` = `megatank` for the Megatank's.
+
 ## Verification (what was run)
 `aw2dev co verify aria --net` (`co_verify_*_aria`, the generic scenarios against `cos/aria.toml` through `cospec.py`: attack, defence, counter and meter, move, economy, the heal of 3, the meter's 7 stars and the
 missing Power entry, the Tag Power with Nell, an unlisted pair, the CPU's Super Power, the HQ, both peers equal), `tests/test_aria.py` (the row, Vengeance at 8 and 9 displayed HP in both levels and as a counterattacker,
