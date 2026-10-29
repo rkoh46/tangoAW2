@@ -6,13 +6,13 @@
 
 == m01_sturm
 @SONG sturm
-NARRATION: The ridge, dusk. Eleven green / tanks, and no paint to spare.
-VON BOLT: Eleven tanks, mine and / yours now. Kehh... listen.
+NARRATION: The ridge at dusk. Eleven green / tanks, and no paint to spare.
+VON BOLT: Eleven tanks, mine and yours / now. Kehh... listen.
 STURM: They are silent.
-VON BOLT: The crystals, little storm. / Thirty years they hummed at nobody.
+VON BOLT: The crystals, little storm. For / thirty years they hummed at nobody.
 VON BOLT: Tonight they hum at the man / standing in the middle of them.
-STURM: Then I will stand in the / middle of everything.
-VON BOLT: And the Accord? It will / notice a ridge changing hands.
+STURM: Then I will stand in the middle / of everything.
+VON BOLT: And the Accord? It will notice a / ridge changing hands.
 STURM: I want it to notice. A fence / that sees the storm builds nothing.
 VON BOLT: Kehh-heh! Frightened men / overpay. I shall raise my prices.
 
@@ -22,26 +22,26 @@ VON BOLT: Kehh-heh! Frightened men / overpay. I shall raise my prices.
 @SONG hagevolt
 NARRATION: The Foundry, awake. Its smoke / leans toward the sea.
 VON BOLT: The warden girl said sea. / Everyone says sea. Kehh...
-STURM: It is the one wall they / trust.
-VON BOLT: I trust ledgers, little / storm. Ledgers do not capsize.
-STURM: Then be seasick in my / company. You will not walk home.
-VON BOLT: And what is my price for / this humiliation?
-STURM: The lane that feeds the / fence. Every crate. Every toll.
-VON BOLT: ...Every toll. I did not / say no. Did I? Kehh.
+STURM: It is the one wall they trust.
+VON BOLT: I trust ledgers, little storm. / Ledgers do not capsize.
+STURM: Then be seasick in my company. / You will not walk home.
+VON BOLT: And what is my price for this / humiliation?
+STURM: The lane that feeds the fence. / Every crate. Every toll.
+VON BOLT: ...Every toll. I did not say no. / Did I? Kehh.
 
 # ---------------------------------------------------------------- after M3 Blockade Runner (Sturm, Von Bolt)
 
 == m03_sturm
 @SONG co:hawke
 STURM: Von Bolt. The Marshal on the / radio. What do you know of him?
-VON BOLT: He audits. He once held a / ship of mine for a typo.
+VON BOLT: He audits. He once held a ship / of mine for a typo.
 STURM: And?
-VON BOLT: ...And he was right. I / hated it. I respect him. Kehh.
-STURM: He invited me. He keeps / coffee for rivals.
-VON BOLT: A man who sells coffee to / the enemy is lonely, boy. Or rich.
+VON BOLT: ...And he was right. I hated it. / I respect him. Kehh.
+STURM: He invited me. He keeps coffee / for rivals.
+VON BOLT: A man who serves coffee to the / enemy is lonely, boy. Or rich.
 STURM: He wants to be tested.
-VON BOLT: Everyone does. Some of / them pay.
-STURM: Then I will walk his road / and be tested.
+VON BOLT: Everyone does. Some of them pay / for it.
+STURM: Then I will walk his road and / test him.
 
 # ---------------------------------------------------------------- after M4 Marshal in Green (Sturm, Hawke, Von Bolt)
 
@@ -52,49 +52,49 @@ HAWKE: Remains closed, Lord Sturm.
 STURM: I did not ask to open it. I / asked if it is a threat.
 HAWKE: Every plan threatens the one / before it. That is how plans improve.
 STURM: Then improve mine.
-HAWKE: With pleasure. Tomorrow, a / moon, a tower, and a knight who
-HAWKE: announces himself. Eight / aircraft and no sleep. Efficient.
-VON BOLT: And an invoice! Kehh... / for the coffee!
-HAWKE: Sent to the ministry. They / will pay. They always pay.
+HAWKE: With pleasure. Tomorrow: a moon, / a tower, and a knight who
+HAWKE: announces himself. Eight aircraft / and no sleep. Efficient.
+VON BOLT: And an invoice! Kehh... for the / coffee!
+HAWKE: Sent to the ministry. They will / pay. They always pay.
 
 # ---------------------------------------------------------------- after M5 Night Raid (Sturm, Hawke)
 
 == m05_sturm
 @SONG enemy1
-HAWKE: Eight aircraft, no losses, one / pie eaten. A good night.
-STURM: Eagle's voice on the radio. / He was not angry. He was hurt.
-HAWKE: Yes. I know that voice. I / have heard it before.
+HAWKE: Eight aircraft, no losses, one pie / eaten. A good night.
+STURM: Eagle's voice on the radio. He / was not angry. He was hurt.
+HAWKE: Yes. I know that voice. I have / heard it before.
 STURM: You knew him.
-HAWKE: I know how he flies. Hurt men / fly louder. It is exploitable.
-STURM: You speak of him like a man / you have played before.
+HAWKE: I know how he flies. Hurt men / fly louder. It can be exploited.
+STURM: You speak of him like a man you / have played before.
 HAWKE: Twice. On paper. It ended the / same way each time.
-STURM: Play it a third time. In his / own sky.
-HAWKE: Gladly. It is the only way / to finish the game.
+STURM: Play him a third time. In his own / sky.
+HAWKE: Gladly. It is the only way to / finish the game.
 
 # ---------------------------------------------------------------- after M6 Stepping Stones (Sturm, Von Bolt)
 
 == m06_sturm
 @SONG hagevolt
-VON BOLT: Five islands! Kehh... five / sets of tolls! Mine, mine, mine!
-VON BOLT: And not one drop of it / stuck to my boots. A miracle.
-STURM: The sea lane is open. The / crates now cross for me.
-VON BOLT: And for me! In my / half of the hold!
-STURM: You count a hold. I count / a coast.
-VON BOLT: A coast is a very large / hold, little storm.
-STURM: Yes. Greenhaven is on it. / The Twin Gates are behind it.
-VON BOLT: Kehh... my feet will / be on land. I will kiss it.
+VON BOLT: Five islands! Kehh... five sets / of tolls! Mine, mine, mine!
+VON BOLT: And not a drop of sea on my / boots. A miracle.
+STURM: The sea lane is open. The crates / cross for me now.
+VON BOLT: And for me! In my half of the / hold!
+STURM: You count a hold. I count a / coast.
+VON BOLT: A coast is a very large hold, / little storm.
+STURM: Yes. Greenhaven is on it. The Twin / Gates are behind it.
+VON BOLT: Kehh... my feet will be on land. / I will kiss it.
 
 # ---------------------------------------------------------------- after M7 Greenhaven Arsenal (Sturm, Hawke)
 
 == m07_sturm
 @SONG co:hawke
-STURM: The Arsenal is mine. The / second Foundry is mine.
-HAWKE: And the cranes are the / Colonel's. A fair division.
+STURM: The Arsenal is mine. The second / Foundry is mine.
+HAWKE: And the cranes are the Colonel's. / A fair division.
 STURM: Eagle asked why you did it.
-HAWKE: A small reason. It is / always a small reason.
-STURM: And the true reason?
+HAWKE: A small reason. It is always a / small reason.
+STURM: And the real reason?
 HAWKE: Nothing moved any more, Lord / Sturm. I cannot bear that.
-HAWKE: You move it. That is the / whole of my loyalty.
+HAWKE: You move it. That is the whole of / my loyalty.
 STURM: It will do. For now.
 HAWKE: Chapter two does not say / otherwise. Yet.
 
@@ -102,39 +102,39 @@ HAWKE: Chapter two does not say / otherwise. Yet.
 
 == m08_sturm
 @SONG hagevolt
-STURM: Jess called it a delay. She / is correct.
-VON BOLT: A delay is a debt, little / storm. It comes due. Kehh...
+STURM: Jess called it a delay. She is / right.
+VON BOLT: A delay is a debt, little storm. / It comes due. Kehh...
 STURM: Then collect first. Your / accounts are frozen.
-VON BOLT: ...They are. Thirty years / of rent, behind a clerk's glass.
+VON BOLT: ...They are. Thirty years of / rent, behind a clerk's glass.
 STURM: Move it. By rail. Before the / Accord thinks to ask.
-VON BOLT: Kehh-heh! Three trucks to / the east port! I shall ride along
+VON BOLT: Kehh-heh! Three trucks to the / east port! I shall ride along
 VON BOLT: in a very large hat.
 
 # ---------------------------------------------------------------- after M9 The Loot Train (Sturm, Von Bolt, Hawke)
 
 == m09_sturm
 @SONG hagevolt
-VON BOLT: The ships are paid. The / port is paid. I am... poor. Kehh...
+VON BOLT: The ships are paid. The port is / paid. I am... poor. Kehh...
 HAWKE: By the standards of a man who / owns a continent. Marginally.
-STURM: The harbour is yours. The / gold stays in my ships.
-VON BOLT: And the last shelf stays / home. Locked. Do not ask.
+STURM: The harbour is yours. The gold / stays in my ships.
+VON BOLT: And the last shelf stays home. / Locked. Do not ask.
 STURM: I have not asked.
 VON BOLT: You will. They always do.
 STURM: Evergreen. Three walls. Never / taken. Break it.
-HAWKE: I have drawn the siege. The / wall falls on the fourth day.
+HAWKE: I have drawn up the siege. The / wall falls on the fourth day.
 
 # ---------------------------------------------------------------- after M10 Evergreen Citadel (Sturm, Hawke, Von Bolt)
 
 == m10_sturm
 @SONG sturm
 STURM: Green Earth is down. Three / nations remain.
-HAWKE: By my count. They have started / to call it a table.
-VON BOLT: A table! Kehh... four legs, / and one just sawn off!
-STURM: Let them sit at it. The more / of them in one room, the fewer
+HAWKE: By my count. They have started / calling it a table.
+VON BOLT: A table! Kehh... four legs, and / one just sawn off!
+STURM: Let them sit at it. The more of / them in one room, the fewer
 STURM: doors they guard. I prefer my / enemies in one place.
-HAWKE: Yellow Comet next. Mount Ember. / A pass an old man opened.
-VON BOLT: An old man! Kehh... I / outrank him. In years.
-STURM: Take the pass. Old men know / where a wall is weakest.
+HAWKE: Yellow Comet next. Mount Ember. A / pass an old man opened.
+VON BOLT: An old man! Kehh... I outrank / him. In years.
+STURM: Take the pass. Old men know where / a wall is weakest.
 
 # ---------------------------------------------------------------- after M11 Ashfall Pass (Sturm, Hawke, Von Bolt)
 
@@ -142,23 +142,23 @@ STURM: Take the pass. Old men know / where a wall is weakest.
 @SONG enemy1
 STURM: The old man read me page nine. / Who pays for the fence.
 VON BOLT: Nobody! That is why it is / falling! Kehh...
-STURM: Then I pay. And I own the / fence when the payment is done.
-HAWKE: You would purchase the Accord / by instalments.
-STURM: By the mile. Koal's road is / the first.
-VON BOLT: And the rulebook girl! She / knows more than she writes.
+STURM: Then I pay. And when the payment / is done, I own the fence.
+HAWKE: You would buy the Accord in / instalments.
+STURM: By the mile. Koal's road is the / first.
+VON BOLT: And the rulebook girl! She knows / more than she writes.
 STURM: Then I will read her.
 
 # ---------------------------------------------------------------- after M12 Highway to the Horizon (Sturm, Koal, Hawke)
 
 == m12_sturm
 @SONG co:koal
-KOAL: Surface condition: good. Shoulder: / three metres. Camber: acceptable.
+KOAL: Surface: good. Shoulder: three / metres. Camber: acceptable.
 STURM: Where does your road end?
-KOAL: At a gate. They always end / at a gate.
-STURM: Then it is the wrong / road.
-KOAL: ...Yes. That is what I said. / To Grimm. He did not listen.
+KOAL: At a gate. They always end at a / gate.
+STURM: Then it is the wrong road.
+KOAL: ...Yes. That is what I told / Grimm. He did not listen.
 STURM: Build until there are no gates.
-KOAL: Then it is a road with no / end.
+KOAL: Then it is a road with no end.
 STURM: Yes.
 KOAL: I like it. Mind the lane, Lord / Sturm. I intend to finish this one.
 HAWKE: The next stage is lit, Koal. / Fourteen days. A patron called Kindle.
@@ -169,11 +169,11 @@ HAWKE: The next stage is lit, Koal. / Fourteen days. A patron called Kindle.
 @SONG co:kindle
 KINDLE: Darlings, the plaza is still / warm. I may weep. Or burn it again.
 STURM: Do not burn what I have taken.
-KINDLE: What a dreadful rule. I / shall obey it. Once.
-VON BOLT: Fourteen thousand, Kindle! / That is still on my book!
+KINDLE: What a dreadful rule. I shall / obey it. Once.
+VON BOLT: Fourteen thousand, Kindle! It is / still on my books!
 KINDLE: Applause is legal tender, / darling. Ask anyone.
 VON BOLT: I did! Nobody agreed!
-STURM: Enough. The east is open. A / lane to the Keep.
+STURM: Enough. The east is open. A lane / to the Keep.
 KINDLE: Then I shall light it. Every / mile, and a sign: KINDLE WAS HERE.
 
 # ---------------------------------------------------------------- after M14 No Soldier Left Behind (Sturm, Hawke, Von Bolt)
@@ -183,38 +183,38 @@ KINDLE: Then I shall light it. Every / mile, and a sign: KINDLE WAS HERE.
 HAWKE: I will say nothing about the / highlands.
 STURM: You have said it.
 HAWKE: I said nothing.
-VON BOLT: He said it with his / eyebrows! Kehh...
-STURM: One private. One army turned / round. It will not happen again.
+VON BOLT: He said it with his eyebrows! / Kehh...
+STURM: One private. One army turned / around. It will not happen again.
 HAWKE: It will, Lord Sturm. And I / suspect you know it.
-STURM: Then it will be priced. By / me.
-VON BOLT: Priced! I like it. Boot / boy goes on my ledger. A real one.
-STURM: He stays on mine.
+STURM: Then it will be priced. By me.
+VON BOLT: Priced! I like it. The boot boy / goes in my ledger. A real one.
+STURM: He stays in mine.
 
 # ---------------------------------------------------------------- after M15 The Skybridge (Sturm, Koal, Kindle)
 
 == m15_sturm
 @SONG enemy1
-KOAL: The Skybridge: stone, one / mile, no guardrail. Unforgivable.
-KINDLE: It was a magnificent stage, / darling. Do not scold it.
+KOAL: The Skybridge: stone, one mile, no / guardrail. Unforgivable.
+KINDLE: It was a magnificent stage, / darling. Don't scold it.
 KOAL: Stages do not carry traffic.
-KINDLE: This one carried a whole / army. Bow to it.
-STURM: Kanbei keeps one gate. The / Keep. His daughter keeps the rest.
-KOAL: Comet Keep has a south gate. / My highway ends against it.
-KINDLE: And a Great Hall with a / scroll. Under glass. I shall see it.
-STURM: You will both go. Open the / gate. Light the hall.
+KINDLE: This one carried a whole army. / Bow to it.
+STURM: Kanbei keeps one gate. The Keep. / His daughter keeps the rest.
+KOAL: Comet Keep has a south gate. My / highway ends against it.
+KINDLE: And a Great Hall with a scroll. / Under glass. I shall see it.
+STURM: You will both go. Open the gate. / Light the hall.
 
 # ---------------------------------------------------------------- after M16 Comet Keep (Sturm, Hawke, Koal)
 
 == m16_sturm
 @SONG sturm
 STURM: Yellow Comet fell in a month.
-HAWKE: A month and a bridge. The / fence is now two flags short.
+HAWKE: A month and a bridge. The fence is / now two flags short.
 KOAL: The south gate is open. The / highway is complete.
-KOAL: It does not end. I walked / the last mile. It was straight.
-STURM: Blue Moon is next. Rich. / Afraid. Together, dangerous.
-HAWKE: A foundry cold for eleven / years. A machine that waits.
-STURM: A machine I can use. I will / ask it what it was told.
-HAWKE: It will answer exactly. / That is a rare and useful kind.
+KOAL: It does not end. I walked the / last mile. It was straight.
+STURM: Blue Moon is next. Rich. Afraid. / Together, dangerous.
+HAWKE: A foundry cold for eleven years. / A machine that waits.
+STURM: A machine I can use. I will ask / it what it was told.
+HAWKE: It will answer exactly. That is a / rare and useful kind.
 
 # ---------------------------------------------------------------- after M17 Cold Iron (Sturm, Jugger, Hawke)
 
@@ -223,10 +223,10 @@ HAWKE: It will answer exactly. / That is a rare and useful kind.
 JUGGER: STATUS REPORT. FOUNDRY: HELD. / MORALE: NOT MEASURED.
 JUGGER: ADDENDUM: THE OBELISK HUMS. / PITCH: MATCHES THE STORM.
 STURM: Do not log that.
-JUGGER: LOGGED. FILED UNDER: / DO NOT LOG.
-HAWKE: A paradox. Impressive for / a machine in its first week.
-JUGGER: HUMOR: NOT FOUND. ORDER: / PENDING. QUERY: NEXT TARGET?
-STURM: Blue Moon keeps two prizes. / A pit. A line of steel.
+JUGGER: LOGGED. FILED UNDER: DO NOT / LOG.
+HAWKE: A paradox. Impressive, for a / machine in its first week.
+JUGGER: HUMOUR: NOT FOUND. ORDERS: / PENDING. QUERY: NEXT TARGET.
+STURM: Blue Moon keeps two prizes. A / pit. A line of steel.
 JUGGER: TWO TARGETS: PARALLEL. / EFFICIENCY: IMPROVES. PROCEED.
 
 # ---------------------------------------------------------------- after M18 The Pit (Sturm, Flak, Jugger, Von Bolt)
@@ -234,75 +234,75 @@ JUGGER: TWO TARGETS: PARALLEL. / EFFICIENCY: IMPROVES. PROCEED.
 == m18_sturm
 @SONG co:flak
 FLAK: Flak is full. Flak is happy. / Boss, Flak ate a coin. Again.
-STURM: Do not eat coin.
+STURM: Do not eat coins.
 FLAK: Coin tastes bad. Boss tastes / better.
 STURM: Do not eat me.
-JUGGER: CORRECTION: FLAK IS NOT / TO EAT THE BOSS. LOGGED.
-VON BOLT: Nine thousand calories a / day! I am being eaten alive!
-STURM: Then pay for the war, and / it will pay for the meals.
-FLAK: Flak likes this war. Boss is / big. Flak is big. Good fit.
+JUGGER: CORRECTION: FLAK IS NOT TO EAT / THE BOSS. LOGGED.
+VON BOLT: Nine thousand calories a day! I / am being eaten alive!
+STURM: Then pay for the war, and it will / pay for the meals.
+FLAK: Flak likes this war. Boss is big. / Flak is big. Good fit.
 
 # ---------------------------------------------------------------- after M19 The Assembly Line (Sturm, Von Bolt, Jugger)
 
 == m19_sturm
 @SONG hagevolt
-VON BOLT: Her whole vault! In her / own ledger! In her own ink!
+VON BOLT: Her whole vault! In her own / ledger! In her own ink!
 STURM: You were greedy. It worked.
-VON BOLT: I was ALWAYS greedy. It / only works when someone shows me.
+VON BOLT: I am ALWAYS greedy. It only / works when someone shows me.
 JUGGER: SASHA: AUDIT NOTICE: ISSUED. / SIGNATURE: REQUIRED.
 VON BOLT: Burn it!
 JUGGER: AFFIRMATIVE. FILING.
-STURM: Blue Moon builds in iron / and promises in paper.
-STURM: Take the harbour. Take the / paper after. It will sink.
-VON BOLT: Kehh-heh! I will help / it sink. For a fee.
+STURM: Blue Moon builds in iron and / promises in paper.
+STURM: Take the harbour. Take the paper / after. It will sink.
+VON BOLT: Kehh-heh! I will help it sink. / For a fee.
 
 # ---------------------------------------------------------------- after M20 Moonlit Harbours (Sturm, Hawke, Jugger)
 
 == m20_sturm
 @SONG enemy2
-JUGGER: SUPPLY LINE: LONG. DEPTH: / ONE CONVOY. QUERY: WHO GUARDS IT?
-HAWKE: Nobody. That is the point of / a line. Everyone trusts it.
-STURM: Then we follow it up the / river. Through their fog.
-JUGGER: WARNING: FOG. WARNING: OUR / OWN CONVOY. LENGTH: LONGER.
+JUGGER: SUPPLY LINE: LONG. DEPTH: ONE / CONVOY. QUERY: WHO GUARDS IT.
+HAWKE: Nobody. That is the point of a / line. Everyone trusts it.
+STURM: Then we follow it up the river. / Through their fog.
+JUGGER: WARNING: FOG. WARNING: OUR OWN / CONVOY. LENGTH: LONGER.
 STURM: Then be quick. And frugal.
-JUGGER: FRUGAL: NOT FOUND IN / VOCABULARY. ...ADDED.
+JUGGER: FRUGAL: NOT IN VOCABULARY. / ...ADDED.
 
 # ---------------------------------------------------------------- after M22 Whiteout (Sturm, Hawke, Jugger)
 
 == m22_sturm
 @SONG sturm
 JUGGER: LEDGER: THIRTY YEARS OF IRON. / CONSIGNEE: A SYMBOL. QUERY.
-STURM: Not here. Not in front of / the boy.
-JUGGER: BOY: PRESENT. LOGGED. / DEFERRED.
-HAWKE: Three flags are down. Orange / Star remains. And a laboratory.
-STURM: A laboratory that built the / quiet weapons. And locked the mind.
-HAWKE: Unlock her. Keep her. I / drafted a chapter.
+STURM: Not here. Not in front of the / boy.
+JUGGER: BOY: PRESENT. LOGGED. DEFERRED.
+HAWKE: Three flags are down. Orange Star / remains. And a laboratory.
+STURM: A laboratory that built the / quiet weapons, and locked up the mind.
+HAWKE: Unlock her. Keep her. I have / drafted a chapter.
 STURM: Draft it. We go to Lab 7.
 
 # ---------------------------------------------------------------- after M23 Laboratory 7 (Sturm, Lash, Hawke)
 
 == m23_sturm
 @SONG co:lash
-LASH: Sub-basement four! Come and / see! It is SO sad down there!
+LASH: Sub-basement four! Come and see! / It's SO sad down there!
 STURM: What is in it?
-LASH: A cancelled project! He has a / cot, a mug, and a drawer!
-HAWKE: Remember what I said. Toys / stay indoors.
-LASH: He is not a toy! He is a / person! In a drawer! Heehee...
-LASH(s): ...That one was not funny. / I will stop.
-STURM: Keep him fed. Keep him dry. / He is mine when he wakes.
-LASH: He is not awake? He IS awake! / Eee! I will tell him you said so!
+LASH: A cancelled project! He has a / cot, a mug and a drawer!
+HAWKE: Remember what I said. Toys stay / indoors.
+LASH: He's not a toy! He's a person! In / a drawer! Heehee...
+LASH(s): ...That one wasn't funny. I'll / stop.
+STURM: Keep him fed. Keep him dry. He is / mine when he wakes.
+LASH: He's not awake? He IS awake! Eee! / I'll tell him you said so!
 
 # ---------------------------------------------------------------- after M24 Sky Gala (Sturm, Adder, Kindle)
 
 == m24_sturm
 @SONG co:adder
 ADDER: Photographed from every angle. / Every angle flattered me.
-KINDLE: Darling, the left one was / merely adequate.
+KINDLE: Darling, the left one was merely / adequate.
 ADDER: The left one is my best.
 KINDLE: Then your best is adequate.
-ADDER: I am a star. You are a / sparkler.
-KINDLE: Darling, sparklers burn / longer.
-STURM: Enough. Both of you will be / lit when I say. Not before.
+ADDER: I am a star. You are a sparkler.
+KINDLE: Darling, sparklers burn longer.
+STURM: Enough. You will both be lit when / I say. Not before.
 ADDER: Lit by whom?
 STURM: By me.
 
@@ -312,10 +312,10 @@ STURM: By me.
 @SONG enemy1
 VON BOLT: Everything is a shop. The / shopkeeper said so. Kehh...
 STURM: Then the shop is mine. The / customer is mine.
-VON BOLT: And the sign says closing / down! Everything half off!
-HAWKE: A last sale is a final / move. Hachi is no fool.
-STURM: Three flags in one field. / The nations are about to stand.
-HAWKE: Together. Briefly. It is / the only way they know to lose.
+VON BOLT: And the sign says closing down! / Everything half off!
+HAWKE: A last sale is a final move. / Hachi is no fool.
+STURM: Three flags in one field. The / nations are about to stand.
+HAWKE: Together. Briefly. It is the only / way they know how to lose.
 STURM: Then give them a field.
 
 # ---------------------------------------------------------------- after M26 The Last Alliance (Sturm, Lash, Hawke)
@@ -324,9 +324,9 @@ STURM: Then give them a field.
 @SONG co:lash
 LASH: Echo asked what a Last Alliance / is. I said: a mistake with flags!
 STURM: He is awake.
-LASH: He is up and he is shy! He / asked if he may watch the Gate!
+LASH: He's up, and he's shy! He asked if / he can watch the Gate!
 HAWKE: I advise against introducing a / cancelled project to a gate.
-LASH: He will love it! He loves / anyone who was made!
-STURM: Then he will see what I / have made of a gate.
+LASH: He'll love it! He loves anyone / who was made!
+STURM: Then he will see what I have made / of a gate.
 HAWKE: A duel with an audience. / Theatrical.
 
