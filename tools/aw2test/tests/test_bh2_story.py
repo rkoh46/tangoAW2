@@ -34,6 +34,9 @@ def mission_flow(ctx, n, label):
     t = story.Tracer(e, d, out_dir(ctx), label).attach()
     a2.open_mission(ctx, e, g, d, n - 1, b2.PICKS.get(n, []), f"m{n}")
     d.leave_setup()
+    if n == 31:                  # (the finale: its opening scene, then the four nations' computer turns, then the player's)
+        e.wait(120)
+        b2.to_player_turn(e, g, d)
     for _ in range(3000):
         if not d.scripts_running():
             e.wait(30)
