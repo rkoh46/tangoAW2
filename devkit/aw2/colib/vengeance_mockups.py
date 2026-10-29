@@ -138,25 +138,83 @@ def lettering(frames):
     return fill, edge, x
 
 
-def option_d(panel, frames=None):
+# "+" and "%" in the window digits' style (2-pixel strokes, the digits' 6 rows), drawn: the window has neither
+PLUS_ROWS = ["..##..", "..##..", "######", "######", "..##..", "..##.."]
+PERCENT_ROWS = ["##...#", "##..#.", "...#..", "..#...", ".#..##", "#...##"]
+VENGEANCE_PCT = {8: 25, 7: 30, 6: 35, 5: 40, 4: 45, 3: 50, 2: 60, 1: 70}
+
+
+def digits(frames):
+    """The window's own digits, cut from its HP number (the unit windows of the Tanks at 1..9 HP) and the 0 of its "70" (ammo): {char: set of (x, y), rows 0..5}."""
+    out = {}
+    for d in range(1, 10):
+        im = Image.open(os.path.join(frames, f"panel_hp{d}.bmp")).convert("RGB")
+        c = components(im, (190, 128, 204, 136))
+        if c:
+            g = max(c, key=len)
+            y0 = min(p[1] for p in g)
+            out[str(d)] = {(x, y - y0) for x, y in g}
+    im = Image.open(os.path.join(frames, "panel_hp9.bmp")).convert("RGB")
+    c = components(im, (180, 136, 204, 144))
+    if len(c) >= 2:
+        g = c[-1]
+        y0 = min(p[1] for p in g)
+        out["0"] = {(x, y - y0) for x, y in g}
+    out["+"] = {(x, y) for y, row in enumerate(PLUS_ROWS) for x, ch in enumerate(row) if ch == "#"}
+    out["%"] = {(x, y) for y, row in enumerate(PERCENT_ROWS) for x, ch in enumerate(row) if ch == "#"}
+    return out
+
+
+def set_line(glyphs, text, y_off=0):
+    fill, x = set(), 1
+    for ch in text:
+        g = glyphs[ch]
+        gx0 = min(p[0] for p in g)
+        for px, py in g:
+            fill.add((x + px - gx0, py + y_off))
+        x += max(p[0] for p in g) - gx0 + 2
+    return fill, x
+
+
+def window_top(im):
+    fill_cols = {(139, 156, 32), (156, 156, 16)}
+    return min(y for y in range(40, 160) for x in range(0, 240, 3) if im.getpixel((x, y)) in fill_cols)
+
+
+def window_x(im):
+    """The window's left and right edges (a row inside it: its fill colours)."""
+    fill_cols = {(139, 156, 32), (156, 156, 16)}
+    y = window_top(im) + 6
+    xs = [x for x in range(0, 240) if im.getpixel((x, y)) in fill_cols]
+    return min(xs), max(xs) + 1
+
+
+def option_d(panel, frames=None, bonus=None, mock=None):
     """The unit window with one more strip on top: "Vengeance" (the window's fill and corner kept)."""
     im = panel.copy()
-    y1 = 99
+    y1 = window_top(im)
     # (the window's own left and right edges, measured on a row inside it: its fill colours)
-    fill_cols = {(139, 156, 32), (156, 156, 16)}
-    xs = [x for x in range(120, 240) if im.getpixel((x, y1 + 6)) in fill_cols]
-    x0, x1 = min(xs), max(xs) + 1
+    x0, x1 = window_x(im)
     strip = im.crop((x0, y1 + 2, x1, y1 + 4))          # the window's fill pattern, two rows
-    for yy in range(y1 - 16, y1 + 2):
+    extra = 10 if bonus else 0
+    for yy in range(y1 - 16 - extra, y1 + 2):
         for xx in range(x0, x1):
             im.putpixel((xx, yy), strip.getpixel((xx - x0, (yy - y1) % 2)))
     if frames and os.path.exists(os.path.join(frames, "word_recon_bridge.bmp")):
         fill, edge, w = lettering(frames)
-        ox, oy = x0 + (x1 - x0 - w) // 2, y1 - 18
+        ox, oy = x0 + (x1 - x0 - w) // 2, y1 - 18 - extra
         for px, py in edge:
             im.putpixel((ox + px, oy + py), (0, 41, 0))
         for px, py in fill:
             im.putpixel((ox + px, oy + py), WHITE)
+        if bonus:
+            f2, w2 = set_line(digits(mock), f"+{bonus}%")
+            e2 = {(px + dx, py + dy) for px, py in f2 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))} - f2
+            ox2, oy2 = x0 + (x1 - x0 - w2) // 2, y1 - 9
+            for px, py in e2:
+                im.putpixel((ox2 + px, oy2 + py), (0, 41, 0))
+            for px, py in f2:
+                im.putpixel((ox2 + px, oy2 + py), WHITE)
     else:
         text(im, x0 + 5, y1 - 16, "Vengeance")
     return im
@@ -223,3 +281,80 @@ def main(frames, out):
 
 if __name__ == "__main__":
     print(main(sys.argv[1], sys.argv[2]))
+
+
+RAMP = {8: (248, 168, 0), 7: (248, 136, 0), 6: (248, 104, 0), 5: (248, 72, 0), 4: (240, 40, 0), 3: (224, 16, 0), 2: (200, 0, 0), 1: (168, 0, 0)}
+
+
+def forecast(fc, words, frames, bonus):
+    """The enemy's forecast on a Vengeance unit: the DAMAGE box lifted by the header's height and the window's "Vengeance +N%" header under it (the same header as the player's own window)."""
+    im = fc.copy()
+    wt = window_top(im)
+    ground = lambda c: is_ground(c)
+    wx0, wx1 = window_x(im)
+    # (the DAMAGE box alone: its light frame's extent above the window, then everything inside that rectangle down to the window: the box and its pointer, no unit beside it)
+    light = [(x, y) for y in range(max(0, wt - 34), wt) for x in range(max(0, wx0 - 8), min(240, wx1 + 8)) if sum(im.getpixel((x, y))) > 600 and not ground(im.getpixel((x, y)))]
+    pts = light
+    if pts:
+        bx0, by0 = min(p[0] for p in pts) - 1, min(p[1] for p in pts) - 1
+        bx1, by1 = max(p[0] for p in pts) + 2, wt
+        box = im.crop((bx0, by0, bx1, by1))
+        clean = fc.crop((bx0, by0 - 40, bx1, by0 - 40 + (by1 - by0))) if by0 >= 40 else None
+        if clean is not None:
+            im.paste(clean, (bx0, by0))
+        im.paste(box, (bx0, by0 - 26))
+    return option_d(im, words, bonus, frames)
+
+
+def around(im):
+    """A 90 x 120 view round the window (its whole height and what sits above it)."""
+    x0, x1 = window_x(im)
+    cx = max(45, min(240 - 45, (x0 + x1) // 2))
+    return (cx - 45, 40, cx + 45, 160)
+
+
+def sheet_e(frames, words, fcdir, out):
+    cells = json.load(open(os.path.join(frames, "cells.json")))
+    global TANK_Y, CAM_X
+    base = Image.open(os.path.join(frames, "base.bmp")).convert("RGB")
+    CAM_X = cells["cam_base"][0]
+    TANK_Y = row_top(base, 3)
+    row = base.copy()
+    for x, hp in tanks(cells):
+        if hp <= 8:
+            recolour_digit(row, x, RAMP[hp])
+    box = (16 * 2 - CAM_X - 4, TANK_Y - 9, 16 * 12 - CAM_X + 4, TANK_Y + 16)
+    wins = []
+    for hp in (9, 8, 5, 1):
+        im = Image.open(os.path.join(frames, f"panel_hp{hp}.bmp")).convert("RGB")
+        wins.append((f"{hp} HP" + ("  (no Vengeance)" if hp > 8 else f"  +{VENGEANCE_PCT[hp]}%"), im if hp > 8 else option_d(im, words, VENGEANCE_PCT[hp], frames)))
+    fcs = []
+    for hp in (8, 5, 1):
+        im = Image.open(os.path.join(fcdir, f"fc_hp{hp}.bmp")).convert("RGB")
+        fcs.append((f"Andy targets her {hp} HP Tank", forecast(im, words, frames, VENGEANCE_PCT[hp])))
+    sc = 6
+    cw, ch = (box[2] - box[0]) * sc, (box[3] - box[1]) * sc
+    crop = (150, 40, 240, 160)
+    ww, wh = (crop[2] - crop[0]) * 3, (crop[3] - crop[1]) * 3
+    pad, head = 12, 36
+    W = max(cw, 4 * (ww + pad)) + 2 * pad
+    H = pad + head + ch + 2 * pad + head + wh + 2 * pad + head + wh + 2 * pad
+    sh = Image.new("RGB", (W, H), (20, 20, 28))
+    dr = ImageDraw.Draw(sh)
+    y = pad
+    dr.text((pad, y), "Option E (mock-up). On the map: the HP number goes from orange at 8 HP to dark red at 1 HP; 10 and 9 stay white.", fill=(240, 220, 120))
+    sh.paste(row.crop(box).resize((cw, ch), Image.NEAREST), (pad, y + head))
+    y += head + ch + 2 * pad
+    dr.text((pad, y), "Her unit window (cursor on the unit): Vengeance and that unit's own bonus, for attack and defence.", fill=(240, 220, 120))
+    for k, (label, im) in enumerate(wins):
+        x = pad + k * (ww + pad)
+        dr.text((x, y + 18), label, fill=(200, 200, 210))
+        sh.paste(im.crop(around(im)).resize((ww, wh), Image.NEAREST), (x, y + head))
+    y += head + wh + 2 * pad
+    dr.text((pad, y), "The enemy's damage forecast on a Vengeance unit: the same line, the DAMAGE box above it (the % already counts her defence bonus).", fill=(240, 220, 120))
+    for k, (label, im) in enumerate(fcs):
+        x = pad + k * (ww + pad)
+        dr.text((x, y + 18), label, fill=(200, 200, 210))
+        sh.paste(im.crop(around(im)).resize((ww, wh), Image.NEAREST), (x, y + head))
+    sh.save(out)
+    return out

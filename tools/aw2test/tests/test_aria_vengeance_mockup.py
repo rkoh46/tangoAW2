@@ -28,6 +28,7 @@ def aria_vengeance_mockup_frames(ctx):
     from tests.test_crumb import set_unit
     set_unit(g, 6, ROW, fuel=5)          # (the 6 HP Tank low on fuel, the 4 HP one out of ammo: AW2's icons beside the sign)
     set_unit(g, 8, ROW, ammo=0)
+    cells = {}
     g.e.wait(30)
     g.wait_unit(13, ROW + 5)
     g.e.wait(30)
@@ -40,8 +41,15 @@ def aria_vengeance_mockup_frames(ctx):
     g.goto(2, ROW)
     g.e.wait(40)
     ctx.shot(g, "panel_10hp")
-    cells = {"tanks": [(2 + k, ROW, hp // 10) for k, hp in enumerate(HPS)], "low_fuel": (6, ROW), "low_ammo": (8, ROW), "row": ROW,
-             "cam": [g.e.u16(0x0201_E450 + 4), g.e.u16(0x0201_E450 + 6)]}
+    # the unit window on every Tank (its HP digit: the window's own digits 1..9 for the mock-up's bonus line)
+    for k, hp in enumerate(HPS):
+        g.goto(2 + k, ROW)
+        g.e.wait(40)
+        ctx.shot(g, f"panel_hp{hp // 10}")
+        if hp // 10 == 8:
+            cells["cam_hp8"] = [g.e.u16(0x0201_E450 + 4), g.e.u16(0x0201_E450 + 6)]
+    cells.update({"tanks": [(2 + k, ROW, hp // 10) for k, hp in enumerate(HPS)], "low_fuel": (6, ROW), "low_ammo": (8, ROW), "row": ROW,
+             "cam": [g.e.u16(0x0201_E450 + 4), g.e.u16(0x0201_E450 + 6)]})
     g.goto(2, ROW + 4)
     g.e.wait(30)
     cells["cam_base"] = [g.e.u16(0x0201_E450 + 4), g.e.u16(0x0201_E450 + 6)]
@@ -67,4 +75,32 @@ def aria_vengeance_mockup_words(ctx):
         g.goto(*cell)
         g.e.wait(40)
         ctx.shot(g, f"word_{name}")
+    g.e.close()
+
+
+@test(modes=("ds",))
+def aria_vengeance_mockup_forecast(ctx):
+    """The enemy's damage forecast against Vengeance units, for the mock-up: Andy's Tanks below Aria's Tanks at 8, 5 and 1 HP; on Andy's turn each fires: the forecast box (DAMAGE %) at the target
+    cursor, photographed (`fc_hpN.bmp`). Opt-in like the frames."""
+    if os.environ.get("AW2TEST_VENGEANCE_MOCKUP") != "1":
+        raise Skip("AW2TEST_VENGEANCE_MOCKUP not set")
+    m = ctx.map()
+    targets = [(4, 80), (8, 50), (12, 10)]
+    for x, _ in targets:
+        m.unit(1, "tank", x, ROW).unit(2, "tank", x, ROW + 1)
+    g = ctx.start(m, ["aria", "andy"], humans=(1, 2), env=cv.ENV)
+    for x, hp in targets:
+        ctx.set_hp(g, x, ROW, hp)
+    g.end_turn(human=2)
+    for x, hp in targets:
+        g.select(x, ROW + 1)
+        g.move_to(x, ROW + 1)
+        g.choose("Fire", g.ACTION_MENU)
+        g.e.wait(40)
+        ctx.shot(g, f"fc_hp{hp // 10}")
+        ctx.log(f"forecast on Aria's {hp // 10} HP Tank: {ctx.battle_records(g)[0]['display']}%")
+        for _ in range(3):
+            g.e.press("B", 4)
+            g.e.wait(10)
+        g.wait_for_input()
     g.e.close()
