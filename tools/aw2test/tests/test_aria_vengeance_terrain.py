@@ -1,6 +1,6 @@
 """Aria's Vengeance defence on 1, 2, 3 and 4 star terrain (crate::aria, co_roster::defence_total): her Infantry on plain, wood, city and
 an HQ (4 stars), and her Tanks on the same four, at 10, 8, 5, 2 and 1 displayed HP, struck
-by Andy's Mech / Tank. For every cell: the game's damage forecast equals the calculator's (terrain stars x HP bars + 100 + her flat 5% +
+by Andy's Mech / Tank. For every cell: the game's damage forecast equals the calculator's (terrain stars x HP bars + 100 + her flat 6% +
 Vengeance, under AW2's cap at 200), the real loss is inside the calculator's range, and the forecast is lower than the same strike on Andy's
 own unit (the twin). The forecast frames are kept for the review sheet (python3 -m aw2.colib.vengeance_terrain_sheet)."""
 
@@ -69,7 +69,7 @@ def check_kind(ctx, kind):
         h = (hp + 9) // 10
         v = damage.aria_vengeance(hp)
         ctx.check(out.defence <= 200, f"{kind} on {ter} ({r['stars']} stars) at {h} HP: defence {out.defence} is under AW2's cap")
-        ctx.check(r["shown"] == min(out.losses), f"{kind} on {ter} ({r['stars']} stars) at {h} HP (+{5 + v}%): forecast {r['shown']}% = the calculator's {min(out.losses)}% (defence {out.defence})")
+        ctx.check(r["shown"] == min(out.losses), f"{kind} on {ter} ({r['stars']} stars) at {h} HP (+{damage.ARIA_FLAT + v}%): forecast {r['shown']}% = the calculator's {min(out.losses)}% (defence {out.defence})")
         ctx.check(r["loss"] in out.losses, f"{kind} on {ter} at {h} HP: real loss {r['loss']} inside {sorted(out.losses)}")
         ctx.check(r["shown"] < tw["shown"] or tw["shown"] == 0, f"{kind} on {ter} at {h} HP: {r['shown']}% against Andy's {tw['shown']}%")
         ctx.log(f"{kind} on {ter} ({r['stars']}*) {h} HP: Aria {r['shown']}% / Andy {tw['shown']}% (defence {out.defence})")
