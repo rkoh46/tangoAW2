@@ -3,7 +3,7 @@
   campaign scenes [--md] [--mission bh05]   every scene of the BH Campaign with its song (role, AW2 song id) and box count: prologue, intro, victory, the scenes on
                                             the world map after a win, mid-battle triggers; scenes with no song are marked `-` (story scenes without one fail)
   campaign menu [--out DIR]                 start the real app offline with the Dual Strike pack through the AI debug channel, open Select Mode > Campaign and
-                                            photograph the chooser at each entry (AW2, DS, BH, BH2 and Emerald Sun placeholders) and the "Coming soon" boxes
+                                            photograph the chooser at each entry (AW2, DS, BH, Emerald Sun and BH2)
   campaign sheets | sim | difficulty | check | dialogue   the Emerald Sun Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
                                             the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
   campaign worldmap [--out PNG] [--no-run]  the world-map tests with pictures, then es_world_map.png: the map at three stages with the nodes labelled, the flag states, the unlock moments
@@ -23,7 +23,7 @@ def register(sub):
     a = cs.add_parser("scenes", help="every scene with its song")
     a.add_argument("--md", action="store_true")
     a.add_argument("--mission")
-    a.add_argument("--campaign", default="bh", choices=["bh", "es"])
+    a.add_argument("--campaign", default="bh", choices=["bh", "es", "bh2"])
     a.set_defaults(fn=scenes)
     a = cs.add_parser("menu", help="photograph the Campaign sub-menu of the real app")
     a.add_argument("--out")
@@ -57,7 +57,7 @@ def register(sub):
     a = cs.add_parser("trace", help="play missions in the harness and trace song / fade / silence")
     a.add_argument("--mission", nargs="*", type=int, default=[1])
     a.add_argument("--out")
-    a.add_argument("--campaign", default="bh", choices=["bh", "es"])
+    a.add_argument("--campaign", default="bh", choices=["bh", "es", "bh2"])
     a.set_defaults(fn=trace)
 
 
@@ -86,7 +86,7 @@ def scenes(a):
 
 
 def menu(a):
-    """The Campaign chooser of the real app, entry by entry (the placeholders' boxes too); exit 1 if an entry or a box is missing."""
+    """The Campaign chooser of the real app, entry by entry (AW2, DS, BH, Emerald Sun, BH2); exit 1 if an entry is missing."""
     import json, time, subprocess
     from .. import profiles
     out = Path(a.out) if a.out else cfg.work("campaign", "menu")
@@ -127,7 +127,7 @@ def menu(a):
         d.press_until("A", {"screen_info.box_open": True}, timeout=30, gap=1.0)
         time.sleep(1.0)
         d.screenshot(str(out / "chooser_0_aw2.png"))
-        names = ["aw2", "ds", "bh", "bh2", "emerald_sun"]
+        names = ["aw2", "ds", "bh", "emerald_sun", "bh2"]
         def entry():
             got = d.peek(0x0203FD14, 1)
             return int(str(got.get("hex", got)), 16) if isinstance(got, dict) else -1
@@ -141,17 +141,7 @@ def menu(a):
             d.screenshot(str(out / f"chooser_{k}_{names[k]}.png"))
             util.say(f"entry {k} ({names[k]}): {'reached' if entry() == k else 'NOT reached'} in {presses} press(es)")
             bad += entry() != k
-        # the Emerald Sun box (the last entry, the cursor is on it)
-        d.press("A")
-        time.sleep(0.8)
-        d.screenshot(str(out / "box_emerald_sun.png"))
-        d.press("A")
-        time.sleep(0.6)
-        d.press("UP")
-        time.sleep(0.6)
-        d.press("A")
-        time.sleep(0.8)
-        d.screenshot(str(out / "box_bh2.png"))
+        # (no "Coming soon" box is left: Emerald Sun and the BH2 Campaign are both campaigns of the chooser)
         d.press("B")
         time.sleep(0.6)
         d.screenshot(str(out / "chooser_after_box.png"))

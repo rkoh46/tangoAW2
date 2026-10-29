@@ -1,5 +1,5 @@
 //! The BH2 Campaign's dialogue, as text files in the BH Campaign's box format ([`crate::bh_text`]; a copy with the BH2 cast: `src/bh2_text/*.txt`, format
-//! `src/bh2_text/README.txt`, checked by `tools/bh2text/lint.py`). Not wired into `bh2_campaign.rs` yet: the scenes wait for the merge with the mission renumbering.
+//! `src/bh2_text/README.txt`, checked by `tools/bh2text/lint.py`), wired into `bh2_campaign.rs` (except the M30 takeover scenes and `m30_map`: `bh2_campaign::TODO_SCENES`).
 //!
 //! A scene is a key (`m14_pre`) and rows; a row is one dialogue box: a speaker, an
 //! optional expression, a colon, then up to two lines of at most 176 pixels in AW2's font,

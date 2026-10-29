@@ -1,6 +1,6 @@
 # BH2 Campaign dialogue: `bh2_text`, `tools/bh2text/lint.py`
 
-The BH2 Campaign's story is written (branch `bh2text`) and waits to be wired into `bh2_campaign.rs`. It is the BH Campaign's text system ([`bh_text`](../AW2.md), `src/bh_text/README.txt`) copied for the sequel.
+The BH2 Campaign's story is written and wired into `bh2_campaign.rs` (docs/dev/bh2-maps.md "BH2 in the game"; only the M30 takeover scenes and `m30_map` wait for the map-switch merge). It is the BH Campaign's text system ([`bh_text`](../AW2.md), `src/bh_text/README.txt`) copied for the sequel.
 
 | What | Where |
 |---|---|
@@ -13,7 +13,8 @@ The BH2 Campaign's story is written (branch `bh2text`) and waits to be wired int
 Asuka is cold, exact and dry; Sturm never shouts, never contracts and never shows warmth; Hawke, Koal, Kanbei, Sasha, Javier, Jugger (in capitals), Klaus and Livia never contract; Aria is fiery and personal. Mid-battle scenes (`mNN_dayN`, `mNN_front2_*`) keep the battle's music; every other scene names a song. No dates or ages. Free-pick scenes name the pool (Asuka, Crumb, Hawke, Koal, Kindle, Jugger, Flak, Lash, Adder, Von Bolt, Clone Andy; **Sturm is a pick nowhere**) and give each officer a line in an `@IF` block; pair missions add an `@PARTNER` block.
 
 ## Songs
-`own:door` (crate, door, Obelisk and Lab 7 binder scenes), `own:credits` (not used by a scene: the staff roll's song), `own:aria` (Aria's scenes). They live on `bh2music` / `aria` and are not merged: `bh2_text.rs` `OWN_SONGS` maps them to stand-in tracks and `ARIA` is a temporary constant (93). After the merge replace the right-hand sides; the text files do not change. `co:asuka` is Asuka's "Iron Verdict".
+`own:door` (crate, door, Obelisk and Lab 7 binder scenes), `own:credits` (not used by a scene: the staff roll's song), `own:aria` (Aria's scenes). They are `music/bh2/*.m4t`, rows of `es_music::SOURCES`; `bh2_text.rs` `OWN_SONGS` maps each name to
+`Track::Own(slot)`. `co:asuka` is Asuka's "Iron Verdict".
 
 ## Wiring (scene keys use the final numbering: mission `bh2_NN` plays `mNN_*`)
 Per mission: `mNN_pre` the intro; `mNN_post` the victory; `mNN_map` the scene on the world map afterwards; `mNN_dayK` a trigger at the start of day K (move the day if the mission changes); `mNN_front2_post` / `mNN_front2_lost` the second front won / lost (M4, M13, M25).
@@ -39,4 +40,4 @@ Per mission: `mNN_pre` the intro; `mNN_post` the victory; `mNN_map` the scene on
 | `epilogue`, `epilogue_toasts` | after M31, chained; then `bh2_text::credits()` | |
 | `m32_pre`, `m32_day3` (Cassius), `m32_day5` (Aurelia), `m32_day7` (Livia), `m32_post`, `m32_epilogue` | secret M32 (unlocked by M29); `m32_epilogue` then the `secret` credits pages | |
 
-Needs from the campaign data: the roster pools above; Asuka forced in M1, M2 (+Crumb), M12, M13 front 1, M23 (+Crumb), M26 (+Hawke), M28 (+Crumb), M31 (+ a free partner); Sturm + Asuka in M5 only; credits from `bh2_text::credits()` (`secret` pages show after M32); `final_mission` M31; a test like `bh_campaign::every_dialogue_scene_is_used` (`bh2_text::keys()` against `keys_used()`); `tools/bh2text/lint.py` checks the same once `bh2_campaign.rs` asks for scenes with `bh2_text::scene("...")`.
+Wired (see bh2_campaign.rs); needs from the campaign data: the roster pools above; Asuka forced in M1, M2 (+Crumb), M12, M13 front 1, M23 (+Crumb), M26 (+Hawke), M28 (+Crumb), M31 (+ a free partner); Sturm + Asuka in M5 only; credits from `bh2_text::credits()` (`secret` pages show after M32); `final_mission` M31; a test like `bh_campaign::every_dialogue_scene_is_used` (`bh2_text::keys()` against `keys_used()`); `tools/bh2text/lint.py` checks the same once `bh2_campaign.rs` asks for scenes with `bh2_text::scene("...")`.

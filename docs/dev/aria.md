@@ -24,8 +24,8 @@ Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos
 - Orange Star's colours, style and HQ: her row's style byte and colour are Nell's (`new_row`), her battle style 0 (`co_new::build`), her HQ the game's own (`hq = "default"`), the CO page's tab Orange Star's
   (`custom_campaign::country`). In the Teams list and the War Room she follows Nell (`like`).
 - **Not in the Emerald Sun Campaign**, reserved for the BH2 Campaign. In every Versus list, the tag partner pick, War Room, Survival, Champion and the DS-style CO select grid.
-- **Theme**: a placeholder, `co:nell` (her row's music is Nell's). Her own song, "Last Accord", is on the `bh2music` branch (its file `bh2/aria.m4t` under music) and is being reworked: when it lands,
-  set `theme = "own:aria"` and add a row to `es_music::SOURCES` as Asuka's.
+- **Theme**: her own song, `music/bh2/aria.m4t` (D minor, 130 bpm, the final O5 version), is a row of `es_music::SOURCES` (CO 93) and `theme = "own:aria"`; her turns play it in Versus and in the BH2 Campaign (without the music pack's
+  room her row falls back to Nell's song, `co_new::like`). The same song is the scenes' `@SONG own:aria` (`Track::Own`).
 - Online: `SIM_VERSION` 32 -> **33** (`pvp.rs` history): the CO table, the Teams order, the texts and the pictures are 93 rows long and a hurt unit of hers attacks harder. (Earlier drafts of her kit, with +3% / +10%,
   Nell's luck, Sturm's movement, +30% defence, +1 move and a day's income, were dropped before release: those traits stay Asuka's.)
 

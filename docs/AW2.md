@@ -4581,9 +4581,8 @@ from the directory.
 | 5..7 | design maps 1..3, 0x724 (tangoAW2: +0x4C4 the five-army mark, +0x723 the look) | Design Room Save |
 | 8 | the design map a saved Versus game is on (its current terrain and units) | map menu Save on a design map |
 | 9 | a Survival map saved halfway (tangoAW2): the block, the run in its tail ("SV"), the pairs after it | map menu Save on a Survival map |
-| 10 | the BH2 Campaign's development record (`TANGOAW2_BH2_CAMPAIGN` only, `bh2_campaign.rs`; it must be folded into another slot before BH2 ships: docs/dev/bh2-maps.md "Flash slot budget") | BH2 dev New, mission start, after a win |
 | 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14; the Emerald Sun and BH2 missions share it, told apart by the saved mission byte's top bits) | map menu Save in a BH mission |
-| 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign") | BH Campaign New, mission start, after a win |
+| 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign"), then the BH2 Campaign's record at +0x120 (also 0x120, magic "AWB2": `Source::save_offset`, `ds_campaign::merge_record` / `extract_record`; a campaign saving keeps the other's region as the slot has it) | BH Campaign or BH2 Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state follow the block (two sectors) | map menu Save in a DS mission |
 | 15 | the DS Campaign's record, 0x20 (tangoAW2), its records, the CO skills' data, the History's record (`history.rs`, 0x1A4) and the War Room's records on Dual Strike's maps (`ds_versus.rs`, at the payload's end) | DS Campaign New, mission start, after a win, a skills change, a War Room record, after a profile write once a battle has ended (EXP, the History) |
 
