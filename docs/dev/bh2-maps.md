@@ -30,6 +30,9 @@ Mission n is `bh2_NN` (the map and its spec); a second front is `bh2_NNb` (M4, M
 | `aw2dev bh2 pictures [--out DIR]` | `m01.png`.. (the full map, fog off, every unit, labelled), `m01_fog.png` (the player's view), `act1_sheet.png`, `worldmap_flags.png`; `MISSION N - Title` burned in |
 | `aw2dev maps boot --campaign bh2 [--mission N ..]` | the missions entered in the offline harness (dev flag), the game's own whole-map pictures into `devkit/work/campaign/bh2/review_raw` |
 | `aw2dev bh2 sheets [--out DIR]` | those pictures labelled "MISSION N - Title": `m01.png`.., `m01_fog.png`, `m04_front2.png`, `act1_game_sheet.png` |
+| `aw2dev bh2 scenes [--md]` | the dialogue lint (every key the code asks for exists, every scene is asked for) and the scene -> song table; a story scene without a song fails |
+| `aw2dev bh2 saves [--no-harness]` | the folded save record: `ds_campaign::save_tests` and the harness `-k bh2_saves` |
+| `aw2dev bh2 integration [--out PNG]` | the proof sheet of the harness's frames (chooser, prologue, world map, a scene per act, Aria's CO select and page); run `-k story_trace_bh2`, `-k aria_pics_co_select_grid`, `-k aria_pics_co_page_one` first |
 | `aw2dev bh2 check` | every mission flag on the picture world map lies on land inside its nation |
 
 ## The owner's rules, and where each is enforced

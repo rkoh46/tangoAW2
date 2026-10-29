@@ -41,6 +41,8 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [map-lint.md](map-lint.md) | `aw2dev maps lint`: rivers, bridges, puddles, joins, units, reachability; what AW2 and Dual Strike allow; before / after pictures |
 - `stages.md`: a custom campaign's mission that moves on, in the same battle, to another map (`Action::NextStage`, `MissionDef::stages`): carry-over, five-army, suspend, determinism.
 | [bh2-maps.md](bh2-maps.md) | the BH2 Campaign's maps: specs, `aw2dev maps gen --campaign bh2`, lint (IV01: inventions are Black Hole's), pictures, feature coverage, world-map flags, Act I |
+| [bh2-text.md](bh2-text.md) | the BH2 Campaign's dialogue: `bh2_text`, `tools/bh2text/lint.py`, the wiring table, voices and songs (`aw2dev bh2 scenes`) |
+| [stages.md](stages.md) | a mission that goes on in the same battle on another map (`MissionDef::stages`; BH2 M31) |
 | [worldmap.md](worldmap.md) | `aw2dev worldmap convert / preview / check`: the picture world map (`WorldArt::Picture`): the owner's picture to GBA tiles, nine palettes, region masks per nation, conquest re-tint, budgets, the live harness test |
 | [campaign-scenes.md](campaign-scenes.md) | `aw2dev campaign` / `aw2dev sound`: how AW2 presents story scenes, the BH Campaign's prologue card, songs per scene, Sturm's scenes |
 | [es-campaign.md](es-campaign.md) | the Emerald Sun Campaign: files, rules, the kit (`maps gen`, `campaign sheets / sim / difficulty / check`, the dialogue lint), the five COs |

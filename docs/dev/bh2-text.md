@@ -43,3 +43,10 @@ Per mission: `mNN_pre` the intro; `mNN_post` the victory; `mNN_map` the scene on
 | `m32_pre`, `m32_day3` (Cassius), `m32_day5` (Aurelia), `m32_day7` (Livia), `m32_post`, `m32_epilogue` | secret M32 (unlocked by M29); `m32_epilogue` then the `secret` credits pages | |
 
 Wired (see bh2_campaign.rs); needs from the campaign data: the roster pools above; Asuka forced in M1, M2 (+Crumb), M12, M13 front 1, M23 (+Crumb), M26 (+Hawke), M28 (+Crumb), M31 (+ a free partner); Sturm + Asuka in M5 only; credits from `bh2_text::credits()` (`secret` pages show after M32); `final_mission` M31; a test like `bh_campaign::every_dialogue_scene_is_used` (`bh2_text::keys()` against `keys_used()`); `tools/bh2text/lint.py` checks the same once `bh2_campaign.rs` asks for scenes with `bh2_text::scene("...")`.
+
+## Final wiring (bh2design)
+Every scene key is asked for by `bh2_campaign.rs` through `txt("...")` (`TODO_SCENES` is empty); `aw2dev bh2 scenes` checks the keys and the music of each scene, the harness `-k story_trace_bh2` plays one flow per act (no silent dialogue: `story_trace_bh2_opening`, `story_trace_bh2_missions`).
+- **A scene**: write it in the right `act*.txt` (`== mNN_key`, `@SONG`), then `m.intro` / `m.victory` / `m.after` (`chain(&[...])`) or an `on_day(d, None, vec![Action::Scene(txt("mNN_dayD"))])` trigger in the mission's function. A mid-battle scene has no `@SONG`.
+- **A song**: `music/bh2/<name>.m4t`, a row of `es_music::SOURCES` (a slot id above the CO table for a scene song: `es_music::DOOR` / `CREDITS`; a CO's id for a CO theme), a name in `bh2_text.rs` `OWN_SONGS` (`Track::Own(slot)`) and in `tools/bh2text/lint.py` `OWN_SONGS`; `aw2dev sound render` and listen first.
+- **A stage**: docs/dev/stages.md; M31 is the example (`m31_switch` before `Action::NextStage`, `m31_stage2` the stage intro, the stage's own triggers and `victory`).
+- Where a condition is a stand-in for the story's event: M13 `m13_stand` (Kanbei's army at a third), M16 `m16_wire` (Com Tower (20,10)), M21 `m21_freed` (East Tower (21,6)), M22 `m22_binder` (Com Tower (17,9)), M27 `m27_vault_empty` (funds under 500 from day 6; the win follows `m27_sale`).
