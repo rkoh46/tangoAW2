@@ -12,8 +12,8 @@
 //!
 //! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
 //! |---|---|---|
-//! | Attack | +6% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
-//! | Defence | +6% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
+//! | Attack | +7% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
+//! | Defence | +7% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
 //! | HP | | +3 to every unit |
 //! | Luck, movement | the game's own | |
 //!
@@ -34,7 +34,7 @@ pub const STARS: (u32, u32) = (0, 7);
 pub const VENGEANCE_HP: u8 = 8;
 pub const VENGEANCE: [i32; 8] = [85, 61, 55, 49, 43, 37, 31, 25];
 /// Her flat bonus: every unit of hers (not an Oozium: no CO changes one, `co_roster::stat`) attacks and defends this much harder (percent), at every HP and power level.
-pub const FLAT: i32 = 6;
+pub const FLAT: i32 = 7;
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -75,7 +75,7 @@ pub fn vengeance_for(t: u8, hp: u8) -> i32 {
 }
 
 /// The sign players read ([`crate::aria_sign`]): Vengeance's and her flat bonus together, for a unit of type `t` with `hp` (record HP) on the map or in the unit window: `Some((displayed HP, percent))` at 8 to 1
-/// displayed HP (8 HP +31%, 7 +37% ... 2 +67%, 1 +91%), `None` at 9 and 10 HP, for a dead unit and for an Oozium.
+/// displayed HP (8 HP +32%, 7 +38% ... 2 +68%, 1 +92%), `None` at 9 and 10 HP, for a dead unit and for an Oozium.
 pub fn sign(t: u8, hp: u8) -> Option<(u8, i32)> {
     let v = vengeance_for(t, hp);
     (v > 0).then(|| (((hp as u32 + 9) / 10) as u8, FLAT + v))
@@ -112,8 +112,8 @@ mod tests {
         for t in [MOVE, crate::co_roster::RANGE] {
             assert_eq!([0, 1, 2].map(|m| bonus(m, t)), [0, 0, 0]);
         }
-        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [6, 6, 6], "a flat 6% defence");
-        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [6, 6, 26], "a flat 6% attack, Build Anew's 20% on top");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [7, 7, 7], "a flat 7% defence");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [7, 7, 27], "a flat 7% attack, Build Anew's 20% on top");
         assert!(crate::co_new::is_new(ARIA) && crate::co_new::is_own(ARIA) && !crate::es_co::is_es(ARIA));
         assert!(crate::co_new::listed(ARIA), "in every Versus list");
         assert_eq!(crate::co_new::like(ARIA), LIKE);
@@ -135,8 +135,8 @@ mod tests {
     fn the_sign_is_the_flat_bonus_and_vengeance() {
         let shown = |hp: u8| sign(4, hp).map(|(_, p)| p);
         assert_eq!([100, 90, 81].map(shown), [None, None, None], "9 and 10 HP show nothing");
-        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(shown), [31, 37, 43, 49, 55, 61, 67, 91].map(Some));
-        assert_eq!(sign(4, 71), Some((8, 31)));
+        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(shown), [32, 38, 44, 50, 56, 62, 68, 92].map(Some));
+        assert_eq!(sign(4, 71), Some((8, 32)));
         assert_eq!(sign(crate::roster::OOZIUM, 10), None, "never an Oozium");
         assert_eq!(sign(4, 0), None);
         assert_eq!(ramp_colour(8), 31 | (21 << 5), "orange at 8 HP");

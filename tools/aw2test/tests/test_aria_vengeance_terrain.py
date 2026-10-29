@@ -1,6 +1,6 @@
 """Aria's Vengeance defence on 1, 2, 3 and 4 star terrain (crate::aria, co_roster::defence_total): her Infantry on plain, wood, city and
 an HQ (4 stars), and her Tanks on the same four, at 10, 8, 5, 2 and 1 displayed HP, struck
-by Andy's Mech / Tank. For every cell: the game's damage forecast equals the calculator's (terrain stars x HP bars + 100 + her flat 6% +
+by Andy's Mech / Tank. For every cell: the game's damage forecast equals the calculator's (terrain stars x HP bars + 100 + her flat 7% +
 Vengeance, under AW2's cap at 200), the real loss is inside the calculator's range, and the forecast is lower than the same strike on Andy's
 own unit (the twin). The forecast frames are kept for the review sheet (python3 -m aw2.colib.vengeance_terrain_sheet)."""
 

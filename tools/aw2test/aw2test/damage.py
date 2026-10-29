@@ -67,7 +67,7 @@ def aria_vengeance(hp, unit_type=None):
 
 
 def aria_bonus(mode, which):
-    """Aria's own numbers (crate::aria::bonus) on every unit: +6% firepower and defence always (ARIA_FLAT), the Super Power (mode 2; she has no CO Power) +20% firepower, with the +10% firepower every power adds. Vengeance (a unit on
+    """Aria's own numbers (crate::aria::bonus) on every unit: +7% firepower and defence always (ARIA_FLAT), the Super Power (mode 2; she has no CO Power) +20% firepower, with the +10% firepower every power adds. Vengeance (a unit on
     8 HP or less, attack and defence by its HP) depends on the unit: `Ctx.side` adds it ([`aria_vengeance`])."""
     v = {0: ARIA_FLAT + (20 if mode == 2 else 0), 1: ARIA_FLAT}.get(which, 0)
     if which == 0 and mode > 0:
@@ -75,7 +75,7 @@ def aria_bonus(mode, which):
     return v
 
 
-ARIA_FLAT = 6       # crate::aria::FLAT: every unit of hers (not an Oozium) +6% firepower and defence
+ARIA_FLAT = 7       # crate::aria::FLAT: every unit of hers (not an Oozium) +7% firepower and defence
 
 
 ASUKA_DAY_BONUS = 5      # crate::asuka::DAY_BONUS
