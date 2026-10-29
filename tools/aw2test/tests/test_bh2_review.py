@@ -3,6 +3,7 @@ photographed whole by the cursor's sweep (the real game's tiles, 16 pixels a cel
 are checked against the full values. The pictures go to the folder AW2TEST_REVIEW_DIR (m<N>_<view>.png); `aw2dev maps boot --campaign bh2` labels them "MISSION N - Title"."""
 
 from aw2test import bh2campaign as b2
+from aw2test import dscampaign as dc
 from aw2test import bhact2 as a2
 from aw2test import stitch
 from aw2test.harness import test
@@ -80,10 +81,14 @@ def review(ctx, n):
     if setup:
         d.leave_setup()
         a2.intro(ctx, e, d, f"m{n}", (0,))
+        if n == 31:                                       # (its opening scene runs first, then the four nations' computer turns)
+            b2.to_player_turn(e, g, d)
         d.wait_control()
         g._units_base = g._players_base = None
         cnt2, bad2 = deviations(e, g)
         if n == 31:                                       # (a five-army mission: Nell, the first army, moves before the player's turn: her units' fuel is spent, nothing is hit)
+            # (a five-army mission: Nell, the first army, moves before the player's turn: her units' fuel is spent, nothing is hit: HP and ammo stay full, rule IV04 keeps her out of reach)
+            ctx.log(f"M31: the player's first control on day {e.u16(dc.DAY)}")
             bad2 = [b for b in bad2 if b[4] != 'fuel']
         ctx.check(not bad2, f"M{n}: the first turn's shots hit nothing (every unit still at full HP after Deploy and the first turn start): {bad2}")
         post = sweeps(ctx, e, g, d, n, "post_", None, front_too=False)

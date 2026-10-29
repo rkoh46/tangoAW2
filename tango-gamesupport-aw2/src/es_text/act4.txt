@@ -98,7 +98,7 @@ LIVIA: Legate. The stencil.
 LIVIA: I have seen this mark before. / On a bill. I will say no more.
 KLAUS: You do not need to. Not yet.
 LIVIA: I thank you. When I know, you / will be the first, in writing.
-KINDLE: Cough. Excuse me. Radio. I / do hope I am not interrupting.
+KINDLE: Ahem. Darlings, forgive the / radio. I do hope I am not rude.
 KINDLE: You have the Harbour Office. / Congratulations. Keep the book.
 KINDLE: The crates, the cranes and / the north dock stay mine. Paid for.
 KLAUS: By whom, Kindle?
@@ -110,8 +110,8 @@ KINDLE: are for the unpaid. Go home, / green soldier. You frighten my dock.
 NARRATION: The Accord's radio, / two days after the Free Port.
 NELL: Legate, the Accord is in / session. You are heard.
 JESS: Green Earth first. Javier is / alive, so is his pride. Mostly.
-JESS: He says you fought the way / a warden would. That is a thing
-JESS: coming from him. Plain talk: you / are an invader who fights fair.
+JESS: He says you fought the way / a warden would. Coming from him,
+JESS: that is high praise. Plain talk: / you are an invader who fights fair.
 JAVIER: By the oath of the towers, / I owe you an honest account.
 JAVIER: You held the Harbour Office / and you did not pillage it.
 SONJA: Yellow Comet agrees, / reluctantly and with notes.
@@ -271,7 +271,7 @@ SENSEI: An old man belongs in the air. The / ground is for people who can still 
 KLAUS: Commander Sensei. We have no / quarrel with your nation's farms.
 SENSEI: You have a legion on its coast. That is a / quarrel by any measure.
 KLAUS: It is a quarrel I have chosen / to finish. Open the strait.
-DRAKE: Dude. Can't. The council says / hold, so I hold. I hold very well.
+DRAKE: Can't, dude. The council says / hold, so I hold. I hold very well.
 SENSEI: The council, also, says the / green flag is not to reach Stormhold.
 SENSEI: I do not argue with orders. / I enjoy them. They tell me where to be.
 LIVIA: What does the Accord pay you for / this, Commander?
@@ -289,7 +289,7 @@ NELL: Legate Klaus, this is Nell, on / the Accord's channel. I will be brief.
 NELL: I offer the Accord's table. Tonight. / Stop your guns, and sit down.
 KLAUS: Madam Chair. Tell the fleet to / stand down and I will sit.
 NELL: I asked them. The council set their / orders. Only the council can lift them.
-DRAKE: Dude, I want to. Honest. But / orders are orders, and mine are firm.
+DRAKE: I want to. Honest. But orders / are orders, and mine are firm.
 SENSEI: Hm. I too have kind words. They / do not carry torpedoes.
 KLAUS: Then we finish it by arms, and / sit down after. My thanks, Nell.
 
@@ -301,7 +301,7 @@ CASSIUS: Look at the fire. The Accord's / pride, burning like a bonfire!
 DRAKE: Dude. That was a good fight. / I am not even mad. Mostly.
 SENSEI: You flew the screen well, / Aurean. The wing is done. Hm.
 KLAUS: Admiral. Commander. Your crews / will be treated as soldiers, and fed.
-DRAKE: Dude. Thanks. I heard what you / did at Isle Verdant. Same man, huh.
+DRAKE: Thanks. I heard what you did / at Isle Verdant. Same man, huh.
 LIVIA: Legate. The Strait Fort's harbour / book, taken whole at the pier.
 LIVIA: Every freight bill from the stencil / passes this harbour. Same mark.
 LIVIA: Stormhold. The Allied stronghold on the / plateau. The crates were stored there.
@@ -386,7 +386,7 @@ KLAUS: Then we begin. Three lanes. Move.
 == m16_phase2
 KLAUS: The escarpment is behind us. The / harbour district is ours. Market next.
 HACHI: Customer, you broke the shop window. / That comes out of your account.
-EAGLE: Wing up! Falcon Field is not / done yet! Death from above!
+EAGLE: Wing up! Falcon Field is not / done yet!
 AURELIA: Market Ward next. Give me eight turns / and three guns at the west gate.
 CASSIUS: I will keep the Eagles off your / guns. Hurry up.
 AURELIA: Do not give me orders, Prefect. / I am doing the stone.
@@ -395,7 +395,7 @@ KLAUS: Together.
 == m16_phase3
 KLAUS: The Market Ward has fallen. The / Citadel and the Sunrise Gate stand.
 HACHI: Last chance sale, friend! Barter! / Everything half price, everything goes!
-EAGLE: Wing up! All of it! Let them look / at the sky! Death from above!
+EAGLE: Wing up! All of it! Let them / look at the sky!
 AURELIA: Both Powers are lit. Watch the / cliff guns. They will have the range.
 CASSIUS: My men are pinned under the cliff, old / man! Let me ride up to the hangars!
 KLAUS: Then ride, Prefect. Take the / field. Do not die in it.
@@ -423,7 +423,7 @@ HACHI: The key is in the till. Under the receipts. / You cannot hide a thing fro
 KLAUS: I will not burn your shop, Hachi. / Nor your archives.
 HACHI: Hm. Then you pay for the glass.
 LIVIA: I will draw the invoice for the / glass, at cost. Payable in ninety days.
-HACHI: At cost! I love this woman. Eagle, she is / the first Roman who understands retail.
+HACHI: At cost! I love this woman. Eagle, she is / the first Aurean who gets retail.
 CASSIUS(h): We took Stormhold! A plateau! / On horses! Old man, say it!
 KLAUS: It was well ridden. And well / fought, all of you.
 AURELIA: The Sunrise Gate. A hundred paces of / oak and iron. I will miss it. A little.

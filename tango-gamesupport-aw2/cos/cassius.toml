@@ -7,7 +7,7 @@ role = "Emerald Sun's cavalry commander, a reckless rival"
 short = "Cass"          # used only on a plate the full name does not fit (see `aw2dev co check`)
 full_name = "Cassius Rufus"
 theme = "co:eagle"
-bio = "Commander of the Emerald Sun cavalry and the Senate's favourite, who thinks the legion should be his. Hit: Speed. Miss: Patience."
+bio = "Dashing cavalry commander of the Emerald Sun. Lives for the charge. Hit: Speed Miss: Patience"
 luck = [10, 10, 10]
 stars = { cop = 3, scop = 7 }
 
@@ -19,18 +19,18 @@ hq = "emerald_sun"
 
 [d2d]
 name = "Impetus"
-text = "My vehicles move 1 space more and hit 10% harder, but their armour is 10% thinner."
+text = "Vehicles move 1 space more and have 10% more firepower, but their defense is 10% lower."
 mods = [ { units = "vehicle", move = 1, attack = 10, defence = -10 } ]
 
 [cop]
 name = "Charge"
-text = "Vehicles move 1 more space and attack 30% harder."
+text = "Vehicles move 1 more space, and their firepower rises by 30%."
 mods = [ { units = "vehicle", move = 1, attack = 30 } ]
 quote = ["With me! Ride them down!", "Glory is a short road!"]
 
 [scop]
 name = "Triumph"
-text = "Vehicles move 1 more space, attack 40% harder, and can move again after attacking, once."
+text = "Vehicles move 1 more space, and their firepower rises by 40%. A vehicle that has attacked can move once more."
 mods = [ { units = "vehicle", move = 1, attack = 40 } ]
 rules = [ "a vehicle that has attacked may move once more (not attack again) in the same turn" ]
 quote = ["Strike, and strike again!", "They will sing of this!"]

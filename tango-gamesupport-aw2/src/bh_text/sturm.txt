@@ -33,9 +33,9 @@ VON BOLT: ...Every toll. I did not / say no. Did I? Kehh.
 
 == m03_sturm
 @SONG co:hawke
-STURM: Von Bolt. The Marshal on the / radio. What do you know of him.
+STURM: Von Bolt. The Marshal on the / radio. What do you know of him?
 VON BOLT: He audits. He once held a / ship of mine for a typo.
-STURM: And.
+STURM: And?
 VON BOLT: ...And he was right. I / hated it. I respect him. Kehh.
 STURM: He invited me. He keeps / coffee for rivals.
 VON BOLT: A man who sells coffee to / the enemy is lonely, boy. Or rich.
@@ -53,7 +53,7 @@ STURM: I did not ask to open it. I / asked if it is a threat.
 HAWKE: Every plan threatens the one / before it. That is how plans improve.
 STURM: Then improve mine.
 HAWKE: With pleasure. Tomorrow, a / moon, a tower, and a knight who
-HAWKE: announces himself. Eight / aircraft and no sleep. Tidy work.
+HAWKE: announces himself. Eight / aircraft and no sleep. Efficient.
 VON BOLT: And an invoice! Kehh... / for the coffee!
 HAWKE: Sent to the ministry. They / will pay. They always pay.
 
@@ -65,8 +65,8 @@ HAWKE: Eight aircraft, no losses, one / pie eaten. A good night.
 STURM: Eagle's voice on the radio. / He was not angry. He was hurt.
 HAWKE: Yes. I know that voice. I / have heard it before.
 STURM: You knew him.
-HAWKE: I know his tempo. Hurt men / fly louder. It is exploitable.
-STURM: You speak of him like a / board you have played before.
+HAWKE: I know how he flies. Hurt men / fly louder. It is exploitable.
+STURM: You speak of him like a man / you have played before.
 HAWKE: Twice. On paper. It ended the / same way each time.
 STURM: Play it a third time. In his / own sky.
 HAWKE: Gladly. It is the only way / to finish the game.
@@ -92,8 +92,8 @@ STURM: The Arsenal is mine. The / second Foundry is mine.
 HAWKE: And the cranes are the / Colonel's. A fair division.
 STURM: Eagle asked why you did it.
 HAWKE: A small reason. It is / always a small reason.
-STURM: And the true one.
-HAWKE: The board stopped moving, / Lord Sturm. I cannot bear a still board.
+STURM: And the true reason?
+HAWKE: Nothing moved any more, Lord / Sturm. I cannot bear that.
 HAWKE: You move it. That is the / whole of my loyalty.
 STURM: It will do. For now.
 HAWKE: Chapter two does not say / otherwise. Yet.
@@ -153,7 +153,7 @@ STURM: Then I will read her.
 == m12_sturm
 @SONG co:koal
 KOAL: Surface condition: good. Shoulder: / three metres. Camber: acceptable.
-STURM: Where does your road end.
+STURM: Where does your road end?
 KOAL: At a gate. They always end / at a gate.
 STURM: Then it is the wrong / road.
 KOAL: ...Yes. That is what I said. / To Grimm. He did not listen.
@@ -180,7 +180,7 @@ KINDLE: Then I shall light it. Every / mile, and a sign: KINDLE WAS HERE.
 
 == m14_sturm
 @SONG sturm
-HAWKE: I will say nothing about the / pass.
+HAWKE: I will say nothing about the / highlands.
 STURM: You have said it.
 HAWKE: I said nothing.
 VON BOLT: He said it with his / eyebrows! Kehh...
@@ -284,7 +284,7 @@ STURM: Draft it. We go to Lab 7.
 == m23_sturm
 @SONG co:lash
 LASH: Sub-basement four! Come and / see! It is SO sad down there!
-STURM: What is in it.
+STURM: What is in it?
 LASH: A cancelled project! He has a / cot, a mug, and a drawer!
 HAWKE: Remember what I said. Toys / stay indoors.
 LASH: He is not a toy! He is a / person! In a drawer! Heehee...
@@ -328,5 +328,5 @@ LASH: He is up and he is shy! He / asked if he may watch the Gate!
 HAWKE: I advise against introducing a / cancelled project to a gate.
 LASH: He will love it! He loves / anyone who was made!
 STURM: Then he will see what I / have made of a gate.
-HAWKE: A duel with an audience. Tidy.
+HAWKE: A duel with an audience. / Theatrical.
 

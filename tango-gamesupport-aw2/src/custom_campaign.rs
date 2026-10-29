@@ -111,6 +111,8 @@ pub struct CampaignDef {
     pub prologue: Vec<Page>,
     /// The prologue's song (a scene on the map: the map's song takes over after it).
     pub prologue_song: Option<crate::campaign_music::Track>,
+    /// Scenes on the world map after the prologue's pages, one after the other, each with its own song (BH2: the castle, the Allies, the turn).
+    pub prologue_scenes: Vec<Scene>,
     /// The staff roll after the last mission's scenes.
     pub credits: Vec<CreditSection>,
     pub missions: Vec<MissionDef>,
@@ -688,6 +690,8 @@ pub enum Cond {
     OnyxDestroyed,
     /// A mission-local flag ([`FLAG_FIRST`]..) is set (a trigger's own once-latch).
     Flag(u8),
+    /// The mission's once-trigger of this name ([`Trigger::named`]) has fired: its latch is set (persistent: saved with the mission's flags). The trigger comes earlier in the mission's list.
+    Fired(&'static str),
     /// A predicate written in Rust for a mission with a rule of its own (an
     /// escort, an evacuation): it gets the live battle; see the helpers
     /// ([`unit_by_name`], [`units_of`], [`day`]).
@@ -786,6 +790,8 @@ pub struct Trigger {
     /// Fires once (the default: a latch flag of its own); `repeating()` fires
     /// at every look while the condition holds.
     pub once: bool,
+    /// A name other triggers' conditions can ask about ([`Cond::Fired`]); only a once-trigger has a latch to be asked.
+    pub name: Option<&'static str>,
 }
 
 impl Trigger {
@@ -795,7 +801,12 @@ impl Trigger {
             cond,
             then,
             once: true,
+            name: None,
         }
+    }
+    pub fn named(mut self, name: &'static str) -> Trigger {
+        self.name = Some(name);
+        self
     }
     pub fn repeating(mut self) -> Trigger {
         self.once = false;
@@ -1281,6 +1292,8 @@ struct Compiler<'a> {
     shared: HashMap<Vec<u8>, u16>,
     /// The next once-latch flag.
     next_flag: u8,
+    /// The latch of each named once-trigger, by (mission index, name): [`Cond::Fired`].
+    named_latches: std::collections::HashMap<(usize, &'static str), u8>,
     /// The player's army and the index of the mission being compiled (for `Line::only`).
     player: u8,
     mission: usize,
@@ -1386,6 +1399,7 @@ pub fn text_ids_used(def: &CampaignDef) -> usize {
         })
         .collect();
     scene(&Scene::new(prologue));
+    def.prologue_scenes.iter().for_each(&mut scene);
     seen.len() + 2 * def.missions.len()
 }
 
@@ -1696,6 +1710,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         fns: Vec::new(),
         shared: HashMap::new(),
         next_flag: FLAG_FIRST,
+        named_latches: std::collections::HashMap::new(),
         player: 1,
         mission: 0,
         factory: Vec::new(),
@@ -1765,7 +1780,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     // Story: prologue pages, scenes after wins, the staff roll.
     let mut story = Story::default();
     let map_song = crate::campaign_music::world_map_song(source.world_art() == WorldArt::OmegaLand);
-    story.prologue = prologue_script(&mut cx, &def.prologue, def.prologue_song)?;
+    story.prologue = prologue_script(&mut cx, &def.prologue, def.prologue_song, &def.prologue_scenes)?;
     for (i, m) in def.missions.iter().enumerate() {
         if !m.after.is_empty() {
             let cmds = cx.scene_cmds(&m.after, SceneEnd::Song(map_song))?;
@@ -1920,6 +1935,7 @@ fn prologue_script(
     cx: &mut Compiler,
     pages: &[Page],
     song: Option<crate::campaign_music::Track>,
+    more: &[Scene],
 ) -> Result<u32, Error> {
     if pages.is_empty() {
         return Ok(0);
@@ -1943,7 +1959,7 @@ fn prologue_script(
             &Scene {
                 lines,
                 song,
-                more: Vec::new(),
+                more: more.to_vec(),
                 place: 1,
             },
             SceneEnd::Fade,
@@ -1992,6 +2008,17 @@ fn check_frozen(m: &MissionDef) -> Result<(), Error> {
         ));
     }
     Ok(())
+}
+
+/// A condition with every [`Cond::Fired`] turned into the named trigger's latch flag (an error for a name no earlier trigger of the mission has).
+fn resolve_fired(c: &Cond, names: &std::collections::HashMap<(usize, &'static str), u8>, mission: usize) -> Result<Cond, Error> {
+    Ok(match c {
+        Cond::Fired(n) => Cond::Flag(*names.get(&(mission, *n)).ok_or_else(|| format!("Cond::Fired({n:?}): no earlier once-trigger of that name"))?),
+        Cond::Not(x) => Cond::Not(Box::new(resolve_fired(x, names, mission)?)),
+        Cond::All(v) => Cond::All(v.iter().map(|x| resolve_fired(x, names, mission)).collect::<Result<_, _>>()?),
+        Cond::Any(v) => Cond::Any(v.iter().map(|x| resolve_fired(x, names, mission)).collect::<Result<_, _>>()?),
+        other => other.clone(),
+    })
 }
 
 fn compile_mission(
@@ -2064,6 +2091,9 @@ fn compile_mission(
                 return Err("out of trigger flags (96 per campaign)".into());
             }
             cmds.push(cmd(0x44, 0, f as u16, 0, 0));
+            if let Some(n) = t.name {
+                cx.named_latches.insert((index, n), f);
+            }
             Some(f)
         } else {
             None
@@ -2187,9 +2217,10 @@ fn compile_mission(
         }
         let _ = ends;
         let script = cx.script(cmds);
+        let tc = resolve_fired(&t.cond, &cx.named_latches, index)?;
         let cond = match latch {
-            Some(f) => Cond::All(vec![Cond::Not(Box::new(Cond::Flag(f))), t.cond.clone()]),
-            None => t.cond.clone(),
+            Some(f) => Cond::All(vec![Cond::Not(Box::new(Cond::Flag(f))), tc]),
+            None => tc,
         };
         let pred = cx.cond(index, &cond);
         let group = vec![rec8(5, 0, 0, pred), rec8(7, 0xFF, 0, script)];
@@ -2832,7 +2863,17 @@ pub fn sleeping(core: &Core, army: u8) -> bool {
         return false;
     };
     let player = if crate::five::active(core) { 5 } else { 1 };
-    list.iter().any(|(a, hqs)| *a == army && hqs.iter().any(|&(x, y)| owner_at(core, x, y) != player))
+    list.iter().any(|(a, hqs)| {
+        if *a != army {
+            return false;
+        }
+        if hqs.iter().any(|&(x, y)| owner_at(core, x, y) != player) {
+            return true;
+        }
+        // The moment the line before it falls the army has neither its wave nor its funds yet (the rout check runs before the trigger that wakes it): no units and no funds is still asleep.
+        let funds = core.raw_read_32(core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army as u32, -1);
+        funds == 0 && units_of(core, army).is_empty()
+    })
 }
 
 const MAP_STATE: u32 = 0x0300_32D8;
@@ -3106,6 +3147,7 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         Cond::OnyxHitsAtMost(n) => crate::onyx::reversed_hits(core).is_some_and(|h| h <= *n),
         Cond::OnyxDestroyed => crate::onyx::reversed_hits(core) == Some(0),
         Cond::Flag(f) => crate::ds_campaign::campaign_flag(core, *f as u32),
+        Cond::Fired(_) => false, // (resolved to a Flag when the mission is compiled)
         Cond::Not(c) => !holds(core, c),
         Cond::All(cs) => cs.iter().all(|c| holds(core, c)),
         Cond::Any(cs) => cs.iter().any(|c| holds(core, c)),
@@ -3263,6 +3305,9 @@ pub fn roster_index(model: &Model, co: u8) -> Option<usize> {
 /// A CO's country as the CO screen's tabs number them (0 Orange Star, 1
 /// Blue Moon, 2 Green Earth, 3 Yellow Comet, 4 Black Hole).
 pub fn country(co: u8) -> u8 {
+    if co == crate::co_new::ARIA {
+        return 0; // Orange Star's
+    }
     if crate::co_new::is_own(co) {
         return 4;
     }

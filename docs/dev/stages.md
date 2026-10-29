@@ -71,6 +71,6 @@ stages today (stages are a custom campaign's); the mechanism does not depend on 
 ## Inspecting and forcing a switch (`aw2dev stage`)
 
 `aw2dev stage next 31` enters the mission in the offline harness, plays it to its stage switch with real captures and prints what the switch did: the stage, the map size, each army's units and funds before and after,
-the player's units by type before and after, and its power meter; pictures of the moment before and of the new stage's first frame are in the run's folder (`tools/aw2test/out/ds/stage_tool_m31/`).
+the player's units by type before and after, and its power meter; pictures of the moment before and of the new stage's first frame are in the run's folder (the harness output folder `stage_tool_m31`, git-ignored).
 The captures are the mission's own triggers: `tools/aw2test/tests/test_stage_tool.py`'s `STAGE_TRIGGERS` has one row a mission with stages (the player's army, the HQs in order). A new mission with stages adds its row; the
 test `stage_tool_m31` (default suite) checks the report. `aw2dev stage show FILE.sav` says which stage a suspended game was saved on (the rest of the save: `aw2dev save inspect`).

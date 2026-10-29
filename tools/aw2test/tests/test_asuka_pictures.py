@@ -102,15 +102,15 @@ def pick(ctx, names, prefix):
 
 @test(modes=("ds",), )
 def asuka_pics_power_bar(ctx):
-    """The meter filling, 0 / 25 / 50 / 75 / 100% of the CO Power's price (27000), then the Super Power's price; the HUD's bar and stars as the game draws them."""
+    """The meter filling, 0 / 25 / 50 / 75 / 100% of the CO Power's price (36000), then the Super Power's price; the HUD's bar and stars as the game draws them."""
     g = hp_battle(ctx, "power", visuals="off")
     p = g.player(1)
     from aw2test import ram
     for k, frac in enumerate((0, 25, 50, 75, 100)):
-        g.e.w32(p["addr"] + ram.P_CHARGE, 27000 * frac // 100)
+        g.e.w32(p["addr"] + ram.P_CHARGE, 36000 * frac // 100)
         g.e.wait(30)
         ctx.shot(g, f"bar_{k}")
-    g.e.w32(p["addr"] + ram.P_CHARGE, 81000)
+    g.e.w32(p["addr"] + ram.P_CHARGE, 72000)
     g.e.wait(30)
     ctx.shot(g, "bar_super")
     ctx.check(True, "bar shots taken")
@@ -167,7 +167,7 @@ def activation(ctx, which, prefix):
     ctx.require(g.e.wait_until(lambda: g.player(1)["co_mode"] == mode, 3000, step=10), "the power is on")
     g.wait_for_input()
     ctx.shot(g, f"{prefix}_after")
-    ctx.eq(g.unit_at(5, 5)["hp"], 55 if which == "power" else 65, f"{prefix}: the Mech 45 -> {55 if which == 'power' else 65}")
+    ctx.eq(g.unit_at(5, 5)["hp"], 45, f"{prefix}: her Mech stays at 45 (no HP effect on her side)")
 
 
 @test(modes=("ds",))
@@ -215,6 +215,8 @@ def asuka_pics_counter_break(ctx):
     m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10).unit(1, "infantry", 3, 3).unit(2, "infantry", 25, 15)
     g = ctx.start(m, ["asuka", "andy"], humans=(1, 2), visuals="a")
     ctx.power(g, 1, "super")
+    from tests.test_asuka import no_rain
+    no_rain(g)
     g.end_turn(human=2)
     ctx.shot(g, "cb_before")
     e = g.e

@@ -92,9 +92,9 @@ def build():
     m.spread(2, {FTR: 2, BCO: 2}, (11, 18, 28, 25), seed=3, gap=1, avoid=av)
     for k_, (x, y) in zip([BS, CR, CR, SUB, LAN, LAN], m.sea_near(20, 12, 6, box=(8, 11, 32, 15), deep=False)):
         m.unit(1, k_, x, y)
-    for k_, (x, y) in zip([BS, BS, CR, CR, SUB], m.sea_near(20, 28, 5, box=(8, 27, 32, 29), deep=False)):
-        m.unit(2, k_, x, y)
+    for k_, (x, y) in zip([BS, BS, CR, CR, SUB], m.sea_near(9, 13, 5, box=(3, 12, 15, 15), deep=False)):
+        m.unit(2, k_, x, y)      # (the fleet starts in the strait's west end, below the foundry's bay: it is in sight of the factory's water door from the first days, so the door has a fleet to answer, and it then fights Black Hole's own ships)
     clear_fire_lines(m)
     m.note("hq", 10, 4, "Von Bolt's HQ"); m.note("enemy_hq", 20, 23, "Jess + Colin's HQ (objective)"); m.note("foundry", 6, 6, "the old foundry: Black Hole's Black Factory"); m.note("deathray", 14, 1, "the Deathray (Black Hole's), at the top edge")
-    m.note("gate_w", 14, 17, "seam gate in the fortress wall"); m.note("gate_e", 26, 17, "seam gate in the fortress wall")
+    m.note("treasury", 18, 20, "Colin's treasury: the fortress's central city; its capture opens Sonja's sealed note and empties Colin's funds"); m.note("gate_w", 14, 17, "seam gate in the fortress wall"); m.note("gate_e", 26, 17, "seam gate in the fortress wall")
     return m

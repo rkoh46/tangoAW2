@@ -216,7 +216,7 @@ STURM: It was.
 == m28_day_15
 EAGLE: Silos! Launch! Take that / satellite down!
 EAGLE: Death from above--from / below! Up! Both!
-HAWKE: At last Captain Eagle flies / at something slower than himself.
+HAWKE: Eagle aims at a satellite. / Bold, and likely useless.
 
 == m28_onyx_hit1
 EAGLE: Direct hit! One down! Keep / launching!
@@ -258,7 +258,7 @@ RACHEL(s): Rule five. When / outnumbered... retreat.
 RACHEL(s): Rule five is a bad rule. / I wrote it myself.
 RACHEL(s): Sister... I tried. I / really tried.
 OLAF: Back to the ships! Back!
-OLAF: I am not running! I am / relocating! Loudly!
+OLAF: I am not running! Olaf / returns with more ice!
 EAGLE: This was not supposed to / go like this!
 EAGLE: Hawke! You grounded us / again! That's twice!
 HAWKE: Three, Captain, if you count / the Onyx. Mind the wind home.
@@ -410,7 +410,7 @@ VON BOLT: Because the dock is / SOMEBODY ELSE'S problem!
 == m31_day_5
 SONJA: Fog tonight. Ninety per cent. / I chose the night for it.
 SONJA: My vision opens. Yours / narrows. Do adjust.
-HAWKE: A fair tempo to take. I will / have to take it back.
+HAWKE: A fair advantage to take. I / will have to take it back.
 VON BOLT: She charges ahead and / SMILES. I hate it.
 
 == m31_first_truck
@@ -446,7 +446,7 @@ SONJA: Last shelf in the vault. A / crate. It hums.
 SONJA: It hums at your voice, Sturm. / Only yours.
 VON BOLT: That crate is NOTHING.
 SONJA: Then why do you sweat, / Colonel?
-HAWKE: Interesting. And unwelcome.
+HAWKE: Instructive. And unwelcome.
 
 == m31_map
 @SONG enemy2
@@ -468,7 +468,7 @@ VON BOLT: ...I did find them. Third / drawer. With a bookmark. Kehh.
 SONJA: My father's code is a wall. I / counted its bricks. Yours is a storm.
 STURM: You are not Black Hole.
 SONJA: Not yet. Test me.
-STURM: Why.
+STURM: Why?
 SONJA: Because something under / your voice answers that crate.
 SONJA: I want to hear what it / says.
 HAWKE: A spy joins the house she / robbed. I do not trust her.
@@ -530,8 +530,8 @@ HAWKE: Of whoever stands when / the storm finally rests.
 JUGGER: ALERT. ALLIED BAND SIGNAL. / SOURCE: RAIL YARD. LAST TRAIN.
 JUGGER: VOICE MATCH: ANDY. / CONFIDENCE: 87 PERCENT.
 JUGGER: TEXT: "ALL COLOURS EAST. / THE FENCE IS DOWN. BUILD ANEW."
-SONJA: Four nations, regrouping. / Under a mechanic. I would answer.
-NARRATION: The lid trembles. A voice, / thin as wire: "...Hobb. Door's open."
+SONJA: Andy's voice. Not Andy's / words. Someone else wrote that.
+NARRATION: The lid trembles. A voice, / thin as wire: "...Hobb. The door."
 CRUMB CO: Gerald? Did you hear / that?
 STURM: I heard it from the corridor. / Whatever it is, it is mine.
 NARRATION: "...The storm was only the / first knock." Gerald's mark warms.

@@ -18,7 +18,7 @@ KLAUS: Beyond them lies Yellow Comet. We cross / as conquerors, so we cross fast
 KLAUS: Take all three. If the bridges / fall, the legion waits for thaw.
 NARRATION: Dry sand country, scrub and rock. / A sandstorm walks along the road.
 CASSIUS(h): A storm! Nothing keeps up with / my horses in it. Hate the grit!
-AURELIA: Dust scours the air, Prefect. Long / guns lose a cell of range. Mine too.
+AURELIA: Dust scours the air, Prefect. Long / guns lose a square of range. Mine too.
 AURELIA: Across the desert, past the river, / runs the Comet Pipe. A pipeline wall.
 AURELIA: North to south, two gates: the / Highwatch road and the Lowmere road.
 AURELIA: And a seam on the Crossways road. / One direct-fire hit breaks it open.
@@ -40,7 +40,7 @@ SENSEI: Copters and paratroopers, boy. / Look up as well as ahead.
 CASSIUS: Listen! A grandfather who / knows my name!
 KLAUS: He does not know your name. / He knows your horses. Go.
 CASSIUS(s): Klaus. One thing. If I / am slow, if I fail the clock...
-KLAUS: Then I will say so, plainly, / in the Senate. As I would of me.
+KLAUS: Then I will say so, plainly, / in the Senate. As I would of myself.
 CASSIUS: Good. That is... good. Right! / Forward! Nobody falls behind me!
 
 == m05_day4
@@ -62,7 +62,7 @@ GRIMM: Grimm lost! Grimm has never / lost a bridge! Grimm is angry!
 SENSEI: Grimm, hush. The man rode / three hundred leagues in eight days.
 SENSEI: Cassius of Aurea. In forty / years I have not seen that ride.
 CASSIUS: ...You mean that? You are / not just being kind?
-SENSEI: I am old and cruel. I do not / do kind. I say what I saw.
+SENSEI: I am too old to be kind, / boy. I say what I saw.
 CASSIUS(h): He said it. Did you hear? / A stranger! A Comet man!
 AURELIA: We heard. The whole valley / heard. Please stop repeating it.
 SENSEI: Your people march because / the bread stopped, they say.
@@ -101,13 +101,13 @@ KLAUS: Write the figure down. We / will ask again, in person.
 NARRATION: The market town of Aurelhaven, / Blue Moon. Sixteen days.
 KLAUS: Quaestor. You asked for me. / I would rather be at the front.
 LIVIA: I asked you to be silent, / Legate. It will be difficult.
-COLIN: Wowee! So you are the Aurean / treasurer! I thought you'd be taller!
+COLIN: Oh! You're the Aurean / treasurer! I-I thought you'd be taller.
 LIVIA: And I thought the Blue Moon / guild would be punctual.
 HACHI: Guild's always on time, friend. / It's your coin that's late.
 HACHI: We bit it. Aurean silver / is lead with good manners.
-COLIN: Counterfeit! Bold of you to / pay in it, honestly.
+COLIN: C-counterfeit! That's, um, / very bold of you.
 LIVIA: The coin is struck by the / Senate's mint. I can show you.
-HACHI: Show me a receipt. Rival or not, / I don't take receipts. Nails, yes.
+HACHI: Receipts I can't spend, friend. / Show me silver that rings true.
 LIVIA: Then I shall show you what / I do accept. Legate, the map.
 KLAUS: The whole town is the target. / About seventy properties in all.
 KLAUS: Capture, nothing else. Twenty-two / at once, at the end of any day by
@@ -117,18 +117,18 @@ KLAUS: Salt Row, south of the square, is cut / off by the Mill Water. Seven brid
 KLAUS: Some fifty neutral houses lie / between us. Take them street by street.
 AURELIA: The Mill Water is a canal, Legate. / Bridges, and a wall of sluice gates.
 KLAUS: A neutral missile silo stands in / the market toward the Guildhall.
-COLIN: Ooh, the silo! Mine, I think. / Wowee, I love that market!
+COLIN: Ooh, the silo! That's mine, / I think. Um. Is it?
 LIVIA: Stepping on it is not owning it, / Colin. Properties are my concern.
 LIVIA: The Senate's auditors arrive on / day seventeen. If I cannot show
 LIVIA: twenty-two properties on my books, / the credit is withdrawn. All of it.
-COLIN: Ha! And we out-produce you / three to one! Look at my factories!
+COLIN: B-but we out-produce you / three to one! Look at my factories!
 HACHI: Colin. Don't show 'em / the factories.
 LIVIA: Thank you, Colin. You have / just told me three things.
 COLIN: ...Did I? Hachi, did I?
 HACHI: Yep. Every time. You leak / worse than a cheap barrel.
 LIVIA: Your hours, your output and / your temper. I shall use all three.
 LIVIA: A tank is a debt with a gun / on it. I have settled larger.
-HACHI: Big talk, rival merchant. The deeds / are ours, and I don't discount.
+HACHI: Big talk, rival merchant. These / deeds ain't on sale. Not today.
 LIVIA: Gladly. Each capture is a deed / transferred, at the usual rate.
 HACHI: I'll haggle every one of 'em. / Come take your houses, friend.
 KLAUS: Advance.
@@ -136,18 +136,18 @@ KLAUS: Advance.
 == m06_day6
 LEGIONARY: Quaestor! A crowd at the / counting house! They want coin!
 LEGIONARY: They say Colin's heralds / told them our bills are paper!
-COLIN: Bank run! Ha! One rumour, and / your bills are dust, Quaestor!
+COLIN: A bank run! Sis taught me / that one! Your bills are dust!
 HACHI: My till's been counting your / bills all week, rival. Slowly.
 LIVIA: Open every window. Pay every / bill, in full. In silver. Slowly.
 LEGIONARY: Slowly, Quaestor? The chest / will empty in a day!
-LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
+LIVIA: A run is only a queue. I / keep very good queues.
 
 == m06_post
 @SONG aw2:423
 NARRATION: Day fifteen. Aurelhaven is taken. / Twenty-two properties on the ledger.
-COLIN: Wowee. Twenty-two. She counted / them like beans, Hachi.
+COLIN: T-twenty-two. She counted / them like beans, Hachi.
 HACHI: She counted 'em like debts. / That's worse. I know debts.
-COLIN: Quaestor Livia! No hard / feelings! I make you an offer!
+COLIN: Quaestor Livia! No hard / feelings! I-I'd like to make an offer!
 COLIN: Come to Blue Moon! A seat in / the guild! Half the profits!
 COLIN: You could be richer! The / richest woman on the coast!
 LIVIA: I am already as rich as the / Senate permits. But I am touched.
@@ -160,7 +160,7 @@ LIVIA: You gain a customer who pays. / I gain a currency people accept.
 COLIN: Hm. Hm. Hachi, is that a / good deal?
 HACHI: It's an excellent deal. I / dislike how excellent it is.
 LIVIA: I considered adding an apology / clause. I removed it for space.
-COLIN: HA! She jokes! Hachi, the / Quaestor is funny!
+COLIN: Oh! She made a joke! Hachi, / the Quaestor is funny!
 HACHI: She's terrifying. Sign it, / friend. Before she raises the rate.
 COLIN: Done! The Merchant Princes! / Livia and Colin! Best pair at sea!
 KLAUS: I have lost a Quaestor to a / guild. Or perhaps gained a guild.
@@ -208,11 +208,11 @@ LIVIA: He is ill, Legate. I have / seen the look. Bring a bucket.
 LIVIA: Do not charge him for the / bucket.
 DRAKE: Dude. The radio is on, you / know. I can hear your seasick man.
 CASSIUS: I am NOT seasick, you sea / lizard! It is a fine day!
-DRAKE: Dude. Chill. I just want to / know why a green fleet shows up.
+DRAKE: Easy. I just want to know / why a green fleet shows up.
 DRAKE: Everybody on this coast thinks / you are the next big bad guy.
 KLAUS: Then everybody is mistaken. / We want the harbour. No more.
 DRAKE: Nobody wants a harbour for / "no more", dude. Cannons say more.
-SENSEI: Hmph. A harbour. Young man, I / watched your grandfather want one.
+SENSEI: Hmph. A harbour. Young man, I've / watched a hundred admirals want one.
 SENSEI: Yellow Comet's wing flies from / Isle Verdant's airport. Mind your hats.
 KLAUS: Then we will answer with the / guns. Drake, Sensei, stand by.
 SENSEI: Stand by? I have stood by / since before you could walk. Come.
@@ -234,14 +234,14 @@ DRAKE: Dude. That was a real mess. / I mean that in a good way.
 SENSEI: Hmph. Beaten by sailors with / shovels. I have lost to worse. Rarely.
 DRAKE: Sensei. Chill. They were not / sailors. They were cruisers.
 KLAUS: Drake. The harbour is Aurea's / now. Your ships may leave.
-DRAKE: Dude. I want to say / something first, okay?
+DRAKE: Hey. I want to say / something first, okay?
 DRAKE: You kept the lanes clean. / You did not sink one fisher.
 DRAKE: You did not mine the Roads. / My cousins fish there. Thanks.
 LIVIA: We have no quarrel with / fishermen, Drake. They pay taxes.
 DRAKE: Ha. See, dude? That is / almost a joke.
 DRAKE: So I think you are not / Black Hole. Black Hole mines things.
 KLAUS: We are not. We march on / our own account, and for bread.
-DRAKE: Bread. Dude. The nets came / up grey this spring. Ash. Weird.
+DRAKE: Bread. Huh. The nets came / up grey this spring. Ash. Weird.
 KLAUS: The same grey ash. It fell / on our fields for three years.
 DRAKE: Dude. For real? Then you are / invading, and scared. New one.
 KLAUS: I am hunting someone. When / I find him I will be less scared.
@@ -259,7 +259,7 @@ NELL: Thank you. First: the Accord / has noticed the green fleet.
 NELL: Four reports, four theories. / All of them end with "invasion."
 KLAUS: Madam. The fleet sails openly. / We kept the fishing lanes clear.
 NELL: Armies that invade seldom tell / the fishermen to stay home.
-NELL: You have taken three harbours of / ours, Legate. I do not forget it.
+NELL: You have taken three of the / Accord's harbours. I can't forget it.
 NELL: I would like to believe you. / Truly. But Max will not.
 NELL: Orange Star's border force sits / at Ironhold. It will meet you.
 KLAUS: Then Max will meet me. I do / not want a fight with Orange Star.
@@ -320,15 +320,15 @@ NARRATION: The cavalry strikes the line. / The centre does not move.
 == m08_post
 @SONG ally1
 NARRATION: Ironhold. The crags stand. / The causeway is quiet.
-MAX: Blast. I lost. To two men / who argued the whole time.
+MAX: Hmph. I lost. To two men / who argued the whole time.
 SASHA: The flank was well timed. The / hammer was precise. I note it.
 MAX: Sasha. Be quiet. Legate Klaus. / I fought with my whole force.
 MAX: You beat me clean. I respect / that. I respect the legion.
 KLAUS: Commander Max. Your men / fought well. I regret the loss.
 MAX: Do not be sorry. I would have / done the same. What do you want?
 KLAUS: To take Ironhold, and pass / north. And to know who feeds my people.
-MAX: Bread? That is your war? Huh. / My sister would say that is odd.
-NELL: Hello, Max. Your sister / is on the line. Are you hurt?
+MAX: Bread? That's your war? Huh. / Nell would call that honest.
+NELL: Hello, Max. It's Nell. / Are you hurt?
 MAX: Nell! No. Only proud. Mostly.
 NELL: Legate Klaus. I ask your terms. / What does Aurea want from us?
 KLAUS: Nothing from you, Madam Chair. / We want passage and an answer.

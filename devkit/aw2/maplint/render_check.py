@@ -100,6 +100,18 @@ def stable(crops):
     return out
 
 
+MAX_PHASES = 4
+
+
+def phases(ref):
+    """{(look, tile id, shade): {crop, ...}} for the tiles the games draw in at most MAX_PHASES drawings whatever their neighbours (an animated plain tile: the open sea in rain has two phases): water's animation
+    is one drawing in a few phases, and a key's few reference samples may all be in one phase. A tile with more drawings (a coast, a river, a shoal) is a real transition: its keys stay strict."""
+    pool = {}
+    for (lk, key), crops in ref.items():
+        pool.setdefault((lk, key[0], key[1]), set()).update(crops)
+    return {k: v for k, v in pool.items() if len(v) <= MAX_PHASES}
+
+
 def check(m, picture, ref):
     """Problems of one map against the reference: [(x, y, text)]; a cell is flagged when a pixel the games always draw one colour in is another colour in the picture."""
     cs = cells(m, picture)
@@ -107,6 +119,7 @@ def check(m, picture, ref):
         return None
     lk = look_of(m, picture)
     cache = {}
+    plain = phases(ref)
     out = []
     for x, y, key, crop in cs:
         crops = ref.get((lk, key))
@@ -116,6 +129,8 @@ def check(m, picture, ref):
             cache[(lk, key)] = stable(crops)
         st = cache[(lk, key)]
         wrong = sum(1 for px, v in st.items() if crop[px:px + 3] != v)
+        if wrong > max(12, 0.30 * len(st)) and crop in plain.get((lk, key[0], key[1]), ()):
+            continue           # (another phase of an animated plain tile: the same drawing the reference has under other neighbours)
         if wrong > max(12, 0.30 * len(st)):          # (a few pixels more or less are the water's animation phase; a wrong tile differs in dozens)
             out.append((x, y, f"tile 0x{key[0]:03X} ({key[2]} {''.join(map(str, key[3:]))}): {wrong} of {len(st)} fixed pixels differ from the {len(crops)} reference drawings of it"))
     return out

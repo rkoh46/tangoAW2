@@ -45,6 +45,8 @@ CO_IDS = {n.lower(): i for i, n in enumerate(CO_NAMES)}
 CO_IDS.update({n.lower().replace(" ", ""): 72 + k for k, n in enumerate(NEW_CO_NAMES)})
 ASUKA = 92       # Sonja after she defects to Black Hole (crate::co_new::ASUKA), in every Versus list
 CO_IDS["asuka"] = ASUKA
+ARIA = 93        # Nell's sister, an Orange Star CO with only a Super Power (crate::co_new::ARIA), in every Versus list
+CO_IDS["aria"] = ARIA
 
 
 def co_name(co):
@@ -54,6 +56,8 @@ def co_name(co):
         return NEW_CO_NAMES[co - 72]
     if co == ASUKA:
         return "Asuka"
+    if co == ARIA:
+        return "Aria"
     return f"CO {co}"
 
 TERRAIN_CLASSES = {

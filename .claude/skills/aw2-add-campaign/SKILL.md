@@ -21,6 +21,15 @@ BH2 maps (docs/dev/bh2-maps.md): specs in `five/bh2/spec/`, `aw2dev maps gen --c
 ## A mission in stages (a map switch inside one battle)
 Read docs/dev/stages.md. A mission declares `MissionDef::stages` (`StageDef`: map, armies with the player's `CoSpec::Keep`, units, deploy cells, `Carry`, look, weather, triggers, intro) and a trigger ends a stage with `Action::NextStage` (put its scene before it). The survivors, funds and CO meters carry over; five-army and four-army stages both work; a battle saved on a later (four-army) stage resumes on it. Prove it like BH2's M31: harness `bh2_m31_progression`, `bh2_m31_stage_two_suspend_and_resume`, `bh2_m31_switch_is_deterministic` (`tools/aw2test/tests/test_bh2_progression.py`).
 
+## Extending the BH2 Campaign (missions, scenes, songs, stages)
+Read docs/dev/bh2-maps.md ("BH2 in the game"), docs/dev/bh2-text.md ("Final wiring") and docs/dev/stages.md.
+- **A mission**: spec in `five/bh2/spec/` + `bh2lib.MISSIONS`, `aw2dev maps gen --campaign bh2`, a `bh2_NN()` `MissionDef` in `bh2_campaign.rs` (forced leads checked by the test `the_free_pick_pool_...`; a free pick needs the pool in the scene header), a flag in `world_picture::BH2_FLAGS`, `aw2dev maps lint --source bh2`, `aw2dev bh2 check`, `aw2dev maps boot --campaign bh2 --mission N`, `maps render-check`.
+- **A scene**: `src/bh2_text/act*.txt`, wire with `txt("key")` (intro / victory / after chain / `on_day` / a trigger's `Action::Scene`), then `aw2dev bh2 scenes` and `python3 tools/aw2test/run.py -k story_trace_bh2` (no silent dialogue).
+- **A song**: `music/bh2/<name>.m4t` + `es_music::SOURCES` + `OWN_SONGS` in `bh2_text.rs` and the lint, `aw2dev sound compose|render`, `cargo test ... es_music`.
+- **A stage**: `StageDef` on `MissionDef::stages`, `Action::NextStage`, the stage's `intro` / `victory` / `triggers`; run `-k bh2_m31` (progression, suspend, determinism).
+- **Saves**: the BH2 record is in slot 13 after the BH record (`Source::save_offset`); never a new sector. `aw2dev bh2 saves`.
+- Proof sheet for the owner: `aw2dev bh2 integration`.
+
 ## Tools for a mission with stages or five armies
 
 - `aw2dev stage next <mission>`: plays the mission to its stage switch and prints what the switch did (units and funds before and after, the player's units carried, the meter); a mission with stages needs a row in

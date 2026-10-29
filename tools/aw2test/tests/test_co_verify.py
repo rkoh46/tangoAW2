@@ -4,7 +4,8 @@ Test names: `co_verify_<facet>_<co>[_<mode>]`; every check is tagged `[<co> <abi
 from aw2test import coverify as cv
 from aw2test.harness import test
 
-NAMES = ("klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy")
+NAMES = ("klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy", "aria")
+NO_COP = ("aria",)      # Aria has only a Super Power: no CO Power level is played for her
 
 
 def stats(name, mode):
@@ -16,6 +17,8 @@ def stats(name, mode):
 
 for _n in NAMES:
     for _m in (0, 1, 2):
+        if _n in NO_COP and _m == 1:
+            continue
         stats(_n, _m)
 
 
@@ -35,7 +38,7 @@ def ranges(name, mode, beyond):
 
 for _n in NAMES + ("andy",):
     for _m in (0, 1, 2):
-        if _n == "andy" and _m:
+        if (_n == "andy" and _m) or (_n in NO_COP and _m == 1):
             continue
         moves(_n, _m)
 for _n in ("aurelia", "klaus"):
@@ -119,7 +122,8 @@ def cpu(name, which):
 
 
 for _n in NAMES:
-    cpu(_n, "power")
+    if _n not in NO_COP:
+        cpu(_n, "power")
     cpu(_n, "super")
 
 

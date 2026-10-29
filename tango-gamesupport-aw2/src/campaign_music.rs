@@ -20,6 +20,8 @@ pub enum Track {
     Ds { seq: u16, like: u16 },
     /// A CO's own theme (AW2's table row, a new CO's Dual Strike theme).
     Co(u8),
+    /// One of our own songs by its slot ([`crate::es_music::DOOR`], [`crate::es_music::CREDITS`] or Aria's CO id), and the stand-in without the music pack's room.
+    Own(u8),
 }
 
 /// AW2's song for the world map and the prologue, and for a scene on the map's backdrop.
@@ -143,6 +145,24 @@ const CO_TABLE: u32 = 0x085D_3DD0;
 const CO_ROW: u32 = 0x104;
 const AW2_COS: u8 = 19;
 
+/// The song a slot of ours stands for in the game without the pack's room: the AW2 or Dual Strike song of the same mood.
+pub fn own_stand_in(id: u8) -> Track {
+    match id {
+        crate::es_music::DOOR => Track::Ds { seq: 0x2D, like: 25 },
+        crate::es_music::CREDITS => Track::Ds { seq: 0x36, like: 420 },
+        _ => Track::Co(crate::co_new::like(id)),
+    }
+}
+
+/// The name a `@SONG own:<name>` line uses for a slot.
+pub fn own_name(id: u8) -> &'static str {
+    match id {
+        crate::es_music::DOOR => "door",
+        crate::es_music::CREDITS => "credits",
+        _ => "aria",
+    }
+}
+
 impl Track {
     /// The AW2 song id to play: a Dual Strike story song of the pack when the pack has it, else AW2's like one; a CO's theme from AW2's table, a new
     /// CO's Dual Strike theme (AW2's like CO's without the pack).
@@ -153,6 +173,7 @@ impl Track {
             Track::Co(co) if co < AW2_COS => core.raw_read_16(CO_TABLE + CO_ROW * co as u32 + 4, -1),
             Track::Co(co) => crate::ds_music::song(co)
                 .unwrap_or_else(|| core.raw_read_16(CO_TABLE + CO_ROW * crate::co_new::like(co) as u32 + 4, -1)),
+            Track::Own(id) => crate::ds_music::song(id).unwrap_or_else(|| own_stand_in(id).resolve(core)),
         }
     }
 
@@ -169,6 +190,7 @@ impl Track {
             Track::Ds { seq, like } => crate::ds_music::story_song(seq).unwrap_or(like),
             Track::Co(co) if co < AW2_COS => read(co),
             Track::Co(co) => crate::ds_music::song(co).unwrap_or_else(|| read(crate::co_new::like(co))),
+            Track::Own(id) => crate::ds_music::song(id).unwrap_or_else(|| own_stand_in(id).resolve_rom(rom)),
         }
     }
 
@@ -180,6 +202,7 @@ impl Track {
         match self {
             Track::Aw2(s) => format!("aw2:{s}"),
             Track::Co(c) => format!("co:{c}"),
+            Track::Own(c) => format!("own:{}", own_name(c)),
             Track::Ds { seq, .. } => format!("ds:{seq:#x}"),
         }
     }

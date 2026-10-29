@@ -413,7 +413,7 @@ def selectable_by_cycling(e):
 def universe(e):
     """Every CO the screen draws a cell for, in Dual Strike's way (ds_coselect.rs: by country, then id)."""
     table = e.u32(CO_TABLE_POOL)
-    ids = list(range(19)) + list(range(72, 83)) + [92]
+    ids = list(range(19)) + list(range(72, 83)) + [86, 87, 88, 89, 92, 93]      # (the Emerald Sun four, Asuka and Aria: co_new::all() filtered by listed())
     return sorted(ids, key=lambda c: (e.u8(table + c * 0x104 + 0x15), c))
 
 

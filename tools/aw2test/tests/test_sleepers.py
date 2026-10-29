@@ -51,7 +51,17 @@ def bh2_m31_sleeping_nation_survives_losing_its_holders(ctx):
         spot = next(c for c in ((h["x"] + 1, h["y"]), (h["x"] - 1, h["y"]), (h["x"], h["y"] + 1), (h["x"], h["y"] - 1)) if g.unit_at(*c) is None)
         d.place_unit(g.unit(att["id"]), *spot)
         e.wait(4)
-        g.attack(spot, spot, (h["x"], h["y"]))
+        d.dialogue()
+        try:
+            g.attack(spot, spot, (h["x"], h["y"]))
+        except Exception:
+            # (a scene the mission plays, answered with A; then the attack again)
+            for _ in range(30):
+                e.press("A", 4)
+                e.wait(20)
+            d.wait_control()
+            g._units_base = g._players_base = None
+            g.attack(spot, spot, (h["x"], h["y"]))
         d.dialogue()
     g._units_base = g._players_base = None
     ctx.eq(len(g.units(army=2)), 0, "all of Olaf's holding units are dead")
@@ -64,6 +74,7 @@ def bh2_m31_sleeping_nation_survives_losing_its_holders(ctx):
     g._units_base = g._players_base = None
     n = len(g.units(army=2))
     ctx.check(n >= 10, f"Olaf's wave landed ({n} units)")
+    ctx.log("olaf record " + g.player(2)["raw"].hex() + f" units {n}")
     ctx.check(alive(e, g, 2), "Olaf is alive after waking")
     ctx.check(e.u32(g.players_base + 0x3C * 2) >= 20000, f"and has his funds ({e.u32(g.players_base + 0x3C * 2)})")
     e.close()

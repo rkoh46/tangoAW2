@@ -66,8 +66,14 @@ def describe_slot(tag, slot):
     for name, m in (("pairs", TAG_MARK), ("stage", STAGE_MARK), ("fronts", FRONTS_MARK)):
         if len(slot) > BLOCK_SIZE and slot[BLOCK_SIZE:BLOCK_SIZE + 4] == m:
             marks[name] = BLOCK_SIZE
-    if marks.get("stage") is not None and len(slot) > BLOCK_SIZE + 4:
-        marks["stage_number"] = slot[BLOCK_SIZE + 4]
+    # (the stage's and the two-front mark stand right after the block, or after the pairs' tail when the block carries one: crate::suspend::MARK_AT; older saves have them over the tail)
+    for name, m in (("stage", STAGE_MARK), ("fronts", FRONTS_MARK)):
+        if name not in marks:
+            at = slot.find(m, BLOCK_SIZE + 4)
+            if at > 0:
+                marks[name] = at
+    if marks.get("stage") is not None and len(slot) > marks["stage"] + 4:
+        marks["stage_number"] = slot[marks["stage"] + 4]
     if "pairs" in marks:
         marks["pairs_match"] = struct.unpack_from("<I", slot, BLOCK_SIZE + 4)[0] == r["aw2"]["hash"]
     r["marks"] = marks

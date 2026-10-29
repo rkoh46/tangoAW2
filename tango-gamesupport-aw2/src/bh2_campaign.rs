@@ -1,36 +1,70 @@
-//! The BH2 Campaign, development build: Black Hole's eastern war on the AW1-style picture world map (docs/BH2_CAMPAIGN.md). Only Act I's five missions exist so far, as
-//! minimal `MissionDef`s (the armies, the COs of the design table, M4's two fronts, M5's held second HQ) with no dialogue: they exist to enter the maps in the game and
-//! photograph them (`aw2dev maps boot --campaign bh2`), the real game's pictures the owner reviews. The maps are `five/bh2/spec/*.py` -> `bh2_map_data.rs`.
+//! The BH2 Campaign: Black Hole's eastern war on the AW1-style picture world map (docs/BH2_CAMPAIGN.md, docs/dev/bh2-maps.md, docs/dev/bh2-text.md). Thirty-one missions
+//! (M30 and M31 are the final mission's two maps) and the secret M32: the maps are `five/bh2/spec/*.py` -> `bh2_map_data.rs`, the dialogue is `src/bh2_text/*.txt`
+//! (`bh2_text.rs`, wired below with `txt("...")`), the songs `music/bh2/*.m4t` (`es_music::SOURCES`).
 //!
-//! It is behind a development flag (`TANGOAW2_BH2_CAMPAIGN`, [`available`]) and never shows to players: the Campaign sub-menu's "BH2 CAMPAIGN" stays "Coming soon".
-//! Its record is Flash slot 10 ("AWB2"), a mission saved halfway shares the BH Campaign's slot 12 (`suspend::source_tag`); see docs/dev/bh2-maps.md "Flash".
+//! It is a campaign of the Campaign chooser ([`available`]; the release toggle [`RELEASED`]). Its record lives in the BH Campaign's Flash slot 13, after the BH record
+//! (`campaign_model::Source::save_offset`); a mission saved halfway shares slot 12 (`suspend::source_tag`).
+//!
+//! M30 "The Orange Line" and M31 "The Last Accord" (one mission in two stages: the gauntlet, then Aria's citadel after a mid-battle map switch, docs/dev/stages.md) are wired like the rest;
+//! every scene of the dialogue files is asked for ([`TODO_SCENES`] is empty).
 
 use mgba::core::Core;
 
 use crate::campaign_model::Model;
 use crate::campaign_model::{ring, SendRule, VolcanoDef};
 use crate::custom_campaign::{co, colour, unit, *};
-use crate::es_campaign::{after, deployment, wave};
+use crate::es_campaign::{after, deployment, on_day, wave};
+
+/// The scene with this key from `src/bh2_text/*.txt` (a missing key panics; `tools/bh2text/lint.py` and the test `every_dialogue_scene_is_used` check them all).
+fn txt(key: &str) -> Scene {
+    crate::bh2_text::scene(key)
+}
+
+/// The second front's outcome (crate::two_front's state byte: 2 won, 3 lost).
+fn second_front_won(core: &mut Core) -> bool {
+    core.raw_read_8(0x0203_E401, -1) == 2
+}
+
+fn second_front_lost(core: &mut Core) -> bool {
+    core.raw_read_8(0x0203_E401, -1) == 3
+}
+
+/// The roster without one officer (a mission whose lead is forced elsewhere: Hawke leads M4's sky front).
+fn pool_but(c: u8) -> Vec<u8> {
+    ROSTER.iter().map(|r| r.0).filter(|&x| x != c).collect()
+}
+
+/// `n` units of an army, as many as `num / den` of what the map gives it at the start.
+fn share(map: &str, army: u8, num: usize, den: usize) -> u8 {
+    let c = built_map(map).map_or(0, |m| m.units.iter().filter(|u| u.army == army).count());
+    (c * num / den) as u8
+}
 
 /// The campaign's source index in [`crate::campaign_model::SOURCES`].
 pub const SOURCE: usize = 3;
 
-/// The development flag: the environment variable `TANGOAW2_BH2_CAMPAIGN` is set (every console of the harness sets it for itself).
+/// The release toggle (docs/dev/bh2-maps.md "Release"): `true` shows the campaign in every build. Set it `false` to hide the campaign again; the environment variable
+/// `TANGOAW2_BH2_CAMPAIGN` (any value) shows it anyway, as the test harness does.
+pub const RELEASED: bool = true;
+
+/// The campaign is shown and playable: released (or the variable is set).
 pub fn dev_flag() -> bool {
-    std::env::var_os("TANGOAW2_BH2_CAMPAIGN").is_some()
+    RELEASED || std::env::var_os("TANGOAW2_BH2_CAMPAIGN").is_some()
 }
 
-/// The campaign is playable (the Dual Strike pack is on and the development flag is set).
+/// The campaign is playable (the Dual Strike pack is on and the campaign is released).
 pub fn available(core: &Core) -> bool {
     crate::ds_weather::is_on(core) && dev_flag()
 }
 
-/// The roster, in unlock order: every Black Hole officer (all open: the development build has no unlocks yet).
-pub const ROSTER: [(u8, bool); 12] = [
+/// The scenes of the dialogue files that no mission asks for yet (none: the map-switch merge wired the rest); `every_dialogue_scene_is_used` allows exactly these.
+pub const TODO_SCENES: [&str; 0] = [];
+
+/// The roster, in unlock order: the eleven Black Hole officers the dialogue expects, all open (Sturm is never a free pick: he is forced with Asuka in M5 only).
+pub const ROSTER: [(u8, bool); 11] = [
     (crate::co_new::ASUKA, true),
     (co::CRUMB, true),
     (co::HAWKE, true),
-    (co::STURM, true),
     (co::KOAL, true),
     (co::KINDLE, true),
     (co::JUGGER, true),
@@ -75,6 +109,10 @@ fn bh2_01() -> MissionDef {
     ];
     m.units = deployment("bh2_01");
     m.rank_days = 12;
+    m.intro = txt("m01_pre");
+    m.victory = txt("m01_post");
+    m.after = crate::bh2_text::chain(&["m01_map"]);
+    m.triggers.push(on_day(4, None, vec![Action::Scene(txt("m01_day4"))]));
     m.flag = flag(1);
     m.stars = 1;
     m.needs = Needs::Start;
@@ -104,6 +142,11 @@ fn bh2_02() -> MissionDef {
         ),
         after(Cond::UnitGone("crate"), vec![Action::Lose]),
     ];
+    m.intro = txt("m02_pre");
+    m.victory = txt("m02_post");
+    m.after = crate::bh2_text::chain(&["m02_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m02_day5"))]));
+    m.triggers.push(on_day(10, None, vec![Action::Scene(txt("m02_day10"))]));
     m.flag = flag(2);
     m.stars = 1;
     m.needs = Needs::All(vec!["bh2_01"]);
@@ -146,6 +189,10 @@ fn bh2_03() -> MissionDef {
     m.factory = F3.to_vec();
     // Mount Ember (the volcano in the middle of the map): from day 3 it erupts every day on 3 of the 28 cells of the ring road round it (5 HP, any army's units, never below 1).
     m.volcano = Some(VolcanoDef::new(3, 1, 5, &ring(19, 10, 26, 17)).per_eruption(3));
+    m.intro = txt("m03_pre");
+    m.victory = txt("m03_post");
+    m.after = crate::bh2_text::chain(&["m03_map"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m03_day6"))]));
     m.flag = flag(3);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_02"]);
@@ -162,6 +209,7 @@ fn bh2_04() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).funds(14000),
     ];
     m.units = deployment("bh2_04");
+    m.pool = pool_but(co::HAWKE); // Hawke leads the sky front
     m.rank_days = 14;
     // The sky front (BH1's M20 rule): open sky and aircraft, won and lost by AW2's rout rule; its aircraft attack (role 4), none goes for an HQ.
     m.front2 = Some(FrontDef {
@@ -186,6 +234,12 @@ fn bh2_04() -> MissionDef {
         weather: Weather::Clear,
         fog: false,
     });
+    m.intro = txt("m04_pre");
+    m.victory = txt("m04_post");
+    m.after = crate::bh2_text::chain(&["m04_map"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m04_day6"))]));
+    m.triggers.push(Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(txt("m04_front2_post"))]));
+    m.triggers.push(Trigger::new(When::TurnStart, Cond::Custom(second_front_lost), vec![Action::Scene(txt("m04_front2_lost"))]));
     m.flag = flag(4);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_03"]);
@@ -205,6 +259,10 @@ fn bh2_05() -> MissionDef {
     m.units = deployment("bh2_05");
     m.rank_days = 22;
     m.look = 3; // the Wasteland look: the exile capital stands on blasted ground
+    m.intro = txt("m05_pre");
+    m.victory = txt("m05_post");
+    m.after = crate::bh2_text::chain(&["m05_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m05_day5"))]));
     m.flag = flag(5);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_04"]);
@@ -237,15 +295,16 @@ fn bh2_06() -> MissionDef {
         When::AfterAction,
         Cond::All(M6_TOWERS.iter().map(|&(x, y)| Cond::OwnerAt { x, y, army: 1 }).collect()),
         vec![
-            Action::Scene(Scene::new(vec![
-                Line::say(co::JAVIER, "The last tower. My eyes in the forest are gone."),
-                Line::say(co::EAGLE, "Then I take the sky over this army. Wing, scramble."),
-            ])),
+            Action::Scene(txt("m06_takeover")),
             Action::TakeOver { army: 2, co: co::EAGLE, meter_pct: 40 },
             Action::AddFunds { army: 2, funds: 6000 },
             Action::Spawn(M6_WING.iter().map(|&(k, (x, y))| UnitDef::new(2, k, x, y).attack()).collect()),
         ],
     )];
+    m.intro = txt("m06_pre");
+    m.victory = txt("m06_post");
+    m.after = crate::bh2_text::chain(&["m06_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m06_day5"))]));
     m.flag = flag(6);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_05"]);
@@ -264,6 +323,10 @@ fn bh2_07() -> MissionDef {
     m.units = deployment("bh2_07");
     m.look = 2; // the Desert look
     m.rank_days = 20;
+    m.intro = txt("m07_pre");
+    m.victory = txt("m07_post");
+    m.after = crate::bh2_text::chain(&["m07_map"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m07_day6"))]));
     m.flag = flag(7);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_06"]);
@@ -282,6 +345,10 @@ fn bh2_08() -> MissionDef {
     m.units = deployment("bh2_08");
     m.weather = Weather::Sandstorm;
     m.rank_days = 20;
+    m.intro = txt("m08_pre");
+    m.victory = txt("m08_post");
+    m.after = crate::bh2_text::chain(&["m08_map", "m08_warroom", "m08_staff"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m08_day5"))]));
     m.flag = flag(8);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_07"]);
@@ -301,6 +368,10 @@ fn bh2_14() -> MissionDef {
     m.units = deployment("bh2_14");
     m.weather = Weather::Sandstorm; // a dust storm on the border (and M14 is no look twin of M12)
     m.rank_days = 22;
+    m.intro = txt("m14_pre");
+    m.victory = txt("m14_post");
+    m.after = crate::bh2_text::chain(&["m14_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m14_day5"))]));
     m.flag = flag(14);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_13"]);
@@ -319,6 +390,10 @@ fn bh2_15() -> MissionDef {
     m.units = deployment("bh2_15");
     m.look = 1; // the Snow look
     m.rank_days = 22;
+    m.intro = txt("m15_pre");
+    m.victory = txt("m15_post");
+    m.after = crate::bh2_text::chain(&["m15_map"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m15_day6"))]));
     m.flag = flag(15);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_14"]);
@@ -338,6 +413,10 @@ fn bh2_09() -> MissionDef {
     m.fog = true;
     m.weather = Weather::Rain; // night rain over the lantern islands
     m.rank_days = 14;
+    m.intro = txt("m09_pre");
+    m.victory = txt("m09_post");
+    m.after = crate::bh2_text::chain(&["m09_map"]);
+    m.triggers.push(on_day(4, None, vec![Action::Scene(txt("m09_day4"))]));
     m.flag = flag(9);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_08"]);
@@ -357,6 +436,11 @@ fn bh2_10() -> MissionDef {
     m.look = 2; // the Desert look
     m.weather = Weather::Sandstorm;
     m.rank_days = 14;
+    m.intro = txt("m10_pre");
+    m.victory = txt("m10_post");
+    m.after = crate::bh2_text::chain(&["m10_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m10_day5"))]));
+    m.triggers.push(on_day(9, None, vec![Action::Scene(txt("m10_day9"))]));
     m.flag = flag(10);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_09"]);
@@ -375,6 +459,10 @@ fn bh2_11() -> MissionDef {
     m.units = deployment("bh2_11");
     m.weather = Weather::Rain;
     m.rank_days = 16;
+    m.intro = txt("m11_pre");
+    m.victory = txt("m11_post");
+    m.after = crate::bh2_text::chain(&["m11_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m11_day5"))]));
     m.flag = flag(11);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_10"]);
@@ -409,10 +497,13 @@ fn bh2_12() -> MissionDef {
     airlift.extend(M12_INF.iter().map(|&(x, y)| UnitDef::new(2, unit::INFANTRY, x, y).attack()));
     m.triggers = vec![
         // at half strength Kanbei calls Sensei's airlift
-        Trigger::new(When::AfterAction, Cond::ArmyUnitsAtMost { army: 2, n: M12_HALF }, vec![Action::Spawn(airlift)]),
+        Trigger::new(When::AfterAction, Cond::ArmyUnitsAtMost { army: 2, n: M12_HALF }, vec![Action::Scene(txt("m12_airlift")), Action::Spawn(airlift)]),
         // his last tank falls: he yields the field
         after(Cond::Custom(m9_no_tanks), vec![Action::Win]),
     ];
+    m.intro = txt("m12_pre");
+    m.victory = txt("m12_post");
+    m.after = crate::bh2_text::chain(&["m12_map"]);
     m.flag = flag(12);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_11"]);
@@ -443,6 +534,14 @@ fn bh2_13() -> MissionDef {
         weather: Weather::Clear,
         fog: true,
     });
+    m.intro = txt("m13_pre");
+    m.victory = txt("m13_post");
+    m.after = crate::bh2_text::chain(&["m13_map", "m13_warroom", "m13_staff"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m13_day6"))]));
+    m.triggers.push(Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(txt("m13_front2_post"))]));
+    m.triggers.push(Trigger::new(When::TurnStart, Cond::Custom(second_front_lost), vec![Action::Scene(txt("m13_front2_lost"))]));
+    // Kanbei's guard holds the strait bridge to the last: the scene plays when his army is down to a third
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::ArmyUnitsAtMost { army: 2, n: share("bh2_13", 2, 1, 3) }, vec![Action::Scene(txt("m13_stand"))]));
     m.flag = flag(13);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_12"]);
@@ -462,6 +561,13 @@ fn bh2_16() -> MissionDef {
     m.look = 1; // the Snow look
     m.weather = Weather::Snow;
     m.rank_days = 16;
+    m.intro = txt("m16_pre");
+    m.victory = txt("m16_post");
+    m.after = crate::bh2_text::chain(&["m16_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m16_day5"))]));
+    m.triggers.push(on_day(9, None, vec![Action::Scene(txt("m16_day9"))]));
+    // "Seam six: cut": the wire is read when Black Hole holds the Com Tower between the walls
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::OwnerAt { x: 20, y: 10, army: 1 }, vec![Action::Scene(txt("m16_wire"))]));
     m.flag = flag(16);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_15"]);
@@ -481,6 +587,11 @@ fn bh2_17() -> MissionDef {
     m.look = 1;
     m.fog = true;
     m.rank_days = 18;
+    m.intro = txt("m17_pre");
+    m.victory = txt("m17_post");
+    m.after = crate::bh2_text::chain(&["m17_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m17_day5"))]));
+    m.triggers.push(on_day(8, None, vec![Action::Scene(txt("m17_day8"))]));
     m.flag = flag(17);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_16"]);
@@ -501,6 +612,11 @@ fn bh2_18() -> MissionDef {
     m.weather = Weather::Snow;
     m.fog = true; // the whiteout: snow and fog together (M17 is fog alone, M16 snow alone)
     m.rank_days = 18;
+    m.intro = txt("m18_pre");
+    m.victory = txt("m18_post");
+    m.after = crate::bh2_text::chain(&["m18_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m18_day5"))]));
+    m.triggers.push(on_day(8, None, vec![Action::Scene(txt("m18_day8"))]));
     m.flag = flag(18);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_17"]);
@@ -540,6 +656,10 @@ fn bh2_19() -> MissionDef {
     m.factory = F14.to_vec();
     // Mount Cinder: from day 3 it erupts every day on 3 of the cells of the ring road round it (5 HP, any army's units, never below 1).
     m.volcano = Some(VolcanoDef::new(3, 1, 5, &ring(20, 10, 27, 17)).per_eruption(3));
+    m.intro = txt("m19_pre");
+    m.victory = txt("m19_post");
+    m.after = crate::bh2_text::chain(&["m19_map", "m19_warroom", "m19_staff"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m19_day6"))]));
     m.flag = flag(19);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_18"]);
@@ -557,6 +677,11 @@ fn bh2_20() -> MissionDef {
     ];
     m.units = deployment("bh2_20");
     m.rank_days = 16;
+    m.intro = txt("m20_pre");
+    m.victory = txt("m20_post");
+    m.after = crate::bh2_text::chain(&["m20_map"]);
+    m.triggers.push(on_day(4, None, vec![Action::Scene(txt("m20_day4"))]));
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m20_split"))]));
     m.flag = flag(20);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_19"]);
@@ -575,6 +700,12 @@ fn bh2_21() -> MissionDef {
     m.units = deployment("bh2_21");
     m.weather = Weather::Rain;
     m.rank_days = 18;
+    m.intro = txt("m21_pre");
+    m.victory = txt("m21_post");
+    m.after = crate::bh2_text::chain(&["m21_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m21_day5"))]));
+    // Andy's commandos free Nell when Black Hole takes the East Tower
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::OwnerAt { x: 21, y: 6, army: 1 }, vec![Action::Scene(txt("m21_freed"))]));
     m.flag = flag(21);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_20"]);
@@ -594,6 +725,12 @@ fn bh2_22() -> MissionDef {
     m.look = 3;
     m.fog = true;
     m.rank_days = 16;
+    m.intro = txt("m22_pre");
+    m.victory = txt("m22_post");
+    m.after = crate::bh2_text::chain(&["m22_map"]);
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m22_day5"))]));
+    // the archive (the ruins' Com Tower) is reached
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::OwnerAt { x: 17, y: 9, army: 1 }, vec![Action::Scene(txt("m22_binder"))]));
     m.flag = flag(22);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_21"]);
@@ -616,16 +753,26 @@ fn bh2_23() -> MissionDef {
     m.units = deployment("bh2_23");
     m.rank_days = 16;
     m.triggers = vec![
-        after(
+        // (once: the scenes play, the reserve wakes)
+        Trigger::new(
+            When::AfterAction,
             Cond::UnitAt {
                 name: "crumb",
                 x: M23_CRATE.0,
                 y: M23_CRATE.1,
             },
-            vec![Action::Spawn(wave(1, unit::NEOTANK, &M23_NEO))],
+            vec![
+                Action::Scene(crate::bh2_text::chain(&["m23_crate", "m23_journal", "m23_reserve"])),
+                Action::Spawn(wave(1, unit::NEOTANK, &M23_NEO)),
+            ],
         ),
         after(Cond::UnitGone("crumb"), vec![Action::Lose]),
     ];
+    m.intro = txt("m23_pre");
+    m.victory = txt("m23_post");
+    m.after = crate::bh2_text::chain(&["m23_map"]);
+    m.triggers.push(on_day(2, None, vec![Action::Scene(txt("m23_day2"))]));
+    m.triggers.push(on_day(4, None, vec![Action::Scene(txt("m23_day4"))]));
     m.flag = flag(23);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_22"]);
@@ -644,6 +791,11 @@ fn bh2_24() -> MissionDef {
     m.units = deployment("bh2_24");
     m.look = 2; // the Desert look
     m.rank_days = 18;
+    m.intro = txt("m24_pre");
+    m.victory = txt("m24_post");
+    m.after = crate::bh2_text::chain(&["m24_map"]);
+    m.triggers.push(on_day(3, None, vec![Action::Scene(txt("m24_day3"))]));
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m24_day5"))]));
     m.flag = flag(24);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_23"]);
@@ -673,6 +825,12 @@ fn bh2_25() -> MissionDef {
         weather: Weather::Sandstorm,
         fog: true,
     });
+    m.intro = txt("m25_pre");
+    m.victory = txt("m25_post");
+    m.after = crate::bh2_text::chain(&["m25_map", "m25_warroom", "m25_staff"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m25_day6"))]));
+    m.triggers.push(Trigger::new(When::TurnStart, Cond::Custom(second_front_won), vec![Action::Scene(txt("m25_front2_post"))]));
+    m.triggers.push(Trigger::new(When::TurnStart, Cond::Custom(second_front_lost), vec![Action::Scene(txt("m25_front2_lost"))]));
     m.flag = flag(25);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_24"]);
@@ -691,6 +849,12 @@ fn bh2_26() -> MissionDef {
     m.units = deployment("bh2_26");
     m.look = 1; // the Snow look
     m.rank_days = 18;
+    m.intro = txt("m26_pre");
+    m.victory = txt("m26_post");
+    m.after = crate::bh2_text::chain(&["m26_map"]);
+    m.triggers.push(on_day(2, None, vec![Action::Scene(txt("m26_day2"))]));
+    m.triggers.push(on_day(4, None, vec![Action::Scene(txt("m26_day4"))]));
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m26_folders"))]));
     m.flag = flag(26);
     m.stars = 2;
     m.needs = Needs::All(vec!["bh2_25"]);
@@ -715,6 +879,20 @@ const F22: [(u8, [u8; 3]); 14] = [
     (16, [unit::INFANTRY, unit::MD_TANK, unit::ARTILLERY]),
 ];
 
+/// Black Hole's (army 1's) funds, from the players table.
+fn funds_of_player(core: &Core) -> u32 {
+    let p = core.raw_read_32(0x0849_9598, -1) + 0x3C;
+    core.raw_read_32(p, -1)
+}
+
+/// M27: day 6 or later and Black Hole's funds (Von Bolt's vault) are under 500: the vault is empty.
+fn vault_empty(core: &mut Core) -> bool {
+    day(core) >= 6 && funds_of_player(core) < 500
+}
+
+/// Colin's treasury: the fortress's central city on M27's map (the map's `treasury` note, the city west of the keep). Black Hole's capture of it opens Sonja's sealed note.
+const M27_TREASURY: (u8, u8) = (18, 20);
+
 /// M27 Von Bolt's Note: Von Bolt (forced) + a free partner against Jess + Colin at the Orange Star sea fortress; the player's Black Factory and Deathray (rain).
 fn bh2_27() -> MissionDef {
     let mut m = MissionDef::new("bh2_27", "Von Bolt's Note");
@@ -728,6 +906,30 @@ fn bh2_27() -> MissionDef {
     m.weather = Weather::Rain;
     m.rank_days = 22;
     m.factory = F22.to_vec();
+    m.intro = txt("m27_pre");
+    m.victory = txt("m27_post");
+    m.after = crate::bh2_text::chain(&["m27_map"]);
+    m.triggers.push(on_day(2, None, vec![Action::Scene(txt("m27_day2"))]));
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m27_day5"))]));
+    // Sonja's note is "for the day your vault is empty": Von Bolt's. From day 6, when Black Hole's funds are under 500, he opens it (`m27_vault_empty`). It wins nothing. The trigger's latch is
+    // the persistent state "the note is opened" (saved with the mission's flags): the treasury's scene asks it with `Cond::Fired`, so it holds even if the funds recover.
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::Custom(vault_empty), vec![Action::Scene(txt("m27_vault_empty"))]).named("m27_note"));
+    // Colin's treasury (the fortress's central city): its capture sets Colin's funds to 0. If the note was opened earlier Von Bolt sells it as the truth (`m27_sale`); if the treasury falls first,
+    // a one-line notice. The win is the normal one (the HQ or a rout).
+    let treasury = Cond::OwnerAt { x: M27_TREASURY.0, y: M27_TREASURY.1, army: 1 };
+    m.triggers.push(Trigger::new(
+        When::AfterAction,
+        Cond::All(vec![treasury.clone(), Cond::Fired("m27_note")]),
+        vec![Action::Scene(txt("m27_sale")), Action::SetFunds { army: 2, funds: 0 }],
+    ));
+    m.triggers.push(Trigger::new(
+        When::AfterAction,
+        Cond::All(vec![treasury, Cond::Not(Box::new(Cond::Fired("m27_note")))]),
+        vec![
+            Action::Scene(Scene::new(vec![Line::say(co::COLIN, "The treasury is lost! ...We cannot pay another soldier.")])),
+            Action::SetFunds { army: 2, funds: 0 },
+        ],
+    ));
     m.flag = flag(27);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_26"]);
@@ -764,6 +966,12 @@ fn bh2_28() -> MissionDef {
         // nine days held: the storm passes
         Trigger::new(When::TurnStart, Cond::DayAtLeast(10), vec![Action::Win]),
     ];
+    m.intro = txt("m28_pre");
+    m.victory = txt("m28_post");
+    m.after = crate::bh2_text::chain(&["m28_map"]);
+    m.triggers.push(on_day(3, None, vec![Action::Scene(txt("m28_day3"))]));
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m28_day6"))]));
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m28_door"))]));
     m.flag = flag(28);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_27"]);
@@ -783,6 +991,10 @@ fn bh2_29() -> MissionDef {
     m.units = deployment("bh2_29");
     m.look = 2; // the Desert look
     m.rank_days = 22;
+    m.intro = txt("m29_pre");
+    m.victory = txt("m29_post");
+    m.after = crate::bh2_text::chain(&["m29_map", "m29_warroom"]);
+    m.triggers.push(on_day(6, None, vec![Action::Scene(txt("m29_day6"))]));
     m.flag = flag(29);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_28"]);
@@ -794,8 +1006,8 @@ const M31_NELL: (u8, u8) = (8, 8);
 const M31_OLAF: (u8, u8) = (24, 6);
 const M31_KANBEI: (u8, u8) = (39, 6);
 const M31_EAGLE: (u8, u8) = (38, 20);
-/// Aria's CO id: the new Orange Star commander of part two (the `aria` branch's id 93: not merged here, so a placeholder CO takes her place; replace this constant when it lands).
-const ARIA_CO: u8 = co::MAX;
+/// Aria's CO id: the new Orange Star commander of the finale's stage 2 (CO 93, `crate::aria`).
+const ARIA_CO: u8 = crate::co_new::ARIA;
 
 /// Each nation's troops land when the stage before it falls (cells in its zone, free of start units): (kind, cell). The nation's army is present from the start
 /// (a few units holding round its HQ) and owns nothing but the HQ, so it cannot build until then.
@@ -870,10 +1082,10 @@ fn owned(c: (u8, u8)) -> Cond {
 
 /// The next nation wakes: when the player holds this stage's HQ (and every line before it has fallen: a stage's HQ taken out of order moves nothing), the nation `army`'s troops land and
 /// it gets its funds. The fallen nations stay on the map and fight on.
-fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u8, u8))]) -> Trigger {
+fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u8, u8))], takeover: Scene) -> Trigger {
     let mut all = vec![owned(hq)];
     all.extend(before.iter().map(|&c| owned(c)));
-    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::AddFunds { army, funds }, stage(army, wave)])
+    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::AddFunds { army, funds }, stage(army, wave)])
 }
 
 /// A nation that is still asleep earns nothing: its HQ's income is taken back at each of army 1's turn starts until the lines before it have fallen (`wake` then gives it its fixed funds).
@@ -890,7 +1102,7 @@ fn fallen(army: u8, hq: (u8, u8)) -> Trigger {
 const M31_WAKE_FUNDS: i32 = 25000;
 
 /// M30 The Orange Line: a free pair against Rachel + Sami (one Orange Star army under a tag pair) at Orange Star's outer defences: two rivers, a trench of woods and a ridge with the Com Tower in its heart, forward bases, Sami's
-/// infantry on the line and Rachel's reserve and production behind it (normal look, rain and so fog). Its scenes (`m30_pre`, `m30_post`, `m30_map`) are the text branch's: wire them with `bh2_text::scene` when it lands.
+/// infantry on the line and Rachel's reserve and production behind it (normal look, rain and so fog).
 fn bh2_30() -> MissionDef {
     let mut m = MissionDef::new("bh2_30", "The Orange Line");
     m.objective = "Break the line at the trench's Com Tower, cross the east river and take Rachel's HQ.";
@@ -903,6 +1115,10 @@ fn bh2_30() -> MissionDef {
     m.weather = Weather::Rain; // (the rain forces fog)
     m.fog = true;
     m.rank_days = 24;
+    m.intro = txt("m30_pre");
+    m.victory = txt("m30_post");
+    m.after = txt("m30_map");
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m30_day5"))]));
     m.flag = flag(30);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_29"]);
@@ -937,18 +1153,15 @@ fn bh2_31() -> MissionDef {
         fallen(1, M31_NELL),
         fallen(2, M31_OLAF),
         fallen(3, M31_KANBEI),
-        wake(M31_NELL, &[], 2, M31_WAKE_FUNDS, &OLAF_WAVE),
-        wake(M31_OLAF, &[M31_NELL], 3, M31_WAKE_FUNDS, &KANBEI_WAVE),
-        wake(M31_KANBEI, &[M31_NELL, M31_OLAF], 4, M31_WAKE_FUNDS, &EAGLE_WAVE),
+        wake(M31_NELL, &[], 2, M31_WAKE_FUNDS, &OLAF_WAVE, txt("m31_takeover_olaf")),
+        wake(M31_OLAF, &[M31_NELL], 3, M31_WAKE_FUNDS, &KANBEI_WAVE, txt("m31_takeover_kanbei")),
+        wake(M31_KANBEI, &[M31_NELL, M31_OLAF], 4, M31_WAKE_FUNDS, &EAGLE_WAVE, txt("m31_takeover_eagle")),
         // Eagle's HQ is the last of stage 1: a scene, then the battle moves on to the Citadel
         Trigger::new(
             When::AfterAction,
             Cond::All(vec![owned(M31_EAGLE), owned(M31_KANBEI), owned(M31_OLAF), owned(M31_NELL)]),
             vec![
-                Action::Scene(Scene::new(vec![
-                    Line::say(co::EAGLE, "The Accord's last wing is down. We held the sky as long as we could."),
-                    Line::say(ARIA_CO, "Then it is mine to hold. Let them come to the citadel."),
-                ])),
+                Action::Scene(txt("m31_switch")),
                 Action::NextStage,
             ],
         ),
@@ -963,11 +1176,18 @@ fn bh2_31() -> MissionDef {
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(ARIA_CO)).funds(90000),
     ];
     st.look = 1; // the Snow look: the citadel stands on high ground (and the stage is no look twin of the gauntlet's)
-    st.intro = Scene::new(vec![
-        Line::say(ARIA_CO, "Every unit here is new, and every one is mine. The Accord does not end at the lakes."),
-        Line::say(crate::co_new::ASUKA, "Then we take it from the top, one pass at a time."),
-    ]);
+    st.intro = txt("m31_stage2");
+    st.victory = txt("m31_post");
+    st.triggers = vec![
+        on_day(6, None, vec![Action::Scene(txt("m31_day6"))]),
+        on_day(9, None, vec![Action::Scene(txt("m31_day9"))]),
+        on_day(12, None, vec![Action::Scene(txt("m31_day12"))]),
+    ];
     st.carry = Carry::All;
+    // the epilogue on the world map after the last win; the credits follow (`def`)
+    m.after = crate::bh2_text::chain(&["epilogue", "epilogue_toasts"]);
+    m.intro = txt("m31_pre");
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m31_day5"))]));
     m.stages = vec![st];
     m.flag = flag(31);
     m.stars = 3;
@@ -1002,6 +1222,12 @@ fn bh2_32() -> MissionDef {
         // Livia's fleet
         day_wave(7, vec![at(unit::BATTLESHIP, M32_FLEET[0]), at(unit::CRUISER, M32_FLEET[1]), at(unit::CRUISER, M32_FLEET[2]), at(unit::SUB, M32_FLEET[3]), at(unit::LANDER, M32_FLEET[4])]),
     ];
+    m.intro = txt("m32_pre");
+    m.victory = txt("m32_post");
+    m.after = txt("m32_epilogue");
+    m.triggers.push(on_day(3, None, vec![Action::Scene(txt("m32_day3"))]));
+    m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m32_day5"))]));
+    m.triggers.push(on_day(7, None, vec![Action::Scene(txt("m32_day7"))]));
     m.flag = flag(32);
     m.stars = 3;
     m.needs = Needs::All(vec!["bh2_29"]); // the secret mission opens after M29
@@ -1048,9 +1274,10 @@ pub fn def() -> CampaignDef {
     CampaignDef {
         source: SOURCE,
         roster: ROSTER.to_vec(),
-        prologue: Vec::new(),
-        prologue_song: None,
-        credits: Vec::new(),
+        prologue: crate::bh2_text::pages("prologue"),
+        prologue_song: crate::bh2_text::song("prologue"),
+        prologue_scenes: vec![txt("prologue_castle"), txt("prologue_allies"), txt("prologue_turn")],
+        credits: crate::bh2_text::credits(),
         missions,
         final_mission: "bh2_31",
         bonds: Vec::new(),
@@ -1094,10 +1321,10 @@ mod tests {
         let d = def();
         assert!(at(&d, "bh2_04").front2.as_ref().is_some_and(|f| f.sky));
         let m5 = at(&d, "bh2_05");
-        assert!(m5.held_hq.is_none() && m5.held_more.is_empty() && m5.triggers.is_empty(), "M5 has no held or second HQ");
+        assert!(m5.held_hq.is_none() && m5.held_more.is_empty(), "M5 has no held or second HQ");
         assert_eq!(m5.armies.len(), 3);
         // M6: the Com Tower network and Eagle's takeover (one trigger); M7 a harbour assault; M8 Koal's fuel line
-        assert_eq!(at(&d, "bh2_06").triggers.len(), 1);
+        assert_eq!(at(&d, "bh2_06").triggers.len(), 2, "the takeover and the day-5 scene");
         assert_eq!(at(&d, "bh2_07").look, 2);
         assert!(matches!(at(&d, "bh2_08").weather, Weather::Sandstorm));
     }
@@ -1136,7 +1363,7 @@ mod tests {
         let m25 = at(&d, "bh2_25");
         let f = m25.front2.as_ref().expect("M25's second front");
         assert!(!f.sky && matches!(f.weather, Weather::Sandstorm) && matches!(f.map, MapSrc::Built("bh2_25b")));
-        assert_eq!(at(&d, "bh2_23").triggers.len(), 2);
+        assert_eq!(at(&d, "bh2_23").triggers.len(), 4, "the crate scenes and reserve, the loss, the day-2 and day-4 scenes");
     }
 
     /// M23: the crate tile and the Neotank cells are the map's `mark_` notes' cells, free of start units, on ground; Crumb is the named APC of Black Hole.
@@ -1156,18 +1383,19 @@ mod tests {
         let d = def();
         // M27: the player's factory; M28: waves and the day-10 win, no day limit; M29: three armies; M30: four held HQs and four triggers (three wakes and the win), no day limit
         assert!(at(&d, "bh2_27").factory.len() == 14);
-        assert_eq!(at(&d, "bh2_28").triggers.len(), 5);
+        assert_eq!(at(&d, "bh2_28").triggers.len(), 8, "four waves, the day-10 win and the day-3, 5 and 6 scenes");
         assert_eq!(at(&d, "bh2_28").day_limit, 0);
         assert_eq!(at(&d, "bh2_29").armies.len(), 3);
         let m31 = at(&d, "bh2_31");
         assert!(m31.held_hq.is_some() && m31.held_more.len() == 3);
-        assert_eq!(m31.triggers.len(), 10); // (three sleep, three cut-off, three wakes and the win)
+        assert_eq!(m31.triggers.len(), 11, "three sleep, three cut-off, three wakes, the switch and the day-5 scene");
         assert_eq!(m31.armies.len(), 5);
         assert_eq!(m31.day_limit, 0);
         assert_eq!(m31.stages.len(), 1, "the Last Citadel is stage 2 of M31");
         assert_eq!(m31.stages[0].armies.len(), 2);
         assert!(!m31.stages[0].deploy.is_empty() && m31.stages[0].units.iter().all(|u| u.army == 2));
-        assert_eq!(at(&d, "bh2_32").triggers.len(), 3);
+        assert_eq!(at(&d, "bh2_32").triggers.len(), 6, "three waves and their day scenes");
+        assert_eq!(m31.stages[0].triggers.len(), 3, "days 6, 9 and 12 on stage 2");
     }
 
     /// Every cell a wave or a stage names is ground (sea for M32's fleet) and free of start units; M30's stage HQs are the map's `Q` tiles.
@@ -1216,6 +1444,117 @@ mod tests {
             let region = crate::world_picture::BH2.map().region_at(x as i32, y as i32);
             assert!(region != 0, "{}: the flag ({x}, {y}) is on the sea", m.key);
         }
+    }
+
+    /// Every scene of the dialogue files is asked for by the code, except the map-switch merge's TODO list, and every scene the code asks for exists
+    /// (a missing one is a panic in `def()`).
+    #[test]
+    fn every_dialogue_scene_is_used() {
+        let _ = def();
+        let used = crate::bh2_text::keys_used();
+        let unused: Vec<String> = crate::bh2_text::keys()
+            .into_iter()
+            .filter(|k| !used.contains(k) && !TODO_SCENES.contains(&k.as_str()))
+            .collect();
+        assert!(unused.is_empty(), "scenes in src/bh2_text/*.txt that no mission asks for: {unused:?}");
+        for k in TODO_SCENES {
+            assert!(crate::bh2_text::keys().iter().any(|x| x == k), "{k} is in the TODO list but not in the files");
+            assert!(!used.contains(k), "{k} is wired: take it off TODO_SCENES");
+        }
+    }
+
+    /// The pools: the eleven officers, no Sturm; M4 without Hawke (he leads the sky front); every mission's lead is as the mission list says.
+    #[test]
+    fn the_free_pick_pool_is_the_eleven_officers_and_leads_are_forced_as_planned() {
+        let cos: Vec<u8> = ROSTER.iter().map(|r| r.0).collect();
+        assert_eq!(cos.len(), 11);
+        assert!(!cos.contains(&co::STURM), "Sturm is never a free pick");
+        assert!(ROSTER.iter().all(|r| r.1));
+        let d = def();
+        assert!(!at(&d, "bh2_04").pool.contains(&co::HAWKE) && at(&d, "bh2_04").pool.len() == 10);
+        let asuka = crate::co_new::ASUKA;
+        let lead = |k: &str| match &at(&d, k).armies.iter().find(|a| a.colour == colour::BLACK_HOLE).unwrap().co {
+            CoSpec::Fixed(c) => Some((*c, None)),
+            CoSpec::Pair(a, b) => Some((*a, Some(*b))),
+            CoSpec::PickPartner(a) => Some((*a, None)),
+            _ => None,
+        };
+        let forced: [(&str, u8); 17] = [
+            ("bh2_01", asuka),
+            ("bh2_02", asuka),
+            ("bh2_05", co::STURM),
+            ("bh2_08", co::KOAL),
+            ("bh2_10", co::KOAL),
+            ("bh2_12", asuka),
+            ("bh2_13", asuka),
+            ("bh2_15", co::HAWKE),
+            ("bh2_16", co::JUGGER),
+            ("bh2_17", co::LASH),
+            ("bh2_18", co::FLAK),
+            ("bh2_22", co::CLONE_ANDY),
+            ("bh2_23", asuka),
+            ("bh2_24", co::ADDER),
+            ("bh2_26", asuka),
+            ("bh2_27", co::VON_BOLT),
+            ("bh2_28", asuka),
+        ];
+        for (k, c) in forced {
+            assert_eq!(lead(k).map(|l| l.0), Some(c), "{k}'s lead");
+        }
+        for k in ["bh2_03", "bh2_06", "bh2_07", "bh2_09", "bh2_11", "bh2_14", "bh2_19", "bh2_20", "bh2_21", "bh2_25", "bh2_29", "bh2_30", "bh2_31", "bh2_32"] {
+            assert!(lead(k).is_none(), "{k} is a free pick");
+        }
+    }
+
+    /// M29 opens the secret M32 and nothing else needs M32; the staff roll has the secret pages; the prologue has its pages and three scenes.
+    #[test]
+    fn the_secret_opens_after_m29_and_the_story_is_wired() {
+        let d = def();
+        assert!(matches!(&at(&d, "bh2_32").needs, Needs::All(v) if v == &vec!["bh2_29"]));
+        assert!(d.missions.iter().filter(|m| m.key != "bh2_32").all(|m| !matches!(&m.needs, Needs::All(v) if v.contains(&"bh2_32"))));
+        assert!(!d.prologue.is_empty() && d.prologue_scenes.len() == 3 && d.prologue_song.is_some());
+        assert!(d.credits.iter().any(|c| c.secret) && d.credits.iter().any(|c| !c.secret));
+        assert!(!at(&d, "bh2_31").after.lines.is_empty() && !at(&d, "bh2_32").after.lines.is_empty());
+        for m in &d.missions {
+            let post = if m.stages.is_empty() { &m.victory } else { &m.stages[0].victory };
+            assert!(!m.intro.lines.is_empty() && !post.lines.is_empty(), "{} has its pre and post scenes", m.key);
+        }
+    }
+
+    /// Aria is the real CO 93 in the final mission.
+    #[test]
+    fn aria_is_co_93_in_the_final_mission() {
+        assert_eq!(ARIA_CO, 93);
+        let d = def();
+        assert!(matches!(&at(&d, "bh2_31").stages[0].armies[1].co, CoSpec::Fixed(93)), "Aria leads stage 2 of the finale");
+    }
+
+    /// The release toggle shows the campaign; the text ids of every scene fit the compiler's budget.
+    #[test]
+    fn released_and_the_text_ids_fit() {
+        assert!(RELEASED && dev_flag());
+        let used = crate::custom_campaign::text_ids_used(&def());
+        assert!(used + 150 <= 3072, "the BH2 Campaign's scenes use {used} text ids: pack or trim");
+    }
+
+    /// M27's treasury is a city of Orange Star's inside the fortress (the map's `treasury` note), and the trigger is a once-only capture trigger that zeroes Colin's funds and does not win.
+    #[test]
+    fn m27_note_wins_nothing_and_the_treasury_empties_colins_funds() {
+        let text = include_str!("../five/bh2/bh2_27.txt");
+        assert!(text.contains(&format!("# treasury: ({}, {})", M27_TREASURY.0, M27_TREASURY.1)), "the map marks the treasury");
+        let rows: Vec<&str> = text.lines().filter(|l| !l.starts_with('#') && !l.starts_with("map") && !l.starts_with("armies") && !l.starts_with("unit") && !l.is_empty()).collect();
+        assert_eq!(rows[M27_TREASURY.1 as usize].as_bytes()[M27_TREASURY.0 as usize], b'C', "an Orange Star city (capital C)");
+        let d = def();
+        let m = at(&d, "bh2_27");
+        // three triggers: the note (funds under 500: no win), the treasury with the note opened (m27_sale) and without (a notice); the last two set Colin's funds to 0; none wins
+        let n = m.triggers.len();
+        let ts = &m.triggers[n - 3..];
+        assert!(ts.iter().all(|t| t.once), "each fires once");
+        assert!(matches!(&ts[0].cond, Cond::Custom(_)) && ts[0].then.len() == 1, "the note's scene alone");
+        for t in &ts[1..] {
+            assert!(t.then.iter().any(|a| matches!(a, Action::SetFunds { army: 2, funds: 0 })), "Colin's funds go to 0");
+        }
+        assert!(ts.iter().all(|t| !t.then.iter().any(|a| matches!(a, Action::Win))), "the win is the normal one");
     }
 
     #[test]

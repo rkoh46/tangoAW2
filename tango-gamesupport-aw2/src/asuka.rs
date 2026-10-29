@@ -2,29 +2,32 @@
 //! `art/cos/asuka/` from the project owner's picture, imported by `aw2dev co portrait import`).
 //!
 //! She is built from pieces that already run in the game:
-//! - **Sonja's Dual Strike block** ([`SONJA_DS`], `co_roster::ds_co`): vision +1 / +2 / +2 in fog, her HP hidden from the enemy (Dual Strike's skill 0x01; the strike-first skill 0x04 and the
-//!   sees-into-hiding-places skill 0x08 in her powers), the enemy's terrain stars cut by 1 / 2 / 3, luck 10 with bad luck 5, the power meter's usual +10% firepower in a power.
-//!   Her **luck is Nell's** (maximum roll 20 in every level, no bad luck: the user's choice, replacing Sonja's quirk) and her **movement Sturm's**: every terrain costs 1 for ground units (his row's charts).
-//! - **Her own day to day**: all her units attack and defend [`DAY_BONUS`]% better (`co_roster::stat`), in every power too.
-//! - **Hawke's Black Wave and Black Storm** (AW2's own mass-HP procedure `sub_08044D70`, called by her own two power functions in `co_powers::asuka_fn`): her units regain 1 (2) HP, the enemy's
-//!   lose 1 (2) HP, never below 1 HP; the sparkle and the cut-in are Hawke's (his presentation row is her template, [`LIKE`]).
+//! - **Sonja's Dual Strike block** ([`SONJA_DS`], `co_roster::ds_co`): vision +1 / +2 / +2 in fog, her HP hidden from the enemy (Dual Strike's skill 0x01; the sees-into-hiding-places skill 0x08
+//!   in her powers), the enemy's terrain stars cut by 1 / 2 / 3, the power meter's usual +10% firepower in a power. Sonja's strike-first skill (0x04, Super Power) is masked off in her row.
+//!   Her **luck is Nell's** (maximum roll 20 in every level, no bad luck: the user's choice, replacing Sonja's quirk).
+//! - **No movement trait** any more (the Sturm's-movement charts were dropped with the simplification); her day to day is **+5% attack and defence** again ([`DAY_BONUS`] 5, in every power too).
+//! - **Hawke's mass-HP procedure** (`sub_08044D70`, called by her own two power functions in `co_powers::asuka_fn`) is now only the carrier of the halving and one HP: Dark Intel ([`HP_ENEMY`] 0, [`HP_OWN`] 0)
+//!   changes no HP, Event Horizon makes every enemy unit lose 1 HP (never below 1); the sparkle and the cut-in are Hawke's (his presentation row is her template, [`LIKE`]).
+//! - **Rain until her next turn**: both powers set AW2's own rain (the weather argument of the mass procedure is 2, as Drake's Typhoon's), which Dual Strike's rules give fog of war ([`crate::ds_weather`]). It lasts
+//!   as Drake's does: AW2 ends a weather when every army has ended a turn since it began, so the rain (and the fog it forced) starts when she fires, lasts through the opponents' turn(s) and is gone when her next turn
+//!   begins, for any number of armies. The weather and the fog flag go back to what they were (a fog-on battle keeps its fog). Vision follows AW2's rain (-1) plus her bonus.
 //! - **Drake's halving, extended**: the same procedure's fuel flag (Drake's Tsunami and Typhoon) halves every enemy unit's fuel, rounded down, and `co_powers::mass_unit` halves every enemy unit's
 //!   ammo the same way (a unit with no ammo stat has 0 and is unaffected). Not Drake's rain.
 //! - **Sonja's art** (the project owner's decision): her presentation row's pictures, palette, expressions and HUD face are AW2's Sonja row; only her name graphic is hers. Her HQ is Black Hole's
 //!   (her row's property style, as Hawke's and Lash's: the HQ follows the CO, not the colour slot).
 //!
-//! | | Day to day | CO Power, Dark Intel (3 stars) | Super Power, Event Horizon (9 stars in all) |
+//! | | Day to day, Black Insight | CO Power, Dark Intel (4 stars) | Super Power, Event Horizon (8 stars in all) |
 //! |---|---|---|---|
-//! | Attack / defence | +5% / +5% | +5% / +5% | +5% / +5% |
+//! | Attack / defence | +5% / +5% | +5% / +5% (and the power's own +10% / +10%) | the same |
 //! | Vision | +1 | +2, sees into woods and reefs | +2, sees into hiding places |
 //! | Terrain stars the enemy loses | 1 | 2 | 3 |
-//! | HP | hidden from the enemy | own units +1 HP, enemy units -1 HP | own +2, enemy -2; strikes first when attacked |
+//! | HP | hidden from the enemy | none | every enemy unit loses 1 HP |
 //! | Enemy ammo and fuel | | halved | halved |
-//! | Luck | 0..19% | 0..19% | 0..19% |
-//! | Movement | every terrain costs 1 | same | same |
+//! | Weather | | rain with fog until her next turn | the same |
+//! | Luck | 0..19% (Nell's) | same | same |
 //! | Firepower | 0 | +10% (every power) | +10% |
 //!
-//! Stars: Eagle's, 3 / 9 (Sonja 3/5, Hawke 5/9). Not in the Emerald Sun Campaign (`aw2dev campaign check`) and reserved for the BH2 Campaign.
+//! Stars: 4 / 8, the normal cost (Sonja 3/5, Hawke 5/9, Kanbei 4/7). Not in the Emerald Sun Campaign (`aw2dev campaign check`) and reserved for the BH2 Campaign.
 
 use crate::co_new::ASUKA;
 
@@ -33,16 +36,16 @@ pub const SONJA_DS: u8 = 8;
 /// AW2's Hawke (row 14): her presentation template (Black Hole's music, cut-in, the sparkle, the CPU's profile and her place in the lists) and the power procedures she borrows.
 pub const LIKE: u8 = 14;
 /// Stars of her CO Power and of her Super Power in all.
-pub const STARS: (u32, u32) = (3, 9);
-/// AW2's Sturm (row 10): her movement charts are his (every terrain costs 1 for ground units).
-pub const MOVE_LIKE: u8 = 10;
+pub const STARS: (u32, u32) = (4, 8);
 /// Nell's day-to-day maximum luck roll (AW2's table: 20; her powers raise it to 60 and 100, Asuka's keep 20), no bad luck.
 pub const LUCK: i16 = 20;
-/// Her day to day: all her units attack and defend this much better (percent), in every power too.
+/// Her day to day: all her units attack and defend this much better (percent), in every power too. 5 (the owner confirmed it; set 0 to switch it off).
 pub const DAY_BONUS: i32 = 5;
-/// Her CO Power's and Super Power's HP effect on her own units and on the enemy's (Hawke's Black Wave 1, Black Storm 2).
-pub const HP_OWN: [i32; 3] = [0, 1, 2];
-pub const HP_ENEMY: [i32; 3] = [0, 1, 2];
+/// Her powers' HP effect on her own units and on the enemy's, by power level (none in Dark Intel, 1 off every enemy unit in Event Horizon).
+pub const HP_OWN: [u8; 3] = [0, 0, 0];
+pub const HP_ENEMY: [u8; 3] = [0, 0, 1];
+/// AW2 ability bit "strikes first when attacked" (Sonja's Super Power has it; Event Horizon does not).
+pub const STRIKE_FIRST_ABILITY: u32 = 0x04;
 
 /// Whether `co` is Asuka.
 pub fn is_asuka(co: u8) -> bool {
@@ -54,9 +57,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn she_is_between_sonja_and_hawke() {
-        assert_eq!(STARS, (3, 9), "Eagle's meter (AW2's and Dual Strike's table): her powers are stronger than Sonja's 3/5 and Hawke's 5/9 together would be");
-        assert_eq!(DAY_BONUS, 5);
+    fn she_is_sonjas_numbers_without_the_extras() {
+        assert_eq!(STARS, (4, 8), "the normal cost");
+        assert_eq!(DAY_BONUS, 5, "the +5% is on");
+        assert_eq!((HP_OWN, HP_ENEMY), ([0, 0, 0], [0, 0, 1]));
         assert_eq!(ASUKA, 92);
         assert!((ASUKA as u32) < crate::co_roster::ROOM);
         assert_eq!(crate::co_roster::ds_co(ASUKA), Some(SONJA_DS));

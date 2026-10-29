@@ -9,7 +9,7 @@ army = "black_hole"
 role = "Black Hole's copy of Andy, made to fight for it"
 theme = "own:cloneandy"
 luck = [10, 10, 10]
-bio = "Black Hole's copy of Andy, made to fight for it. Cheerful, tireless and never doubts an order. Hit: Orders Miss: Giving up"
+bio = "Black Hole's copy of Andy. Cheerful, obedient, a little uncanny. Hit: Orders Miss: Giving up"
 stars = { cop = 3, scop = 6 }
 
 # The HQ of his country (Black Hole's own), as Andy's data gives it: "default".
@@ -17,14 +17,14 @@ hq = "default"
 
 [d2d]
 name = "Andy's own"
-text = "Andy, copied and tuned a little. All units have 2% more firepower and 2% more defence."
+text = "A tuned copy of Andy. Firepower and defense of all units rise by 2%."
 mods = [{ units = "all", attack = 2, defence = 2 }]
 
 # Every power adds the game's own +10% firepower and +10% defence (co_roster::stat, AW2's power procedure): that is Hyper Repair's boost, so its mods are
 # empty (listing it here would count it twice). In all: 112% firepower, 112% defence.
 [cop]
 name = "Hyper Repair"
-text = "Restores two HP to all units. Firepower and defence rise by 10%."
+text = "Restores 2 HP to all units. Firepower and defense rise by 10%."
 heal = 2
 mods = []
 
@@ -32,7 +32,7 @@ mods = []
 # +10 / +10 and the day to day: 142% firepower, 132% defence.
 [scop]
 name = "Hyper Upgrade"
-text = "Restores four HP to all units. Firepower rises by 40% and defence by 30%."
+text = "Restores 4 HP to all units. Firepower rises by 40% and defense by 30%."
 heal = 4
 mods = [{ units = "all", attack = 30, defence = 20 }]
 

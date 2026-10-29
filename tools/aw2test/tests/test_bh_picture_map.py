@@ -28,8 +28,15 @@ def _view(ctx, e, cx, cy, name):
 
 
 def _run(ctx, won, tag):
+    old = os.environ.get("TANGOAW2_BH_WORLDMAP")
     os.environ["TANGOAW2_BH_WORLDMAP"] = "bh2"
-    e, g, d = a2.boot(ctx, won, 0xFFF | (0x1FF << 12), picks={}, at=0)
+    try:
+        e, g, d = a2.boot(ctx, won, 0xFFF | (0x1FF << 12), picks={}, at=0)      # (the console takes its environment here; restored at once: it must not leak into the next test)
+    finally:
+        if old is None:
+            os.environ.pop("TANGOAW2_BH_WORLDMAP", None)
+        else:
+            os.environ["TANGOAW2_BH_WORLDMAP"] = old
     d.wait_world_map()
     e.wait(120)
     shots = [_view(ctx, e, cx, cy, f"{tag}_{cx}_{cy}") for cx, cy in ((0, 0), (16, 0), (0, 48), (16, 96))]

@@ -13,6 +13,7 @@ from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2
 from aw2test import dscampaign as dc
 from aw2test import stitch
+from aw2test import tag as tagmod
 from aw2test.emu import Emu
 from aw2test.game import Game
 from aw2test.harness import test
@@ -53,6 +54,19 @@ def capture(ctx, e, g, d, cell, army):
     ctx.require(any(n.lower().startswith("capt") for n in menu["names"]), f"Capture offered at {cell} ({menu['names']})")
     g.choose("Capt", g.ACTION_MENU)
     e.wait(120)
+
+
+def to_player_turn(e, g, d, frames=24000):
+    """Presses A through the scripts until it is the player's (army 5's) turn with nothing running: the computer's turns of the four nations go by."""
+    for _ in range(frames // 20):
+        if d.scripts_running():
+            e.press("A", 4)
+        elif g.current_army() == 5 and d.in_battle():
+            e.wait(30)
+            if g.current_army() == 5 and not d.scripts_running():
+                break
+        e.wait(16)
+    g._units_base = g._players_base = None
 
 
 def settle(e, g, d, frames=6000):
@@ -175,6 +189,7 @@ def bh2_m31_progression(ctx):
     w, h = d.size()
     d.leave_setup()
     a2.intro(ctx, e, d, "m31", (0,))
+    to_player_turn(e, g, d)     # (the finale's own opening scene, m31_pre, runs to its end; the four nations' computer turns pass)
     d.wait_control()
     g._units_base = g._players_base = None
     player = 5
@@ -247,15 +262,20 @@ def bh2_m31_progression(ctx):
     d.wait_control()
     g._units_base = g._players_base = None
     frames.append((scene, {"title": "The switch: The Last Citadel opens with Aria", "plain": True, "lines": [
-        "The same battle, on the second map: Aria's scene, the survivors on the deploy cells in the south-west camp, Aria (Orange Star; her CO is the placeholder until the Aria CO lands) leading a revived army of brand-new full-strength units."]}))
+        "The same battle, on the second map: Aria's scene, the survivors on the deploy cells in the south-west camp, Aria (Orange Star, CO 93) leading a revived army of brand-new full-strength units."]}))
     home(g, e)
     full = stitch.stitch(Quiet(ctx), g, "m31b_full", w, h)
     frames.append((full, {"title": "Stage 2, the whole map: Aria's fortress on high ground", "marks": [("Aria's HQ", (33, 5), "next")], "lines": [
         f"{len(g.units(army=2))} units on the plateau, the player's {len(g.units(army=1))} survivors in the camp. Approaches: the Aisne's bridges and the passes. No pipes."]}))
     capture(ctx, e, g, d, (33, 5), 1)
     shots = []
-    for k in range(6):
-        shots.append(a2.pic(ctx, e, f"m31b_win{k}"))
+    for k in range(120):          # (the victory scene, m31_post, is dialogue: A through its boxes until the battle is over)
+        if k < 6:
+            shots.append(a2.pic(ctx, e, f"m31b_win{k}"))
+        if bool(e.u8(dc.LAST_RESULT)) or not d.in_battle():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
         e.wait(40)
     ended = bool(e.u8(dc.LAST_RESULT)) or not d.in_battle()
     ctx.check(ended, "Aria's HQ taken: the campaign's final mission is won")
@@ -324,6 +344,7 @@ def play_to_stage_two(ctx):
     e, g, d = b2.enter(ctx, 31)
     d.leave_setup()
     a2.intro(ctx, e, d, "m31", (0,))
+    to_player_turn(e, g, d)     # (the finale's own opening scene, m31_pre, runs to its end; the four nations' computer turns pass)
     d.wait_control()
     g._units_base = g._players_base = None
     home(g, e)
@@ -348,6 +369,8 @@ def bh2_m31_stage_two_suspend_and_resume(ctx):
     e, g, d = play_to_stage_two(ctx)
     mine = signature(g.units(army=1))
     aria = len(g.units(army=2))
+    pairs = [tagmod.partner(e, a) for a in range(1, 5)]
+    ctx.check(any(pairs), f"the player's tag pair is live before the save ({pairs[0]})")
     ctx.log("before the save: players " + str([(a, g.player(a)['raw'][0x14:0x16].hex(), g.player(a)['raw'][0x1B], g.player(a)['raw'][0x1A], g.player(a)['raw'][0x2A]) for a in range(1, 5)]))
     names = saves.suspend(g)
     ctx.check("Save" in names, f"Save on the map menu of stage 2 ({names})")
@@ -369,6 +392,7 @@ def bh2_m31_stage_two_suspend_and_resume(ctx):
     ctx.eq(stage_of(e), 1, "resumed on stage 2 (the stage number came back)")
     ctx.eq(e.u8(FIVE_ON), 0, "the four-army game is on")
     ctx.eq(d.mission(), 30, "the mission is M31")
+    ctx.eq([tagmod.partner(e, a) for a in range(1, 5)], pairs, "the tag pairs survive a stage-2 resume (the stage mark used to be written over the pairs' tail)")
     ctx.eq(len(g.units(army=2)), aria, "Aria's army as saved")
     ctx.eq(signature(g.units(army=1)), mine, "the player's units as saved")
     ctx.eq(owner(e, 33, 5), 2, "Aria's HQ is on the map")
@@ -416,3 +440,76 @@ def bh2_m31_switch_is_deterministic(ctx):
         ctx.log(f"run {run + 1}: {prints[-1]}")
         e.close()
     ctx.eq(prints[0], prints[1], "two runs give the same battle after the switch and a computer turn")
+
+
+def m27_treasury(ctx, vault_empty, recover=False):
+    """M27 entered; with `vault_empty` the day is 6 and Black Hole's funds are 0 (Von Bolt's vault is empty: the note's scene, `m27_vault_empty`, plays after the next action); Black Hole then really
+    captures Colin's treasury, the fortress's central city (18,20): Colin's funds are 0 afterwards. Returns the texts of the scenes shown. Nothing wins the mission."""
+    e, g, d = b2.enter(ctx, 27)
+    d.leave_setup()
+    a2.intro(ctx, e, d, "m27", (0,))
+    d.wait_control()
+    g._units_base = g._players_base = None
+    funds2 = lambda: e.u32(g.player(2)["addr"])
+    ctx.check(funds2() > 0, f"Colin has funds at the start ({funds2()})")
+    if vault_empty:
+        e.w16(dc.DAY, 6)
+        e.w32(g.player(1)["addr"], 0)
+    if recover:
+        # the note opens after the next action (the vault is empty), then the funds come back: the note stays opened (the trigger's latch)
+        u = next(u for u in g.units(army=1) if u["type"] in (1, 2, 5))
+        try:
+            g.wait_unit(u["x"], u["y"])
+        except Exception:        # (the note's scene opens in the middle of the action: the harness waits for an idle map; the scene is pressed through next)
+            pass
+        settle(e, g, d)
+        g._units_base = g._players_base = None
+        e.w32(g.player(1)["addr"], 20000)
+        e.wait(10)
+    capture(ctx, e, g, d, (18, 20), 1)
+    texts = []
+    last = None
+    for _ in range(600):
+        t = d.text_shown()
+        if t and t != last:
+            texts.append(a2.clean(t))
+            last = t
+        if d.scripts_running():
+            e.press("A", 4)
+        elif not t and texts:
+            break
+        e.wait(10)
+    settle(e, g, d)
+    g._units_base = g._players_base = None
+    ctx.eq(owner(e, 18, 20), 1, "the treasury is Black Hole's")
+    ctx.eq(funds2(), 0, "Colin's funds are 0")
+    ctx.check(not e.u8(dc.LAST_RESULT) and d.in_battle(), "the mission goes on: only the HQ or a rout wins it")
+    e.close()
+    return texts
+
+
+@test(name="bh2_m27_note_and_treasury", modes=("ds",))
+def bh2_m27_note_and_treasury(ctx):
+    """M27 Von Bolt's Note: Black Hole's funds under 500 from day 6 open Sonja's note (a scene, no win); the capture of Colin's treasury then plays Von Bolt's sale (`m27_sale`) and zeroes Colin's funds."""
+    texts = m27_treasury(ctx, True)
+    ctx.log(f"scenes: {texts}")
+    ctx.check(any("note" in t.lower() or "vault" in t.lower() for t in texts), "the note's scene was shown")
+    ctx.check(any("sale" in t.lower() or "truth" in t.lower() for t in texts), "Von Bolt's sale was shown")
+
+
+@test(name="bh2_m27_treasury_first_is_a_notice", modes=("ds",))
+def bh2_m27_treasury_first_is_a_notice(ctx):
+    """The treasury falls before the vault is empty: a one-line notice instead of the sale (the note is not opened), and Colin's funds are 0."""
+    texts = m27_treasury(ctx, False)
+    ctx.log(f"scenes: {texts}")
+    ctx.check(any("treasury" in t.lower() for t in texts), "the notice was shown")
+    ctx.check(not any("sale" in t.lower() for t in texts), "no sale: the note was not opened")
+
+
+@test(name="bh2_m27_note_stays_opened_when_the_funds_recover", modes=("ds",))
+def bh2_m27_note_stays_opened_when_the_funds_recover(ctx):
+    """The note's "opened" state is the vault trigger's latch: the vault empties (funds 0 from day 6, the note's scene plays), the funds recover to 20000, and the treasury's capture still plays Von Bolt's sale."""
+    texts = m27_treasury(ctx, True, recover=True)
+    ctx.log(f"scenes: {texts}")
+    ctx.check(any("sale" in t.lower() or "truth" in t.lower() for t in texts), "Von Bolt's sale was shown although the funds had recovered")
+    ctx.check(not any("cannot pay another soldier" in t for t in texts), "not the plain notice")

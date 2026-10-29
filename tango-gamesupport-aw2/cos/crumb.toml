@@ -5,12 +5,12 @@ army = "black_hole"
 role = "a Black Hole soldier promoted by Sturm"
 theme = "own:crumb"
 luck = [10, 10, 20]
-bio = "A Black Hole soldier promoted by Sturm. Keeps his troops fed and supplied."
+bio = "Pvt. Pip \"Crumb\" Hobb, promoted by Sturm. Keeps troops fed, with a biscuit named Gerald. Hit: Biscuits Miss: Being left behind"
 stars = { cop = 3, scop = 6 }
 
 [d2d]
 name = "Rank and File"
-text = "My foot soldiers are sturdy, and anyone on a city or base gets fed."
+text = "Infantry and Mech have 10% more firepower and defense. Units on his cities and bases are resupplied."
 mods = [ { units = "foot", attack = 10, defence = 10 } ]
 
 [cop]

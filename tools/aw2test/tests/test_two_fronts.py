@@ -310,6 +310,46 @@ def two_front_looks_and_deployments(ctx):
         e.close()
 
 
+def forge_partner(e, army, co):
+    """A tag partner for `army` in the running battle (the Teams screen's pick, written straight into the pair state): the record crate::tag keeps and suspend.rs saves."""
+    import struct
+    from aw2test import tag as tagmod
+    from aw2test import rom as romlib
+    rec = bytearray(tagmod.REC)
+    rec[tagmod.P_CO] = romlib.co_id(co)
+    e.write(tagmod.rec(army), bytes(rec))
+    e.w8(tagmod.MAGIC_AT, 0x7A)
+
+
+@test(modes=("ds",))
+def two_front_saved_halfway_keeps_the_tag_pairs(ctx):
+    """A two-front mission saved halfway with a tag pair: after a reboot's Continue the pairs are as saved (the two-front mark used to be written over the pairs' tail at the same offset and cut the length:
+    the pairs were lost)."""
+    from aw2test import tag as tagmod
+    e, g, d = start(ctx, VICTORY_OR_DEATH)
+    first_round(ctx, e, d)
+    forge_partner(e, 1, "sami")
+    e.wait(4)
+    before = tagmod.partner(e, 1)
+    ctx.require(before is not None and before["co"] == 4, f"the pair is live before the save ({before})")
+    names = saves.suspend(g)
+    ctx.check("Save" in names, f"Save on the map menu ({names})")
+    img = saves.flash(e, os.path.join(ctx.out, "saved_pairs"))
+    ctx.check(len(img.slot(14) or b"") > 0xE28 + 0x80, f"slot 14 holds the pairs and both fronts ({len(img.slot(14) or b'')} bytes)")
+    e.close()
+    e, g, d = boot(ctx, img.path)
+    d.open_campaign_box()
+    d.chooser_row(1)
+    e.press("A", 8)
+    e.wait(30)
+    d.box_row(0)
+    e.press("A", 8)
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1200, step=10), "Continue: the battle")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    ctx.eq(tagmod.partner(e, 1), before, "the tag pair after a two-front resume")
+
+
 @test(modes=("ds",))
 def two_front_saved_halfway(ctx):
     """A mission saved halfway (map menu > Save) keeps both fronts: after a

@@ -1,5 +1,5 @@
-"""Driving the BH2 Campaign's development build (crate::bh2_campaign): the BH Campaign's engine, a fifth entry on Select Mode's Campaign chooser, behind the
-development flag TANGOAW2_BH2_CAMPAIGN (set in every console's own environment: `ENV`). `boot` continues at a chosen progress; `enter` opens a mission through its CO
+"""Driving the BH2 Campaign (crate::bh2_campaign): the BH Campaign's engine, the fifth entry on Select Mode's Campaign chooser (released; TANGOAW2_BH2_CAMPAIGN, set in every
+console's own environment as `ENV`, would show it even if the release toggle were off). `boot` continues at a chosen progress; `enter` opens a mission through its CO
 screens (docs/dev/bh2-maps.md)."""
 
 from . import dscampaign as dc
@@ -11,8 +11,8 @@ from .game import Game, NavError
 SOURCE = 0x0203FD57               # crate::ds_campaign::SOURCE (0 DS, 1 BH, 2 Emerald Sun, 3 BH2)
 BH2 = 3
 BH2_MAGIC = 0x32425741            # "AWB2"
-BH2_SLOT, BH2_MID_SLOT = 10, 12   # (the mid-mission slot is the BH Campaign's, told apart by the saved mission's top bits)
-CHOOSER_ROW = 4                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN, EMERALD SUN, BH2 (development)
+BH2_SLOT, BH2_OFFSET, BH2_MID_SLOT = 13, 0x120, 12   # (the record follows the BH Campaign's in slot 13; the mid-mission slot is the BH Campaign's, told apart by the saved mission's top bits)
+CHOOSER_ROW = 3                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN, BH2 CAMPAIGN, EMERALD SUN (campaign_menu::DISPLAY_ORDER; the source index stays 3)
 P_UNLOCKED = dc.PROGRESS + 0x0D
 ENV = {"TANGOAW2_BH2_CAMPAIGN": "1"}
 
@@ -29,7 +29,7 @@ FOG = {1, 9, 13, 17, 18, 22, 25, 30}
 FRONT2 = {4, 13, 25}
 # The COs a test player picks (none: a fixed army or pair), in the order the CO screens ask.
 PICKS = {3: [ASUKA], 4: [ASUKA], 6: [ASUKA], 7: [ASUKA], 9: [ASUKA], 11: [ASUKA], 13: [ASUKA], 14: [ASUKA, CRUMB], 17: [ASUKA], 19: [ASUKA, CRUMB], 20: [ASUKA, CRUMB], 21: [ASUKA], 25: [ASUKA, CRUMB], 27: [ASUKA], 29: [ASUKA, CRUMB], 30: [ASUKA, CRUMB], 31: [ASUKA, CRUMB], 32: [ASUKA, CRUMB]}      # (M13: front 1 is Asuka's; the pick is front 2's)
-ROSTER_BITS = 0xFFF               # every officer is open in the development build
+ROSTER_BITS = 0x7FF               # the eleven officers are all open (crate::bh2_campaign::ROSTER)
 
 
 M32_FLAG = (30, 222)               # crate::world_picture::BH2_FLAGS (the secret mission's flag on Black Hole's island)
@@ -59,6 +59,27 @@ class Bh2Campaign(BhCampaign):
     def unlocked(self):
         return []
 
+    def start_bh2(self, new=True, from_title=True, pick=True):
+        """From the title: Campaign -> BH2 CAMPAIGN -> New or Continue."""
+        e = self.e
+        if from_title:
+            self.open_campaign_box()
+        self.chooser_row(CHOOSER_ROW)
+        e.press("A", 8)
+        e.wait(30)
+        if e.u8(dc.MENU_LEVEL) != 2 or e.u8(SOURCE) != BH2:
+            raise NavError(f"not in the BH2 box (level {e.u8(dc.MENU_LEVEL)}, source {e.u8(SOURCE)})")
+        self.box_row(1 if new else 0)
+        e.press("A", 8)
+        for _ in range(40):
+            if e.wait_until(self.active, 30, step=5):
+                break
+            e.press("A", 8)
+        else:
+            raise NavError("the BH2 Campaign did not start")
+        if pick:
+            self.pick_mission()
+
     def start_at(self, won_mask, unlocked_mask, from_title=True):
         e = self.e
         if from_title:
@@ -78,7 +99,7 @@ class Bh2Campaign(BhCampaign):
                 break
             e.press("A", 8)
         else:
-            raise NavError("the BH2 Campaign did not start (is TANGOAW2_BH2_CAMPAIGN set?)")
+            raise NavError("the BH2 Campaign did not start (is the campaign released?)")
 
 
 def boot(ctx, n, env=None, save=None):
@@ -118,3 +139,16 @@ def enter(ctx, n, env=None, save=None):
     ctx.eq(d.mission(), n - 1, f"M{n}: its own mission was entered")
     g._units_base = g._players_base = None
     return e, g, d
+
+
+def to_player_turn(e, g, d, army=5, frames=24000):
+    """Presses A through the scripts (a mission's opening scene) until it is the player's turn (`army`, the fifth in M31) with nothing running: a five-army mission's computer turns go by first."""
+    for _ in range(frames // 20):
+        if d.scripts_running():
+            e.press("A", 4)
+        elif g.current_army() == army and d.in_battle():
+            e.wait(30)
+            if g.current_army() == army and not d.scripts_running():
+                break
+        e.wait(16)
+    g._units_base = g._players_base = None

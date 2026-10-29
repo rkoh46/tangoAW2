@@ -116,33 +116,32 @@ In **this build, for everyone** (no playtest flag, unlike the Emerald Sun five):
 CO select grid (Versus' grid no longer draws black cells for Emerald Sun COs the roster does not list), the CO pages, the HUD, the power and tag cut-ins, the dialogue boxes. **Not in the Emerald Sun Campaign**:
 `aw2dev campaign check` fails if any campaign module, dialogue file or roster names her (`eslib/cli.py asuka_rule`; test `eslib/test_eslib.py AsukaRule`). **Not in the BH Campaign yet**: reserved for the BH2 Campaign.
 
-## What she does
-| | **Black Insight** (day to day) | **Dark Intel** (CO Power, 3 stars) | **Event Horizon** (Super Power, 9 stars in all) |
+## What she does (simplified: the owner's second design)
+| | **Black Insight** (day to day) | **Dark Intel** (CO Power, 4 stars) | **Event Horizon** (Super Power, 8 stars in all) |
 |---|---|---|---|
-| Attack and defence | +5% / +5% | +5% / +5% on top of the power's own +10% firepower and defence | the same |
 | Vision in fog | +1 | +2, sees into woods and reefs | +2, sees into hiding places |
 | Enemy terrain stars lost | 1 | 2 | 3 |
-| Hit points | hidden from the enemy | her units +1 HP, enemy units -1 HP (to 100, never below 1) | her units +2, enemy -2; her units strike first when attacked (Counter Break) |
+| Hit points | hidden from the enemy | no change | every enemy unit loses 1 HP (never below 1) |
 | Enemy ammo and fuel | | halved, rounded down | halved, rounded down |
-| Luck | 0..19% (Nell's), no bad luck | same (Nell's powers raise it to 60 and 100: Asuka's do not stack that) | same |
-| Movement | every terrain costs 1 for ground units (Sturm's) | same | same |
-- **Sonja's numbers** are her Dual Strike block (`co_roster::ds_co(92) = 8`): vision, skills 0x01 / 0x09 / 0x0D, the enemy's terrain cut.
-- **Nell's luck** (the user's choice, replacing Sonja's bad-luck quirk): maximum roll 20 (read from AW2's table: Nell 20 / 60 / 100 by level) in all three levels, bad luck 0. Her powers keep 20 rather than stacking Nell's 60 and 100: with Hawke's HP swing and Drake's halving on top, that would be too much. Ten sampled hits stay inside 0..19 and exceed what luck 10 reaches.
-- **Sturm's movement**: her row's three movement charts per level are Sturm's (every terrain costs 1 for ground units; impassable terrain stays impassable: a Tank still cannot climb a mountain, as Sturm's cannot). In the Dual Strike pack rain and snow no longer slow anyone and AW2's weather charts are all the clear one (`co_roster::build`), so Sturm's and hers are the same in every weather; checked equal to Sturm's in clear, rain and snow.
-- **Hawke's Black Wave and Black Storm** are AW2's own mass-HP procedure (`sub_08044D70`); her two power functions (`co_powers::asuka_fn`) call it as Hawke's do (damage and healing 1 or 2) with **Drake's fuel flag on**
-  (his Tsunami and Typhoon pass 1: every enemy unit's fuel halved, `fuel / 2` rounded down, 99 -> 49, 21 -> 10, 1 -> 0). The **ammo** is halved the same way in `co_powers::mass_unit` (9 -> 4, 6 -> 3, 3 -> 1, 1 -> 0;
-  Infantry, Recon and APC have no ammo stat, 0, and stay). Her own units and her team's keep theirs. **No rain** (Drake's weather argument stays -1: unchanged). The cut-in and sparkle are Hawke's.
+| Luck | 0..19% (Nell's), no bad luck | same | same |
+| Weather | | rain with fog of war until her next turn | the same |
+| Attack / defence | +5% / +5% (`asuka::DAY_BONUS`, a one-line toggle) | +10% firepower, +10% defence (every power) | the same |
+- **Removed in the simplification** (before: 3 / 9 stars, Eagle's meter): Sturm's movement (her movement charts are Andy's now), the +5% attack and defence were taken out and **put back by the owner** (`DAY_BONUS` 5; set 0 to switch it off; `damage.ASUKA_DAY_BONUS` in the harness mirrors it), the HP swing of Hawke's Black Wave / Black Storm (her units +1 / +2 HP, the enemy's -1 / -2), and Counter Break (her units strike first when attacked: Sonja's
+  strike-first skill 0x04 is masked off her Super Power's row, `co_roster::build`). Kept: Sonja's vision, hidden HP and terrain cut, **Nell's luck**, the halving of ammo and fuel.
+- **Sonja's numbers** are her Dual Strike block (`co_roster::ds_co(92) = 8`): vision, skills 0x01 / 0x09, the enemy's terrain cut. `aw2dev co verify sonja` proves Sonja herself is untouched.
+- **Nell's luck**: maximum roll 20 (AW2's table: Nell 20 / 60 / 100 by level) in all three levels, bad luck 0; her powers keep 20.
+- **The halving** is AW2's mass procedure (`sub_08044D70`, Drake's fuel flag on: every enemy unit's fuel `fuel / 2` rounded down, 99 -> 49, 21 -> 10, 1 -> 0) with the ammo halved in `co_powers::mass_unit` (9 -> 4, 6 -> 3,
+  3 -> 1, 1 -> 0; Infantry, Recon and APC have no ammo stat and stay). Her own units and her team's keep theirs. ****Rain** (the owner's addition, settled as "it clears at her next turn"): both powers pass 2 (rain) as the mass procedure's weather argument (Drake's Typhoon's) and nothing else is needed for the duration: AW2 ends a weather when every army's turn-end count is equal (all have ended a turn since it began), so the rain starts when she fires, lasts through the opponent(s)' turn(s) and is gone when her next turn begins, for any number of armies (an earlier build kept it one round longer with Dual Strike's two-day power-snow flag; the owner shortened it). `ds_weather::tick` forces the Rules' fog flag on while rain is coming and gives it back when it stops (fog-off battles clear, fog-on ones stay fog; the fog comes from the next turn, as for Drake); AW2 restores the weather the battle had (snow returns). Vision: AW2's rain -1 plus her bonus (3 + 2 - 1 = 4 plains during the power; at her next turn the rain is over: 3 + 1 = 4). **Dark Intel changes no HP**: the procedure does nothing for a damage of 0, so it is called with 1 as a
+  carrier and `mass_unit` does the halving of both ammo and fuel itself and skips the procedure's own work for each unit. Event Horizon calls it with 1 (enemy) and 0 (hers). No rain. The cut-in and sparkle are Hawke's.
 - The CPU plays her with Hawke's profile (`ds_ai::template_of`): a power as soon as the meter allows.
 - Black Hole's colours and emblem by default like Hawke and Lash (row style 4, colour 5); her CO page's tab is Black Hole's.
 
 ## The star costs
-**3 / 9, Eagle's** (the user's order: Black Insight is now Sonja's vision, hidden HP and cover cut, +5%, Nell's luck and Sturm's movement) (the meter of AW2's Eagle and Dual Strike's: read from both tables, `aw2dev co balance asuka --vs Eagle Sonja Hawke`; Sonja 3 / 5, Hawke 5 / 9, Drake 4 / 7, Kanbei 4 / 7). Her powers are stronger than any
-of theirs (Hawke's HP swing, Drake's halving of fuel and ammo, Sonja's vision, cover cut and strike first, +5%), so the cheap CO Power and the dear Super Power of the one CO of the roster with a flat 3 / 9 fit best:
-CO Power at 27000 meter points (9000 a star), Super Power at 81000, each further use +20%. The yardstick of `co balance asuka --vs Sturm Hawke Kanbei Eagle Nell Sonja Drake` (firepower + defence + 10 per HP moved + 10 for halving + 10 for every terrain costing 1 + (luck - bad luck - 10) / 2): Asuka d2d +25, CO Power +65, Super Power +85 at 3 / 9;
-Hawke +10 / +40 / +60 at 5 / 9, Kanbei +40 / +80 / +110 at 4 / 7, Sturm +10 flat, Drake +2 / +32 / +42, Sonja -2 / +8 / +8, Eagle +1 / -24 / +11. She lands above Hawke at every level for two to four fewer stars and under Kanbei's raw numbers, with the meter of Eagle's.
+**4 / 8**, the normal cost (the user's order after the simplification: Kanbei 4 / 7, Drake 4 / 7, Hawke 5 / 9, Eagle 3 / 9; before it was Eagle's 3 / 9): CO Power at 36000 meter points (9000 a star), Super Power at 72000, each
+further use +20%. `aw2dev co balance asuka --vs Sturm Hawke Kanbei Eagle Nell Sonja Drake` prints where she lands.
 
 ## Names and words (final)
-Day to day **Black Insight**, CO Power **Dark Intel**, Super Power **Event Horizon**. Quotes: "I have read your every move. Observe." / "Event Horizon. Nothing escapes it. Not even you." / tag-in "Updating the file." /
+Day to day **Black Insight**, CO Power **Dark Intel**, Super Power **Event Horizon** (the CO page says it in AW2's neutral voice: "Vision rises by 1, and her HP is hidden. Enemy cover drops 1 star, and luck is good."). Quotes: "I have read your every move. Observe." / "Event Horizon. Nothing escapes it. Not even you." / tag-in "Updating the file." /
 victory "As projected. Black Hole advances." Tag Powers (`cos/tags.toml`, `sturm_pairs.rs`):
 | Pair | Tag Power | Compatibility | Stars |
 |---|---|---|---|
@@ -155,7 +154,7 @@ victory "As projected. Black Hole advances." Tag Powers (`cos/tags.toml`, `sturm
 | Asuka + anyone else | none | 95 | none |
 
 ## Online
-`inspect::SIM_VERSION` 27 -> **28** (`pvp.rs` history): the CO table, the Teams order, the power procedures in ROM, the unit hooks and the text tables are all part of the shared console. Both peers must run the same
+`inspect::SIM_VERSION` 27 -> **28** (and **33**: the simplification of her kit shares Aria's history line; the bump is still one number) (`pvp.rs` history): the CO table, the Teams order, the power procedures in ROM, the unit hooks and the text tables are all part of the shared console. Both peers must run the same
 build. Another branch that also bumps to 28 must take the next free number when merging.
 
 ## Verification (what was run; `tools/aw2test/tests/test_asuka.py`, `test_asuka_pictures.py`)
@@ -173,3 +172,8 @@ refresh it with `aw2dev gfx golden` when this line is merged).
 - The cut-off quote lines on the first sheets were the sheet's frame timing (the text still being typed); the boxes finish both lines ("I have read your / every move. Observe.", "Event Horizon. Nothing / escapes it. Not even you."). `asuka_pics_*_activation` measures each line's pixel width in the typed-out frame against AW2's font width of the toml's line (within 3 px), so a truncated or wrong line fails.
 - The Super Power showed the CO Power's line because AW2 (and Dual Strike) write six quotes for every CO and pick **one of the six at random for any power** (`sub_080398D0`): the six lines are not a CO Power / Super Power split. That is AW2's design for its own COs, left alone. For tangoAW2's own COs (Crumb, the Emerald Sun five, Asuka) the pick is now the power's own (`crumb::quote_pick`, extended: slots CO Power, Super Power, Tag Power twice), so Event Horizon says its own line.
 - The white frame: AW2's own flash. The screen goes white for about 14 emulated frames, twice in a Super Power (Hawke's, Sonja's and Kanbei's are the same length, measured on all four with the same burst) and returns to the map normally; nothing lingers. The sheet shows the frames just before and after, never the white. A CO Power has a wash of light instead, no white.
+
+## The simplification (SIM_VERSION 33, with Aria)
+Her kit was cut down at the owner's request: no Sturm's movement, no +5% / +5% (a toggle), no HP swing (Dark Intel none, Event Horizon -1 HP on every enemy unit), no strike-first, 4 / 8 stars; vision, hidden HP, the terrain cut, Nell's luck
+and the halving stay. Tests: `tools/aw2test/tests/test_asuka.py` (the row's stars 4 / 8 and skills 0x01 / 0x09 / 0x09, exact HP before and after in both powers, the meter's 36000 / 72000, no movement trait, the plain strike order, the
+tag powers' halves) and `co verify sonja`.

@@ -92,6 +92,7 @@ pub fn def() -> CampaignDef {
         roster: ROSTER.to_vec(),
         prologue: crate::bh_text::pages("prologue"),
         prologue_song: crate::bh_text::song("prologue"),
+        prologue_scenes: Vec::new(),
         credits: credits(),
         missions,
         final_mission: "bh30", // the finale (the secret M31 follows the nine bonds)
@@ -304,6 +305,7 @@ pub fn features_def() -> CampaignDef {
     ];
     a.triggers = vec![Trigger {
         once: true,
+        name: None,
         when: When::TurnStart,
         cond: Cond::DayAtLeast(2),
         then: vec![
@@ -343,6 +345,7 @@ pub fn features_def() -> CampaignDef {
     b.triggers = vec![
         Trigger {
             once: true,
+            name: None,
             when: When::AfterAction,
             cond: Cond::UnitAt {
                 name: "courier",
@@ -356,6 +359,7 @@ pub fn features_def() -> CampaignDef {
         },
         Trigger {
             once: true,
+            name: None,
             when: When::TurnStart,
             cond: Cond::All(vec![
                 Cond::DayAtLeast(4),
@@ -1024,6 +1028,7 @@ pub fn features_def() -> CampaignDef {
             who: None,
         }],
         prologue_song: None,
+        prologue_scenes: Vec::new(),
         credits: vec![
             CreditSection {
                 heading: "FEATURES",
@@ -1201,6 +1206,7 @@ pub fn inventions_def() -> CampaignDef {
             who: None,
         }],
         prologue_song: None,
+        prologue_scenes: Vec::new(),
         credits: vec![CreditSection {
             heading: "TEST",
             names: vec!["TEST"],

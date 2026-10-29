@@ -84,7 +84,11 @@ pub struct Source {
     pub text: &'static str,
 }
 
-pub const SOURCES: [Source; 8] = [
+/// Song slots of BH2's scene songs (not COs: ids above the CO table, used only as the song's key; [`crate::campaign_music::Track::Own`]).
+pub const DOOR: u8 = 200;
+pub const CREDITS: u8 = 201;
+
+pub const SOURCES: [Source; 11] = [
     Source {
         co: 86,
         name: "klaus",
@@ -127,6 +131,23 @@ pub const SOURCES: [Source; 8] = [
         co: crate::co_new::CLONE_ANDY,
         name: "cloneandy",
         text: include_str!("../music/es/cloneandy.m4t"),
+    },
+    // Aria (CO 93, crate::aria): the New Accord's commander, Orange Star's final opponent in the BH2 Campaign; her theme is in Versus like her.
+    Source {
+        co: crate::co_new::ARIA,
+        name: "aria",
+        text: include_str!("../music/bh2/aria.m4t"),
+    },
+    // BH2's scene songs (docs/dev/bh2-text.md): "The Door" under the crate, door and Obelisk scenes, and the staff roll's song.
+    Source {
+        co: DOOR,
+        name: "door",
+        text: include_str!("../music/bh2/door.m4t"),
+    },
+    Source {
+        co: CREDITS,
+        name: "credits",
+        text: include_str!("../music/bh2/credits.m4t"),
     },
 ];
 
@@ -1594,8 +1615,10 @@ form A loop A A
             assert_eq!(c.name, s.name);
             assert!(c.tracks.len() <= MAX_TRACKS);
             let secs = c.loop_seconds();
+            // (the staff roll's song is longer on purpose: AW2's own roll is 160 s)
+            let (lo, hi) = if s.co == CREDITS { (45.0, 120.0) } else { (45.0, 90.0) };
             assert!(
-                (45.0..=90.0).contains(&secs),
+                (lo..=hi).contains(&secs),
                 "{}: the loop is {secs:.1} s, AW2's themes are 45 to 90 s",
                 s.name
             );
@@ -1616,7 +1639,7 @@ form A loop A A
     #[test]
     fn songs_are_the_new_cos_and_distinct() {
         let cos: Vec<u8> = SOURCES.iter().map(|s| s.co).collect();
-        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92, 82, 81], "the five Emerald Sun COs, Asuka, Crumb and Clone Andy");
+        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92, 82, 81, 93, DOOR, CREDITS], "the five Emerald Sun COs, Asuka, Crumb, Clone Andy, Aria and BH2's two scene songs");
         let all: Vec<Vec<u8>> = SOURCES
             .iter()
             .map(|s| {

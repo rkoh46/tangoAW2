@@ -2,7 +2,7 @@
 screen, the War Room's CO screen, Survival's and Champion's (the same screen),
 and the tag partner pick (the Teams list). With the Dual Strike pack that is
 AW2's 19 (Sturm included) and the 16 new ones (crate::co_new: Dual Strike's nine,
-Clone Andy, Crumb, Asuka, the Emerald Sun four), 35; without it AW2's 19. The War Room's records (the best
+Clone Andy, Crumb, Asuka, Aria, the Emerald Sun four), 36; without it AW2's 19. The War Room's records (the best
 five of a map, each with its CO's id) are saved and loaded back for a new CO."""
 
 import os
@@ -16,7 +16,7 @@ from aw2test.game import Game
 from aw2test.harness import test
 
 AW2 = list(range(19))
-NEW = list(range(72, 83)) + [86, 87, 88, 89, 92]      # (92: Asuka; 86..89 the Emerald Sun four; Varro, 90, is on no list)
+NEW = list(range(72, 83)) + [86, 87, 88, 89, 92, 93]      # (92: Asuka; 93: Aria; 86..89 the Emerald Sun four; Varro, 90, is on no list)
 
 
 def boot(ctx, save=None):
@@ -45,12 +45,12 @@ def check_lists(ctx, e, what):
 def co_new_all():
     # (CO id, Dual Strike id, the CO it takes after): crate::co_new::NEW, then Crumb
     like = [11, 13, 12, 10, 18, 17, 16, 15, 15, 13, 13]
-    return [(72 + k, 0, like[k]) for k in range(11)] + [(92, 0, 14)]
+    return [(72 + k, 0, like[k]) for k in range(11)] + [(92, 0, 14), (93, 0, 0)]
 
 
 @test()
 def war_room_offers_every_co(ctx):
-    """The War Room's CO screen: AW2's 19 without the pack, 31 with it (the
+    """The War Room's CO screen: AW2's 19 without the pack, 36 with it (the
     Teams list's COs), each reachable with the pad."""
     e, g = boot(ctx)
     wr.open_war_room(e)
@@ -69,7 +69,7 @@ def war_room_offers_every_co(ctx):
 
 @test(modes=("ds",))
 def survival_offers_every_co(ctx):
-    """Survival's CO screen (the War Room's) offers the same 31, on a basic
+    """Survival's CO screen (the War Room's) offers the same 36, on a basic
     course and on a Champion course (open once a basic course has a record,
     here a Money record by Asuka: a new CO's id is in the record's seven bits and
     its face is drawn on SELECT MAP)."""

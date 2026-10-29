@@ -1282,7 +1282,7 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         scop = t(co_new::T_SCOP);
         cop_name = string(Some(t(co_new::T_COP_NAME)));
         scop_name = string(Some(t(co_new::T_SCOP_NAME)));
-    } else if co == co_new::ASUKA {
+    } else if co == co_new::ASUKA || co == co_new::ARIA {
         // (Asuka's own words, cos/asuka.toml: her numbers are Sonja's, her texts are not)
         let t = |w: u16| crate::es_cos::text(co, w).unwrap_or_default();
         bio = t(co_new::T_BIO);
@@ -1847,7 +1847,7 @@ mod tests {
         );
         assert_eq!(f.width("A"), 5);
         let before = fallbacks();
-        for co in (0..19u8).chain(72..81) {
+        for co in (0..19u8).chain(72..83).chain([86, 87, 88, 89, 90, 92, 93]) {
             let v = view_for(None, None, co);
             for page in 0..3 {
                 let cv = compose(&v, page).unwrap();

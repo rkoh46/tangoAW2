@@ -1,0 +1,767 @@
+# BH2 dialogue, act5 "Succession": M26 The Second Folder, M27 Von Bolt's Note, M28 Where the Map Ends, M29 The Gate of Colours, M30 The Orange Line, M31 The Last Accord (format: README.txt).
+
+# ---------------------------------------------------------------- M26 The Second Folder (Asuka + Hawke fixed; enemy Max + Sami; Black Hole's eastern HQ)
+
+== m26_pre | ASUKA
+@SONG co:max
+NARRATION: Orange Star's tent, before / dawn. Aria hands Max a sealed order.
+ARIA: Take the key and the boy. / Alive. Alive, Max.
+MAX: Alive! Got it! Mostly!
+SAMI: Roger. We secure the boy. We / don't break the boy.
+ARIA: Hawke is there. Don't let him / talk. He'll have you agreeing.
+MAX: Nobody talks Max into / anything!
+SAMI: Max. You adore the Marshal's coat.
+MAX: ...It's a really good coat.
+NARRATION: Black Hole's eastern HQ. A / grey fort on a snowy plateau.
+NARRATION: Max and Sami hit the gate. / The whole garrison is on the wall.
+MAX: Hey! Black Hole! Remember me? / Lunch, delivered! Fist first!
+SAMI: Roger. Surrender the key and / the boy. No one else gets hurt.
+HAWKE: Commander Sami. You will find / the boy has an opinion.
+SAMI: Marshal Hawke. Of all the / traitors in the world.
+MAX: Hey, fancy coat! Come down / here and fight!
+HAWKE: I have a coat for each / weather, Commander. I dislike rain.
+ASUKA: Marshal. We hold the HQ. / Together.
+HAWKE: Together. If it must be.
+WICK: Is it all right if I ask what / the folder under his arm is?
+HAWKE: No.
+WICK: Right.
+MORTAR: Wick. The Marshal has had / that folder for thirty years.
+ASUKA: And I have had mine for / three months, Sergeant.
+MORTAR: Ma'am? What is in them?
+ASUKA: Plans, Sergeant. For the day / after Lord Sturm.
+
+== m26_day4
+MAX: They've gone quiet! That's / suspicious!
+SAMI: Roger. That's how they plan.
+MAX: Don't plan! Punch!
+
+== m26_folders
+@SONG co:hawke
+NARRATION: The HQ's war room. The gate / holds. Two people. Two folders.
+HAWKE: Asuka. You have a folder / under your arm.
+ASUKA: Marshal. So do you.
+HAWKE: Mine is called Chapter Two.
+ASUKA: Mine has no name. I call it / "In Case".
+HAWKE: In case of what?
+ASUKA: In case Lord Sturm does / something that harms Black Hole.
+ASUKA: In case the army needs a / spine, and he is not there.
+HAWKE: ...Open yours first.
+ASUKA: Page one: "Replace the / founder."
+HAWKE: Page one of mine is / "Succession". Page two: "Replace
+HAWKE: the founder."
+ASUKA: Page three: "Not with a / person. With a custom."
+HAWKE: Page three. "Not with a / person. With a custom." ...
+ASUKA: We wrote the same plan.
+HAWKE: I wrote mine in the margins / of Green Earth's audits. For years.
+ASUKA: I wrote mine in the margins / of his ledgers. For months.
+HAWKE: I distrusted you because you / do what I do.
+ASUKA: I distrusted you because you / do what I do.
+HAWKE: Interesting. We have both / prepared for the same day.
+HAWKE: Tell me, Asuka. What is it / you want?
+ASUKA: An army that outlives a / mistake. Mine, Lord Sturm's, anyone's.
+HAWKE: A chair. Not a throne. A / chair that outlives its occupant.
+ASUKA: Then we draft the chair. / Together.
+HAWKE: And who sits in it?
+ASUKA: Whoever the army asks. Not / whoever the plan names.
+HAWKE: That goes against all I was / taught. I like it.
+HAWKE: From today I take your orders. / Not because I must.
+ASUKA: That is the kindest thing you / have ever said to me.
+HAWKE: It is a statement of fact. / Do not put it in writing.
+
+== m26_post
+@SONG co:max
+MAX(s): Okay! We fall back! Not / because you won!
+SAMI: Roger. Because they have / something we don't.
+MAX: What?!
+SAMI: A plan that agrees with / itself, Max.
+MAX: ...Huh. Okay. That's fair.
+SAMI: Commander Asuka. We will be / at the Gate of Colours.
+ASUKA: I look forward to it, Sami.
+SAMI: Roger. So do I. Fall back, / grunts.
+MAX: Hey! Marshal! Next time bring / a bigger coat!
+HAWKE: I will bring two.
+MAX: Ha! I like him! Don't tell / Sami!
+SAMI: I can hear you, Max.
+
+== m26_map
+@SONG enemy2
+WICK: Is it all right if I say / I think they are getting along?
+MORTAR: Wick. They are the two most / suspicious people on the continent.
+WICK: Yes, Sergeant. That's what / I mean.
+MORTAR: ...Fine. It is the best / we can hope for.
+KOAL: The eastern road is repaired. / The gate hinges are not. Mind them.
+KINDLE: Darling Koal, was that / flirtation?
+KOAL: It was a hinge report.
+
+# ---------------------------------------------------------------- M27 Von Bolt's Note (Von Bolt + a FREE partner fixed; enemy Jess + Colin; a sea fortress, a Black Factory)
+
+== m27_pre
+@SONG hagevolt
+NARRATION: The Counting House. A sea / fortress of vaults, cranes and docks.
+NARRATION: Von Bolt's last treasure. A / rooster guards the lead dock.
+VON BOLT: Kehh... my fortress! Fifty / years of interest in granite!
+JESS: Colonel Von Bolt. Green Earth / is closing your war chest today.
+COLIN: W-we want your gold! To pay / back... what the Accord stole!
+VON BOLT: PAY BACK?! I have never / paid anything back in my life!
+JESS: Then today's your first time, / Colonel.
+COLIN: I-it's all right, Jess! He's / old! We should be gentle!
+VON BOLT: OLD?! I was old before you / were born, boy!
+VON BOLT: Interest! Guard the dock! / Peck anyone who owes me!
+@PARTNER ASUKA
+[CO2]: Colonel. A war chest is a / tool. Spend it. Do not mourn it.
+@PARTNER CRUMB CO
+[CO2]: Hello, Colonel! Hello, Interest! / I brought your boots. Both of them!
+@PARTNER HAWKE
+[CO2]: Colonel. Spend the chest in / the right order. I shall keep the books.
+@PARTNER KOAL
+[CO2]: A fortress with one road. I / will mind it. Mind the lane.
+@PARTNER KINDLE
+[CO2]: Darling Colonel! A fortress! / The fourteen thousand can wait.
+@PARTNER JUGGER
+[CO2]: COLONEL: LOGGED. CHEST: FINITE. / QUERY: WHEN DOES FINITE END.
+@PARTNER FLAK
+[CO2]: Flak guards old man! Old man / pays Flak in biscuits! Good deal!
+@PARTNER LASH
+[CO2]: Ooh! A treasure house! Can I / make the doors EXPLODE? Heehee!
+@PARTNER ADDER
+[CO2]: A fortress at sea. I will / pose upon the parapet. Lovely light.
+@PARTNER CLONE ANDY
+[CO2]: Hey, Colonel! I'll help! I / can fix any-- ...okay! Sure!
+@END
+VON BOLT: Build! Build with the / Factory! Every unit costs a coin!
+VON BOLT: Kehh... every coin is a / small death. Remember that.
+
+== m27_day5
+JESS: Fortress walls are cracking, / Colin! Keep the guns on the docks!
+COLIN: Y-yes, Jess! I'm firing! I / didn't know guns were so loud!
+VON BOLT: The vault door groans! / Kehh... boot boy! Count the coins!
+
+== m27_vault_empty
+@SONG hagevolt
+NARRATION: The last coin leaves the / vault. The Factory sighs. A silence.
+VON BOLT(s): Empty. ...Empty. My vault. / Kehh... Kehh...
+VON BOLT: Fifty years. Every ton. Gone / into tanks. Gone into the fire.
+NARRATION: Interest the rooster pecks / at his boot. A small, brave sound.
+VON BOLT: The note. The sealed note. / "For the day your vault is empty".
+VON BOLT: She said I'd never need it. / Kehh... I never believed her.
+NARRATION: He breaks the seal. The / paper is Sonja's. Black ink.
+VON BOLT: "Colonel. If you read this, / your vault is empty. You are cross."
+VON BOLT: "Good. When the vault is / empty, the truth is the only thing
+VON BOLT: left to sell. Sell it to Green / Earth first. They pay in retreat."
+VON BOLT: "Charge double. S."
+VON BOLT: Charge... double. Kehh... / kehh-heh! She knew.
+VON BOLT: She knew my vault would / empty, before I did.
+VON BOLT(s): Nobody trusts me with the / truth. They trust me with gold.
+VON BOLT: Gold is easier.
+
+== m27_sale
+@SONG hagevolt
+VON BOLT: Commander Jess! Kehh! A / moment of your time! A SALE!
+JESS: Colonel. You are out of units. / Surrender.
+VON BOLT: I have one thing left. The / truth. Priced to move.
+JESS: What truth?
+VON BOLT: The key to the door turns / only for a Hobb. The Hobb is a boy.
+VON BOLT: A boy who sleeps with a / biscuit. A good boy. Do not shoot him.
+VON BOLT: His grandfather wrote it: / "If it must close, let a Hobb decide."
+JESS: ...That's a journal. Do you / have a copy?
+VON BOLT: A copy comes free with the / sale. The price is one retreat.
+JESS: One retreat?
+VON BOLT: And a little for the / rooster. He likes millet.
+COLIN: Jess? If it's true, we should / ask Aria. Not shoot.
+JESS: ...Colonel Von Bolt, you are / the worst salesman I've ever met.
+VON BOLT: I am the best. I just / sold you something true. A rarity.
+JESS: Colin. Pull back. Fall back / to the coast. We are not done.
+JESS: But we are not shooting the / boy. Is that clear?
+COLIN: Clear, Jess! Nobody shoots / the boy!
+VON BOLT: Kehh-heh! A pleasure doing / business!
+
+== m27_post
+@SONG hagevolt
+VON BOLT: To Sonja! Kehh... to / Asuka! Whatever she's called.
+VON BOLT: She gave me the one / thing worth more than gold.
+VON BOLT: Terms I could actually / afford.
+ASUKA: Colonel. You sold the truth. / It was worth a fleet.
+VON BOLT: Truth is the only stock / that always appreciates, girl.
+ASUKA: I know. I wrote it down.
+VON BOLT: You wrote it down. Before / I had a vault to empty.
+VON BOLT: Kehh... I should be / furious. And yet I'm proud.
+ASUKA: Of me, or of yourself?
+VON BOLT: Of the rooster. Obviously. / He pecked everyone.
+
+== m27_map
+@SONG enemy2
+CRUMB CO: Ma'am! The Colonel says / the vault is empty!
+ASUKA: It is. I know.
+CRUMB CO: Is that bad?
+ASUKA: It is the beginning. A man who / has nothing to protect is dangerous.
+CRUMB CO: Is he dangerous?
+ASUKA: He is happy. With Von Bolt, / that is the same thing.
+FLAK: Flak gave old man sandwich. / Old man cried. Flak confused.
+VON BOLT: Kehh... I am poor. And I / feel FANTASTIC. Write that down.
+
+# ---------------------------------------------------------------- M28 Where the Map Ends (Asuka + Crumb fixed; enemy Drake + Grit; the Obelisk; nine days)
+
+== m28_pre | ASUKA
+@SONG co:sturm
+NARRATION: The Obelisk. Dusk. Black stone, / a flag, and a seam as tall as a house.
+NARRATION: An Allied strike force lands / on the shore. Orders: destroy the door.
+DRAKE: Dude. I really didn't want to / be here. But here I am.
+GRIT: Reckon the door's a bad idea, / ma'am. We came to close it.
+DRAKE: Nobody gets hurt. That's the / plan. That's the whole plan, dude.
+ASUKA: Captain. Somebody always gets / hurt. It is the nature of plans.
+DRAKE: ...Yeah. I've heard that one / before, dude.
+CRUMB CO: Hello, Captain Drake! / Hello, Mr Grit! I'm the Hobb!
+GRIT: Aw, shucks. He's a kid.
+CRUMB CO: I'm a Commander, Mr Grit. / Gerald is the Colonel.
+GRIT: Is he, now.
+DRAKE: Look, kid. We heard about the / key. From Jess. Via the old Colonel.
+DRAKE: We won't shoot you. We just / want you to not open it.
+CRUMB CO: Oh. That's nice, Captain. / But I think I do have to.
+STURM: Hobb. Approach.
+STURM: Asuka. You carried the key. / You carried the boy. You took
+STURM: neither from me.
+ASUKA: They were not mine to take, / Lord Sturm.
+STURM: Noted.
+STURM: Drake. Grit. You came to close / what you cannot understand.
+STURM: I do not blame you. I forgive / nothing. Defend the shore.
+DRAKE: Dude. He's scary.
+GRIT: Reckon he means it, too.
+ASUKA: Hold the shore until Commander / Hobb reaches the door.
+
+== m28_day3
+DRAKE: Okay! They've got walls! / Why do they always have walls?
+GRIT: Reckon the door is humming. / Do you hear that, Drake?
+DRAKE: I hear a lot of humming. I'm / trying not to think about it.
+KOAL: Four roads to the Obelisk. All / repaved. Mind the lane, Captain.
+KINDLE: The glow is so flattering, / darlings. I shall stand beside it.
+JUGGER: DOOR HUM: 41 HERTZ. SAME AS / CRATE, CRYSTAL, AND HIM.
+FLAK: Flak guards boy. Boy has key. / Flak not eat key.
+LASH: The hum is a perfect fifth! / Heehee! I want to hug it!
+ADDER: The door at dusk. A star walks / through. Photograph it, someone!
+VON BOLT: Second pick of the door! / Kehh... I mean what is behind it!
+CLONE ANDY: Okay! I'm watching the / shore. Nothing gets past me!
+
+== m28_door
+@SONG own:door
+NARRATION: The Obelisk's foot. A seam / in the black stone. A keyhole.
+CRUMB CO: It's the same mark. The / whole door is Gerald.
+ASUKA: Commander. The decision is / yours. Not mine. Not his.
+STURM: Hobb. You hold the key. I / will not take it.
+CRUMB CO: Sir? Why not? You could.
+STURM: It turns for you. Taken, it / would be only metal.
+STURM: I have taken everything else.
+CRUMB CO: Sir... what's on the other / side?
+STURM: The rest of the storm.
+CRUMB CO: Is it a good storm?
+STURM: It is mine.
+CRUMB CO: That's not what I asked, / sir.
+STURM: ...It is the one I was born / into. It is not kind. Not unkind.
+STURM: It is large.
+CRUMB CO: Sir. I'll turn it. Because / you came back for me, in the pass.
+CRUMB CO: Nobody else did. But please / promise me something.
+STURM: I do not promise.
+CRUMB CO: Then I'll ask. Please come / home after.
+NARRATION: A long silence. Wind. The / key in Crumb's hand is warm.
+STURM: ...Noted.
+NARRATION: Crumb turns the key. The / seam opens. White light. A tide.
+STURM: Asuka. Hold my world.
+ASUKA: For how long?
+STURM: Nine days. Until the storm / passes.
+ASUKA: And after?
+STURM: After, it is yours to keep, / or to lose.
+NARRATION: He walks into the light. / The door does not close behind him.
+CRUMB CO(s): Ma'am... he didn't say / goodbye.
+ASUKA: He said "Noted." From him, / that is goodbye.
+DRAKE: Dude. The door's open.
+GRIT: Reckon we need a bigger fence.
+
+== m28_day6
+GRIT: Six days. The light's / still on.
+DRAKE: It's kinda pretty. I hate / that it's pretty.
+CRUMB CO: Ma'am, Gerald's warm. / Something is coming back.
+ASUKA: Hold the shore, Commander. / Whatever it is, we wait for it.
+
+== m28_post
+@SONG own:door
+NARRATION: The ninth night. The light / thins. The seam narrows.
+CRUMB CO: Ma'am. It wants to close. / I think it wants me to say.
+ASUKA: Your decision, Commander. A / Hobb decides.
+CRUMB CO: I'll close it. But I / won't lock it. In case he comes home.
+ASUKA: That is exactly what your / grandfather would have written.
+NARRATION: Crumb turns the key half- / way. The seam sighs shut. Hum stays.
+DRAKE: Closed. Not locked. Dude. / That's... actually perfect.
+GRIT: Reckon we can live with that. / I'm a patient man.
+DRAKE: We'll call it a draw. Tell / Jess I tried.
+ASUKA: Captain. Tell Jess she may / have the journal. A copy.
+DRAKE: Cool. Really cool, ma'am.
+HAWKE: Asuka. The army is waiting / for you. Chapter two begins.
+ASUKA: Marshal. The army will wait / a moment. Commander Hobb.
+CRUMB CO: Yes, ma'am?
+ASUKA: Well done.
+CRUMB CO(h): Thank you, ma'am! ...Is / that an order or a nice thing?
+ASUKA: It is a nice thing. I am / learning the difference.
+
+== m28_map
+@SONG sturm
+MORTAR: Ma'am. The Obelisk is quiet.
+ASUKA: It will hum when he thinks / of us. Or when we think of him.
+WICK: Is it all right if I think / about him sometimes?
+ASUKA: Yes, Private. A founder is / allowed to be missed.
+MORTAR: Ma'am. The army. Standing / by, in the courtyard.
+ASUKA: Then I shall go and tell / them the world is theirs to hold.
+
+# ---------------------------------------------------------------- M29 The Gate of Colours (FREE PAIR; enemy Andy, and Max + Sami)
+
+== m29_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:asuka
+NARRATION: Orange Star's outer capital. / The Gate of Colours, four banners high.
+NARRATION: Andy holds the gate. Max and / Sami hold the walls on either side.
+ASUKA: Black Hole. Lord Sturm is gone. / The founder is past the door.
+ASUKA: I do not claim his chair. I / claim the work. We finish it.
+HAWKE: The army hears you, Asuka. / It is also watching.
+ANDY: Okay! Black Hole lady! You're / not coming through! I won't let you!
+MAX: Hey! Lunch is served, Black / Hole! Fist first! You lose!
+SAMI: Roger. Hold the walls, grunts. / Nobody opens that gate.
+ASUKA: Andy. Hand me the Citadel's / seal, and nobody else dies.
+ANDY: Never! You'll have to take / the citadel!
+@IF ASUKA
+ASUKA: I command now. I shall do it / as I do everything. In writing.
+@IF CRUMB CO
+CRUMB CO: Ma'am, Sir is gone, but / Gerald says he's okay. Wherever.
+@IF HAWKE
+HAWKE: Chapter two begins. The army / is the chair. Do not sit on it.
+@IF KOAL
+KOAL: A gate is a road with a door. / I have never failed a door.
+@IF KINDLE
+KINDLE: A gate of four banners! / Darlings, what an entrance to ruin.
+@IF JUGGER
+JUGGER: FOUNDER: ABSENT. DIRECTIVE: / CONTINUES. SENTIMENT: LOGGED.
+@IF FLAK
+FLAK: Boss gone. Flak not sad. Flak / hits gate. Boss would like.
+@IF LASH
+LASH: Ooh, a gate! Four banners! / One for each fuse! Heehee!
+@IF ADDER
+ADDER: A gate at sunrise. Four / banners. And one cape. Perfect.
+@IF VON BOLT
+VON BOLT: Kehh... the founder's / gone. Who pays me? ...Heh. She does.
+@IF CLONE ANDY
+CLONE ANDY: Okay! A gate! Andy's / in there! I can fix any-- ...anything!
+@END
+@PARTNER ASUKA
+[CO2]: We fight for the chair. Not / the person. Do not forget that.
+@PARTNER CRUMB CO
+[CO2]: Ma'am, I'll hold the gate with / you! Gerald is on guard!
+@PARTNER HAWKE
+[CO2]: Two gates, two flanks. I take / the left. Please take the right.
+@PARTNER KOAL
+[CO2]: I will build the road to / the gate. Wide enough for tanks.
+@PARTNER KINDLE
+[CO2]: Together, darlings. The gate / falls, and I take the bow.
+@PARTNER JUGGER
+[CO2]: PARTNER: PRESENT. GATE: FOUR / BANNERS. QUERY: WHY SO MANY.
+@PARTNER FLAK
+[CO2]: Flak guards boss back! Max / big! Flak happy!
+@PARTNER LASH
+[CO2]: Partner! I brought a battering / ram that sings! Heehee!
+@PARTNER ADDER
+[CO2]: I take the sky. You take the / gate. The light is mine.
+@PARTNER VON BOLT
+[CO2]: Partner! Kehh-heh! Split the / plunder? Sixty-forty. Mine.
+@PARTNER CLONE ANDY
+[CO2]: I've got your back! Okay! I / can fix any-- ...yes! Okay!
+@END
+MAX: Everybody ready? Let's / punch!
+ASUKA: Break the gate. Then the / walls. Keep the armies apart.
+
+== m29_day6
+MAX: Sami! They're through the / left wall!
+SAMI: Roger. Rally on the gate. / Nobody retreats.
+ANDY: Okay! Everybody to the gate! / We hold! Hold!
+
+== m29_post
+@SONG co:andy
+ANDY(s): The gate... I can't hold / it. I'm sorry, everyone.
+ANDY: I'm falling back. To the / citadel. Not because I lost.
+ANDY: Because Nell asked me to.
+ASUKA: Andy. Hold your head high. / You held longer than anyone could.
+ANDY: Don't pity me, Black Hole lady. / ...Okay. Thanks.
+MAX: Hey! We fall back too! But / we're coming back! For a real fight!
+SAMI: Roger. The Citadel. Fall back.
+HAWKE: A fallen gate. Now they will / retreat into the keep.
+ASUKA: They will give us everything / they have. All four colours.
+HAWKE: Naturally. They have no other / plan left.
+
+== m29_map
+@SONG enemy1
+MORTAR: Ma'am. A report from the / western sea. Unknown sails.
+ASUKA: Whose?
+MORTAR: Nobody's, ma'am. No flag. / Heading for the home island.
+ASUKA: Black Hole's island. Where / the key was found.
+WICK: Is it all right if I'm / frightened?
+ASUKA: Yes, Private. Be frightened / of the right thing.
+ASUKA: We do not know who they are.
+ASUKA: Something is coming. It can wait / until the Citadel is ours.
+
+== m29_warroom
+@SONG own:aria
+NARRATION: The Last Citadel. Orange / Star's heart. Every colour, one hall.
+ARIA: Andy's back. The gate's lost. / Good. Now they're in our house.
+ANDY: Sorry, Aria. I held as / long as I could.
+ARIA: You held. It's all I wanted. / Sit down. Eat something.
+OLAF: Aria! Blue Moon will take / the second line! Ice and honour!
+KANBEI: Yellow Comet takes the third. / Kanbei's seal is on page one.
+EAGLE: And the sky is mine. Last / act. Death from above.
+NELL: And I'll be the first line. / Don't argue, dear.
+ARIA: Nell. You don't have to.
+NELL: Yes, I do. Someone has to / be sorry first, in public.
+ARIA: ...Then you're the first. I'll / be the last.
+HACHI: I'll hold the kitchen, kids. / Free of charge.
+ARIA: Four lines. Four commanders. / Then me. Build anew.
+NARRATION: Nell touches her sister's / sleeve. Aria does not move away.
+
+# ---------------------------------------------------------------- M30 The Orange Line (FREE PAIR; enemy Rachel + Sami, the outer defences)
+
+== m30_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:sami
+NARRATION: The Orange Line. Trenches, / wire and wall, a day from the Citadel.
+SAMI: Roger. This is the Line, grunts. / Behind it, the Citadel. In front, them.
+SAMI: Dig in. Dig deeper. And somebody / tell a joke. Morale needs one.
+RACHEL: By the book, the Line holds / eleven days. We have four. Adapt.
+SAMI: Rachel, kid, put the book down. / Pick up a shovel.
+RACHEL: I can do both. By the book.
+ASUKA: Commander Rachel. Commander Sami. / The Line ends today. Step aside.
+RACHEL: My book used to say the Accord / is just. I have crossed it out.
+RACHEL: I read your ledger. Twice. / Then I read what Nell signed.
+SAMI: Roger. I signed nothing. I only / saluted. That's its own kind of guilt.
+RACHEL: But my sisters are in that / Citadel. So I stand here. By the book.
+SAMI: And I stand with her. I've got / chocolate and a very stubborn spine.
+@IF ASUKA
+ASUKA: A line is a promise to stand. / I shall see how long it lasts.
+@IF CRUMB CO
+CRUMB CO: Hello, Miss Rachel! Hello, Miss / Sami! Gerald sends chocolate. Honest!
+@IF HAWKE
+HAWKE: She says eleven days. I give / it three. The wire will fail first.
+@IF KOAL
+KOAL: Trenches. The oldest road, dug / downward. I will mind the lane.
+@IF KINDLE
+KINDLE: Mud, wire and brave girls! / Darlings, what a gritty finale.
+@IF JUGGER
+JUGGER: LINE: ONE. TRENCHES: SIX. / JOKES: PENDING. HUMOR: NOT FOUND.
+@IF FLAK
+FLAK: Flak digs too! Flak digs / for snack! Dirt not snack. Sad.
+@IF LASH
+LASH: Ooh, wire! Wire conducts! I / brought a lot of volts! Heehee!
+@IF ADDER
+ADDER: A trench is no place for a / cape. I shall review it from above.
+@IF VON BOLT
+VON BOLT: A line of defence! Kehh... / who owns the land it stands on?
+@IF CLONE ANDY
+CLONE ANDY: Okay! Trenches! I can fix / any-- ...any wall! Sure!
+@END
+@PARTNER ASUKA
+[CO2]: I read the line. You break it. / We meet in the Citadel.
+@PARTNER CRUMB CO
+[CO2]: Miss Sami! Want a biscuit? It's / very, very old! It's still good!
+@PARTNER HAWKE
+[CO2]: Wire first, then the trench. Their / reserve is a bluff. Begin.
+@PARTNER KOAL
+[CO2]: I will lay a road across the / wire. Wide enough for tanks.
+@PARTNER KINDLE
+[CO2]: Darlings, I shall open with a / flourish. The wire will not mind.
+@PARTNER JUGGER
+[CO2]: PARTNER: PRESENT. WIRE: SIX / BELTS. OPENING: I WILL FIND ONE.
+@PARTNER FLAK
+[CO2]: Flak guards boss! Flak hits / Sami! Sami has chocolate? Flak asks!
+@PARTNER LASH
+[CO2]: Partner! I brought a wire- / cutter that sings! Heehee!
+@PARTNER ADDER
+[CO2]: Together. I take the sky. You / take the mud. Mind my light.
+@PARTNER VON BOLT
+[CO2]: Partner! Kehh-heh! Split the / plunder? Sixty-forty. Mine.
+@PARTNER CLONE ANDY
+[CO2]: I've got your back! Okay! I / can fix any-- ...yes! Sure!
+@END
+SAMI: Roger. Grunts, hold the wire. / Nobody leaves the trench.
+ASUKA: Cut the wire, take the trench. / Then the Citadel.
+
+== m30_day5
+SAMI: Rachel! Left belt's open! Fix / it, kid!
+RACHEL: I'm fixing it! Rule four: / do not lose! That means belts too!
+SAMI: Then why is it open?!
+RACHEL: Nobody told the wire!
+SAMI: Ha! Good. Keep that spirit.
+
+== m30_post
+@SONG co:rachel
+RACHEL(s): The Line is lost. Rule five. / When outnumbered... retreat.
+SAMI: Roger. We fall back to the / Citadel. All of us. In order.
+RACHEL: Commander Asuka. May I ask / one question? Not by the book.
+ASUKA: You may, Rachel.
+RACHEL: Did you mean it? The ledger. / Was it the truth, or a weapon?
+ASUKA: Both. A truth can be a weapon. / It does not stop being true.
+RACHEL: ...That is a rule I did not / have. Rule nine. I'll write it.
+SAMI: Roger. And another for the / record. The Citadel is Aria's.
+SAMI: She wrote the broadcast. She / does not retreat. She has one speed.
+RACHEL: She is my sister. And Nell's. / She is also very frightening.
+ASUKA: I have read her letters. I / find her magnificent.
+SAMI: Don't tell her that. She'll / hit you. Harder.
+RACHEL: By the book, Aria shouts first / and cries second. Be ready for both.
+
+== m30_map
+@SONG enemy1
+MORTAR: Ma'am. The Line is cut. The / Citadel is one march away.
+HAWKE: Four lines, four commanders. / Then the Citadel is ours.
+ASUKA: Marshal. What do you make / of Aria?
+HAWKE: The same as I make of you. / Dangerous.
+KINDLE: Darlings, a final act! I / have already ordered the bouquet.
+LASH: Ooh! I brought a spare door! / For the finale! Heehee!
+CRUMB CO: Ma'am, may I stand beside / you at the end? Gerald insists.
+ASUKA: You may, Commander. Bring the / key. And soup.
+
+# ---------------------------------------------------------------- M31 The Last Accord (FREE PAIR; stage 1 the gauntlet: Nell, then Olaf, Kanbei and Eagle take command in turn; map switch; stage 2 Aria)
+
+== m31_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
+@SONG co:nell
+NARRATION: The Last Citadel. Four lines / of defence, four commanders, one hall.
+NELL: Good morning! I'm Nell, and I'm / your first line. Do be gentle.
+NELL: Commander Asuka. I read your / ledger. I signed the first seal.
+NELL: I'll answer by standing here, / where everyone can see me.
+ASUKA: Nell. You do not have to stand.
+NELL: Yes, dear, I do. Someone has / to be sorry in public.
+ASUKA: Sorry is not a battle plan.
+NELL: It's the only one I've ever / believed in. Come on, then.
+NELL: I was born lucky. I'll spend / it today. All of it.
+HAWKE: A simple creed. I almost / admire it.
+@IF ASUKA
+ASUKA: Four lines, four commanders. A / gauntlet. I have faced worse.
+@IF CRUMB CO
+CRUMB CO: Hello, Miss Nell! I'm sorry / about the tower. Gerald is, too.
+@IF HAWKE
+HAWKE: Each commander has a weakness. / I know all four.
+@IF KOAL
+KOAL: Four gates, one road. I will / lay the road through all four.
+@IF KINDLE
+KINDLE: A gauntlet! Four acts, a / finale. Darlings, I could weep.
+@IF JUGGER
+JUGGER: LINES: FOUR. COMMANDERS: FOUR. / ODDS OF SUCCESS: PENDING.
+@IF FLAK
+FLAK: Four fights! Four snacks! / Flak ready!
+@IF LASH
+LASH: Ooh! Four levels! Like a game! / Heehee! I brought a boss key!
+@IF ADDER
+ADDER: Four acts and a finale! The / star arrives! Mind the cape!
+@IF VON BOLT
+VON BOLT: Four commanders! Four / payouts! Kehh... what's the prize?
+@IF CLONE ANDY
+CLONE ANDY: Okay! Four lines! I can / fix any-- ...anything! Sure!
+@END
+@PARTNER ASUKA
+[CO2]: I shall read each commander as / they arrive. Hold the line.
+@PARTNER CRUMB CO
+[CO2]: Hello, Miss Nell! We're / friends, really! Gerald is, anyway.
+@PARTNER HAWKE
+[CO2]: Four takeovers. I have mapped / each one. Nothing will surprise us.
+@PARTNER KOAL
+[CO2]: A gauntlet is four roads laid / end to end. I will survey them.
+@PARTNER KINDLE
+[CO2]: Darlings, together we shall / open every act. And close it.
+@PARTNER JUGGER
+[CO2]: PARTNER: FIRM. GAUNTLET: / LOGGED. HUMOR: NOT FOUND.
+@PARTNER FLAK
+[CO2]: Flak guards boss! Four fights! / Flak is happy!
+@PARTNER LASH
+[CO2]: Partner! Four levels! I'll / hold the keys! Heehee!
+@PARTNER ADDER
+[CO2]: Together we are a duet. I / sing the lead. You keep up.
+@PARTNER VON BOLT
+[CO2]: Partner! Kehh-heh! Four / commanders! Four ransoms! Mine.
+@PARTNER CLONE ANDY
+[CO2]: I've got your back! I can / fix any-- ...yes! Okay!
+@END
+NELL: Orange Star! The first line is / held! Not one step back!
+ASUKA: Break the first line. Then / the next, in order.
+
+== m31_day5
+NELL: Steady, everyone! I was born / lucky! It's rubbing off!
+ANDY: Nell! You're glowing!
+NELL: It's the luck, dear boy. It / always glows at the end.
+
+== m31_takeover_olaf
+@SONG co:olaf
+NARRATION: Nell's headquarters falls. / Snow begins to drift down.
+NELL: I yield a castle, Asuka. Not / my people.
+ASUKA: Understood, Nell. Your people / will be safe.
+NELL(h): Thank you for fighting / properly. It means a lot.
+ASUKA: It is my only trade.
+NELL: Olaf! You're up, dear! The / second line is yours!
+OLAF: Ice and honour! Behold the / second line! Blue Moon holds!
+OLAF: Soldiers of Blue Moon! The / Accord sold us a door! We'll sell
+OLAF: it back with INTEREST!
+VON BOLT: Kehh-heh! Interest! I / like him already!
+OLAF: Black Hole! Olaf takes command! / Let the snow fall!
+
+== m31_takeover_kanbei
+@SONG co:kanbei
+NARRATION: Olaf's headquarters falls. / The snow thins. A bell tolls.
+OLAF: Blue Moon is... beaten. Bah! / Olaf will not forget this.
+OLAF: Kanbei! The third line is / yours!
+KANBEI: Kanbei stands in your place. / For the table. For honour.
+KANBEI: Asuka. Kanbei's seal is on / the first page. Today he answers.
+ASUKA: Emperor. You answered at the / Table. You owe me nothing.
+KANBEI: Kanbei owes his people. Come, / Commander. Let honour judge us.
+SENSEI: Easy, youngsters. I'm / providing the airlift. Knees permitting.
+
+== m31_takeover_eagle
+@SONG co:eagle
+NARRATION: Kanbei's headquarters falls. / The sky opens over the Citadel.
+KANBEI: Kanbei's line is fallen. / Honour is served. Captain Eagle.
+KANBEI: The fourth line is yours. / The sky is yours.
+EAGLE: Death from above! Last act / of the show! Don't blink!
+@WITH HAWKE
+EAGLE: Marshal! Marshal Hawke! You / came! Ha! I've been waiting!
+HAWKE: You have flown well, Captain. / I have followed your career.
+EAGLE: Don't be nice! It's the last / round!
+HAWKE: I am never nice. I am / accurate.
+@END
+EAGLE: Everybody up! Everything / that flies! Full throttle!
+EAGLE: This is it, Black Hole! The / sky's last stand!
+
+== m31_switch
+@SONG co:eagle
+EAGLE(s): I never lose in the air. / This was ground.
+EAGLE: Fine. I lost. I don't have / to like it.
+@WITH HAWKE
+EAGLE: Hawke. Come on. Say something / mean. I'll feel better.
+HAWKE: You were the best opponent I / ever had, Captain.
+EAGLE(s): ...You said that at Evergreen. / I still want to hate you cleanly.
+HAWKE: And I still mean it. / Go. Live.
+@END
+EAGLE: Next time I fly higher. / Count on it.
+NELL: Eagle. Well done. All of / you. All four lines.
+ASUKA: Nell. The Citadel's last door / is open. Who guards it?
+NELL: ...The only one who's / been waiting. Brace yourselves.
+NARRATION: A new banner climbs the / Citadel. Orange, with a black thread.
+NARRATION: Footsteps in the keep. Fast, / sharp. A woman's.
+HAWKE: I counted four lines. I was / mistaken. There are five.
+ASUKA: The fifth is the one who / wrote the letters.
+
+# ---------------------------------------------------------------- M31 stage 2: Aria's citadel (after the map switch)
+
+== m31_stage2
+@SONG own:aria
+NARRATION: The Last Citadel, the keep. / A woman in orange waits on the stair.
+NELL: Aria... I'm sorry. I couldn't / hold them.
+ARIA: Don't. Don't you dare apologise / to me, sister.
+ARIA: You held for thirty years. I'll / hold for one more day.
+ASUKA: Commander Aria. The twin who / rebuilt the Allies. My file on you
+ASUKA: is short.
+ARIA: Then let me add a page, / traitor.
+ARIA: You sat at our tables. You read / our letters. You smiled at your father
+ARIA: while you sold him.
+ASUKA: I sold nothing. I read what / the Accord buried. You would have
+ASUKA: found it too, if you had / looked.
+ARIA: I don't care what's in your / ledger!
+ARIA: Black Hole burned Green Earth. / Black Hole put my sister in a tower.
+ARIA: Every soldier who fell on this / road had a name.
+ARIA: I wrote BUILD ANEW for them. / Today I build it out of
+ARIA: your army's wreckage.
+HAWKE: Fury makes for poor tactics, / Commander.
+ARIA: Then come and correct me, / old man. Bring everyone.
+@PARTNER CRUMB CO
+[CO2]: Miss Aria! I'm Crumb! I'm / sorry about your sister's tower!
+ARIA: Don't be sweet to me, kid. / It makes this harder.
+@PARTNER HAWKE
+[CO2]: Commander Aria. I will correct / you gently. In stages.
+@PARTNER KOAL
+[CO2]: Commander Aria. Your keep has / one road. I intend to take it.
+ARIA: Try. It's a good road.
+@PARTNER KINDLE
+[CO2]: Darling Aria! A last stand! / What a costume! I could cry!
+ARIA: Don't. Save the tears for / the fireworks, lady.
+@PARTNER JUGGER
+[CO2]: ARIA: LOGGED. THREAT: HIGH. / SENTIMENT: DETECTED. SOURCE: HER.
+ARIA: What is that, a toy?
+@PARTNER FLAK
+[CO2]: Flak hits Aria! Aria is / loud! Flak likes loud!
+ARIA: Good. Loud is what I'm for.
+@PARTNER LASH
+[CO2]: Ooh! The boss! I brought / three new toys! Heehee!
+ARIA: Put them down, kid. Or / I'll make you.
+@PARTNER ADDER
+[CO2]: A fiery finale! Aria, you / have the light. May I borrow it?
+ARIA: No.
+@PARTNER VON BOLT
+[CO2]: A last stand! Kehh... what / does it pay? Everything's for sale!
+ARIA: Not this.
+@PARTNER CLONE ANDY
+[CO2]: Hi, Aria. I'm Clone Andy. I / can fix any-- ...I can try.
+ARIA: Andy's face. Andy's voice. / ...Do your best.
+@END
+ARIA: Orange Star, on me! Not one / step back! We end this here!
+
+== m31_day6
+ARIA: Rachel! Left flank! Don't / let them reach the stair!
+RACHEL: By the book, Aria! By the / book! ...Your book!
+ARIA: Then follow it! Left flank, / now!
+NELL: Aria. Breathe.
+ARIA: I'm breathing! Loudly!
+
+== m31_day12
+ARIA: Build anew! BUILD ANEW! / Everyone who has a name, rise!
+ASUKA: She is rallying them. All / of them. Every colour.
+HAWKE: It is the most dangerous / thing a defeated army can do.
+
+== m31_post
+@SONG own:aria
+ARIA(s): Finish it. Go on. Finish it.
+ASUKA: No.
+ARIA: Then why did you come?!
+ASUKA: For the seal, Aria. Not your / head.
+ARIA: You don't get to be gracious.
+ASUKA: I am not gracious. I am / tired. It is different.
+ARIA: ...You hurt everyone I love. / My sister. My friends. All of them.
+ASUKA: Yes. And you rebuilt it all / in three weeks. I admire that.
+ARIA: Don't you dare admire me!
+ASUKA: I took a new name to protect / one man. You built a nation.
+ASUKA: We are alike, Aria. We both / did it for someone we love.
+ARIA: Don't.
+NELL: Aria. Stop.
+ARIA: She's right, blast it. ...I hate / that she's right.
+NELL: Come here, love.
+ARIA(s): I wrote BUILD ANEW for / everyone. Not for this.
+NELL: You built something. It will / stay. It's the best thing anyone's done.
+ARIA: ...I'm not crying. It's the / wind.
+NELL(h): Of course it is, love.
+ARIA: ...Fine. You win. Take your / seal.
+ASUKA: Not here. Not now. When the / army has rested.
+ARIA: ...You're giving me a day?
+ASUKA: I am giving you a ceremony. / It is more dignified.
+HAWKE: Asuka. The army wishes to / speak with you.
+ASUKA: Of course it does.
+
+== m26_day2
+MAX: Sami! They got a gate! I love / a gate!
+SAMI: Roger. Now stop hugging it.
+MAX: I'm not hugging! I'm punching / affectionately!
+SAMI: Roger. Punch affectionately / from over there.
+
+== m27_day2
+COLIN: J-Jess? Can I ask a / question about guns?
+JESS: Always, Colin. Procedure: aim, / then fire. In that order.
+COLIN: What if I aim at the old / man's rooster?
+JESS: Then you hit a rooster. / A very expensive one.
+VON BOLT: INTEREST! HIDE! They want / my rooster! Kehh!
+COLIN: ...I-I'll aim at the dock. / Sorry, Colonel!
+
+== m31_day9
+ANDY: Aria! Okay! We're with you! / Every colour! Every unit!
+MAX: Come on, Black Hole! Max is / right here! Fist first!
+SAMI: Roger. Hold the walls. Nobody / retreats. Nobody.
+HACHI: Closing-down sale, kid! Last / stand's on the house!
+JAKE: Yo, the stair's mine! How you / like me now, Black Hole?
+RACHEL: By the book, no, by Aria's / book! Hold the stair!
+OLAF: Ice and honour! Blue Moon / returns! For Colin! For the snow!
+KANBEI: Yellow Comet stands. The / table stands. Kanbei stands.
+EAGLE: Death from above! One last / time! Come on!
+JESS: Tanks first. Paperwork after. / We can do both.
+ARIA: That's it. That's all of you. / BUILD ANEW!

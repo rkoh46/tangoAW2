@@ -1,0 +1,45 @@
+# Aria, Commander of the New Accord (docs/dev/co-kit.md, docs/dev/aria.md). Nell's sister, an Orange Star CO: the final opponent of the BH2 Campaign (docs/BH2_CAMPAIGN.md section 9, branch bh2design)
+# and Asuka's mirror. Her numbers are her own (src/aria.rs): Vengeance (+25% attack for a unit on 8 HP or less); only a Super Power: heals 3 and +20% attack. Not in the Emerald Sun Campaign.
+id = "aria"
+name = "Aria"
+army = "orange_star"
+role = "Commander of the New Accord, Nell's sister"
+# Orange Star's own HQ and colours (her CO row's country, not an army skin).
+hq = "default"
+
+full_name = "Aria"
+# Her own theme: music/bh2/aria.m4t (a row in es_music::SOURCES), the final-battle song.
+theme = "own:aria"
+bio = "Nell's twin, head of the New Accord. She rebuilt the Allies and wants Black Hole to pay. Hit: Comebacks Miss: Retreat"
+luck = [10, 10, 10]          # the game's own (Andy's row): she has no luck or movement trait
+# Only a Super Power, like Dual Strike's Von Bolt: no CO Power (no Power entry in the menu, no COP stars, the AI never tries one). The Super Power costs 7 stars.
+stars = { cop = 0, scop = 7 }
+
+[d2d]
+name = "Vengeance"
+text = "Units with 8 HP or less attack with 25% more firepower. Her wounded troops fight hardest."
+# no mods: the bonus depends on the unit's HP (crate::aria::vengeance); the check below plays it in battle
+mods = []
+vengeance = { hp = 8, attack = 25 }
+
+[cop]
+# No CO Power (stars.cop = 0): the CO page says so, as AW2 says of Sturm.
+name = ""
+text = "Aria has no CO Power. She saves all her energy for her Super CO Power."
+
+[scop]
+name = "Build Anew"
+text = "Restores 3 HP to all units. Firepower rises by 20%."
+mods = [ { units = "all", attack = 20 } ]
+heal = 3
+quote = ["BUILD ANEW! From these", "ashes, we rise again!"]
+
+[lines]
+tag_in = ["Stand with me."]
+victory = "The Accord stands. Now we build."
+defeat = "Then build it better than I did."
+
+[portrait]
+# The picture the project owner supplied (pixel art, its "transparent" background a checkerboard baked into the JPEG: `checker = true` in the framing file beside it). A direct import, facing right as supplied.
+source = "art-src/cos/aria_v1.jpg"
+flip = true

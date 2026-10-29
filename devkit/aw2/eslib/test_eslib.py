@@ -110,3 +110,24 @@ class AsukaRule(unittest.TestCase):
                 cli.cfg.REPO = old
             self.assertFalse(msgs[0][0])
             self.assertIn("es_act1.rs:1", msgs[0][1])
+
+    def test_aria_is_kept_out_too(self):
+        import tempfile
+        from aw2.eslib import cli
+        with tempfile.TemporaryDirectory() as t:
+            src = Path(t) / "tango-gamesupport-aw2" / "src"
+            (src / "es_text").mkdir(parents=True)
+            (src / "es_act2.rs").write_text("let who = co_new::ARIA;\nlet variable = 1; // Maria\n")
+            (src / "es_text" / "act2.txt").write_text("KLAUS: Hello.\nARIA: no.\n")
+            (src / "es_co.rs").write_text("(crate::co_new::ARIA, 1) => HEAL3,\n")      # a table keyed by CO id may name her
+            (src / "es_text.rs").write_text("")
+            old, msgs = cli.cfg.REPO, []
+            cli.cfg.REPO = Path(t)
+            try:
+                self.assertEqual(cli.asuka_rule(lambda ok, msg: msgs.append((ok, msg))), 1)
+            finally:
+                cli.cfg.REPO = old
+            self.assertTrue(msgs[0][0] and not msgs[1][0])
+            self.assertIn("es_act2.rs:1", msgs[1][1])
+            self.assertNotIn("es_act2.rs:2", msgs[1][1])
+            self.assertNotIn("es_co.rs", msgs[1][1])

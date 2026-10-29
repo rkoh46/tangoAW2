@@ -54,13 +54,23 @@ def two_armies(ctx, cos, humans, visuals="off"):
     return ctx.start(m, cos, humans=humans, visuals=visuals)
 
 
+OWN_SONG_COS = ["cloneandy"]          # (Clone Andy, Crumb, Asuka and Aria play songs of ours: music/es/*.m4t, music/bh2/aria.m4t, crate::es_music, after the pack's)
+
+
 @test(modes=("ds",))
 def new_cos_have_their_own_songs(ctx):
+    """Nine new COs have a Dual Strike theme (converted, from 505); Clone Andy has a song of ours instead (`Copy Protocol`, crate::es_music: a row after the pack's songs, not Andy's Dual Strike theme)."""
     g = two_armies(ctx, ["andy", "sami"], (1,))
     e = g.e
     songs = [row_song(e, co) for co in NEW]
     ctx.log(f"songs: {dict(zip(NEW, songs))}")
-    ctx.eq(sorted(songs), list(range(FIRST_SONG, FIRST_SONG + 10)), "ten songs of their own, from 505 (Clone Andy plays Andy's Dual Strike theme)")
+    ds_cos = [c for c in NEW if c not in OWN_SONG_COS]
+    ds_songs = [row_song(e, c) for c in ds_cos]
+    ctx.eq(sorted(ds_songs), list(range(FIRST_SONG, FIRST_SONG + len(ds_cos))), f"{len(ds_cos)} Dual Strike songs, from 505")
+    own = {c: row_song(e, c) for c in OWN_SONG_COS}
+    for c, s in own.items():
+        ctx.check(s >= FIRST_SONG + len(ds_cos) and s not in ds_songs, f"{c} plays a song of ours ({s}), not one of the Dual Strike themes")
+    ctx.eq(len(set(songs)), len(songs), "every new CO has a song of its own")
     for co, s in zip(NEW, songs):
         h = header_of(e, s)
         ctx.check(0x08800000 <= h < 0x0A000000, f"{co}: song {s} header {h:08x} after the cartridge")
@@ -72,12 +82,20 @@ def new_cos_have_their_own_songs(ctx):
 
 
 @test(modes=("ds",))
-def crumb_plays_adders_theme(ctx):
-    """Crumb has no Dual Strike theme (no twin): his row takes Adder's (AW2's
-    own song), so the music blob holds no song for him."""
+def crumb_asuka_and_aria_play_their_own_themes(ctx):
+    """Crumb ("Marching Off-Step"), Asuka ("Iron Verdict") and Aria (the BH2 final theme) have songs of ours (crate::es_music): rows after the pack's, none is Adder's or Nell's AW2 song."""
     g = two_armies(ctx, ["crumb", "sami"], (1,))
     e = g.e
-    ctx.eq(row_song(e, "crumb"), row_song(e, "adder", AW2_CO_TABLE), "Adder's AW2 song")
+    adder, nell = row_song(e, "adder", AW2_CO_TABLE), row_song(e, "nell", AW2_CO_TABLE)
+    seen = []
+    for co in ("crumb", "asuka", "aria"):
+        s = row_song(e, co)
+        h = header_of(e, s)
+        ctx.check(s >= FIRST_SONG + 9, f"{co}: song {s} is one of ours, after the Dual Strike themes")
+        ctx.check(s not in (adder, nell), f"{co}: not Adder's or Nell's song")
+        ctx.check(0x08800000 <= h < 0x0A000000 and 1 <= e.u8(h) <= 8, f"{co}: header {h:08x} after the cartridge, {e.u8(h)} tracks")
+        seen.append(s)
+    ctx.eq(len(set(seen)), 3, "three different songs")
 
 
 @test(modes=("aw2",))

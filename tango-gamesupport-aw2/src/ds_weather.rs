@@ -208,7 +208,7 @@ fn shown_move(core: &mut Core) {
 // --- Olaf's snow --------------------------------------------------------
 
 /// A power's weather (`sub_08035144(weather)`: Olaf's Blizzard and Winter
-/// Fury bring snow, Drake's Typhoon rain). Dual Strike's power snow lasts
+/// Fury bring snow, Drake's Typhoon rain, and so do Asuka's powers: rain until her next turn, like Drake's). Dual Strike's power snow lasts
 /// two days (`Weather_SetDays`: 2 for `WEATHER_POWER_SNOW`, 1 for any
 /// other), AW2's one: AW2 ends a weather when every army has ended a turn
 /// since it began (`sub_08035080`: each army's turn-end count, at
