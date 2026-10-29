@@ -3,107 +3,107 @@
 
 == prologue
 @SONG prologue
-NARRATION: The storm took four nations. / It did not even hurry.
-NARRATION: Flags came down, one by / one. Not in fire. In order.
-NARRATION: The last Allied train pulled / out, riding low on its springs.
-NARRATION: A voice on the open band: / ALL COLOURS EAST. BUILD ANEW.
-NARRATION: The fence was down. To the / east lay the old continent.
-NARRATION: Past the edge of the maps, / where the four nations began.
-NARRATION: There the Allies regrouped, / led by someone who signed "A."
-NARRATION: In the west, the Obelisk / hummed. A crate hummed with it.
+NARRATION: Four nations fell to the storm. / It never had to hurry.
+NARRATION: Their flags came down one at / a time. Quietly. In order.
+NARRATION: The last Allied train left / the station, heavy and slow.
+NARRATION: Then a voice on the open band: / ALL COLOURS EAST. BUILD ANEW.
+NARRATION: The fence was gone. East lay / the old continent.
+NARRATION: Beyond the edge of the maps, / where the four nations began.
+NARRATION: The Allies gathered there under / someone who signed only "A."
+NARRATION: In the west the Obelisk / hummed, and a crate hummed back.
 NARRATION: Lord Sturm sat in its hall / and listened. He did not smile.
-NARRATION: He would not march east / himself. He wanted a spymaster.
-NARRATION: One woman had read the / Accord's secret files. Every one.
-NARRATION: Yellow Comet's daughter had / not slept in the same bed twice.
-NARRATION: She was about to give up / her name.
+NARRATION: He would not cross the sea / himself. He needed a spy.
+NARRATION: One woman had read every / secret file the Accord kept.
+NARRATION: Yellow Comet's daughter, who / never slept in one bed twice.
+NARRATION: She was about to throw / her own name away.
 NARRATION: The Auditor. / Black Hole 2.
 
 == prologue_castle
 @SONG enemy1
-NARRATION: The Orange Castle. Dusk. / Black Hole's flag hangs in the hall.
-NARRATION: Three weeks of silence from / the east. Then one broadcast.
-JUGGER: REPLAY. ALLIED BAND. VOICE / MATCH: ANDY. TEXT FOLLOWS.
+NARRATION: The Orange Castle at dusk. / Black Hole's flag hangs in the hall.
+NARRATION: Three weeks without a word / from the east. Then a broadcast.
+JUGGER: PLAYBACK. ALLIED BAND. VOICE: / ANDY. TRANSCRIPT FOLLOWS.
 JUGGER: "ALL COLOURS EAST. THE FENCE / IS DOWN. BUILD ANEW."
-VON BOLT: Kehh... "Build anew." Who / writes slogans for a retreat?
-HAWKE: Not Andy. Someone who / writes for a living.
-HAWKE: Sonja. You know the Accord's / clerks. Who writes like that?
-SONJA: No one in my files. Someone / new. Someone who rose after the fence.
+VON BOLT: Kehh... "Build anew." Who / puts a slogan on a retreat?
+HAWKE: Not Andy. That is a writer's / work. A careful one.
+HAWKE: Sonja, you know their clerks. / Who writes like that?
+SONJA: Nobody in my files. Someone / who came up after the fence.
 SONJA: That is what worries me. / I know nothing about them.
-STURM: The Allies run east with / their records and their children.
-STURM: I do not chase. I hold what / is mine. They will come back.
-CRUMB CO: Sir, can I ask? Why don't we / chase them? Their train is slow.
+STURM: The Allies run east with / their papers and their children.
+STURM: I will not chase them. I keep / what is mine. They will return.
+CRUMB CO: Sir? Why don't we chase / them? That train is slow.
 STURM: A man who builds a fence / keeps his best things behind it.
-STURM: The Accord's archives went east. / So did the reason it was made.
-HAWKE: Everything the Accord feared, / written down. And who it feared.
-STURM: My name is in there, I think. / From before I had one here.
-VON BOLT: Kehh... a free look at the / competitor's books! Priceless!
-SONJA: It will not be free. Four / armies. A whole continent of locks.
-STURM: Then I send someone who / reads locks. Not a general.
-HAWKE: Lord Sturm. With respect, / she robbed a vault to join us.
-HAWKE: She keeps records. And she / has never named her price.
-SONJA: I told you. Fifteen per cent / of whatever the Colonel finds.
-HAWKE: That was Von Bolt's price. / I asked for yours.
-SONJA: A fair question, Marshal. / Ask me again tonight.
-STURM: Tonight. At the Obelisk. / Bring your book.
-CRUMB CO: Should I bring the crate, sir? / It's been humming all day.
-VON BOLT: And I get second pick of the / east! In writing, Sturm!
+STURM: The Accord's archive went east. / So did the reason it exists.
+HAWKE: Everything the Accord ever / feared, on paper. And who.
+STURM: My name is in there. From / before I had one in this world.
+VON BOLT: Kehh! A look at the / competition's books! Priceless!
+SONJA: It will not be cheap. Four / armies, a continent of locked doors.
+STURM: Then I will send someone / who opens doors. Not a general.
+HAWKE: Lord Sturm, with respect, she / robbed a vault to join us.
+HAWKE: She keeps notes on all of us. / And she never named her price.
+SONJA: I did. Fifteen percent of / whatever the Colonel finds.
+HAWKE: That was Von Bolt's price. / I asked about yours.
+SONJA: Fair question, Marshal. / Ask me again tonight.
+STURM: Tonight, then. At the Obelisk. / Bring your book.
+CRUMB CO: Should I bring the crate, sir? / It's been humming since lunch.
+VON BOLT: And I get second pick of / the east! I want it in writing!
 STURM: Noted.
 
 == prologue_allies
 @SONG ally2
-NARRATION: The old continent. A quay / in the east. Rain, and many crates.
-ANDY: Okay, that's the last wagon. / Count them again, Hachi.
-HACHI: Counted twice, kid. Eleven / cars. Three hundred children.
-HACHI: Plus some cargo nobody wants / to touch. I didn't ask. I billed.
-MAX: Look at us. Every army we've / got, crammed onto one train.
-SAMI: And Nell's still locked in that / tower. We don't leave anyone.
-JAKE: Easy, Sami. We'll get her out. / Just point me at a front.
-RACHEL: By the book. First we count / our people. Then we count theirs.
-ANDY: I didn't write the broadcast, / you know. Not one word of it.
-ANDY: Somebody on the east side / handed me the page. "Read this."
+NARRATION: The old continent. A quay in / the east, rain, and a lot of crates.
+ANDY: Okay, that's the last car. / Count them again, Hachi?
+HACHI: Twice already, kid. Eleven / cars. Three hundred children.
+HACHI: And some cargo nobody wants to / touch. I didn't ask. I charged.
+MAX: Look at us. Every army we've / got, packed onto one train.
+SAMI: And Nell's still stuck in that / tower. We don't leave anyone.
+JAKE: Easy, Sami. We'll get her. / Just give me a front.
+RACHEL: By the book. First we count / our own. Then we count theirs.
+ANDY: Just so you know, I didn't / write that broadcast. Not a word.
+ANDY: Someone over here handed me / a page and said, "Read this."
 RACHEL: Who?
 ANDY: Never saw a face. Neat / handwriting. Signed "A."
-HACHI: Whoever "A." is, she plans / ahead. The depots are stocked.
-HACHI: Somebody paid to feed a / whole army. I know what that costs.
+HACHI: Whoever "A." is, she plans / ahead. The depots are full.
+HACHI: Somebody paid to feed a whole / army. I know what that costs.
 NARRATION: Far to the north-east, on the / Comet Chain, a lamp burns late.
-KANBEI: Sensei. A letter from the / west, in Sonja's own hand.
-SENSEI: Go on, read it. I won't peek. / My eyes are too old anyway.
+KANBEI: Sensei. A letter from the / west. Sonja's own hand.
+SENSEI: Go ahead, read it. I won't / peek. My eyes are too old.
 KANBEI: "Father. Thank you for the / scarf. I am well. Do not write."
-KANBEI(s): Do not write. ...Then Kanbei / will set her a place at the table.
+KANBEI(s): Do not write. ...Then Kanbei / will set a place for her at table.
 SENSEI: For her?
-KANBEI: For whoever comes to it. / Honour has a place for everyone.
+KANBEI: For whoever comes. Honour / keeps a place for everyone.
 
 == prologue_turn
 @SONG own:door
-NARRATION: The Obelisk. Midnight. The / crate hums. The air is thin.
+NARRATION: The Obelisk at midnight. The / crate hums. The air feels thin.
 STURM: Your book. Open it.
-SONJA: Page one is a list of men / who would not leave a soldier.
-SONJA: The rest is the Accord. Every / nation. Every clerk. Every seal.
-SONJA: I joined you to read the one / file my father forbade me.
+SONJA: The first page lists the men / who would not leave a soldier.
+SONJA: The rest is the Accord. Every / nation, every clerk, every seal.
+SONJA: I came to you to read the one / file my father kept from me.
 SONJA: The Accord's own. The pages / it buried when it built the fence.
-HAWKE: At last. And what do you / want in return?
+HAWKE: Finally. And what do you / want for it?
 SONJA: The truth, Marshal. And the / name of whoever hid it.
 CRUMB CO: Ma'am? The crate went quiet / when you said "truth".
 SONJA: So it did, Commander.
-STURM: The Allies hold a file on you / in four languages.
-HAWKE: Every ministry knows her / face. And her father's.
-SONJA: They will say Yellow Comet / sent a spy. They will say it of him.
-SONJA: Nobody can say Yellow Comet's / daughter did it, if she is gone.
-NARRATION: She takes a small black / book from her coat. Strikes an S.
+STURM: The Allies keep a file on you, / in four languages.
+HAWKE: Every ministry knows her face. / And her father's.
+SONJA: They will say Yellow Comet sent / a spy. They will blame him.
+SONJA: They cannot blame him for a / daughter who no longer exists.
+NARRATION: She takes a small black book / from her coat. Crosses out an S.
 SONJA(s): Sonja served one small / country. A kind one.
-SONJA: It belongs to a man who loves / me. I will not let this cost him.
+SONJA: It belongs to a man who loves / me. This will not cost him.
 STURM: A name is a possession. / Who owns yours?
-SONJA: Nobody. As of this minute.
-VON BOLT: A NEW name! Kehh! There is / a fee for a new name!
+SONJA: Nobody. Not anymore.
+VON BOLT: A NEW name! Kehh! There's / a fee for that, you know!
 HAWKE: Then what do we call you?
-SONJA: My mother's word for me, / before I was a general's daughter.
-SONJA: Asuka. Only my father will / know it. Let him.
-CRUMB CO(h): It's a good name, ma'am! / Gerald says it sounds like morning.
-NARRATION: The hum drops half a tone. / Gerald's mark warms.
-STURM: Asuka. You hold the eastern / war. You answer to me.
-ASUKA: I will see it done, Lord Sturm. / Quietly, and in order.
+SONJA: What my mother called me, / before I was a general's girl.
+SONJA: Asuka. Only my father will / know it. That is enough.
+CRUMB CO(h): It's a nice name, ma'am! / Gerald says it sounds like morning.
+NARRATION: The hum drops half a tone. / Gerald's mark grows warm.
+STURM: Asuka. The war in the east / is yours. You answer to me.
+ASUKA: It will be done, Lord Sturm. / Quietly, and in order.
 HAWKE: I do not trust you.
-ASUKA: Good. Keep it that way, / Marshal. You are right not to.
+ASUKA: Good. Do not start now, / Marshal. You would be wrong to.
 HAWKE: A new name for an old / ambition. Very well, Asuka.
 HAWKE: Do not disappoint us.
 STURM: Take the crate. Take the boy. / Whatever answers it, bring to me.
