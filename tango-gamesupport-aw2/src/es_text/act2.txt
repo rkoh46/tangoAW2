@@ -140,7 +140,7 @@ COLIN: Bank run! Ha! One rumour, and / your bills are dust, Quaestor!
 HACHI: My till's been counting your / bills all week, rival. Slowly.
 LIVIA: Open every window. Pay every / bill, in full. In silver. Slowly.
 LEGIONARY: Slowly, Quaestor? The chest / will empty in a day!
-LIVIA: A run is a queue. A queue / is a schedule. I keep schedules.
+LIVIA: A run is only a queue. I / keep very good queues.
 
 == m06_post
 @SONG aw2:423
@@ -208,7 +208,7 @@ LIVIA: He is ill, Legate. I have / seen the look. Bring a bucket.
 LIVIA: Do not charge him for the / bucket.
 DRAKE: Dude. The radio is on, you / know. I can hear your seasick man.
 CASSIUS: I am NOT seasick, you sea / lizard! It is a fine day!
-DRAKE: Dude. Chill. I just want to / know why a green fleet shows up.
+DRAKE: Easy. I just want to know / why a green fleet shows up.
 DRAKE: Everybody on this coast thinks / you are the next big bad guy.
 KLAUS: Then everybody is mistaken. / We want the harbour. No more.
 DRAKE: Nobody wants a harbour for / "no more", dude. Cannons say more.
@@ -234,14 +234,14 @@ DRAKE: Dude. That was a real mess. / I mean that in a good way.
 SENSEI: Hmph. Beaten by sailors with / shovels. I have lost to worse. Rarely.
 DRAKE: Sensei. Chill. They were not / sailors. They were cruisers.
 KLAUS: Drake. The harbour is Aurea's / now. Your ships may leave.
-DRAKE: Dude. I want to say / something first, okay?
+DRAKE: Hey. I want to say / something first, okay?
 DRAKE: You kept the lanes clean. / You did not sink one fisher.
 DRAKE: You did not mine the Roads. / My cousins fish there. Thanks.
 LIVIA: We have no quarrel with / fishermen, Drake. They pay taxes.
 DRAKE: Ha. See, dude? That is / almost a joke.
 DRAKE: So I think you are not / Black Hole. Black Hole mines things.
 KLAUS: We are not. We march on / our own account, and for bread.
-DRAKE: Bread. Dude. The nets came / up grey this spring. Ash. Weird.
+DRAKE: Bread. Huh. The nets came / up grey this spring. Ash. Weird.
 KLAUS: The same grey ash. It fell / on our fields for three years.
 DRAKE: Dude. For real? Then you are / invading, and scared. New one.
 KLAUS: I am hunting someone. When / I find him I will be less scared.
@@ -320,7 +320,7 @@ NARRATION: The cavalry strikes the line. / The centre does not move.
 == m08_post
 @SONG ally1
 NARRATION: Ironhold. The crags stand. / The causeway is quiet.
-MAX: Blast. I lost. To two men / who argued the whole time.
+MAX: Hmph. I lost. To two men / who argued the whole time.
 SASHA: The flank was well timed. The / hammer was precise. I note it.
 MAX: Sasha. Be quiet. Legate Klaus. / I fought with my whole force.
 MAX: You beat me clean. I respect / that. I respect the legion.

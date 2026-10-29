@@ -27,7 +27,7 @@ NARRATION: Cape Astra, Green Earth. / Forty days out of Aurelium.
 LIVIA: The sea is flat, Legate. / That is the only good news.
 KLAUS: Then take it. We will have / little enough of the other kind.
 AURELIA: Beach shelves at two fathoms. / Barges ground at forty paces.
-KLAUS: Then forty paces it is. / Cassius is not here to complain?
+KLAUS: Then forty paces it is. / Is Cassius not complaining yet?
 CASSIUS: Not yet! My horses are still / being sick in the third hold.
 LIVIA: He is on the radio. / Pretend not to hear him.
 CASSIUS(h): I heard that. Klaus, one day / you will say "well done, Cassius."
@@ -143,7 +143,7 @@ CASSIUS: So, reserve. Last bench of / the theatre. The horses will mutiny.
 KLAUS: Then the horses may mutiny / quietly. Come and watch the drill.
 KLAUS: Behind this ridge lies the causeway / into the heart of the province.
 KLAUS: The wardens' relief army comes from / the north edge and the east edge.
-KLAUS: A conquest is a landing until it is held. / Hold.
+KLAUS: A landing is not a conquest / until it is held. So hold.
 LEGIONARY: Legate, the line is / formed on the crest. Waiting.
 KLAUS: Shields to the front. Rear / rank, lift. Roof them over.
 LEGIONARY: Tortoise formation! / Locked shields, sir!
@@ -275,10 +275,10 @@ JAVIER: They cannot say from where. / It troubles me more than any siege.
 KLAUS: It troubles me, also. In my / country it has eaten the harvest.
 JAVIER: Then we are not enemies in / this, Legate. Only neighbours.
 KLAUS: And conquerors, my lord. I will not burn / your orchards, or your villages.
-KLAUS: I would like to believe so. / Will you tell your Accord?
+KLAUS: I would like you to believe it. / Will you tell your Accord?
 JAVIER: I shall tell them a legion / took a wall and spared a garrison.
 JAVIER: It is not much. It is a / beginning.
-KLAUS: Many men are. That is why / we do not judge them by walls.
+KLAUS: A beginning will do.
 JAVIER: The province is yours to keep. / Keep it better than I did.
 
 == m03_map
