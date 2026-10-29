@@ -486,12 +486,36 @@ pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
 
 /// A custom campaign's record in the staging buffer: its progress and
 /// records (no skill data). (slot, buffer, length).
+///
+/// Campaigns that share a slot (the BH Campaign's slot 13 also holds the BH2 Campaign's record, [`crate::campaign_model::Source::save_offset`]) each keep their own
+/// region of the payload: this campaign's region is replaced, the others' stay as the slot has them.
 pub fn stage_custom(core: &mut Core) -> (u8, u32, u32) {
-    let mut b = vec![0u8; (SAVE_SIZE + RECORDS_SIZE) as usize];
-    core.raw_read_range(PROGRESS, -1, &mut b[..SAVE_SIZE as usize]);
-    core.raw_read_range(RECORDS, -1, &mut b[SAVE_SIZE as usize..]);
+    let mut own = vec![0u8; RECORD_LEN];
+    core.raw_read_range(PROGRESS, -1, &mut own[..SAVE_SIZE as usize]);
+    core.raw_read_range(RECORDS, -1, &mut own[SAVE_SIZE as usize..]);
+    let spec = spec(core);
+    let b = merge_record(read_slot(core, spec.save_slot).unwrap_or_default(), spec.save_offset as usize, &own);
     core.raw_write_range(STAGING, -1, &b);
-    (spec(core).save_slot, STAGING, b.len() as u32)
+    (spec.save_slot, STAGING, b.len() as u32)
+}
+
+/// A campaign record's length in its slot: the progress and the mission records.
+pub const RECORD_LEN: usize = (SAVE_SIZE + RECORDS_SIZE) as usize;
+
+/// The slot's payload with the record at `offset` replaced by `own` (the payload grows, zero-filled, to hold it; other campaigns' regions are kept).
+pub fn merge_record(mut slot: Vec<u8>, offset: usize, own: &[u8]) -> Vec<u8> {
+    slot.resize(slot.len().max(offset + own.len()), 0);
+    slot[offset..offset + own.len()].copy_from_slice(own);
+    slot
+}
+
+/// The record at `offset` of a slot's payload when it opens with the campaign's magic (progress, then the mission records; a record saved before the records existed has none).
+pub fn extract_record(slot: &[u8], offset: usize, magic: u32) -> Option<Vec<u8>> {
+    let end = slot.len().min(offset + RECORD_LEN);
+    if slot.len() < offset + 4 || u32::from_le_bytes(slot[offset..offset + 4].try_into().unwrap()) != magic {
+        return None;
+    }
+    Some(slot[offset..end].to_vec())
 }
 
 /// Empties the BG0 tilemap buffer, then tail-calls `BG_EnableSyncBG0`
@@ -1231,7 +1255,7 @@ fn load_from_flash(core: &mut Core) {
     let Some(b) = read_slot(core, spec(core).save_slot) else {
         return;
     };
-    if b.len() >= 4 && u32::from_le_bytes(b[0..4].try_into().unwrap()) == spec(core).progress_magic {
+    if let Some(b) = extract_record(&b, spec(core).save_offset as usize, spec(core).progress_magic) {
         // (the other campaign's records in RAM are not this one's)
         core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
         core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
@@ -1239,8 +1263,7 @@ fn load_from_flash(core: &mut Core) {
         core.raw_write_range(PROGRESS, -1, &b[..n]);
         // The records (a record saved before them has none).
         if b.len() > SAVE_SIZE as usize {
-            let end = b.len().min((SAVE_SIZE + RECORDS_SIZE) as usize);
-            core.raw_write_range(RECORDS, -1, &b[SAVE_SIZE as usize..end]);
+            core.raw_write_range(RECORDS, -1, &b[SAVE_SIZE as usize..]);
         }
     }
 }
@@ -1924,5 +1947,91 @@ mod tests {
         // Past Survival's ids and inside its table.
         assert!(data::MAP_ID > 0xEC);
         assert!(DATA >= 0x08E5_0000);
+    }
+}
+
+#[cfg(test)]
+mod save_tests {
+    use super::*;
+    use crate::campaign_model::SOURCES;
+
+    /// A made-up campaign record: its magic, then a pattern of its own.
+    fn record(magic: u32, fill: u8) -> Vec<u8> {
+        let mut r = vec![fill; RECORD_LEN];
+        r[..4].copy_from_slice(&magic.to_le_bytes());
+        r
+    }
+
+    const BH: usize = 1;
+    const ES: usize = 2;
+    const BH2: usize = 3;
+
+    /// A fake Flash: slot -> the payload last written, written and read the way the engine stages and loads.
+    struct Flash(std::collections::HashMap<u8, Vec<u8>>);
+    impl Flash {
+        fn save(&mut self, src: usize, rec: &[u8]) {
+            let s = &SOURCES[src];
+            let old = self.0.remove(&s.save_slot).unwrap_or_default();
+            self.0.insert(s.save_slot, merge_record(old, s.save_offset as usize, rec));
+        }
+        fn load(&self, src: usize) -> Option<Vec<u8>> {
+            let s = &SOURCES[src];
+            extract_record(self.0.get(&s.save_slot)?, s.save_offset as usize, s.progress_magic)
+        }
+    }
+
+    #[test]
+    fn bh2_shares_the_bh_slot_after_its_record_and_takes_no_sector_of_its_own() {
+        assert_eq!(SOURCES[BH2].save_slot, SOURCES[BH].save_slot);
+        assert_eq!(SOURCES[BH2].save_offset as usize, RECORD_LEN, "right after the BH record");
+        assert_eq!(SOURCES[BH].save_offset, 0);
+        assert!(SOURCES[BH2].save_offset as usize + RECORD_LEN <= 0x1000 - 0x52, "both records fit one 4 KiB sector's payload");
+        let slots: Vec<u8> = SOURCES.iter().map(|s| s.save_slot).collect();
+        assert_eq!(slots.iter().filter(|&&s| s == 10).count(), 0, "slot 10 is not used any more");
+    }
+
+    #[test]
+    fn bh_es_and_bh2_progress_round_trip_together() {
+        let mut f = Flash(Default::default());
+        let (bh, es, bh2) = (record(SOURCES[BH].progress_magic, 0x11), record(SOURCES[ES].progress_magic, 0x22), record(SOURCES[BH2].progress_magic, 0x33));
+        // any order of saving, any number of times
+        f.save(BH2, &bh2);
+        assert_eq!(f.load(BH), None, "no BH record yet");
+        f.save(ES, &es);
+        f.save(BH, &bh);
+        let bh2b = record(SOURCES[BH2].progress_magic, 0x44);
+        f.save(BH2, &bh2b);
+        let bhb = record(SOURCES[BH].progress_magic, 0x55);
+        f.save(BH, &bhb);
+        assert_eq!(f.load(BH).unwrap(), bhb, "BH's newest record, untouched by BH2's saves");
+        assert_eq!(f.load(BH2).unwrap(), bh2b, "BH2's newest record, untouched by BH's saves");
+        assert_eq!(f.load(ES).unwrap(), es, "Emerald Sun's record has its own slot");
+    }
+
+    #[test]
+    fn a_bh_save_written_before_bh2_existed_still_loads_and_grows_into_the_shared_slot() {
+        let mut f = Flash(Default::default());
+        let old = record(SOURCES[BH].progress_magic, 0x66);
+        f.0.insert(SOURCES[BH].save_slot, old.clone()); // the 0x120-byte payload an older build wrote
+        assert_eq!(f.load(BH).unwrap(), old);
+        assert_eq!(f.load(BH2), None, "BH2 has no record in an old save");
+        let bh2 = record(SOURCES[BH2].progress_magic, 0x77);
+        f.save(BH2, &bh2);
+        assert_eq!(f.load(BH).unwrap(), old, "the BH record survives BH2's first save");
+        assert_eq!(f.load(BH2).unwrap(), bh2);
+        // the other way: an old Emerald Sun save is its own slot and is read at offset 0 as before
+        let es = record(SOURCES[ES].progress_magic, 0x88);
+        f.0.insert(SOURCES[ES].save_slot, es.clone());
+        assert_eq!(f.load(ES).unwrap(), es);
+    }
+
+    #[test]
+    fn a_region_with_another_campaigns_magic_is_not_a_record() {
+        let mut f = Flash(Default::default());
+        f.save(BH, &record(SOURCES[BH].progress_magic, 1));
+        // BH2 reading a slot whose second region is empty finds nothing, and neither does a short payload
+        assert_eq!(f.load(BH2), None);
+        assert_eq!(extract_record(&[1, 2], 0, 5), None);
+        assert_eq!(extract_record(&record(5, 0)[..10], 0, 5).map(|r| r.len()), Some(10), "a short record (saved before the mission records) loads as far as it goes");
     }
 }

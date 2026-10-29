@@ -18,8 +18,7 @@ use crate::custom_campaign::Bond;
 /// (the BH2 Campaign has no hidden bonds)
 const BONDS: [Bond; 0] = [];
 
-/// TEMPORARY: Aria's CO id (`crate::co_new::ARIA` on the `aria` branch). After the merge use the constant and delete this.
-const ARIA: u8 = 93;
+use crate::co_new::ARIA;
 use crate::campaign_music::Track;
 use crate::custom_campaign::{co, colour, Line, Mood, Page, Scene, Speaker};
 
@@ -380,15 +379,14 @@ fn build(rows: &[(Group, Row)], pool: &[u8]) -> Result<Vec<Line>, String> {
     Ok(out)
 }
 
-/// BH2's own songs (`@SONG own:door`), written on the `bh2music` / `aria` branches (`music/bh2/*.m4t`) and not merged yet: TEMPORARY aliases to AW2 / Dual Strike tracks of the
-/// same mood. After the merge each becomes its own `Track` (the merge agent: replace the right-hand sides; the scene files do not change).
+/// BH2's own songs (`@SONG own:door`), written as text (`music/bh2/*.m4t`) and compiled into the game's song table ([`crate::es_music::SOURCES`]).
 const OWN_SONGS: [(&str, Track); 3] = [
-    // "The Door": a quiet loop for the crate, door and Obelisk scenes (alias: the pinch event theme).
-    ("door", Track::Ds { seq: 0x2D, like: 25 }),
-    // The staff roll's theme (alias: the ending).
-    ("credits", Track::Ds { seq: 0x36, like: 420 }),
-    // Aria's CO theme, "Last Accord" (alias: the allies' event theme).
-    ("aria", Track::Ds { seq: 0x19, like: 413 }),
+    // "The Door": a quiet loop for the crate, door, Obelisk and Lab 7 binder scenes.
+    ("door", Track::Own(crate::es_music::DOOR)),
+    // The staff roll's theme.
+    ("credits", Track::Own(crate::es_music::CREDITS)),
+    // Aria's CO theme, her scenes' song too.
+    ("aria", Track::Own(crate::co_new::ARIA)),
 ];
 
 /// A song by the name a `@SONG` line gives: [`crate::campaign_music::parse`]'s forms and `own:<name>`.

@@ -36,7 +36,7 @@ SONG_NAMES = set(re.findall(r'^\s*\(\s*"(\w+)",\s*Track::', open(os.path.join(SR
 # scenes that must have one: the story scenes (intro, victory, the world map's), not the mid-battle day triggers
 NEEDS_SONG = re.compile(r"(?!m\d\d_(day|in_|front2_)).*")      # every scene but the mid-battle ones (mNN_dayN, mNN_front2_*) has a song
 songs = set()
-OWN_SONGS = {"own:door", "own:credits", "own:aria"}     # BH2's own songs (branches bh2music / aria, not merged: bh2_text.rs OWN_SONGS)
+OWN_SONGS = {"own:door", "own:credits", "own:aria"}     # BH2's own songs (music/bh2/*.m4t, es_music::SOURCES; bh2_text.rs OWN_SONGS)
 
 W = None
 
@@ -143,7 +143,7 @@ def lint_file(name, errors, warns, counts):
     return scenes
 
 
-POOL = ["ASUKA", "CRUMB CO", "HAWKE", "STURM", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "VON BOLT", "CLONE ANDY"]   # bh2_campaign::ROSTER
+POOL = ["ASUKA", "CRUMB CO", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "VON BOLT", "CLONE ANDY"]   # bh2_campaign::ROSTER
 
 
 def scene_texts(name, ids):

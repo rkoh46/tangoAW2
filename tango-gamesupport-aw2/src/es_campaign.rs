@@ -130,6 +130,7 @@ pub fn def() -> CampaignDef {
         roster: ROSTER.to_vec(),
         prologue: crate::es_text::pages("prologue"),
         prologue_song: crate::es_text::song("prologue"),
+        prologue_scenes: Vec::new(),
         credits: credits(),
         missions,
         final_mission: last,

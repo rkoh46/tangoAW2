@@ -176,12 +176,8 @@ pub struct Coming {
     pub title: &'static str,
 }
 
-/// The placeholders, in the sub-menu's order after the sources (BH2 under the BH Campaign, Emerald Sun at the bottom).
-pub const COMING: [Coming; 2] = [
-    Coming {
-        label: "BH2 CAMPAIGN",
-        title: "BH2 Campaign",
-    },
+/// The placeholders, in the sub-menu's order after the sources (only Emerald Sun's remains, and it is a source now).
+pub const COMING: [Coming; 1] = [
     Coming {
         label: "EMERALD SUN",
         title: "Emerald Sun Campaign",
@@ -193,7 +189,6 @@ pub fn coming(core: &Core) -> Vec<&'static Coming> {
     COMING
         .iter()
         .filter(|c| !(c.label == "EMERALD SUN" && crate::es_campaign::available(core)))
-        .filter(|c| !(c.label == "BH2 CAMPAIGN" && crate::bh2_campaign::available(core)))
         .collect()
 }
 

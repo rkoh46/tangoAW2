@@ -111,6 +111,8 @@ pub struct CampaignDef {
     pub prologue: Vec<Page>,
     /// The prologue's song (a scene on the map: the map's song takes over after it).
     pub prologue_song: Option<crate::campaign_music::Track>,
+    /// Scenes on the world map after the prologue's pages, one after the other, each with its own song (BH2: the castle, the Allies, the turn).
+    pub prologue_scenes: Vec<Scene>,
     /// The staff roll after the last mission's scenes.
     pub credits: Vec<CreditSection>,
     pub missions: Vec<MissionDef>,
@@ -1315,6 +1317,7 @@ pub fn text_ids_used(def: &CampaignDef) -> usize {
         })
         .collect();
     scene(&Scene::new(prologue));
+    def.prologue_scenes.iter().for_each(&mut scene);
     seen.len() + 2 * def.missions.len()
 }
 
@@ -1669,7 +1672,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     // Story: prologue pages, scenes after wins, the staff roll.
     let mut story = Story::default();
     let map_song = crate::campaign_music::world_map_song(source.world_art() == WorldArt::OmegaLand);
-    story.prologue = prologue_script(&mut cx, &def.prologue, def.prologue_song)?;
+    story.prologue = prologue_script(&mut cx, &def.prologue, def.prologue_song, &def.prologue_scenes)?;
     for (i, m) in def.missions.iter().enumerate() {
         if !m.after.is_empty() {
             let cmds = cx.scene_cmds(&m.after, SceneEnd::Song(map_song))?;
@@ -1819,6 +1822,7 @@ fn prologue_script(
     cx: &mut Compiler,
     pages: &[Page],
     song: Option<crate::campaign_music::Track>,
+    more: &[Scene],
 ) -> Result<u32, Error> {
     if pages.is_empty() {
         return Ok(0);
@@ -1842,7 +1846,7 @@ fn prologue_script(
             &Scene {
                 lines,
                 song,
-                more: Vec::new(),
+                more: more.to_vec(),
                 place: 1,
             },
             SceneEnd::Fade,

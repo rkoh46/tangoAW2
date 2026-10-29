@@ -284,6 +284,9 @@ pub struct Source {
     /// The Flash slot of its record, and of a mission saved halfway (the
     /// layout is in docs/AW2.md "Saves").
     pub save_slot: u8,
+    /// Where its record starts in the slot's payload: 0, except for a campaign that shares a slot (the BH2 Campaign's record follows the BH Campaign's in slot 13;
+    /// each region opens with its own magic).
+    pub save_offset: u32,
     pub mid_slot: u8,
     /// The record's first word ("AWDC" is the DS Campaign's).
     pub progress_magic: u32,
@@ -313,6 +316,7 @@ pub static SOURCES: [Source; 4] = [
         load: crate::ds_campaign_data::load,
         rules: crate::ds_campaign_rules::run,
         save_slot: 15,
+        save_offset: 0,
         mid_slot: 14,
         progress_magic: 0x4344_5741, // "AWDC"
         art: WorldArt::OmegaLand,
@@ -324,6 +328,7 @@ pub static SOURCES: [Source; 4] = [
         load: crate::bh_campaign::load,
         rules: crate::custom_campaign::rules,
         save_slot: 13,
+        save_offset: 0,
         mid_slot: 12,
         progress_magic: 0x4342_5741, // "AWBC"
         art: WorldArt::Aw2,
@@ -335,18 +340,20 @@ pub static SOURCES: [Source; 4] = [
         load: crate::es_campaign::load,
         rules: crate::custom_campaign::rules,
         save_slot: 11,
+        save_offset: 0,
         mid_slot: 12, // (shared with the BH Campaign's: a saved mission names its campaign, `suspend::source_tag`)
         progress_magic: 0x4345_5741, // "AWEC"
         art: WorldArt::OmegaLand,
         has_hard: false,
     },
-    // The BH2 Campaign, development build (`TANGOAW2_BH2_CAMPAIGN`): its own record in Flash slot 10, a saved mission in the shared slot 12; the picture world map.
+    // The BH2 Campaign: its record follows the BH Campaign's in Flash slot 13 (no sector of its own: the Flash budget is full), a saved mission in the shared slot 12; the picture world map.
     Source {
         label: "BH2 CAMPAIGN",
         available: crate::bh2_campaign::available,
         load: crate::bh2_campaign::load,
         rules: crate::custom_campaign::rules,
-        save_slot: 10,
+        save_slot: 13,
+        save_offset: 0x120, // (SAVE_SIZE + RECORDS_SIZE: right after the BH Campaign's record)
         mid_slot: 12,
         progress_magic: 0x3242_5741, // "AWB2"
         art: WorldArt::Picture(&crate::world_picture::BH2),

@@ -97,21 +97,29 @@ def difficulty_cmd(a):
 
 
 def asuka_rule(say):
-    """The campaign's sources (Rust modules, dialogue texts, maps' data) never mention Asuka: no dialogue line, no roster entry, no mission army CO. -> number of failures."""
+    """The campaign's sources (Rust modules, dialogue texts, maps' data) never mention Asuka or Aria (both are BH2's: in Versus, not in this campaign): no dialogue line, no roster entry,
+    no mission army CO. -> number of failures."""
     import re
     from .. import cfg
     src = cfg.REPO / "tango-gamesupport-aw2" / "src"
     files = sorted(src.glob("es_*.rs")) + sorted((src / "es_text").glob("*")) + [src / "es_text.rs"]
-    pat = re.compile(r"asuka|co_new::ASUKA|ASUKA\b", re.I)
-    hits = []
-    for f in files:
-        if f.name in ("es_cos.rs", "es_music.rs") or not f.is_file():
-            continue          # the portraits' and the themes' tables are shared with the Versus COs (keyed by CO id, not the campaign)
-        for n, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
-            if pat.search(line):
-                hits.append(f"{f.name}:{n}")
-    say(not hits, "Asuka is not in the Emerald Sun Campaign" + (f" (found at {', '.join(hits[:6])})" if hits else " (no mention in the campaign's modules, dialogue or rosters)"))
-    return 1 if hits else 0
+    rules = [
+        ("Asuka", re.compile(r"asuka|co_new::ASUKA|ASUKA\b", re.I), ("es_cos.rs", "es_music.rs")),
+        # (es_co.rs keeps a table row of her Super Power's healing, keyed by CO id like the portraits': the word-boundary form keeps "variable" and "Maria" out)
+        ("Aria", re.compile(r"\baria\b|co_new::ARIA\b", re.I), ("es_cos.rs", "es_music.rs", "es_co.rs")),
+    ]
+    bad = 0
+    for who, pat, shared in rules:
+        hits = []
+        for f in files:
+            if f.name in shared or not f.is_file():
+                continue          # the portraits' and the themes' tables are shared with the Versus COs (keyed by CO id, not the campaign)
+            for n, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
+                if pat.search(line):
+                    hits.append(f"{f.name}:{n}")
+        say(not hits, f"{who} is not in the Emerald Sun Campaign" + (f" (found at {', '.join(hits[:6])})" if hits else " (no mention in the campaign's modules, dialogue or rosters)"))
+        bad += bool(hits)
+    return bad
 
 
 def check(a):
