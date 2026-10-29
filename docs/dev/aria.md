@@ -54,7 +54,7 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
   photographs 56 frames; the quote frame is the one with the most text typed.
 
 ## The signs (option E: Vengeance shown on the map, the unit window and the damage forecast)
-Approved from the mock-ups of `devkit/aw2/colib/vengeance_mockups.py`; the rule is `aria::sign(type, hp)` (her flat 7% plus `vengeance_for`: 8 HP +32%, 7 +38%, 6 +44%, 5 +50%, 4 +56%, 3 +62%, 2 +68%, 1 +92%; 10 and 9 HP nothing; an Oozium never; only with the CO
+Approved from the mock-ups of `devkit/aw2/colib/vengeance_mockups.py`; the rule is `aria::sign(type, hp)` (her flat 8% plus `vengeance_for`: 8 HP +33%, 7 +39%, 6 +45%, 5 +51%, 4 +57%, 3 +63%, 2 +69%, 1 +93%; 10 and 9 HP nothing; an Oozium never; only with the CO
 abilities on), and code `aria_sign.rs` with `ds_hud.rs` (`native_sign`, and the strip in `info_flush`). Nothing changes a number or the shared state of the game; everything is in VRAM, palette RAM, the sprite list and `aria_sign::STATE`
 (`ram-map.md`), found again from the unit records every frame, so rollback and save states carry it.
 - **Map**: the HP number of her unit with 8 to 1 displayed HP is drawn in `aria::RAMP` (orange 8, 7, 6, 5, 4, 3, 2, dark red 1), the black box round it kept; the low fuel / ammunition icons (BG2, the cell's top right) and the capture and cargo marks are other tiles of the cell and are

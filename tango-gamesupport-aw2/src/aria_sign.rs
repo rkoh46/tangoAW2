@@ -11,7 +11,7 @@
 //!   changed only where the tile map holds the digit tile of that unit's HP (so never a hidden "?" or a fogged unit), and put back (the bank is worked out from the unit's record) when
 //!   the unit no longer qualifies (a power healed it, Aria left the army by a Tag swap).
 //! - **In the unit window** ([`crate::ds_hud`]): with the cursor on such a unit, a strip as wide as the window, in its fill, on top of it: "Vengeance" and below it "+NN%" (the unit's
-//!   [`crate::aria::sign`]: her flat 7% and Vengeance). The same strip stands above the window while a damage forecast targets the unit, with the DAMAGE box lifted by its height.
+//!   [`crate::aria::sign`]: her flat 8% and Vengeance). The same strip stands above the window while a damage forecast targets the unit, with the DAMAGE box lifted by its height.
 //!   [`Strip`] builds the lettering at run time from the game's own window words (the letters e, c, n of "Recon", g of "Bridge", a of "Tank", cut out by their connected white pixels), the digits of the
 //!   window's HP number (Dual Strike's, `ds_hud::digit_tiles`) and a V, "+" and "%" drawn here in the same style (small bitmaps below); nothing of the game's art is stored.
 

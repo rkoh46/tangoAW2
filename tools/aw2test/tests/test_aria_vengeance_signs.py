@@ -337,7 +337,7 @@ def aria_vengeance_signs_forecast(ctx):
         if h > 8:
             ctx.check(ba[1] == bb[1] and abs(ba[0] - bb[0]) <= 2, f"{h} HP: the DAMAGE box is where it always is ({ba} against the twin's {bb}: it bobs a pixel or two)")
             ctx.eq(mm.window_top(ia), wt, f"{h} HP: the window is not lifted by a strip")
-            ctx.check(da < db, f"{h} HP: the game's forecast is {da}%: her flat 7% defence (the twin's Andy: {db}%)")
+            ctx.check(da < db, f"{h} HP: the game's forecast is {da}%: her flat 8% defence (the twin's Andy: {db}%)")
             continue
         pct = mm.VENGEANCE_PCT[h]
         want = mm.option_d(ib, words, pct, frames)
