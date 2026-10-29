@@ -1383,6 +1383,9 @@ mod tests {
         assert!(!m31.stages[0].deploy.is_empty() && m31.stages[0].units.iter().all(|u| u.army == 2));
         assert_eq!(at(&d, "bh2_32").triggers.len(), 6, "three waves and their day scenes");
         assert_eq!(m31.stages[0].triggers.len(), 3, "days 6, 9 and 12 on stage 2");
+        // the Last Citadel only looks snowy (the Snow look is a tileset): its weather is Clear, so no unit, Aria's included, moves slower there
+        assert_eq!(m31.stages[0].look, 1);
+        assert!(matches!(m31.stages[0].weather, Weather::Clear));
     }
 
     /// Every cell a wave or a stage names is ground (sea for M32's fleet) and free of start units; M30's stage HQs are the map's `Q` tiles.

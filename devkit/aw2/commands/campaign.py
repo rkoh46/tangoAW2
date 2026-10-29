@@ -49,6 +49,7 @@ def register(sub):
     a.add_argument("--player", default="cpu", choices=["cpu", "bot"], help="cpu: the game's computer plays the player's army too; bot: the test player (aw2test.bot) through the pad, going for the HQs")
     a.add_argument("--days", type=int, default=60, help="the day limit over all stages")
     a.add_argument("--god", action="store_true", help="the player's units are healed to full every half second: the player cannot lose, so every wave and stage can be watched")
+    a.add_argument("--advance", type=int, default=0, help="with --player bot: an HQ of the stage still not the player's N days after the last one fell is captured for it (to see every wave and stage; says nothing about difficulty)")
     a.add_argument("--waves", action="store_true", help="a whole-map picture at the start and each time an army lands a wave (on the player's next turn; needs --player bot), with every army's units by type and funds (waves.png)")
     a.add_argument("--out", help="the folder for report.md, report.json and contact.png (default devkit/work/campaign/playthrough/<campaign>-m<N>)")
     a.set_defaults(fn=playthrough)
@@ -79,7 +80,7 @@ def playthrough(a):
     out.mkdir(parents=True, exist_ok=True)
     js = out / "report.json"
     js.unlink(missing_ok=True)
-    env = dict(os.environ, AW2TEST_PLAY_MISSION=str(a.mission), AW2TEST_PLAY_PLAYER=a.player, AW2TEST_PLAY_DAYS=str(a.days), AW2TEST_PLAY_OUT=str(js), AW2TEST_PLAY_GOD="1" if a.god else "0", AW2TEST_PLAY_WAVE_MAPS="1" if a.waves else "0")
+    env = dict(os.environ, AW2TEST_PLAY_MISSION=str(a.mission), AW2TEST_PLAY_PLAYER=a.player, AW2TEST_PLAY_DAYS=str(a.days), AW2TEST_PLAY_OUT=str(js), AW2TEST_PLAY_GOD="1" if a.god else "0", AW2TEST_PLAY_WAVE_MAPS="1" if a.waves else "0", AW2TEST_PLAY_ADVANCE=str(a.advance))
     run = cfg.REPO / "tools" / "aw2test" / "run.py"
     subprocess.run([sys.executable, str(run), "-k", f"playthrough_m{a.mission}", "--mode", "ds"], env=env, cwd=cfg.REPO)
     if not js.exists():

@@ -8,6 +8,8 @@ def markdown(rep):
     for e in rep["events"]:
         if e["event"] == "stage switch":
             L.append(f"- day {e['day']}: stage {e['from']} -> {e['to']}")
+        elif e["event"] == "forced":
+            L.append(f"- day {e['day']} (stage {e['stage']}): {e['hq']}'s HQ captured FOR the player (--advance)")
         else:
             L.append(f"- day {e['day']} (stage {e['stage']}): {e['hq']}'s HQ taken (owner army {e['owner']})")
     for s in rep["stalls"]:

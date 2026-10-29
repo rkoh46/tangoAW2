@@ -135,6 +135,26 @@ fn script() -> Vec<u8> {
     v.concat()
 }
 
+/// The palette banks of AW2's windows and dialogue box (BG 8 and 13, OBJ 12: the same in every look). The map's graphics loaded in the stage's look overwrite them, and a battle's start
+/// loads them again only after its map, which the swap does not go through (the box drew in the map's colours: a pink striped band, M31's Last Citadel in the Snow look). `restore`: false keeps
+/// them before the swap ([`crate::ram_map::STAGE_PAL`]), true puts them back in the palette and the buffer AW2 copies at VBlank.
+const WINDOW_BANKS: [u32; 3] = [8 * 32, 13 * 32, 0x200 + 12 * 32];
+fn keep_window_colours(core: &mut Core, restore: bool) {
+    let keep = crate::ram_map::STAGE_PAL.0;
+    for (k, &off) in WINDOW_BANKS.iter().enumerate() {
+        let mut b = [0u8; 32];
+        if restore {
+            core.raw_read_range(keep + 32 * k as u32, -1, &mut b);
+            for base in [0x0300_20C0u32, 0x0500_0000] {
+                core.raw_write_range(base + off, -1, &b);
+            }
+        } else {
+            core.raw_read_range(0x0500_0000 + off, -1, &mut b);
+            core.raw_write_range(keep + 32 * k as u32, -1, &b);
+        }
+    }
+}
+
 fn install(core: &mut Core) {
     if core.raw_read_32(ROM, -1) == ROM_MAGIC {
         return;
@@ -351,6 +371,7 @@ pub fn magic(core: &mut Core, id: u32) {
     };
     match s {
         Stub::Begin => {
+            keep_window_colours(core, false);
             core.raw_write_8(BUSY, -1, s as u8);
             core.raw_write_16(MAP_STATE, -1, STATE_IDLE);
             return_to(core, 0)
@@ -389,6 +410,7 @@ pub fn magic(core: &mut Core, id: u32) {
             return_to(core, 0)
         }
         Stub::Music => {
+            keep_window_colours(core, true);
             let cpu = core.gba_mut().cpu_mut();
             cpu.set_gpr(0, 1);
             cpu.set_thumb_pc(CO_MUSIC)

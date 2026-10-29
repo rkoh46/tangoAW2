@@ -18,6 +18,7 @@ DAYS = int(os.environ.get("AW2TEST_PLAY_DAYS", "60"))
 OUT = os.environ.get("AW2TEST_PLAY_OUT")
 GOD = os.environ.get("AW2TEST_PLAY_GOD") == "1"            # the player's units are healed to full every half second (watch every wave land: the player cannot lose)
 WAVE_MAPS = os.environ.get("AW2TEST_PLAY_WAVE_MAPS") == "1"  # a whole-map picture at the start and each time an army's units jump (a wave landed), with every army's units by type and funds
+ADVANCE = int(os.environ.get("AW2TEST_PLAY_ADVANCE", "0"))   # with the bot: an HQ of the stage still not the player's this many days after the last one fell is captured for it (shows the waves; says nothing about difficulty)
 PLAYER = os.environ.get("AW2TEST_PLAY_PLAYER", "cpu")      # cpu: the game's computer plays the player's army too; bot: aw2test.bot.Bot plays it through the pad (goals: the HQs)
 STAGE_AT = 0x0203_DCA0
 FIVE_ON = 0x0203_0206
@@ -30,7 +31,7 @@ del harness.TESTS[_n:]
 
 # The HQs whose takeover a picture is taken of, by mission and stage: (name, cell).
 # The armies' names on the wave sheet, by mission and stage.
-ARMIES = {31: {1: {1: "Nell (Orange Star)", 2: "Olaf (Blue Moon)", 3: "Kanbei (Yellow Comet)", 4: "Eagle (Green Earth)", 5: "Black Hole (player)"}}}
+ARMIES = {31: {1: {1: "Nell (Orange Star)", 2: "Olaf (Blue Moon)", 3: "Kanbei (Yellow Comet)", 4: "Eagle (Green Earth)", 5: "Black Hole (player)"}, 2: {1: "Black Hole (player)", 2: "Aria (Orange Star)"}}}
 HQS = {31: {0: bp.HQS and [(n, c) for n, c, _, _ in bp.HQS], 1: [("Aria", (33, 5))]}}
 
 
@@ -109,6 +110,7 @@ def run(ctx, n):
     held = owners(e, cells.get(stage, []))
     frames, max_frames = 0, 3_000_000
     gods = humans(g, e)
+    progress_day = e.u16(dc.DAY)
     waves, want_map, last_counts = [], ["the start"], {}
 
     def wave_map(why):
@@ -154,6 +156,21 @@ def run(ctx, n):
                 run._last_army = army
                 ctx.log(f"turn: army {army} (control {e.u8(g.players_base + 0x3C * army + 0x1B) if 1 <= army <= 5 else '-'}) day {e.u16(dc.DAY)}")
             if 1 <= army <= 5 and e.u8(g.players_base + 0x3C * army + 0x1B) == 1:
+                if ADVANCE and e.u16(dc.DAY) - progress_day >= ADVANCE:
+                    left = [(nm, c) for nm, c in cells.get(stage, []) if bp.owner(e, *c) != army]
+                    if left:
+                        nm, c = left[0]
+                        try:
+                            d.wait_control()
+                            bp.capture(ctx, e, g, d, c, army)
+                            bp.settle(e, g, d)
+                            events.append({"event": "forced", "hq": nm, "day": e.u16(dc.DAY), "stage": stage + 1})
+                            ctx.log(f"forced: {nm}'s HQ {c} captured for the player on day {e.u16(dc.DAY)}")
+                        except Exception as ex:
+                            ctx.log(f"forced capture of {nm}: {ex}")
+                        progress_day = e.u16(dc.DAY)
+                        g._units_base = g._players_base = None
+                        continue
                 if want_map:
                     why = "; ".join(want_map)
                     want_map.clear()
@@ -181,6 +198,8 @@ def run(ctx, n):
         if st != stage:
             events.append({"event": "stage switch", "from": stage + 1, "to": st + 1, "day": e.u16(dc.DAY), "frame": frames})
             stage = st
+            progress_day = e.u16(dc.DAY)
+            want_map.append(f"stage {st + 1} begins")
             if bot is not None:
                 bot.goals = [c for _, c in cells.get(stage, [])]
             e.wait(120)
@@ -192,6 +211,8 @@ def run(ctx, n):
             for name, o in now.items():
                 if held.get(name) != o:
                     events.append({"event": "takeover", "hq": name, "owner": o, "day": e.u16(dc.DAY), "stage": stage + 1})
+                    if o == 5:
+                        progress_day = e.u16(dc.DAY)
                     shot(f"takeover_{name}", f"{name}'s HQ taken (owner {o})")
             held = now
         day = e.u16(dc.DAY)
