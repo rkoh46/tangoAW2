@@ -51,6 +51,12 @@ class Emu:
         # Every frame-advancing command, in order (wait/press/hold, and pokes),
         # so a run can be replayed by another runner (aw2_netplay_script).
         self.timeline = []
+        # AW2TEST_RAM_FILL=ADDR:LEN (hex) fills that EWRAM with a pattern at the first wait and, at close, writes to
+        # AW2TEST_RAM_FILL_DIR which bytes changed: how a region is proven unwritten by AW2 (docs/dev/ram-map.md).
+        self._fill = None
+        if os.environ.get("AW2TEST_RAM_FILL"):
+            a, n = os.environ["AW2TEST_RAM_FILL"].split(":")
+            self._fill = [int(a, 16), int(n, 16), False, save or ""]
         _live.add(self)
 
     # -- protocol ---------------------------------------------------------
@@ -148,9 +154,19 @@ class Emu:
             f.write(sv["label"] + "\n" + " ".join(map(str, sorted(sv["changed"]))) + "\n" + " ".join(map(str, sv["zero"])) + "\n" + " ".join(map(str, sorted(sv["ref"]))) + "\n")
         self._sv = None
 
+    def _fill_pattern(self, n):
+        return bytes((0xA5 ^ (i * 7)) & 0xFF for i in range(n))
+
     def close(self):
         if getattr(self, "_sv", None) is not None and self.proc.poll() is None:
             self._survey_save()
+        f = getattr(self, "_fill", None)
+        if f and f[2] and self.proc.poll() is None:
+            got = self.read(f[0], f[1])
+            bad = [i for i, (x, y) in enumerate(zip(got, self._fill_pattern(f[1]))) if x != y]
+            d = os.environ.get("AW2TEST_RAM_FILL_DIR", "/tmp")
+            with open(os.path.join(d, f"{os.getpid()}-{id(self) % 100000}.txt"), "w") as out:
+                out.write(f"{f[3]}\t{self.frame}\t{len(bad)}\t{bad[:8]}\n")
         if self.proc.poll() is None:
             try:
                 self.proc.stdin.write("quit\n")
@@ -168,6 +184,10 @@ class Emu:
 
     # -- input ------------------------------------------------------------
     def wait(self, n):
+        f = getattr(self, "_fill", None)
+        if f and not f[2]:
+            f[2] = True
+            self.cmd(f"pokebytes {f[0]:08x} {self._fill_pattern(f[1]).hex()}")
         if n > 0:
             self.cmd(f"wait {n}")
             if self.timeline and self.timeline[-1].startswith("wait "):
