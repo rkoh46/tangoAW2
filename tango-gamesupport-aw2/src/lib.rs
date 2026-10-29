@@ -14,6 +14,7 @@ pub mod ai_debug;
 pub mod ally_posture;
 pub mod army_skin;
 pub mod aria;
+pub mod aria_sign;
 pub mod asuka;
 pub mod battle_points;
 pub mod bh_act1;

@@ -74,6 +74,31 @@ pub fn vengeance_for(t: u8, hp: u8) -> i32 {
     }
 }
 
+/// The sign players read ([`crate::aria_sign`]): Vengeance's and her flat bonus together, for a unit of type `t` with `hp` (record HP) on the map or in the unit window: `Some((displayed HP, percent))` at 8 to 1
+/// displayed HP (8 HP +30%, 7 +36% ... 2 +66%, 1 +90%), `None` at 9 and 10 HP, for a dead unit and for an Oozium.
+pub fn sign(t: u8, hp: u8) -> Option<(u8, i32)> {
+    let v = vengeance_for(t, hp);
+    (v > 0).then(|| (((hp as u32 + 9) / 10) as u8, FLAT + v))
+}
+
+/// The HP number's colour on the map by displayed HP 8..1 (8-bit channels as the picture drawn for the owner, the game's palette holds each as 5 bits: `c >> 3`): orange at 8 HP, red at 4, dark red at 1.
+pub const RAMP: [(u8, u8, u8); 8] = [
+    (168, 0, 0),
+    (200, 0, 0),
+    (224, 16, 0),
+    (240, 40, 0),
+    (248, 72, 0),
+    (248, 104, 0),
+    (248, 136, 0),
+    (248, 168, 0),
+];
+
+/// [`RAMP`] for displayed HP `shown` (1..8) as the GBA's colour word (RGB555).
+pub fn ramp_colour(shown: u8) -> u16 {
+    let (r, g, b) = RAMP[(shown as usize - 1).min(7)];
+    (r as u16 >> 3) | ((g as u16 >> 3) << 5) | ((b as u16 >> 3) << 10)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,6 +129,18 @@ mod tests {
         assert_eq!(vengeance(0), 0, "a dead unit");
         assert_eq!(vengeance_for(crate::roster::OOZIUM, 10), 0, "an Oozium never");
         assert_eq!(vengeance_for(4, 10), 85);
+    }
+
+    #[test]
+    fn the_sign_is_the_flat_bonus_and_vengeance() {
+        let shown = |hp: u8| sign(4, hp).map(|(_, p)| p);
+        assert_eq!([100, 90, 81].map(shown), [None, None, None], "9 and 10 HP show nothing");
+        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(shown), [30, 36, 42, 48, 54, 60, 66, 90].map(Some));
+        assert_eq!(sign(4, 71), Some((8, 30)));
+        assert_eq!(sign(crate::roster::OOZIUM, 10), None, "never an Oozium");
+        assert_eq!(sign(4, 0), None);
+        assert_eq!(ramp_colour(8), 31 | (21 << 5), "orange at 8 HP");
+        assert_eq!(ramp_colour(1), 21, "dark red at 1 HP");
     }
 
     #[test]

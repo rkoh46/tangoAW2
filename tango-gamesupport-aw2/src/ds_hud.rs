@@ -155,6 +155,16 @@ struct Art {
 
 static ART: OnceLock<Option<Art>> = OnceLock::new();
 
+/// Dual Strike's ten window digits (0..9, 8 x 8 tiles), for [`crate::aria_sign`]'s "+NN%".
+pub(crate) fn digit_tiles() -> Option<&'static [u8]> {
+    art().map(|a| a.digits.as_slice())
+}
+
+/// The strip above the unit window ([`crate::aria_sign`]) this frame: its height (0 none), for the damage box to stand above it.
+static SIGN_H: AtomicI32 = AtomicI32::new(0);
+/// Its OBJ tiles: 20 that only the full-screen battle scenes write (892..911: found by surveying the OBJ tiles written on the map and in the scenes over the suite; the power animations and every map effect keep to 700..890): 16 for "Vengeance", 4 for the number.
+const T_SIGN: u16 = 892;
+
 fn art() -> Option<&'static Art> {
     ART.get_or_init(|| {
         let pack = crate::ds_pack::pack()?;
@@ -1008,9 +1018,27 @@ fn info_flush(core: &mut Core, list: &[Entry], at: u32, end: u32) -> Option<u32>
             row += 1;
         }
     }
-    // The backing: AW2's window, at Dual Strike's rectangle.
+    // Aria's Vengeance: the strip on top of the window, with the unit's own bonus.
+    let percent = if with_unit && hidden_hp.is_none() {
+        crate::unit_actions::unit_at(core, core.raw_read_8(CURSOR_X, -1) as i32, core.raw_read_8(CURSOR_Y, -1) as i32)
+            .and_then(|u| crate::aria_sign::cursor_percent(core, u))
+    } else {
+        None
+    };
+    let strip = percent.and_then(|p| crate::aria_sign::Strip::new(core, &a.digits, p));
+    let lift = if strip.is_some() { crate::aria_sign::STRIP_H } else { 0 };
+    SIGN_H.store(lift, Ordering::Relaxed);
+    if let Some(st) = &strip {
+        write_tiles(core, T_SIGN as u32, &st.line1);
+        write_tiles(core, T_SIGN as u32 + 16, &st.line2);
+        let ox1 = px + (w - st.w1) / 2;
+        mine.push(Spr::new(ox1, y0 - 27, 32, 16, T_SIGN, 1).mode(1));
+        mine.push(Spr::new(ox1 + 32, y0 - 27, 32, 16, T_SIGN + 8, 1).mode(1));
+        mine.push(Spr::new(px + (w - st.w2) / 2, y0 - 10, 32, 8, T_SIGN + 16, 1).mode(1));
+    }
+    // The backing: AW2's window, at Dual Strike's rectangle (and the strip's rows above it).
     let (wx0, wx1) = (px, px + w);
-    window_take(core, [wx0 as u8, wx1 as u8, y0 as u8, (y0 + PANEL_H) as u8]);
+    window_take(core, [wx0 as u8, wx1 as u8, (y0 - lift) as u8, (y0 + PANEL_H) as u8]);
     // Our digits go in front of the panel's first sprite (the list's order
     // is priority: the map's cursor and units stay behind the panel).
     Some(insert(core, first, at, end, &mine))
@@ -1063,6 +1091,8 @@ fn box_flush(core: &mut Core, list: &[Entry]) -> bool {
     } else {
         (240 - 35 - 32, TOP - 26)
     };
+    // (above Aria's strip, when the target has one)
+    let fy = fy - SIGN_H.load(Ordering::Relaxed);
     let (ox, oy) = (fx - frame.x(), fy - frame.y());
     for e in list {
         let t = e.tile();
@@ -1074,6 +1104,87 @@ fn box_flush(core: &mut Core, list: &[Entry]) -> bool {
         }
     }
     true
+}
+
+// --- Aria's strip on AW2's own panel -------------------------------------------------------------------
+
+/// With Dual Strike's map graphics off: the cursor on a unit of Aria's with the sign puts the strip on top of AW2's own panel ([`crate::aria_sign`]): the game's window (its shadow bytes) grows up by the strip's
+/// height, "Vengeance" and the number are sprites over it, and the damage forecast's box is lifted above it. The game's window is kept as it was in EWRAM ([`crate::aria_sign::STATE`]) so that it
+/// goes back when the cursor leaves, whatever the game did in between.
+fn native_sign(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
+    let now = core.raw_read_8(WIN_TOP, -1);
+    let held = core.raw_read_8(crate::aria_sign::STATE + 1, -1) != 0;
+    let (orig, ours) = (
+        core.raw_read_8(crate::aria_sign::STATE + 2, -1),
+        core.raw_read_8(crate::aria_sign::STATE + 3, -1),
+    );
+    // (the window is still ours when the byte is what we wrote: otherwise the game wrote it again and it is its own)
+    let mine = held && now == ours;
+    let top = if mine { orig } else { now };
+    let list = entries(core, start, at);
+    let panel: Vec<&Entry> = list
+        .iter()
+        .filter(|e| e.mode() == 1 && !e.hidden() && e.y() >= 90 && e.y() < 160)
+        .collect();
+    let find = |tile: u16| panel.iter().find(|e| e.tile() == tile && e.pal() == 1).copied();
+    let wanted = (|| {
+        if !crate::ds_battle::on_map(core) || find(T_UNIT_NAME).is_none() || find(T_TERRAIN_NAME).is_none() {
+            return None;
+        }
+        // (a unit whose HP the game hides shows a "?": nothing to say about it)
+        if find(T_QUESTION).is_some() {
+            return None;
+        }
+        let u = crate::unit_actions::unit_at(core, core.raw_read_8(CURSOR_X, -1) as i32, core.raw_read_8(CURSOR_Y, -1) as i32)?;
+        let p = crate::aria_sign::cursor_percent(core, u)?;
+        // (AW2's own digit tiles, the window's HP number: OBJ tiles 976..985)
+        let mut digits = vec![0u8; 32 * 10];
+        core.raw_read_range(OBJ_VRAM + 32 * 976, -1, &mut digits);
+        crate::aria_sign::Strip::new(core, &digits, p)
+    })();
+    let Some(strip) = wanted else {
+        if mine {
+            core.raw_write_8(WIN_TOP, -1, orig);
+        }
+        if held {
+            core.raw_write_8(crate::aria_sign::STATE + 1, -1, 0);
+        }
+        return at;
+    };
+    let lift = crate::aria_sign::STRIP_H;
+    let (x0, x1) = (core.raw_read_8(WIN_LEFT, -1) as i32, core.raw_read_8(WIN_RIGHT, -1) as i32);
+    let new_top = (top as i32 - lift).max(0) as u8;
+    core.raw_write_8(WIN_TOP, -1, new_top);
+    core.raw_write_8(crate::aria_sign::STATE + 1, -1, 1);
+    core.raw_write_8(crate::aria_sign::STATE + 2, -1, top);
+    core.raw_write_8(crate::aria_sign::STATE + 3, -1, new_top);
+    write_tiles(core, T_SIGN as u32, &strip.line1);
+    write_tiles(core, T_SIGN as u32 + 16, &strip.line2);
+    let y1 = top as i32;
+    let w = x1 - x0;
+    let ox1 = x0 + (w - strip.w1) / 2;
+    let sprites = [
+        Spr::new(ox1, y1 - 27, 32, 16, T_SIGN, 1).mode(1),
+        Spr::new(ox1 + 32, y1 - 27, 32, 16, T_SIGN + 8, 1).mode(1),
+        Spr::new(x0 + (w - strip.w2) / 2, y1 - 10, 32, 8, T_SIGN + 16, 1).mode(1),
+    ];
+    // the damage forecast's box (its digits and frame) above the strip
+    if let Some(frame) = list
+        .iter()
+        .find(|e| e.tile() == T_BOX_FRAME && e.pal() == 1 && e.dims() == (32, 32) && !e.hidden())
+    {
+        for e in &list {
+            let t = e.tile();
+            let box_piece = e.pal() == 1
+                && !e.hidden()
+                && (e.at == frame.at || ((T_BOX_DIGITS..T_BOX_FRAME).contains(&t) && e.dims() == (8, 16)));
+            if box_piece {
+                move_to(core, e, e.x(), e.y() - lift);
+            }
+        }
+    }
+    let Some(first) = panel.iter().map(|e| e.at).min() else { return at };
+    insert(core, first, at, end, &sprites)
 }
 
 // --- The flush ---------------------------------------------------------------------------------------
@@ -1093,9 +1204,14 @@ pub fn flush(core: &mut Core, start: u32, at: u32, end: u32) -> u32 {
         if let Ok(mut l) = LAST_LIST.lock() {
             *l = None;
         }
+        // (AW2's own panel: Aria's strip on top of it)
+        if !crate::design::in_map_editor(core) {
+            return native_sign(core, start, at, end);
+        }
         return at;
     }
     let mut at = at;
+    SIGN_H.store(0, Ordering::Relaxed);
     let list = entries(core, start, at);
     // AW2 now and then builds no sprite list for one frame (a lone stray sprite, or none), and the whole map's HUD would
     // be gone for that frame: the last frame's list stands in (once; the panels' tiles are still ours).
