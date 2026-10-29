@@ -148,3 +148,20 @@ def aria_pics_co_page_one(ctx):
     g.e.wait(110)
     ctx.shot(g, "co_page1")
     g.e.close()
+
+
+@test(modes=("ds",))
+def aria_pics_co_pages(ctx):
+    """Aria's CO pages from the map menu's CO entry, one picture per page (DOWN turns the page): `co_page_N.bmp` (the day-to-day page carries Vengeance's description)."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
+    g = ctx.start(m, ["aria", "andy"])
+    g.open_map_menu()
+    g.choose("CO", g.MAP_MENU)
+    g.e.wait(110)
+    ctx.shot(g, "co_page_0")
+    for k in range(1, 5):
+        g.e.press("DOWN", 4)
+        g.e.wait(70)
+        ctx.shot(g, f"co_page_{k}")
+    g.e.close()

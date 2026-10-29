@@ -52,3 +52,19 @@ def aria_vengeance_mockup_frames(ctx):
     with open(os.path.join(ctx.out, "cells.json"), "w") as fh:
         json.dump(cells, fh)
     g.e.close()
+
+
+@test(modes=("ds",))
+def aria_vengeance_mockup_words(ctx):
+    """The unit window's own name lettering, for the mock-up's "Vengeance": the windows of a Recon on a Bridge and of a Wood (letters cut from Recon, Bridge, Wood, Plain, Tank). Opt-in like the frames."""
+    if os.environ.get("AW2TEST_VENGEANCE_MOCKUP") != "1":
+        raise Skip("AW2TEST_VENGEANCE_MOCKUP not set")
+    m = ctx.map()
+    m.terrain(6, 6, "bridge").terrain(9, 6, "wood")
+    m.unit(1, "recon", 6, 6).unit(1, "tank", 3, 6).unit(2, "tank", 20, 12)
+    g = ctx.start(m, ["aria", "andy"], humans=(1,), env=cv.ENV)
+    for name, cell in (("recon_bridge", (6, 6)), ("wood", (9, 6)), ("tank_plain", (3, 6))):
+        g.goto(*cell)
+        g.e.wait(40)
+        ctx.shot(g, f"word_{name}")
+    g.e.close()

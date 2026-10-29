@@ -92,15 +92,73 @@ def text(im, x, y, s, fill=WHITE, edge=(0, 41, 0)):
     return x
 
 
-def option_d(panel):
+def components(im, box):
+    """The white letters of a window word (8-connected white pixels in `box`: a lowercase letter's strokes touch at corners; letters are two columns apart), left to right, each a set of (x, y) relative to the box."""
+    x0, y0, x1, y1 = box
+    white = {(x, y) for x in range(x0, x1) for y in range(y0, y1) if im.getpixel((x, y)) == WHITE}
+    out = []
+    while white:
+        stack = [white.pop()]
+        comp = set(stack)
+        while stack:
+            x, y = stack.pop()
+            for n in ((x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy):
+                if n in white:
+                    white.remove(n)
+                    comp.add(n)
+                    stack.append(n)
+        out.append(comp)
+    out.sort(key=lambda c: min(p[0] for p in c))
+    return [{(x - x0, y - y0) for x, y in c} for c in out]
+
+
+# The window's capital V, drawn in its letters' style (2-pixel strokes, the capitals' height: rows 5..13 of the 16-row word box), since no window word of AW2 has a V.
+V_ROWS = ["##...##", "##...##", "##...##", ".##.##.", ".##.##.", ".##.##.", "..###..", "..###..", "...#..."]
+
+
+def lettering(frames):
+    """ "Vengeance" in the unit window's own lettering: e, n, c from "Recon", g from "Brdg", a from "Tank" (the game's words, cut letter by letter), V drawn to match; one column between letters, and the
+    dark outline round the white as the window draws it."""
+    rb = Image.open(os.path.join(frames, "word_recon_bridge.bmp")).convert("RGB")
+    tp = Image.open(os.path.join(frames, "word_tank_plain.bmp")).convert("RGB")
+    recon = components(rb, (172, 100, 210, 116))          # R e c o n
+    brdg = components(rb, (210, 100, 240, 116))           # B r d g
+    tank = components(tp, (172, 100, 205, 116))           # T a n k
+    v = {(x, 5 + y) for y, row in enumerate(V_ROWS) for x, c in enumerate(row) if c == "#"}
+    letters = {"V": v, "e": recon[1], "c": recon[2], "n": recon[4], "g": brdg[3], "a": tank[1]}
+    fill = set()
+    x = 1
+    for ch in "Vengeance":
+        g = letters[ch]
+        gx0 = min(p[0] for p in g)
+        for px, py in g:
+            fill.add((x + px - gx0, py))
+        x += max(p[0] for p in g) - gx0 + 2
+    edge = {(px + dx, py + dy) for px, py in fill for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))} - fill
+    return fill, edge, x
+
+
+def option_d(panel, frames=None):
     """The unit window with one more strip on top: "Vengeance" (the window's fill and corner kept)."""
     im = panel.copy()
-    x0, x1, y1 = 173, 236, 99
+    y1 = 99
+    # (the window's own left and right edges, measured on a row inside it: its fill colours)
+    fill_cols = {(139, 156, 32), (156, 156, 16)}
+    xs = [x for x in range(120, 240) if im.getpixel((x, y1 + 6)) in fill_cols]
+    x0, x1 = min(xs), max(xs) + 1
     strip = im.crop((x0, y1 + 2, x1, y1 + 4))          # the window's fill pattern, two rows
     for yy in range(y1 - 16, y1 + 2):
         for xx in range(x0, x1):
             im.putpixel((xx, yy), strip.getpixel((xx - x0, (yy - y1) % 2)))
-    text(im, x0 + 5, y1 - 16, "Vengeance")
+    if frames and os.path.exists(os.path.join(frames, "word_recon_bridge.bmp")):
+        fill, edge, w = lettering(frames)
+        ox, oy = x0 + (x1 - x0 - w) // 2, y1 - 18
+        for px, py in edge:
+            im.putpixel((ox + px, oy + py), (0, 41, 0))
+        for px, py in fill:
+            im.putpixel((ox + px, oy + py), WHITE)
+    else:
+        text(im, x0 + 5, y1 - 16, "Vengeance")
     return im
 
 
@@ -133,8 +191,9 @@ def main(frames, out):
     TANK_Y, CAM_X = ty_base, cells["cam_base"][0]
     c = option_c(base, star_src, cells)
     TANK_Y, CAM_X = ty_panel, cells["cam"][0]
-    d = option_d(panel)
-    e = option_d(option_a(panel, cells, (255, 40, 24)))
+    words = os.path.join(os.path.dirname(frames.rstrip("/")), "aria_vengeance_mockup_words")
+    d = option_d(panel, words)
+    e = option_d(option_a(panel, cells, (255, 40, 24)), words)
     TANK_Y, CAM_X = ty_base, cells["cam_base"][0]
     box = (16 * 2 - CAM_X - 4, TANK_Y - 9, 16 * 12 - CAM_X + 4, TANK_Y + 16)
     rows = [("Today, no sign. Tanks at 10 down to 1 HP: Vengeance is on from 8 down. The 6 HP one is low on fuel, the 4 HP one out of ammo (AW2's icons, top-right)", base),
