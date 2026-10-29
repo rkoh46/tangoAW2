@@ -305,6 +305,7 @@ pub fn features_def() -> CampaignDef {
     ];
     a.triggers = vec![Trigger {
         once: true,
+        name: None,
         when: When::TurnStart,
         cond: Cond::DayAtLeast(2),
         then: vec![
@@ -344,6 +345,7 @@ pub fn features_def() -> CampaignDef {
     b.triggers = vec![
         Trigger {
             once: true,
+            name: None,
             when: When::AfterAction,
             cond: Cond::UnitAt {
                 name: "courier",
@@ -357,6 +359,7 @@ pub fn features_def() -> CampaignDef {
         },
         Trigger {
             once: true,
+            name: None,
             when: When::TurnStart,
             cond: Cond::All(vec![
                 Cond::DayAtLeast(4),

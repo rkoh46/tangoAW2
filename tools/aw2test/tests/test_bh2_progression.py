@@ -442,7 +442,7 @@ def bh2_m31_switch_is_deterministic(ctx):
     ctx.eq(prints[0], prints[1], "two runs give the same battle after the switch and a computer turn")
 
 
-def m27_treasury(ctx, vault_empty):
+def m27_treasury(ctx, vault_empty, recover=False):
     """M27 entered; with `vault_empty` the day is 6 and Black Hole's funds are 0 (Von Bolt's vault is empty: the note's scene, `m27_vault_empty`, plays after the next action); Black Hole then really
     captures Colin's treasury, the fortress's central city (18,20): Colin's funds are 0 afterwards. Returns the texts of the scenes shown. Nothing wins the mission."""
     e, g, d = b2.enter(ctx, 27)
@@ -455,6 +455,17 @@ def m27_treasury(ctx, vault_empty):
     if vault_empty:
         e.w16(dc.DAY, 6)
         e.w32(g.player(1)["addr"], 0)
+    if recover:
+        # the note opens after the next action (the vault is empty), then the funds come back: the note stays opened (the trigger's latch)
+        u = next(u for u in g.units(army=1) if u["type"] in (1, 2, 5))
+        try:
+            g.wait_unit(u["x"], u["y"])
+        except Exception:        # (the note's scene opens in the middle of the action: the harness waits for an idle map; the scene is pressed through next)
+            pass
+        settle(e, g, d)
+        g._units_base = g._players_base = None
+        e.w32(g.player(1)["addr"], 20000)
+        e.wait(10)
     capture(ctx, e, g, d, (18, 20), 1)
     texts = []
     last = None
@@ -493,3 +504,12 @@ def bh2_m27_treasury_first_is_a_notice(ctx):
     ctx.log(f"scenes: {texts}")
     ctx.check(any("treasury" in t.lower() for t in texts), "the notice was shown")
     ctx.check(not any("sale" in t.lower() for t in texts), "no sale: the note was not opened")
+
+
+@test(name="bh2_m27_note_stays_opened_when_the_funds_recover", modes=("ds",))
+def bh2_m27_note_stays_opened_when_the_funds_recover(ctx):
+    """The note's "opened" state is the vault trigger's latch: the vault empties (funds 0 from day 6, the note's scene plays), the funds recover to 20000, and the treasury's capture still plays Von Bolt's sale."""
+    texts = m27_treasury(ctx, True, recover=True)
+    ctx.log(f"scenes: {texts}")
+    ctx.check(any("sale" in t.lower() or "truth" in t.lower() for t in texts), "Von Bolt's sale was shown although the funds had recovered")
+    ctx.check(not any("cannot pay another soldier" in t for t in texts), "not the plain notice")

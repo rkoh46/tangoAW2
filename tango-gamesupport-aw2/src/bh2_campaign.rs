@@ -911,19 +911,20 @@ fn bh2_27() -> MissionDef {
     m.after = crate::bh2_text::chain(&["m27_map"]);
     m.triggers.push(on_day(2, None, vec![Action::Scene(txt("m27_day2"))]));
     m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m27_day5"))]));
-    // Sonja's note is "for the day your vault is empty": Von Bolt's. From day 6, when Black Hole's funds are under 500, he opens it (`m27_vault_empty`). It wins nothing.
-    m.triggers.push(Trigger::new(When::AfterAction, Cond::Custom(vault_empty), vec![Action::Scene(txt("m27_vault_empty"))]));
-    // Colin's treasury (the fortress's central city): its capture sets Colin's funds to 0. With the note opened (the vault is empty now) Von Bolt sells it as the truth (`m27_sale`); if the treasury falls
-    // first, a one-line notice. The win is the normal one (the HQ or a rout).
+    // Sonja's note is "for the day your vault is empty": Von Bolt's. From day 6, when Black Hole's funds are under 500, he opens it (`m27_vault_empty`). It wins nothing. The trigger's latch is
+    // the persistent state "the note is opened" (saved with the mission's flags): the treasury's scene asks it with `Cond::Fired`, so it holds even if the funds recover.
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::Custom(vault_empty), vec![Action::Scene(txt("m27_vault_empty"))]).named("m27_note"));
+    // Colin's treasury (the fortress's central city): its capture sets Colin's funds to 0. If the note was opened earlier Von Bolt sells it as the truth (`m27_sale`); if the treasury falls first,
+    // a one-line notice. The win is the normal one (the HQ or a rout).
     let treasury = Cond::OwnerAt { x: M27_TREASURY.0, y: M27_TREASURY.1, army: 1 };
     m.triggers.push(Trigger::new(
         When::AfterAction,
-        Cond::All(vec![treasury.clone(), Cond::Custom(vault_empty)]),
+        Cond::All(vec![treasury.clone(), Cond::Fired("m27_note")]),
         vec![Action::Scene(txt("m27_sale")), Action::SetFunds { army: 2, funds: 0 }],
     ));
     m.triggers.push(Trigger::new(
         When::AfterAction,
-        Cond::All(vec![treasury, Cond::Not(Box::new(Cond::Custom(vault_empty)))]),
+        Cond::All(vec![treasury, Cond::Not(Box::new(Cond::Fired("m27_note")))]),
         vec![
             Action::Scene(Scene::new(vec![Line::say(co::COLIN, "The treasury is lost! ...We cannot pay another soldier.")])),
             Action::SetFunds { army: 2, funds: 0 },

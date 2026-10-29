@@ -690,6 +690,8 @@ pub enum Cond {
     OnyxDestroyed,
     /// A mission-local flag ([`FLAG_FIRST`]..) is set (a trigger's own once-latch).
     Flag(u8),
+    /// The mission's once-trigger of this name ([`Trigger::named`]) has fired: its latch is set (persistent: saved with the mission's flags). The trigger comes earlier in the mission's list.
+    Fired(&'static str),
     /// A predicate written in Rust for a mission with a rule of its own (an
     /// escort, an evacuation): it gets the live battle; see the helpers
     /// ([`unit_by_name`], [`units_of`], [`day`]).
@@ -788,6 +790,8 @@ pub struct Trigger {
     /// Fires once (the default: a latch flag of its own); `repeating()` fires
     /// at every look while the condition holds.
     pub once: bool,
+    /// A name other triggers' conditions can ask about ([`Cond::Fired`]); only a once-trigger has a latch to be asked.
+    pub name: Option<&'static str>,
 }
 
 impl Trigger {
@@ -797,7 +801,12 @@ impl Trigger {
             cond,
             then,
             once: true,
+            name: None,
         }
+    }
+    pub fn named(mut self, name: &'static str) -> Trigger {
+        self.name = Some(name);
+        self
     }
     pub fn repeating(mut self) -> Trigger {
         self.once = false;
@@ -1280,6 +1289,8 @@ struct Compiler<'a> {
     shared: HashMap<Vec<u8>, u16>,
     /// The next once-latch flag.
     next_flag: u8,
+    /// The latch of each named once-trigger, by (mission index, name): [`Cond::Fired`].
+    named_latches: std::collections::HashMap<(usize, &'static str), u8>,
     /// The player's army and the index of the mission being compiled (for `Line::only`).
     player: u8,
     mission: usize,
@@ -1696,6 +1707,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         fns: Vec::new(),
         shared: HashMap::new(),
         next_flag: FLAG_FIRST,
+        named_latches: std::collections::HashMap::new(),
         player: 1,
         mission: 0,
         factory: Vec::new(),
@@ -1994,6 +2006,17 @@ fn check_frozen(m: &MissionDef) -> Result<(), Error> {
     Ok(())
 }
 
+/// A condition with every [`Cond::Fired`] turned into the named trigger's latch flag (an error for a name no earlier trigger of the mission has).
+fn resolve_fired(c: &Cond, names: &std::collections::HashMap<(usize, &'static str), u8>, mission: usize) -> Result<Cond, Error> {
+    Ok(match c {
+        Cond::Fired(n) => Cond::Flag(*names.get(&(mission, *n)).ok_or_else(|| format!("Cond::Fired({n:?}): no earlier once-trigger of that name"))?),
+        Cond::Not(x) => Cond::Not(Box::new(resolve_fired(x, names, mission)?)),
+        Cond::All(v) => Cond::All(v.iter().map(|x| resolve_fired(x, names, mission)).collect::<Result<_, _>>()?),
+        Cond::Any(v) => Cond::Any(v.iter().map(|x| resolve_fired(x, names, mission)).collect::<Result<_, _>>()?),
+        other => other.clone(),
+    })
+}
+
 fn compile_mission(
     cx: &mut Compiler,
     core: &Core,
@@ -2064,6 +2087,9 @@ fn compile_mission(
                 return Err("out of trigger flags (96 per campaign)".into());
             }
             cmds.push(cmd(0x44, 0, f as u16, 0, 0));
+            if let Some(n) = t.name {
+                cx.named_latches.insert((index, n), f);
+            }
             Some(f)
         } else {
             None
@@ -2187,9 +2213,10 @@ fn compile_mission(
         }
         let _ = ends;
         let script = cx.script(cmds);
+        let tc = resolve_fired(&t.cond, &cx.named_latches, index)?;
         let cond = match latch {
-            Some(f) => Cond::All(vec![Cond::Not(Box::new(Cond::Flag(f))), t.cond.clone()]),
-            None => t.cond.clone(),
+            Some(f) => Cond::All(vec![Cond::Not(Box::new(Cond::Flag(f))), tc]),
+            None => tc,
         };
         let pred = cx.cond(index, &cond);
         let group = vec![rec8(5, 0, 0, pred), rec8(7, 0xFF, 0, script)];
@@ -3077,6 +3104,7 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         Cond::OnyxHitsAtMost(n) => crate::onyx::reversed_hits(core).is_some_and(|h| h <= *n),
         Cond::OnyxDestroyed => crate::onyx::reversed_hits(core) == Some(0),
         Cond::Flag(f) => crate::ds_campaign::campaign_flag(core, *f as u32),
+        Cond::Fired(_) => false, // (resolved to a Flag when the mission is compiled)
         Cond::Not(c) => !holds(core, c),
         Cond::All(cs) => cs.iter().all(|c| holds(core, c)),
         Cond::Any(cs) => cs.iter().any(|c| holds(core, c)),

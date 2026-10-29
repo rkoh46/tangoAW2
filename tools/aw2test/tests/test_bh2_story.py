@@ -3,6 +3,8 @@ scene), the own songs ("The Door", Aria's) are among them. `AW2TEST_STORY_MISSIO
 
 import os
 
+from PIL import Image
+
 from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2
 from aw2test import paths, story
@@ -150,25 +152,55 @@ def story_trace_bh2_prologue_frames(ctx):
     e.press("A", 8)
     out = out_dir(ctx)
     os.makedirs(out, exist_ok=True)
-    rows, last_bytes, dup = [], None, 0
+    rows, kept, dup = [], None, 0
     for _ in range(3000):
         e.press("A", 4)              # (the New confirmation, then every page: A types the next two lines or closes the box)
-        e.wait(20 + TYPE_FRAMES)
+        e.wait(20)
+        # wait until the box is fully typed: the picture stops changing apart from the blinking "next" arrow (a few pixels)
+        prev, still = None, 0
+        for _ in range(40):
+            bmp = e.shot(os.path.join(out, "prologue_cur"))
+            cur = Image.open(bmp).convert("RGB")
+            still = still + 1 if prev is not None and pixel_diff(prev, cur) <= ARROW_PIXELS else 0
+            prev = cur
+            if still >= 3:
+                break
+            e.wait(15)
         t = story.clean(d.text_shown())
-        bmp = e.shot(os.path.join(out, "prologue_cur"))
-        cur = open(bmp, "rb").read()
-        if t and cur != last_bytes:
+        if t and (kept is None or pixel_diff(kept, cur) > ARROW_PIXELS):
             name = f"prologue_{len(rows):03d}.bmp"
             os.replace(bmp, os.path.join(out, name))
             rows.append({"n": len(rows), "text": t, "song": e.u16(story.SONG), "shot": name})
-            last_bytes, dup = cur, 0
+            kept, dup = cur, 0
         else:
             dup += 1
         if d.in_battle() or (rows and dup > 4 and d.world_map_up() and not d.scripts_running()):
             break
     json.dump(rows, open(os.path.join(out, "prologue.json"), "w"), indent=1)
-    ctx.check(len(rows) >= 80, f"{len(rows)} boxes captured")
+    want = sum(len(crate_rows) for crate_rows in prologue_boxes())
+    ctx.eq(len(rows), want, f"one frame per box: {want} boxes in story.txt's prologue scenes")
     e.close()
 
 
-TYPE_FRAMES = 110
+ARROW_PIXELS = 60          # (the blinking "next" arrow is a few pixels: two shots of one typed box differ by fewer)
+
+
+def pixel_diff(a, b):
+    """The number of pixels in which two pictures differ."""
+    from PIL import ImageChops
+    d = ImageChops.difference(a, b).convert("L").point(lambda v: 255 if v else 0)
+    return sum(1 for v in d.getdata() if v)
+
+
+def prologue_boxes():
+    """The rows (boxes) of story.txt's four prologue scenes, one list a scene."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "src", "bh2_text", "story.txt")
+    scenes, cur = {}, None
+    for l in open(path):
+        l = l.rstrip("\n")
+        if l.startswith("== "):
+            cur = l[3:].split("|")[0].strip()
+            scenes[cur] = []
+        elif cur and l and not l.startswith(("@", "#")) and ": " in l:
+            scenes[cur].append(l)
+    return [scenes[k] for k in ("prologue", "prologue_castle", "prologue_allies", "prologue_turn")]
