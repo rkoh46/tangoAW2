@@ -18,7 +18,7 @@ MAX: Ha! She smiled! Big man saw / it! Everybody saw it!
 SAMI: Roger. We saw it. Quiet, Max.
 NARRATION: Marshal Hawke steps forward. / Kneels. Not to Asuka. To the ranks.
 HAWKE: Black Hole's Marshal kneels / to the army. Not to a person.
-HAWKE: A person ends. An army is the / chair. It outlives its occupant.
+HAWKE: A person ends. The army / does not.
 ASUKA: Marshal. Stand.
 HAWKE: When the army says so, / Commander. Not before.
 SOLDIER: Stand, Marshal! Stand!
@@ -79,7 +79,7 @@ ASUKA: A legion at my door, with the / same stencil. I do enjoy a coincidence.
 @IF CRUMB CO
 CRUMB CO: Ma'am, they're nice! They / have horses! Can I pet one?
 @IF HAWKE
-HAWKE: An unknown army with excellent / discipline. How very bothersome.
+HAWKE: An unknown army, and a / disciplined one. That is a concern.
 @IF KOAL
 KOAL: Roman roads. I know the trade. / We shall have a lot to discuss.
 @IF KINDLE
@@ -182,7 +182,7 @@ AURELIA: Your Doctor built a catapult / out of a typewriter, Legate.
 LASH: It had good bones! Heehee! / It threw a very small anvil!
 AURELIA: It threw it eleven paces. / I am almost jealous.
 LIVIA: Marshal. Your ledgers are / meticulous. I should like to read them.
-HAWKE: Quaestor. Mine are for the army. / Yours are for the Senate. Exchange?
+HAWKE: Quaestor. Mine belong to the army, / yours to the Senate. Shall we trade?
 LIVIA: ...Terms accepted.
 KLAUS: Commander Asuka. I will ask / once. Who is Hobb?
 CRUMB CO: Me, sir! And my grandpa! / He built a door. Then they erased him.
@@ -195,7 +195,7 @@ CRUMB CO: Sir. That's what we do. / Hobbs.
 KLAUS: ...Commander Hobb. I owe your / family a debt. I have no coin.
 LIVIA: I do. We shall discuss terms.
 ASUKA: Legate. The door is closed, not / locked. You may leave when you wish.
-HAWKE: Legate. You fought for a shore / you did not choose. I record respect.
+HAWKE: Legate. You fought for a shore / you did not choose. I respect that.
 KLAUS: Marshal. We honour discipline. / It is the only currency we trust.
 KLAUS: We shall not leave yet. We / will camp at the edge of your map.
 KLAUS: We will watch. And we will / ask. Politely. For the rest.

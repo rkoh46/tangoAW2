@@ -37,7 +37,7 @@ ASUKA: Rain on the radar, fog on the / ground. I am entirely at home.
 @IF CRUMB CO
 CRUMB CO: Lanterns are lovely, ma'am. / Gerald thinks they are soup. I hope not.
 @IF HAWKE
-HAWKE: A raid is a question asked at / the right hour. Night answers.
+HAWKE: A night raid. Quiet work. / I approve.
 @IF KOAL
 KOAL: Wet tarmac, no lane lines. / I am displeased. Mind the lane.
 @IF KINDLE
@@ -185,7 +185,7 @@ ASUKA: Crystals burn for whoever / holds them. I shall hold them well.
 @IF CRUMB CO
 CRUMB CO: Ma'am, the crystal's warm. / Gerald says it hums, like the crate.
 @IF HAWKE
-HAWKE: A healing post is a lever. / He must strike it. I shall let him.
+HAWKE: He will strike the crystals. / Let him tire himself.
 @IF KOAL
 KOAL: A crystal beside a road is a / waystation. Not a weapon.
 @IF KINDLE
@@ -232,7 +232,7 @@ ASUKA: He punched a crystal for two / hours. I respect stamina.
 @IF CRUMB CO
 CRUMB CO: Mr Grimm, would you like a / biscuit? Gerald says it helps knuckles.
 @IF HAWKE
-HAWKE: He mistook strength for / strategy. I shall write him a footnote.
+HAWKE: He mistook strength for skill. / It rarely ends well.
 @IF KOAL
 KOAL: He broke three crystals and a / road. I will bill him for the road.
 @IF KINDLE
@@ -319,12 +319,12 @@ ASUKA: ...You remember.
 KANBEI: A baby who held a pencil in / both fists and filed the kitchen.
 ASUKA: I did not come to hurt you.
 KANBEI: You came to read. Kanbei / knows. You read what he would not.
-ASUKA: Father. ...Emperor. Did you / know? The iron. The keyhole.
+ASUKA: Father. ...Emperor. Did you / know? The iron. The shipments.
 KANBEI(s): Kanbei signed nothing he read. / Kanbei signed everything he trusted.
 KANBEI: It is the same shame. The / Accord asked, and he kept silent.
 KANBEI: Honour has no manual for / that. Kanbei is still writing one.
 ASUKA: The truth will cost you your / people's trust.
-KANBEI: Then it will cost it. They / should buy the truth, and not cheap.
+KANBEI: Then let it cost. A people should / pay dearly for the truth.
 KANBEI: Kanbei yields the field. Not / the Table. A place stays set.
 KANBEI: The seventh chair has a / scarf. It will stay. For whoever
 KANBEI: comes to it. Kanbei will not / ask her name.
@@ -370,7 +370,7 @@ ASUKA: Two tides, two lessons. I shall / teach both by the clock.
 @IF CRUMB CO
 CRUMB CO: Hello, Grimm! I have snacks! / Gerald says do not share the biscuit.
 @IF HAWKE
-HAWKE: Two fronts, one clock. Thank / you for the problem. I shall solve it.
+HAWKE: Two fronts, one deadline. / Very well.
 @IF KOAL
 KOAL: A strait is a road that / flooded. I will lay a ford.
 @IF KINDLE
@@ -492,7 +492,7 @@ STURM: I do not manage what I own. / I collect it.
 ASUKA: He is not yours, Lord Sturm. / He is a witness. I need him standing.
 STURM: ...Noted. Do not make a / habit of correcting me.
 ASUKA: I make a habit of being right. / It is cheaper.
-HAWKE: Iron Gate Pass is a single / door. I would like to knock on it.
+HAWKE: Iron Gate Pass is one door. / Let me open it.
 JUGGER: BLUE MOON WIRE: LOCATED. / SIXTEEN SEAMS. I REQUEST THE TASK.
 LASH: Ooh! Sasha's lab island! Lot / 42! Can I have it? Please?
 ASUKA: You may, Doctor. Carefully.

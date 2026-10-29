@@ -21,14 +21,14 @@ SAMI: Marshal Hawke. Of all the / traitors in the world.
 MAX: Pathetic, big man in a coat!
 HAWKE: I have a coat for each / weather, Commander. I dislike rain.
 ASUKA: Marshal. We hold the HQ. / Together.
-HAWKE: Together. I suppose the / board requires it.
+HAWKE: Together. If it must be.
 WICK: Is it all right if I ask what / the folder under his arm is?
 HAWKE: No.
 WICK: Right.
 MORTAR: Wick. The Marshal has had / that folder for thirty years.
 ASUKA: Sergeant. And the General / has had hers for three months.
 MORTAR: Ma'am? What is in them?
-ASUKA: The end of the story, Sergeant. / Or a very long footnote.
+ASUKA: Plans, Sergeant. For the day / after Lord Sturm.
 
 == m26_day4
 MAX: They've gone quiet! That's / suspicious!
@@ -56,15 +56,15 @@ HAWKE: I wrote mine in the margins / of Green Earth's audits. For years.
 ASUKA: I wrote mine in the margins / of his ledgers. For months.
 HAWKE: I distrusted you because you / do what I do.
 ASUKA: I distrusted you because you / do what I do.
-HAWKE: Interesting. We have circled / each other like two players
-HAWKE: with the same opening. Asuka, / what is it you want?
+HAWKE: Interesting. We have both / prepared for the same day.
+HAWKE: Tell me, Asuka. What is it / you want?
 ASUKA: An army that outlives a / mistake. Mine, Lord Sturm's, anyone's.
 HAWKE: A chair. Not a throne. A / chair that outlives its occupant.
 ASUKA: Then we draft the chair. / Together.
 HAWKE: And who sits in it?
 ASUKA: Whoever the army asks. Not / whoever the plan names.
-HAWKE: That is a heresy of my / doctrine. I like it.
-HAWKE: From today I take your orders. / Not as my superior. As the plan says.
+HAWKE: That contradicts my doctrine. / I like it.
+HAWKE: From today I take your orders. / Not because you outrank me.
 ASUKA: It is the nicest thing you / could have said.
 HAWKE: It is a statement of fact. / Do not put it in writing.
 
@@ -112,7 +112,7 @@ VON BOLT: Interest! Guard the dock! / Peck anyone who owes me!
 @PARTNER CRUMB CO
 [CO2]: Hello, Colonel! Hello, Interest! / I brought your boots. Both of them!
 @PARTNER HAWKE
-[CO2]: Colonel. Spend the chest in / the right order. I shall audit it.
+[CO2]: Colonel. Spend the chest in / the right order. I shall keep the books.
 @PARTNER KOAL
 [CO2]: A fortress with one road. I / will mind it. Mind the lane.
 @PARTNER KINDLE
@@ -318,7 +318,7 @@ NARRATION: Orange Star's outer capital. / The Gate of Colours, four banners high
 NARRATION: Andy holds the gate. Max and / Sami hold the walls on either side.
 ASUKA: Black Hole. Sturm is gone. / The founder is past the door.
 ASUKA: I do not claim his chair. I / claim the work. We finish it.
-HAWKE: The army hears you, Asuka. / It is also taking notes.
+HAWKE: The army hears you, Asuka. / It is also watching.
 ANDY: Okay! Black Hole lady! You're / not coming through! I won't let you!
 MAX: Hey! Lunch is served, Black / Hole! Fist first! You lose!
 SAMI: Roger. Hold the walls, grunts. / Nobody opens that gate.
@@ -387,9 +387,9 @@ ASUKA: Andy. Hold your head high. / You held longer than the numbers.
 ANDY: Don't pity me, Black Hole lady. / ...Okay. Thanks.
 MAX: Hey! We fall back too! But / we're coming back! For a real fight!
 SAMI: Roger. The Citadel. Fall back.
-HAWKE: A gate lost, a citadel gained. / Fighting retreats always end in a keep.
+HAWKE: A fallen gate. Now they will / retreat into the keep.
 ASUKA: They will give us everything / they have. All four colours.
-HAWKE: Naturally. It is the only / strategy their ledger permits.
+HAWKE: Naturally. They have no other / plan left.
 
 == m29_map
 @SONG enemy1
@@ -400,7 +400,7 @@ ASUKA: Black Hole's island. Where / the key was found.
 WICK: Is it all right if I'm / frightened?
 ASUKA: Yes, Private. Be frightened / of the right thing.
 ASUKA: The Citadel comes first. The / sails will wait.
-ASUKA: I am told that is a quality / of the sun.
+ASUKA: Something is coming. It can wait / until the Citadel is ours.
 
 == m29_warroom
 @SONG own:aria
@@ -436,11 +436,11 @@ SAMI: Roger. I signed nothing. I only / saluted. That is its own kind of guilt.
 RACHEL: But my sisters are in that / Citadel. So I stand here. By the book.
 SAMI: And I stand with her. I've got / chocolate and a very stubborn spine.
 @IF ASUKA
-ASUKA: A line is a promise to stand. / I shall audit how long it lasts.
+ASUKA: A line is a promise to stand. / I shall see how long it lasts.
 @IF CRUMB CO
 CRUMB CO: Hello, Miss Rachel! Hello, Miss / Sami! Gerald sends chocolate. Honest!
 @IF HAWKE
-HAWKE: Eleven days, she says. I give / it three. The wire is the real clock.
+HAWKE: She says eleven days. I give / it three. The wire will fail first.
 @IF KOAL
 KOAL: Trenches. The oldest road, dug / downward. I will mind the lane.
 @IF KINDLE
@@ -512,7 +512,7 @@ RACHEL: By the book, Aria shouts first / and cries second. Be ready for both.
 MORTAR: Ma'am. The Line is cut. The / Citadel is one march away.
 HAWKE: Four commanders in a gauntlet, / and a fifth behind them. I concur.
 ASUKA: Marshal, how do you rate Aria?
-HAWKE: I rate her as I rate you. As / the person who must not win.
+HAWKE: I rate her as I rate you. / Dangerous.
 KINDLE: Darlings, a final act! I / have already ordered the bouquet.
 LASH: Ooh! I brought a spare door! / For the finale! Heehee!
 CRUMB CO: Ma'am, may I stand beside / you at the end? Gerald insists.
@@ -531,13 +531,13 @@ NELL: Yes, dear, I do. Someone has / to be sorry in public.
 ASUKA: Sorry is not a battle plan.
 NELL: It's the only one I have ever / believed in. Come on, then.
 NELL: I was born lucky. I'll spend / it today. All of it.
-HAWKE: Orange Star's doctrine in a / sentence. I almost admire it.
+HAWKE: A simple creed. I almost / admire it.
 @IF ASUKA
-ASUKA: Four lines, four commanders. A / gauntlet. I have audited worse.
+ASUKA: Four lines, four commanders. A / gauntlet. I have faced worse.
 @IF CRUMB CO
 CRUMB CO: Hello, Miss Nell! I'm sorry / about the tower. Gerald is, too.
 @IF HAWKE
-HAWKE: A gauntlet is a sequence. I / shall read its order and exploit it.
+HAWKE: Each commander has a weakness. / I know all four.
 @IF KOAL
 KOAL: Four gates, one road. I will / lay the road through all four.
 @IF KINDLE
@@ -579,7 +579,7 @@ CLONE ANDY: Okay! Four lines! I can / fix any-- ...anything! Sure!
 [CO2]: I've got your back! I can / fix any-- ...yes! Okay!
 @END
 NELL: Orange Star! The first line is / held! Not one step back!
-ASUKA: Break the first line. Then / the next. One at a time.
+ASUKA: Break the first line. Then / the next, in order.
 
 == m31_day5
 NELL: Steady, everyone! I was born / lucky! It's rubbing off!
@@ -619,7 +619,7 @@ KANBEI: The fourth line is yours. / The sky is yours.
 EAGLE: Death from above! Last act / of the show! Don't blink!
 @WITH HAWKE
 EAGLE: Marshal! Marshal Hawke! You / came! Ha! I've been waiting!
-HAWKE: Captain. You have flown / well all season. I read it.
+HAWKE: You have flown well, Captain. / I have followed your career.
 EAGLE: Don't be nice! It's the last / round!
 HAWKE: I am never nice. I am / accurate.
 @END

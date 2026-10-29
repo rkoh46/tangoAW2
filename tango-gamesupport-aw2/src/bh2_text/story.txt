@@ -12,8 +12,8 @@ NARRATION: There, past the maps, the / four nations first grew up.
 NARRATION: There the Allies gather, / under a letter: "A."
 NARRATION: In the west, the Obelisk / hums. A crate hums with it.
 NARRATION: Lord Sturm sits in its hall / and listens. He does not smile.
-NARRATION: He will not march east / himself. He wants an auditor.
-NARRATION: One woman has read every / ledger the Accord ever kept.
+NARRATION: He will not march east / himself. He wants a spymaster.
+NARRATION: One woman has read the Accord's / secret files. All of them.
 NARRATION: Yellow Comet's daughter has / not slept in one bed twice.
 NARRATION: She is about to lose / her name.
 NARRATION: The Auditor. / Black Hole 2.
@@ -25,11 +25,11 @@ NARRATION: Three weeks of silence from / the east. Then one broadcast.
 JUGGER: REPLAY. ALLIED BAND. VOICE / MATCH: ANDY. TEXT FOLLOWS.
 JUGGER: "ALL COLOURS EAST. THE FENCE / IS DOWN. BUILD ANEW."
 VON BOLT: Kehh... "Build anew." Who / writes slogans for a retreat?
-HAWKE: Someone with better prose / than Andy. The grammar is tidy.
+HAWKE: Someone with a better hand / than Andy. An educated one.
 HAWKE: Sonja. You know the Accord's / clerks. Who writes like that?
 SONJA: Nobody I filed. A new hand, / raised after the fence went up.
 SONJA: That is the part worth / fearing. I have no page on them.
-STURM: The Allies run east with / their ledgers and their children.
+STURM: The Allies run east with / their records and their children.
 STURM: I do not chase. I hold what / is mine. They will come back.
 CRUMB CO: Sir, may I ask? Why not / chase? Their train is slow.
 STURM: A man who builds a fence / keeps his best things behind it.
@@ -40,7 +40,7 @@ VON BOLT: Kehh... a free look at the / competitor's books! Priceless!
 SONJA: Not free. Four armies. A / whole continent of locks.
 STURM: Then I send someone who / reads locks. Not a general.
 HAWKE: Lord Sturm. With respect. / She robbed a vault to join us.
-HAWKE: She keeps receipts. She has / never told us her price.
+HAWKE: She keeps records. And she / has never named her price.
 SONJA: I told you. Fifteen per cent / of what the Colonel finds.
 HAWKE: That was Von Bolt's price. / I asked for yours.
 SONJA: You are right to ask, Marshal. / Ask me again tonight.
@@ -79,9 +79,9 @@ NARRATION: The Obelisk. Midnight. The / crate hums. The air is thin.
 STURM: Your book. Open it.
 SONJA: Page one is a list of men / who would not leave a soldier.
 SONJA: The rest is the Accord. Every / nation. Every clerk. Every seal.
-SONJA: I joined you to read the one / ledger my father forbade me.
+SONJA: I joined you to read the one / file my father forbade me.
 SONJA: The Accord's own. The pages / it buried when it built the fence.
-HAWKE: A late confession. A fair / one. And your price?
+HAWKE: At last. And what do you / want in return?
 SONJA: The truth, Marshal. And the / name of whoever hid it.
 CRUMB CO: Ma'am? The crate went quiet / when you said "truth".
 SONJA: So it did, Commander.
@@ -90,7 +90,7 @@ HAWKE: Forty files. Every ministry / knows her face. And her father's.
 SONJA: They will say Yellow Comet / sent a spy. They will say it of him.
 SONJA: Nobody can say Yellow Comet's / daughter did it, if she is gone.
 NARRATION: She takes a small black / book from her coat. Strikes an S.
-SONJA(s): Sonja audited a nation. It / was small. It was kind.
+SONJA(s): Sonja watched over one small / country. It was a kind one.
 SONJA: It belonged to a man who / loves me. I will not spend him.
 STURM: A name is a possession. / Who owns yours.
 SONJA: Nobody. As of this minute.
@@ -101,10 +101,11 @@ SONJA: Asuka. Only my father will / know it. Let him.
 CRUMB CO(h): It's a good name, ma'am! / Gerald says it sounds like morning.
 NARRATION: The hum drops half a tone. / Gerald's mark warms.
 STURM: Asuka. You hold the eastern / war. You answer to me.
-ASUKA: I will audit it, Lord Sturm. / One nation. One ledger at a time.
+ASUKA: I will see it done, Lord Sturm. / Quietly, and in order.
 HAWKE: I do not trust you.
-ASUKA: Good, Marshal. Keep it. / It is the only honest thing here.
-HAWKE: Sonja audited a nation. Asuka, / I gather, will audit the world.
+ASUKA: Good, Marshal. Keep your / suspicion. You are right to have it.
+HAWKE: A new name for an old / ambition. Very well, Asuka.
+HAWKE: Do not disappoint us.
 STURM: Take the crate. Take the boy. / Whatever answers it, bring to me.
-ASUKA: Whatever answers, Lord Sturm, / I will read first.
+ASUKA: Whatever answers, Lord Sturm, / I will hear it before you do.
 STURM: Noted.

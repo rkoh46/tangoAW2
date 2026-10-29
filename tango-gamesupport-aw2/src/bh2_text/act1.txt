@@ -16,7 +16,7 @@ ASUKA: He should. I returned more / than I took. It is unsettling.
 WICK: Is it true you can see through / fog, ma'am?
 ASUKA: No. Fog hides what a man's / eyes cannot reach.
 ASUKA: It cannot hide what his / paperwork knows. Every depot files.
-ASUKA: Every requisition is a / position. I read the requisitions.
+ASUKA: Every supply request gives away a / position. I read the requests.
 MORTAR: So the fort tells you where / its tanks are. By mail.
 ASUKA: In triplicate. Green Earth / was always diligent.
 DRAKE: Ahoy, ma'am! Welcome to / Halyard Isle. Mind the pelicans.
@@ -31,7 +31,7 @@ ASUKA: She will have her turn.
 DRAKE: Yeah, I figured. Look... I / really don't want to do this.
 ASUKA: Nobody ever does. That is / why I do it first.
 WICK: Is it all right if the fog / is on our side, ma'am?
-ASUKA: It is on the side of whoever / read the mail. Land the boats.
+ASUKA: It favours whoever read the mail / first. Land the boats.
 
 == m01_day4
 DRAKE: Fog's thick tonight, ma'am! / Great for naps. Not so great for war.
@@ -72,7 +72,7 @@ ASUKA: The Quartermaster signals. The / crate is on the quay. Humming.
 MORTAR: Ma'am. It hums at you now?
 ASUKA: It hums at no one. Not yet. / It is waiting for a voice.
 WICK: Whose voice, ma'am?
-ASUKA: That, Private, is the / audit.
+ASUKA: That, Private, is what I mean / to find out.
 
 # ---------------------------------------------------------------- M2 The Quartermaster's Crate (Asuka + Crumb fixed; enemy Jess)
 
@@ -135,7 +135,7 @@ ASUKA: Gerald is a clue, Commander.
 CRUMB CO: He is a friend!
 ASUKA: Both are true. It is allowed.
 CRUMB CO: The mark on his wrapper... / the keyhole. It's on the crate too.
-ASUKA: I know. I have seen it three / times in thirty ledgers. Never named.
+ASUKA: I know. I have seen it in old / records three times. Never named.
 CRUMB CO(s): Ma'am, what if I'm nobody's / consignee? What if I'm nobody's?
 ASUKA: Then you are mine. A quartermaster / is always somebody's.
 CRUMB CO(h): Thank you, ma'am! ...Is that / an order or a nice thing?
@@ -184,7 +184,7 @@ ASUKA: A cold foundry and a ledger / in its vault. My favourite battle.
 @IF CRUMB CO
 CRUMB CO: Is the furnace friendly, ma'am? / Gerald hates a hot room.
 @IF HAWKE
-HAWKE: A foundry is a board with / three doors. I like it already.
+HAWKE: A foundry has three doors. / Watch all of them.
 @IF KOAL
 KOAL: Two slag roads and a ramp. / Mind the lane. I will pave it.
 @IF KINDLE
@@ -235,11 +235,11 @@ JESS: Javier. Fall back. We take / this to Evergreen. To Eagle.
 JAVIER: Aye, Dame Jess. I shall guard / your back. And your pride.
 JESS: Leave my pride out of it.
 @IF ASUKA
-ASUKA: A keyhole. On every ledger. I / told you the paper knew more.
+ASUKA: A keyhole. On every page. I / said the paperwork would talk.
 @IF CRUMB CO
 CRUMB CO: Ma'am, Gerald says the mark / is shy. It hides in the corner.
 @IF HAWKE
-HAWKE: Four nations, one hidden / hand. A tidy conspiracy. Record it.
+HAWKE: Four nations, one hidden hand. / Someone planned this carefully.
 @IF KOAL
 KOAL: Thirty years of iron on one / road. And nobody sent a surveyor.
 @IF KINDLE
@@ -257,7 +257,7 @@ VON BOLT: Thirty years of shipments / and not one invoice for ME. Kehh.
 @IF CLONE ANDY
 CLONE ANDY: Okay. A keyhole. Sure! / ...What opens it, sir?
 @END
-ASUKA: That is the question. And / I mean to turn it.
+ASUKA: That is the question. I intend / to answer it.
 
 == m03_map
 @SONG enemy2
@@ -277,14 +277,14 @@ CRUMB CO: Me too, ma'am. Gerald does / not know. He is very quiet.
 NARRATION: Green Earth's seas. Two / fronts. One fleet, and one sky.
 ASUKA: One clock, two fronts. The sea / front goes to the CO on the radio.
 ASUKA: The sky belongs to Marshal / Hawke. Eagle calls them the Talons.
-HAWKE: I take my orders from the plan, / not from whoever draws it.
+HAWKE: I follow the plan. Not whoever / happens to be drawing it.
 ASUKA: Then take them from arithmetic. / Eagle has more wings than you.
 ASUKA: You have a better mind. Do / not make me say it twice.
-HAWKE: Flattery is my currency, / Asuka. Do not counterfeit it.
+HAWKE: Flattery is wasted on me, / Asuka. Say what you want.
 EAGLE: Marshal! Is that you, Marshal? / Ha! Bring your longest pole!
 HAWKE: I brought two.
 EAGLE: New birds! Bigger! Louder! The / Talons! You'll hate them!
-HAWKE: A name that loud is a / confession of insecurity.
+HAWKE: A name that loud hides a / nervous man.
 EAGLE: Death from above! Say it / with me!
 HAWKE: No.
 DRAKE: Hey, dude, ma'am sent the / sea front a new face. Cool. Be nice.
@@ -309,21 +309,21 @@ CLONE ANDY: A sea front! Okay! I can / fix any-- ...any boat! Sure!
 @IF ASUKA
 ASUKA: A sea front. Fog on a / dull sea. I shall enjoy myself.
 @IF HAWKE
-HAWKE: I will take both fronts, / if the clock allows. It will not.
+HAWKE: I would take both fronts if / I could. I cannot.
 @END
 ASUKA: Your Lasers and minicannons / hold the island. Do not walk into
 ASUKA: their lines. The sea front / holds. The sky front wins.
-HAWKE: Tempo, Asuka. You have / handed me an interesting one.
+HAWKE: A fair assignment, Asuka. / I shall not waste it.
 
 == m04_day6
 EAGLE: Marshal! Talon Two on your / left! Second Talon, on your right!
-HAWKE: I counted them at dawn. / Thank you for the confirmation.
+HAWKE: I counted them at dawn. / Thank you, Captain.
 DRAKE: Hey, they're loud. My / pelicans are leaving, dude.
 
 == m04_front2_post
 @SONG co:hawke
 EAGLE(s): Grounded. Again. By a man / with a clipboard.
-HAWKE: The Talons were well flown, / Captain. I said so in my notes.
+HAWKE: Well flown, Captain. I have / said so in my report.
 EAGLE: Don't be nice! I read your / doctrine! The margins, even!
 HAWKE: Then you know what I do next.
 EAGLE: Yeah. Nothing. You win / quietly and send flowers.
@@ -337,7 +337,7 @@ HAWKE: I do not expect you to be.
 
 == m04_front2_lost
 EAGLE: Ha! The sky's mine! Marshal, / you lost the sky!
-HAWKE: A tempo lost is a tempo owed. / I will collect.
+HAWKE: I lost a move. I will take / it back.
 ASUKA: Then I owe you a tempo, / Marshal. I will repay it at sea.
 HAWKE: Agreed. I shall hold you / to it.
 EAGLE: Talons, regroup! Let's go / hunt the sea front!
@@ -347,11 +347,11 @@ EAGLE: Talons, regroup! Let's go / hunt the sea front!
 DRAKE(s): Abandon ship! Again. Wow, / I'm getting good at it.
 DRAKE: You're a strange crew, dude. / The tall guy in the sky is scary.
 ASUKA: He is a fine mind. He dislikes / that I am his superior.
-HAWKE: I dislike nothing. I record. / Your plan was adequate.
+HAWKE: Your plan was adequate.
 ASUKA: High praise.
-HAWKE: From me, a medal.
+HAWKE: From me, that is praise.
 ASUKA: Marshal. Let us not pretend. / We mistrust each other.
-HAWKE: Naturally. It is the basis / of a lasting working relationship.
+HAWKE: Naturally. That is how we / will get on.
 ASUKA: I could not have put it / better. Evergreen next.
 HAWKE: Evergreen in Exile. Lord / Sturm will want to see it fall.
 ASUKA: Lord Sturm wants to see me / fall. That is why he comes.
@@ -363,8 +363,8 @@ MORTAR: It is a grade, Crumb.
 CRUMB CO: He said it to the General. / Gerald thinks they are friends.
 WICK: Is it all right if I think / they are about to hit each other?
 MORTAR: Yes. Stand back.
-KINDLE: Darling Marshal, Eagle has / a lovely baritone. Would he audition?
-HAWKE: He auditions daily. Loudly.
+KINDLE: Darling Marshal, Eagle has / a lovely baritone. Would he sing?
+HAWKE: He sings daily. Loudly.
 ADDER: A baritone in a bomber. What / a waste of a good profile.
 
 # ---------------------------------------------------------------- M5 Evergreen in Exile (Sturm + Asuka fixed; enemy Javier + Eagle, Grit's Blue Moon column)
@@ -379,7 +379,7 @@ MORTAR: No.
 ASUKA: Lord Sturm. You were to / remain at the Obelisk.
 STURM: I came to watch.
 ASUKA: Watch what.
-STURM: My auditor. Show me the audit.
+STURM: My auditor. Show me what / you can do.
 ASUKA: Perfect Intel, then. What I / know, you know. One mind.
 STURM: I need no intelligence.
 ASUKA: Use mine anyway. It saves / ammunition. And time.
@@ -426,7 +426,7 @@ STURM: Do not mistake that for a / gift.
 ASUKA: I never do, Lord Sturm.
 STURM: Hold it.
 MORTAR: Ma'am? He did not shout / once.
-ASUKA: He never does. It is how / you know.
+ASUKA: He never does. That is how / you know he means it.
 
 == m05_map
 @SONG enemy1
@@ -449,11 +449,11 @@ JAVIER: Let no foe say Javier was / silent! He speaks at twelve towers!
 ASUKA: Twelve towers, one net. Every / tower he loses, his army hears less.
 ASUKA: Cut the net. A man who cannot / talk to his tanks fights alone.
 @IF ASUKA
-ASUKA: A net of towers is a net of / habits. I will read the habits.
+ASUKA: Twelve towers means twelve / routines. I will learn them.
 @IF CRUMB CO
 CRUMB CO: Ma'am, the forest whispers. / Or it's a radio. Gerald hid.
 @IF HAWKE
-HAWKE: Twelve voices, one mind. I will / find the one that keeps the beat.
+HAWKE: Twelve towers, one commander. / I will find the weak one.
 @IF KOAL
 KOAL: Trees are not a road. They / are a problem with a camber.
 @IF KINDLE
@@ -530,11 +530,11 @@ ASUKA: Captain. I am obliged to / take the town. The boardwalk is a risk.
 DRAKE: I knew you'd say that. Okay. / We'll fight nicely. Right?
 ASUKA: We fight efficiently. Which / is the nicest way.
 @IF ASUKA
-ASUKA: A harbour is a ledger with / tides. I shall read it twice.
+ASUKA: A harbour is a schedule with / tides. I shall study it.
 @IF CRUMB CO
 CRUMB CO: Is that a ginger biscuit / stall, Captain? Gerald is interested.
 @IF HAWKE
-HAWKE: A quay is a chokepoint. Take / it, and the town surrenders itself.
+HAWKE: Take the quay and the town / has nothing left to defend.
 @IF KOAL
 KOAL: A pier is a road that forgot / to stop. I respect a straight pier.
 @IF KINDLE
@@ -575,16 +575,16 @@ DRAKE: Whoa. Okay. Hi, little guy.
 ASUKA: Go on, Captain.
 DRAKE: And once a year, four empty / freighters sailed the closed lane.
 DRAKE: "Maintenance." They went west / light. They came back lighter.
-ASUKA: Iron leaves heavy and returns / in silence. Thank you, Captain.
+ASUKA: Iron went out heavy and nothing / came back. Thank you, Captain.
 DRAKE: I never asked. First rule of / piracy: don't ask who pays you.
 DRAKE: Second rule: don't ask why / they don't want you to ask.
 ASUKA: That second rule is the / Accord's whole constitution.
 @IF ASUKA
-ASUKA: A toll that scrubbed no reef. / Every lie in this war has a receipt.
+ASUKA: A toll that scrubbed no reef. / Every lie in this war left a trail.
 @IF CRUMB CO
 CRUMB CO: Captain Drake, do reefs get / lonely? Gerald wonders.
 @IF HAWKE
-HAWKE: A tax on the sea. The oldest / gambit. The Accord forgot the disguise.
+HAWKE: A tax on the sea. An old trick. / They barely hid it.
 @IF KOAL
 KOAL: Lane upkeep. I paved two thousand / miles. Nobody paid me a toll.
 @IF KINDLE
@@ -705,7 +705,7 @@ ASUKA: Lord Sturm. The Comet Chain. / Its walls are paper. Its pride is not.
 STURM: Pride is a wall. Break it.
 ASUKA: Kanbei will meet us at his / Table. I will manage him.
 STURM: Do.
-HAWKE: Honour is the hardest wall to / audit. I recommend patience.
+HAWKE: Honour is a hard wall to / breach. I advise patience.
 VON BOLT: Honour! Kehh... does it have / a price? Everything does!
 KOAL: Eleven bridges run the length / of the Chain. I will pave all eleven.
 KINDLE: And I shall accompany him, / darling. Someone must make bridges fun.

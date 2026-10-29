@@ -20,11 +20,11 @@ SAMI: Max.
 MAX: ...I care a little.
 SAMI: Roger. So do I.
 @IF ASUKA
-ASUKA: Information is the last / currency. I just paid every account.
+ASUKA: Information is cheap to send / and costly to receive. Enjoy.
 @IF CRUMB CO
 CRUMB CO: Ma'am, that is a lot of mail! / Do I stamp them? Gerald can lick.
 @IF HAWKE
-HAWKE: A leak is a gambit. Offer / the pawn. Take the board.
+HAWKE: A leak costs us nothing. It may / cost them everything.
 @IF KOAL
 KOAL: A letter travels faster than / any road. I resent that. Mind the post.
 @IF KINDLE
@@ -94,7 +94,7 @@ ASUKA: Every page. She signed the / first seal. She should hear it.
 SAMI: Roger. Commander Asuka. You / blew the Accord up from inside.
 ASUKA: No, Sami. I handed over / the match. The Accord lit itself.
 SAMI: That is not a defence.
-ASUKA: It is not a defence. It is / an audit. They are different.
+ASUKA: It is not a defence. It is / a fact. Those are different.
 MAX: I hate you. I don't hate you. / I hate that you're right.
 MAX: Grit's calling. Hang on. ...Grit? / ...Yes. ...I know, son.
 SAMI: Max.
@@ -136,11 +136,11 @@ NARRATION: Black Hole's side. The tower / is garrisoned. The rain is cold.
 ASUKA: Nell is in the tower. Andy will / come for her. Let him come.
 ASUKA: The CO on the radio holds / the town. I watch the window.
 @IF ASUKA
-ASUKA: Never guard a door. Make the / door the mistake he wants to make.
+ASUKA: Do not only guard the door. / Let him believe it is open.
 @IF CRUMB CO
 CRUMB CO: Ma'am, is the lady in the / tower nice? Gerald sent a biscuit.
 @IF HAWKE
-HAWKE: A prisoner is a piece that / cannot move. Do not move the others.
+HAWKE: She is a hostage. Do not let / the others forget her.
 @IF KOAL
 KOAL: A tower with one road. Four / guards. I will mind the road.
 @IF KINDLE
@@ -177,7 +177,7 @@ NELL: ...Aria?
 ANDY: Your sister! The loud one!
 NELL(h): Oh, my goodness. She / listened after all.
 ASUKA: Garrison. Hold your fire. / Hold it.
-HAWKE: Asuka. Your queen is leaving.
+HAWKE: Asuka. Nell is leaving.
 ASUKA: I know. Let her go.
 
 == m21_post
@@ -188,18 +188,18 @@ ASUKA: Then answer well, Nell.
 NELL: You don't sound like a monster.
 ASUKA: Monsters file less.
 NELL(h): Ha! Oh, I like you. I wish / you were on my side.
-ASUKA: I am on the side of the / ledger. It is the only honest one.
+ASUKA: I am on the side of the facts. / They are the only honest party.
 NELL: Then we agree on something. / Andy, come on. We're leaving.
 ANDY: Thanks, Black Hole lady! ...I / mean... you're still the enemy!
 ASUKA: Go, Andy. Bring her home.
-HAWKE: You let the queen go. I / record it as an error.
-ASUKA: A queen in a cage guards / nothing. A queen loose argues
-ASUKA: with her own side. I wanted / the argument.
-HAWKE: A calculated release. I / concede the tempo.
+HAWKE: You let her go. I record that / as a mistake.
+ASUKA: A caged Nell guards nothing. / A free Nell argues with her allies.
+ASUKA: And I want them arguing.
+HAWKE: A deliberate one, I see. Very / well.
 HAWKE: Her file is a single line, / by the way. "Aria. Nell's twin."
-HAWKE: Raised east of the fence. I / dislike a woman with no file.
+HAWKE: Raised east of the fence. I / distrust a woman with no file.
 ASUKA: You are describing me, Marshal.
-HAWKE: Precisely. It is why I / dislike you both.
+HAWKE: Precisely. I distrust you both / for it.
 
 == m21_map
 @SONG enemy2
@@ -506,7 +506,7 @@ ANDY: Okay! The train! Nobody touches / the train! It's got children on it!
 HACHI: Closing-down sale, kid! Everything / half off but the train!
 ASUKA: Eleven cars. Hawke counted the / weight in the Rail Yard. It was heavy.
 ASUKA: Door-seal machinery, from Lab 7. / Project 17. I mean to capture it.
-HAWKE: The weight said more than / children. The manifest lied by omission.
+HAWKE: The weight was too great for / children. The manifest lied.
 ANDY: It's not lying! It's got / kids and it's got a machine!
 ANDY: Both are true! Okay?!
 @IF ASUKA
@@ -514,7 +514,7 @@ ASUKA: A train on a rail has no / second option. I find that restful.
 @IF CRUMB CO
 CRUMB CO: Is it a nice train, ma'am? / Gerald loves trains.
 @IF HAWKE
-HAWKE: A train is a king that cannot / leave his square. I shall approach.
+HAWKE: A train cannot leave its rails. / I shall approach.
 @IF KOAL
 KOAL: Rails are roads with opinions. / I will remove the opinions.
 @IF KINDLE
@@ -533,7 +533,7 @@ VON BOLT: A train! Kehh... freight / pays by weight! How much is it?
 CLONE ANDY: Okay! A train! Andy's / on it! I will be gentle. I think.
 @END
 @PARTNER ASUKA
-[CO2]: Front two, the market line. I / shall read the receipts while I fight.
+[CO2]: Front two, the market line. I / shall check the stalls' books as I fight.
 @PARTNER CRUMB CO
 [CO2]: Hello, Mr Hachi! It's me! / Crumb! I won't shoot the stalls!
 @PARTNER HAWKE
@@ -580,7 +580,7 @@ NARRATION: The heavy train, captured. / Eleven cars, steam, and silence.
 ASUKA: Open the third car.
 NARRATION: Crates of bolted steel and / a mass of black machinery.
 ASUKA: A seal machine. A frame of / rails and clamps. For one door.
-HAWKE: I said the weight spoke. I / was understating it.
+HAWKE: I said it was heavy. I / underestimated.
 ASUKA: Project 17. They meant to / push him back and weld it shut.
 CRUMB CO: Ma'am? If they weld the / door shut, who's on the other side?
 ASUKA: Whoever the storm came from.
@@ -605,7 +605,7 @@ ASUKA: That, Private, is the last / thing in the world I am sure of.
 NARRATION: The Allied table. The chair / at the head is filled. Two women.
 NELL: Friends. First, I was wrong. / About the seal.
 ARIA: Sister. Don't. Let me speak.
-ARIA: Four nations sold the door and / lied about it. Black Hole's auditor
+ARIA: Four nations sold the door and / lied about it. Black Hole's clerk
 ARIA: lit the match. We have been / burning ever since.
 OLAF: Aria! The ledger is true! Do / not expect us to forgive it!
 ARIA: I expect you to be angry at / her. Not at each other.

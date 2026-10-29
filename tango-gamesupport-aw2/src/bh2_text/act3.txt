@@ -4,7 +4,7 @@
 
 == m14_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:grit
-NARRATION: Blue Moon's palace, a day / earlier. A long hall of ice and ledgers.
+NARRATION: Blue Moon's palace, a day / earlier. A long hall of ice and files.
 OLAF: Blue Moon has read the ledger! / Blue Moon is OUTRAGED! Again!
 SASHA: Olaf. Outrage is not a policy. / Colin, close the window.
 COLIN: Y-yes, Sis! It's... it's very / cold outside. And in. Everywhere.
@@ -19,18 +19,18 @@ GRIT: Ayup. It's a fence with an / attitude, son.
 JAVIER: Sir Grit! A knight does not / call his duty a fence!
 GRIT: A knight can call it what he / likes. I call it cold.
 ASUKA: The Iron Road. Thirty years / of iron on one rail, four seals,
-ASUKA: and a consignee who is a / keyhole. I mean to follow it home.
+ASUKA: and an unnamed buyer, marked / with a keyhole. I mean to follow it.
 GRIT: Ma'am. Reckon you're not here / for the scenery.
 ASUKA: No, Grit. I am here for / the rail.
 GRIT: Grit'll do. No stripes. I / left 'em with the Accord.
 JAVIER: The Accord! Which kept us / safe behind a fence of honour!
 GRIT: Which kept us quiet behind a / fence of something, son. Ayup.
 @IF ASUKA
-ASUKA: Snow is the best paper. It / records every footprint. I read it.
+ASUKA: Snow keeps every footprint. / I can read a trail in it.
 @IF CRUMB CO
 CRUMB CO: Ma'am! Gerald froze! ...He's / fine. He is a very hard biscuit.
 @IF HAWKE
-HAWKE: A border is a line the enemy / agrees not to cross. I disagree.
+HAWKE: A border is only a line on / a map. I do not respect lines.
 @IF KOAL
 KOAL: A rail with no road beside it. / Offensive. I will survey it.
 @IF KINDLE
@@ -94,7 +94,7 @@ GRIT: Easy, son. You're a man with / towers. That's all.
 JAVIER: A knight who builds on / stolen iron. Is he still a knight?
 ASUKA: He is the only honest / signature on the continent.
 JAVIER: That is what you said at / Calder. I thought it a taunt.
-ASUKA: It was a fact. I do not / taunt. I audit.
+ASUKA: It was a fact. I do not / taunt. I state facts.
 JAVIER: ...Then I shall ride to / Olaf and think. Is this allowed?
 ASUKA: Ride, Sir Javier. Think. / We will meet again at the Pass.
 GRIT: Reckon he'll come back with / a sword and a scruple. Ayup.
@@ -121,41 +121,41 @@ ASUKA: Everything goes to the sea. / And then to the door.
 NARRATION: Iron Gate Pass. A single / road through a wall of snowy rock.
 OLAF: Behold the Iron Gate! Behold / OLAF, the shining pride of Blue Moon!
 OLAF: No army has passed in a / thousand winters! None shall!
-HAWKE: A thousand winters, Commander. / I counted. It was six hundred.
+HAWKE: Six hundred, Commander. / I checked the records.
 OLAF: HAWKE?! The Marshal! The / traitor of the Accord!
-HAWKE: A Marshal. A traitor is one / who changes a plan for gain.
-HAWKE: I changed a plan for a better / one. It is a different crime.
-OLAF: You inspected our border for / thirty years! You drank our tea!
-HAWKE: Coffee. Black. I do not drink / tea. It was a poor border.
+HAWKE: A Marshal. A traitor betrays / for profit. I did not.
+HAWKE: I replaced a poor plan / with a better one.
+OLAF: You sat at our summits for / thirty years! You drank our tea!
+HAWKE: I drank coffee, Commander. / Your border was poorly defended.
 OLAF: HOW DARE YOU!
-HAWKE: I mean the border was poor. / The tea, I never tasted.
+HAWKE: The tea was excellent. The / border was not.
 OLAF: Ha! A man who insults the / Gate! Then he shall eat it!
 ASUKA: Marshal. Iron Gate Pass is / the one door to Blue Moon's valley.
 ASUKA: Open it. I need the foundry / ledgers beyond.
-HAWKE: Asuka. You ask me to open / a door. How delightfully pointed.
-HAWKE: I will treat it as an audit. / Commander Olaf, kindly stand aside.
+HAWKE: A door. Very well, Asuka.
+HAWKE: Commander Olaf. Stand aside, / please. I will not ask twice.
 OLAF: Never! I am the shining star / of Blue Moon! I am the Gate!
-HAWKE: Excellent. Then you are / a single point of failure.
-HAWKE: My favourite kind. I shall / order breakfast after.
+HAWKE: Then the pass depends on you / alone. That is a weakness.
+HAWKE: A weakness I can name. / Good.
 OLAF: Soldiers! To the snow! Hold the / road with ice and honour!
-HAWKE: Ice is a position that never / changes. I enjoy it greatly.
+HAWKE: Ice does not move. That makes / it easy to plan against.
 
 == m15_day6
 OLAF: Ha! My Cruisers... no. My / Tanks! Charge down the pass!
-HAWKE: Commander, I counted them at / dawn. Please continue.
+HAWKE: Seventy tanks. I counted them / at dawn. Please continue.
 OLAF: Counted?! Did you count my / HEART?
-HAWKE: Seventy-one beats a minute, / by the sound of your shouting.
+HAWKE: Your heart is racing. You / should rest, Commander.
 
 == m15_post
 @SONG co:olaf
 OLAF(s): The Gate... has fallen. A / thousand winters. ...Six hundred.
-HAWKE: Six hundred and eleven. I was / rounding up for you.
+HAWKE: Six hundred and eleven. I was / being generous.
 OLAF: Marshal! You are a cold / man!
-HAWKE: I am a tidy one. It looks / similar in the snow.
+HAWKE: A careful one. From a distance / it looks the same.
 OLAF: Colin is on the lab island! / With Sasha! Do not touch my Colin!
-HAWKE: I do not make war on boys, / Commander. I make it on logistics.
+HAWKE: I do not fight boys, Commander. / I cut supplies.
 OLAF: ...You do not?
-HAWKE: I have a folder in my coat / that says I do not. Page nine.
+HAWKE: It is written down. Page nine.
 OLAF: Hm. A man with a folder. I / respect a folder.
 OLAF: Marshal. Why did you do it? / The Accord kept us safe.
 HAWKE: It kept you still. That is / not the same thing, Commander.
@@ -168,11 +168,11 @@ HAWKE: I look forward to it.
 == m15_map
 @SONG co:hawke
 ASUKA: Marshal. The Pass is open. You / were generous with the Commander.
-HAWKE: I am generous with exits. A / man with an exit fights cleaner.
+HAWKE: I always leave an exit. A cornered / man fights harder.
 ASUKA: And your folder? The one in / your coat.
-HAWKE: A habit. Chapter two. It is / not finished. It will keep.
+HAWKE: Chapter two. It is not / finished. It can wait.
 ASUKA: Marshal Hawke. I have one / too. A second folder.
-HAWKE: ...Do you. How interesting.
+HAWKE: ...Do you. I see.
 ASUKA: Not yet. We shall compare / them. When it matters.
 HAWKE: Naturally. When it matters.
 
@@ -188,7 +188,7 @@ JUGGER: GREETINGS, SNIPER GRIT. / QUERY: WHY "TIN".
 GRIT: It's a fond word, son. Means / "man made of good stuff".
 JUGGER: ...SENTIMENT DETECTED. SOURCE: / GRIT. LOGGED.
 ASUKA: Jugger. The Wire carries every / dispatch the Iron Road sent home.
-ASUKA: Cut the seams. Read what / flows. In that order.
+ASUKA: Cut the seams, and read what / comes through.
 JUGGER: AFFIRMATIVE. SEAMS: SIXTEEN. / TASK: CUT. THEN READ. THEN CUT.
 GRIT: Reckon I can't stop you. Can / slow you. Ayup. Slowly. Like a drip.
 GRIT: Babysat a robot with a tin ear / once. Blue Moon's whole idea.
@@ -420,7 +420,7 @@ ASUKA: I read ledgers. I do not / break them. Hand it over.
 @IF CRUMB CO
 CRUMB CO: Hello, Commander Olaf! I / have soup! From my friend Flak!
 @IF HAWKE
-HAWKE: Furnaces and a ledger. A / foundry is the most honest board.
+HAWKE: Nine furnaces and one archive. / Take the archive first.
 @IF KOAL
 KOAL: Nine furnaces, one road. It / will be wide enough. I will see to it.
 @IF KINDLE
@@ -510,7 +510,7 @@ ASUKA: Issue number one. I will / remember the number.
 @IF CRUMB CO
 CRUMB CO: Gerald says thank you. He / waited a very long time to hear it.
 @IF HAWKE
-HAWKE: I searched that registry myself. / I am ashamed to have missed a page.
+HAWKE: I searched that registry myself. / I should have found that page.
 @IF KOAL
 KOAL: Hobb. A man who builds and signs / nothing. I would have liked him.
 @IF KINDLE
@@ -578,7 +578,7 @@ NARRATION: The flagship's chart room. / North-east lies Orange Star.
 STURM: The orange flag in my hall. / Is it still standing.
 ASUKA: It stands, Lord Sturm. The tower / holds its prisoner. She reads my ledger.
 STURM: Then let her read. And let her / learn what it costs to read.
-HAWKE: A divided house. I am almost / sorry for the occupants.
+HAWKE: A divided house falls easily. / I take no pleasure in it.
 VON BOLT: Divide and conquer! Kehh-heh! / My favourite. Divide, then bill.
 LASH: Lab 7 is in Orange Star. I / HELPED build it. Can I go home?
 ASUKA: Clone Andy goes. Doctor, you / assist by radio.
