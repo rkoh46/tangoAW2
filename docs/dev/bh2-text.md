@@ -35,8 +35,10 @@ Per mission: `mNN_pre` the intro; `mNN_post` the victory; `mNN_map` the scene on
 | `m26_folders` | M26, around day 5 | |
 | `m27_vault_empty` then `m27_sale` | M27, funds reach 0; Jess then retreats (win) | |
 | `m28_door` | M28, Crumb at the door tile; `m28_day6` and `m28_post` bracket the nine days | |
-| `m30_takeover_olaf`, `m30_takeover_kanbei`, `m30_takeover_eagle` | M30, `TakeOver` Nell -> Olaf -> Kanbei -> Eagle | `m30_post` at Eagle's fall |
-| `m31_pre` (Aria's approved opening), `m31_day6`, `m31_day9`, `m31_day12`, `m31_post` | M31 | Hawke speaks as a fixed radio voice |
+| `m30_pre`, `m30_day5`, `m30_post`, `m30_map` | M30 The Orange Line (free pair vs Rachel + Sami) | pick blocks as elsewhere |
+| `m31_pre` (the gauntlet's opening), `m31_day5`, `m31_takeover_olaf`, `m31_takeover_kanbei`, `m31_takeover_eagle` | M31 stage 1: `TakeOver` Nell -> Olaf -> Kanbei -> Eagle | |
+| `m31_switch` (Eagle's fall), then `m31_stage2` (Aria's entrance, the approved draft) | the mid-battle map switch to Aria's citadel | play both at the switch |
+| `m31_day6`, `m31_day9`, `m31_day12`, `m31_post` | M31 stage 2 and the victory | Hawke speaks as a fixed radio voice |
 | `epilogue`, `epilogue_toasts` | after M31, chained; then `bh2_text::credits()` | |
 | `m32_pre`, `m32_day3` (Cassius), `m32_day5` (Aurelia), `m32_day7` (Livia), `m32_post`, `m32_epilogue` | secret M32 (unlocked by M29); `m32_epilogue` then the `secret` credits pages | |
 
