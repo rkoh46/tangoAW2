@@ -94,3 +94,17 @@ def story_trace_bh2_missions(ctx):
         rows = mission_flow(ctx, n, f"bh2_m{n:02d}")
         ctx.check(len(rows) > 50, f"M{n}: {len(rows)} samples")
         music_in_every_dialogue_scene(ctx, rows, f"M{n}")
+
+
+@test(modes=("ds",))
+def story_trace_bh2_chooser(ctx):
+    """The Campaign chooser with BH2 CAMPAIGN listed (and the cursor on it): the picture `bh2_chooser.bmp` for `aw2dev bh2 integration`."""
+    e = Emu(save=paths.base_save(), ds=True)
+    g = Game(e, ctx.image)
+    d = b2.Bh2Campaign(g)
+    d.open_campaign_box()
+    d.chooser_row(b2.CHOOSER_ROW)
+    e.wait(30)
+    bmp = e.shot(os.path.join(out_dir(ctx), "bh2_chooser"))
+    ctx.check(os.path.exists(bmp), "the chooser's picture")
+    e.close()

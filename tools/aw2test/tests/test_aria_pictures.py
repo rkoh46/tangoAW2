@@ -135,3 +135,16 @@ def aria_pics_hq_is_orange_stars(ctx):
         tiles[co] = [row[2:14] for row in rows[92:112]]
     ctx.check(tiles["aria"] == tiles["nell"] and tiles["aria"] == tiles["andy"], "Aria's HQ at army 1's corner is drawn exactly as Nell's and Andy's (Orange Star's)")
     ctx.check(tiles["aria"] != tiles["hawke"], "and is not Black Hole's (Hawke's)")
+
+
+@test(modes=("ds",))
+def aria_pics_co_page_one(ctx):
+    """Aria's CO page 1 (her description, the Hit and Miss line) from the map menu's CO entry: `co_page1.bmp`, for `aw2dev bh2 integration`."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
+    g = ctx.start(m, ["aria", "andy"])
+    g.open_map_menu()
+    g.choose("CO", g.MAP_MENU)
+    g.e.wait(110)
+    ctx.shot(g, "co_page1")
+    g.e.close()

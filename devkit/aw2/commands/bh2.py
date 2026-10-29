@@ -2,6 +2,7 @@
 
   bh2 pictures [--out DIR]    m01.png .. (full map, fog off, units and labels, "MISSION N - Title" burned in), the fog views, act1_sheet.png, worldmap_flags.png
   bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png
+  bh2 integration [--out PNG]  the proof sheet of the harness's frames (chooser, prologue, world map, a scene per act, Aria's CO select)
   bh2 silhouettes             the silhouette check (no two maps alike, no oval blobs; docs/dev/bh2-maps.md)
   bh2 difficulty              the static difficulty score of every mission (M30 must be the hardest by 10%)
   bh2 features                the feature coverage table (properties, terrain, inventions per map) and what no map uses yet
@@ -23,6 +24,9 @@ def register(sub):
     a.add_argument("--act", type=int, nargs="*", help="only these acts' missions (default: every mission with a picture)")
     a.add_argument("--out", help="folder (default devkit/work/bh2/game)")
     a.set_defaults(fn=sheets)
+    a = ps.add_parser("integration", help="the integration proof sheet of the harness's frames: chooser, prologue, world map, a pre-mission scene per act, Aria's CO select")
+    a.add_argument("--out", help="the PNG (default devkit/work/bh2/integration_sheet.png)")
+    a.set_defaults(fn=integration)
     a = ps.add_parser("silhouettes", help="the silhouette check: maps too alike or a rounded blob in the sea (approved maps are listed, not failed)")
     a.set_defaults(fn=silhouettes)
     a = ps.add_parser("difficulty", help="the static difficulty score of every BH2 mission; the final mission must lead by 10 percent")
@@ -53,6 +57,12 @@ def sheets(a):
     for p in paths:
         util.say(f"picture: {p}")
     return 0 if paths else 1
+
+
+def integration(a):
+    from ..bh2lib import integration as ig
+    util.say("picture:", ig.sheet(a.out or cfg.work("bh2", "integration_sheet.png")))
+    return 0
 
 
 def difficulty(a):

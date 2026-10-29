@@ -44,6 +44,7 @@ class Tracer:
         self.audio = audio
         self.t0 = e.frame
         self.last_key = None
+        self.same = 0
         os.makedirs(out, exist_ok=True)
         if audio:
             e.audio_start()
@@ -65,7 +66,13 @@ class Tracer:
             bmp = e.shot(os.path.join(self.out, f"{self.label}_cur"))
             row["bright"] = round(brightness(bmp), 1)
             key = (row["song"], text, row["battle"], row["map"])
-            if key != self.last_key:
+            # (a box that has stayed on the screen for ten samples is typed out: its picture is the "settled" one, kept as <label>_<n>s.bmp)
+            self.same = self.same + 1 if key == self.last_key else 0
+            if text and self.same == 10:
+                name = f"{self.label}_{len(self.rows):04d}s.bmp"
+                os.replace(bmp, os.path.join(self.out, name))
+                row["settled"] = name
+            elif key != self.last_key:
                 name = f"{self.label}_{len(self.rows):04d}.bmp"
                 os.replace(bmp, os.path.join(self.out, name))
                 row["shot"] = name
