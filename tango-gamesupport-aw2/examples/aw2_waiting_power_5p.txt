@@ -65,7 +65,8 @@ wait 10
 press 0 DOWN
 wait 10
 press 0 DOWN
-wait 10
+wait 3
+press 0 DOWN
 press 0 A
 until turnended 30
 wait 40

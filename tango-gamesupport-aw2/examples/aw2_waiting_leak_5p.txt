@@ -51,7 +51,8 @@ wait 10
 press 0 DOWN
 wait 10
 press 0 DOWN
-wait 10
+wait 3
+press 0 DOWN
 press 0 A
 until turnended 30
 wait 40
@@ -69,7 +70,8 @@ wait 10
 press 1 DOWN
 wait 10
 press 1 DOWN
-wait 10
+wait 3
+press 1 DOWN
 press 1 A
 until turnended 30
 wait 40
@@ -87,7 +89,8 @@ wait 10
 press 2 DOWN
 wait 10
 press 2 DOWN
-wait 10
+wait 3
+press 2 DOWN
 press 2 A
 until turnended 30
 wait 40
@@ -105,7 +108,8 @@ wait 10
 press 3 DOWN
 wait 10
 press 3 DOWN
-wait 10
+wait 3
+press 3 DOWN
 press 3 A
 until turnended 30
 wait 40
@@ -123,7 +127,8 @@ wait 10
 press 4 DOWN
 wait 10
 press 4 DOWN
-wait 10
+wait 3
+press 4 DOWN
 press 4 A
 until turnended 30
 wait 40

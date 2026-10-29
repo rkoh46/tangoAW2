@@ -25,6 +25,8 @@ def run(ctx):
                 out.append({"detector": NAME, "shot": f"{vname}/{shot}", "severity": "fail", "msg": "size differs from the golden image"})
                 continue
             diff = np.abs(A - B).sum(axis=2)
+            for x0, y0, w, h in g.get("ignore", []):   # animated parts (e.g. the banner's bobbing PRESS A BUTTON, its phase follows the wall clock)
+                diff[y0:y0 + h, x0:x0 + w] = 0
             frac = float((diff > 24).mean())
             if frac > tol:
                 heat = np.zeros(A.shape, dtype="uint8")

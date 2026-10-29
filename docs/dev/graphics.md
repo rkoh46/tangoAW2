@@ -26,7 +26,7 @@ First time on a machine: `aw2dev build --examples` then `aw2dev gfx golden` (fro
 |---|---|---|
 | `text` | OCR of AW2-font strings (glyph shapes matched against the ROM's own font, `gfxlib/font.py`, `ocr.py`) in a region: unknown glyphs, expected strings, every row in a name set (`in_set = "maps"`, names from `aw2_map_audit`) | `text = [{region, ink, in_set / expect, max_unknown}]` |
 | `same` | a region is pixel-identical across variants (with / without the Dual Strike pack) | `same = [{variants, region}]` |
-| `golden` | each shot against the golden frame, tolerance + heat-map | a golden set |
+| `golden` | each shot against the golden frame, tolerance + heat-map (`golden = {ignore = [[x,y,w,h]]}` skips an animated region) | a golden set |
 | `tiles` | tile guard: byte ranges of VRAM (font, UI) equal the golden dump; lists the overwritten tiles and the OAM entries drawing them | `vram = true`, `guard = [{dump, range}]`, golden |
 | `palette` | palette banks equal golden; and the harness's own colour check (`unitcolours` exit code) | `palette = {rc, banks}` |
 | `stray` | a region that must be empty (one plain colour within `dist`) | `stray = [{region, dist, tolerance}]` |
