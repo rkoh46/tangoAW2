@@ -74,3 +74,33 @@ def sheet(path):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     img.save(path)
     return path
+
+
+def prologue_sheet(path, run=True):
+    """`aw2dev bh2 prologue-sheet`: runs the harness test `story_trace_bh2_prologue_frames` (every page and dialogue box of the prologue, one frame each, typed out), then a contact sheet of all the frames
+    (numbered, 6 across) at `path` and every frame as a PNG in a folder beside it (`prologue_frames/NNN.png`) with `prologue.json` (the text and song of each)."""
+    import subprocess
+    import sys
+    if run:
+        r = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "aw2test" / "run.py"), "-k", "story_trace_bh2_prologue_frames"], cwd=cfg.REPO)
+        if r.returncode:
+            raise SystemExit("the prologue frames test failed")
+    src = OUT / "story_trace_bh2_prologue_frames"
+    rows = json.loads((src / "prologue.json").read_text())
+    path = Path(path)
+    frames = path.parent / "prologue_frames"
+    frames.mkdir(parents=True, exist_ok=True)
+    cols, w, h, head = 6, 240, 160, 14
+    n = len(rows)
+    img = Image.new("RGB", (cols * (w + 4) + 4, ((n + cols - 1) // cols) * (h + head + 4) + 4), (20, 24, 40))
+    d = ImageDraw.Draw(img)
+    for r in rows:
+        k = r["n"]
+        im = Image.open(src / r["shot"]).convert("RGB")
+        im.save(frames / f"{k:03d}.png")
+        x, y = 4 + (k % cols) * (w + 4), 4 + (k // cols) * (h + head + 4)
+        d.text((x, y), f"{k}  song {r['song']}", fill=(250, 235, 120))
+        img.paste(im, (x, y + head))
+    (frames / "prologue.json").write_text(json.dumps(rows, indent=1))
+    img.save(path)
+    return path, n

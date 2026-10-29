@@ -131,3 +131,44 @@ def story_trace_bh2_chooser_order(ctx):
         e.wait(30)
         ctx.eq((e.u8(dc.MENU_LEVEL), e.u8(b2.SOURCE)), (2, source), f"chooser row {row} ({name}) opens source {source}")
         e.close()
+
+
+@test(modes=("ds",))
+def story_trace_bh2_prologue_frames(ctx):
+    """BH2 CAMPAIGN, New: the prologue box by box (`aw2dev bh2 prologue-sheet`): after each box's text has appeared and typed out (`TYPE_FRAMES`) one picture, then A; every page and dialogue box of the
+    narration, the castle, the Allies and the Obelisk scenes, up to the world map. `prologue_NNN.bmp` and `prologue.json` (the text and the song of each frame) go to the output folder."""
+    import json
+    e = Emu(save=paths.base_save(), ds=True, env=b2.ENV)
+    g = Game(e, ctx.image)
+    d = b2.Bh2Campaign(g)
+    d.open_campaign_box()
+    d.chooser_row(b2.CHOOSER_ROW)
+    e.press("A", 8)
+    e.wait(30)
+    d.box_row(1)
+    e.wait(30)
+    e.press("A", 8)
+    out = out_dir(ctx)
+    os.makedirs(out, exist_ok=True)
+    rows, last_bytes, dup = [], None, 0
+    for _ in range(3000):
+        e.press("A", 4)              # (the New confirmation, then every page: A types the next two lines or closes the box)
+        e.wait(20 + TYPE_FRAMES)
+        t = story.clean(d.text_shown())
+        bmp = e.shot(os.path.join(out, "prologue_cur"))
+        cur = open(bmp, "rb").read()
+        if t and cur != last_bytes:
+            name = f"prologue_{len(rows):03d}.bmp"
+            os.replace(bmp, os.path.join(out, name))
+            rows.append({"n": len(rows), "text": t, "song": e.u16(story.SONG), "shot": name})
+            last_bytes, dup = cur, 0
+        else:
+            dup += 1
+        if d.in_battle() or (rows and dup > 4 and d.world_map_up() and not d.scripts_running()):
+            break
+    json.dump(rows, open(os.path.join(out, "prologue.json"), "w"), indent=1)
+    ctx.check(len(rows) >= 80, f"{len(rows)} boxes captured")
+    e.close()
+
+
+TYPE_FRAMES = 110

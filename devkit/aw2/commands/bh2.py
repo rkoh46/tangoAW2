@@ -4,6 +4,7 @@
   bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png
   bh2 scenes [--md]           the scene check: lint (keys used and resolvable) and every scene with its song; a story scene without music fails
   bh2 saves [--no-harness]    the folded BH2 save record: unit tests and the harness round trip (BH + Emerald Sun + BH2)
+  bh2 prologue-sheet [--out PNG] [--no-run]  every page and box of the prologue, typed out, one frame each: a contact sheet and prologue_frames/NNN.png
   bh2 integration [--out PNG]  the proof sheet of the harness's frames (chooser, prologue, world map, a scene per act, Aria's CO select)
   bh2 silhouettes             the silhouette check (no two maps alike, no oval blobs; docs/dev/bh2-maps.md)
   bh2 difficulty              the static difficulty score of every mission (M31 must be the hardest by 10%)
@@ -32,6 +33,10 @@ def register(sub):
     a = ps.add_parser("saves", help="the folded BH2 save record: the unit tests (merge/extract) and the harness round trip with BH, Emerald Sun and BH2 progress")
     a.add_argument("--no-harness", action="store_true", help="only the unit tests")
     a.set_defaults(fn=saves)
+    a = ps.add_parser("prologue-sheet", help="every page and dialogue box of the prologue, one typed-out frame each (harness), as a contact sheet and a folder of PNGs")
+    a.add_argument("--out", help="the PNG (default devkit/work/bh2/prologue_full.png; the frames go in prologue_frames/ beside it)")
+    a.add_argument("--no-run", action="store_true", help="use the frames of the last harness run")
+    a.set_defaults(fn=prologue_sheet)
     a = ps.add_parser("integration", help="the integration proof sheet of the harness's frames: chooser, prologue, world map, a pre-mission scene per act, Aria's CO select")
     a.add_argument("--out", help="the PNG (default devkit/work/bh2/integration_sheet.png)")
     a.set_defaults(fn=integration)
@@ -111,6 +116,13 @@ def saves(a):
         bad = bad or r.returncode
     util.say("bh2 saves: " + ("ok" if not bad else "FAILED"))
     return 1 if bad else 0
+
+
+def prologue_sheet(a):
+    from ..bh2lib import integration as ig
+    path, n = ig.prologue_sheet(a.out or cfg.work("bh2", "prologue_full.png"), run=not a.no_run)
+    util.say(f"picture: {path} ({n} frames)")
+    return 0
 
 
 def integration(a):
