@@ -489,8 +489,6 @@ pub const HOOKS: &[(u32, u16, Hook)] = &[
     (0x0805AC3A, 0x4008, Hook::Set(Op::S, 0, 1)),
     (0x0805E216, 0x4008, Hook::Set(Op::S, 0, 1)),
     (0x0805EE0C, 0x4008, Hook::Set(Op::S, 0, 1)),
-    (0x08016D30, 0xB5F0, Hook::Replace(Routine::NoSave)),
-    (0x0802C644, 0x4803, Hook::Replace(Routine::HideSave)),
     (0x080240B4, 0xB5F0, Hook::Replace(Routine::CaptureTile)),
     (0x0802419C, 0xB5F0, Hook::Replace(Routine::HqToCity)),
     (0x08021996, 0xBC38, Hook::Before(Routine::PropertyCensus)),

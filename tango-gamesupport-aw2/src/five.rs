@@ -135,8 +135,6 @@ pub enum Routine {
     SameTeamIds,
     SameTeamProperty,
     UnsupportedRedeal,
-    NoSave,
-    HideSave,
     CaptureTile,
     HqToCity,
     PropertyCensus,
@@ -337,9 +335,9 @@ pub fn map_picked(core: &mut Core) {
     }
 }
 
-/// Resuming a suspended game (sub_08017658): those are always ordinary
-/// games (a 5-army game cannot be saved), and loading needs the game's own
-/// code, so switch the patches off now, before it runs.
+/// Resuming a suspended game (sub_08017658): AW2's own loading needs the game's own
+/// code, so switch the patches off now, before it runs; a five-army battle is put
+/// back after it ([`restore_saved`], crate::suspend).
 pub const RESUME: u32 = 0x0801_7658;
 
 pub fn before_resume(core: &mut Core) {
@@ -347,6 +345,97 @@ pub fn before_resume(core: &mut Core) {
     if core.raw_read_16(HALVES[0].0, -1) == HALVES[0].2 || core.raw_read_16(HOOKS[0].0, -1) == TRAP {
         apply(core, false);
     }
+}
+
+// ---------- a five-army battle in a suspended game ----------
+
+/// The unit table (12-byte records, ids 1..254: 51 an army) and the bytes of a five-army battle's state a suspend keeps ([`saved_state`]): AW2's own block holds four
+/// armies of 51 units read at 64-unit strides, so for a five-army battle it is not the battle; the record after it is.
+const UNIT_TABLE_PTR: u32 = 0x0849_9594;
+const UNIT_RECORD: u32 = 12;
+const UNIT_IDS: u32 = 5 * 51;
+const SWITCHES_LEN: usize = 8;
+const PLAYER_SLOTS: u32 = 6;
+
+/// Worst case of [`saved_state`]: its size when all 254 unit ids are in use.
+pub const SAVED_MAX: usize =
+    1 + SWITCHES_LEN + TEAMS_SIZE + (PLAYER_SLOTS * PLAYER_SIZE) as usize + 2 + (UNIT_IDS as usize - 1) * (1 + UNIT_RECORD as usize);
+
+/// The battle's five-army state, when one is on: [`FIVE_ON`]'s value, army 5's picks and switches, the Teams screen's record, the six player slots as the game's table
+/// has them now (funds, CO, power meters, takeover counts, controllers), then the live units, each with its id and its 12 bytes.
+pub fn saved_state(core: &Core) -> Option<Vec<u8>> {
+    if !active(core) {
+        return None;
+    }
+    let mut b = vec![core.raw_read_8(FIVE_ON, -1)];
+    let mut sw = [0u8; SWITCHES_LEN];
+    core.raw_read_range(0x0203_0200, -1, &mut sw);
+    b.extend_from_slice(&sw);
+    let mut teams = vec![0u8; TEAMS_SIZE];
+    core.raw_read_range(TEAMS, -1, &mut teams);
+    b.extend_from_slice(&teams);
+    let mut players = vec![0u8; (PLAYER_SLOTS * PLAYER_SIZE) as usize];
+    core.raw_read_range(players_of(core), -1, &mut players);
+    b.extend_from_slice(&players);
+    let base = core.raw_read_32(UNIT_TABLE_PTR, -1);
+    let mut live: Vec<(u8, [u8; 12])> = Vec::new();
+    for id in 1..UNIT_IDS {
+        let mut u = [0u8; 12];
+        core.raw_read_range(base + UNIT_RECORD * id, -1, &mut u);
+        if u[0] != 0 {
+            live.push((id as u8, u));
+        }
+    }
+    b.extend_from_slice(&(live.len() as u16).to_le_bytes());
+    for (id, u) in live {
+        b.push(id);
+        b.extend_from_slice(&u);
+    }
+    Some(b)
+}
+
+fn players_of(core: &Core) -> u32 {
+    players(core)
+}
+
+/// A suspended five-army battle just applied by AW2 (with the patches off, as an ordinary game): the five-army game switched back on, the tables put back as saved, the unit
+/// planes of the map made again from the units.
+pub fn restore_saved(core: &mut Core, b: &[u8]) -> bool {
+    let fixed = 1 + SWITCHES_LEN + TEAMS_SIZE + (PLAYER_SLOTS * PLAYER_SIZE) as usize + 2;
+    if b.len() < fixed || !matches!(b[0], 1 | 2) {
+        return false;
+    }
+    let n = u16::from_le_bytes([b[fixed - 2], b[fixed - 1]]) as usize;
+    if b.len() != fixed + n * (1 + UNIT_RECORD as usize) {
+        return false;
+    }
+    install_data(core);
+    core.raw_write_8(FIVE_ON, -1, b[0]);
+    apply(core, true);
+    core.raw_write_range(0x0203_0200, -1, &b[1..1 + SWITCHES_LEN]);
+    let t = 1 + SWITCHES_LEN;
+    core.raw_write_range(TEAMS, -1, &b[t..t + TEAMS_SIZE]);
+    let p = t + TEAMS_SIZE;
+    let plen = (PLAYER_SLOTS * PLAYER_SIZE) as usize;
+    core.raw_write_range(PLAYERS, -1, &b[p..p + plen]);
+    let base = core.raw_read_32(UNIT_TABLE_PTR, -1);
+    // (ids 0..254 are the five-army table; the rest of the table's 256 records are not units)
+    core.raw_write_range(base, -1, &vec![0u8; (UNIT_RECORD * UNIT_IDS) as usize]);
+    let mut at = fixed;
+    for _ in 0..n {
+        let id = b[at] as u32;
+        if (1..UNIT_IDS).contains(&id) {
+            core.raw_write_range(base + UNIT_RECORD * id, -1, &b[at + 1..at + 1 + UNIT_RECORD as usize]);
+        }
+        at += 1 + UNIT_RECORD as usize;
+    }
+    // The unit id base of the army whose turn it is (51 an army here; AW2's apply made it 64 an army).
+    let cur = core.raw_read_8(CURRENT_ARMY, -1) as u16;
+    if (1..=5).contains(&cur) {
+        core.raw_write_16(CURRENT_BASE, -1, (cur - 1) * 51);
+    }
+    crate::two_front::rebuild_planes(core);
+    true
 }
 
 /// Every hook address, for the trapper (installed once; `sync` switches them).
@@ -606,9 +695,7 @@ fn routine(core: &mut Core, r: Routine) -> Option<u32> {
             let t = (r1 & 0xFF) >> 5;
             Some((t != 0 && team(core, army(r0)) == team(core, t)) as u32)
         }
-        Routine::UnsupportedRedeal | Routine::NoSave => None,
-        // The map menu's Save item hides when its test returns nonzero.
-        Routine::HideSave => Some(1),
+        Routine::UnsupportedRedeal => None,
         Routine::CaptureTile => Some(capture_tile(core, r0 as i16, r1 as i16, r2 as u8, false)),
         Routine::HqToCity => Some(capture_tile(core, r0 as i16, r1 as i16, r2 as u8, true)),
         Routine::PropertyCensus => {

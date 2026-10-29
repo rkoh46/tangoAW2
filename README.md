@@ -105,8 +105,8 @@ original lists.
 
 - USA cartridge only; up to five human players online (Design Room maps
   are not offered online).
-- Five-army battles and two-front Versus and War Room battles can't be
-  suspended.
+- Two-front Versus and War Room battles can't be suspended (five-army battles
+  can: the save takes two Flash sectors instead of one).
 - The mini maps show Black Hole's buildings in neutral grey.
 - Dual Strike's top-screen pictures (the Black Onyx's Earth view) are left
   out.

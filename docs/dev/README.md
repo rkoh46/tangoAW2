@@ -39,7 +39,9 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [maps.md](maps.md) | map format and pipeline, ids and slots, the pre-deployed rule, how to add a map |
 | [map-design.md](map-design.md) | `aw2dev maps study`: the map-design principles measured on AWBW's Hall of Fame against AW2, Dual Strike and our campaigns; the rules MD01..MD08 |
 | [map-lint.md](map-lint.md) | `aw2dev maps lint`: rivers, bridges, puddles, joins, units, reachability; what AW2 and Dual Strike allow; before / after pictures |
-- `stages.md`: a custom campaign's mission that moves on, in the same battle, to another map (`Action::NextStage`, `MissionDef::stages`): carry-over, five-army, suspend, determinism.
+| [stages.md](stages.md) | a custom campaign's mission that moves on, in the same battle, to another map (`Action::NextStage`, `MissionDef::stages`): carry-over, five-army, suspend, determinism; `aw2dev stage next / show` |
+| [five-suspend.md](five-suspend.md) | a five-army battle saved from the map menu and continued: the record after AW2's block, the Flash and RAM cost; `aw2dev save inspect` |
+| [playthrough.md](playthrough.md) | `aw2dev campaign playthrough bh2 N`: a mission played to its end in the harness, a report and a contact sheet |
 | [bh2-maps.md](bh2-maps.md) | the BH2 Campaign's maps: specs, `aw2dev maps gen --campaign bh2`, lint (IV01: inventions are Black Hole's), pictures, feature coverage, world-map flags, Act I |
 | [bh2-text.md](bh2-text.md) | the BH2 Campaign's dialogue: `bh2_text`, `tools/bh2text/lint.py`, the wiring table, voices and songs (`aw2dev bh2 scenes`) |
 | [stages.md](stages.md) | a mission that goes on in the same battle on another map (`MissionDef::stages`; BH2 M31) |
