@@ -219,7 +219,7 @@ KANBEI: She is generous when she / chooses. She chooses rarely.
 NARRATION: Camp on the summit. Two / banners fly side by side.
 KANBEI: Aurelia, I have studied your / siege lines. They are elegant.
 AURELIA: Thank you. They are also / the only thing I own.
-KANBEI: In Wars World, a general / takes a banner. You took two.
+KANBEI: In my country, a general / takes a banner. You took two.
 KLAUS: I am told the second one / answers back.
 KANBEI: It answers truthfully. That / is a different thing.
 CASSIUS: Please. If there are two / banners, I want a third. Mine.
@@ -262,13 +262,13 @@ KLAUS: Marauders. Lash holds the north-east, / Flak the south-east. Guns by the 
 KLAUS: One wears Yellow Comet coats, one / Green Earth. Neither army sent them.
 CASSIUS: Which week is this?
 LIVIA: A paid one. I have heard the / price. Someone is paying them well.
-FLAK: Hello, Aureans! Everyone call / me Flak. It is nice to see a convoy.
+FLAK: Hello, Aureans! Flak is Flak. / Nice to see a convoy!
 FLAK: Adder sold my contract to a / company. They feed me. I say yes.
-LASH: Flak. Do not greet the / targets. It ruins the calculation.
-LASH: Four vehicles, forty / tiles, one ford. A pleasing proof.
-LASH: I have measured this road with / a ruler. You will lose it.
-LASH: Lash. I read the map. The map / reads you.
-LASH: A convoy cannot wait and a / road cannot move. Q.E.D.
+LASH: Flak! Don't greet the targets! / It ruins the calculation! Heehee!
+LASH: Four trucks, forty tiles, one / ford! Ooh, it's a lovely proof!
+LASH: I measured this road with a / ruler! You are going to lose it!
+LASH: I'm Lash, and I have read / the map twice. Have you?
+LASH: A convoy can't wait and a road / can't move. Q.E.D.! Heehee!
 KLAUS: We will see which of us / has read the map better.
 KLAUS: Move out. The chest does not / stop, and neither do we.
 
@@ -280,7 +280,7 @@ LIVIA: The shortcut saves nine hours. / Hours are interest, Prefect.
 AURELIA: And a ruin is a wall with / holes. Lash chose it for you.
 CASSIUS: ...Then I take the road. / Slowly. The way Klaus would have.
 CASSIUS: I took the clever way at / Mistvale. I do not do it twice.
-LASH: He chose the road. Disappointing. / The ford it is. Fire.
+LASH: He chose the road! Boo! Fine, / the ford it is. Fire!
 
 == m11_post
 @SONG ally2
@@ -366,7 +366,7 @@ AURELIA: Legate, he mended the gun I / broke at noon. In one afternoon.
 AURELIA: Fine. A gun that mends is a / gun that must be hit twice in a day.
 AURELIA: Recons to the flanks. Mark every / flash. Break the walls by dusk.
 AURELIA: Then the crews cannot mend them / overnight. Hit the repairmen first.
-KLAUS: Tag Power on my word. You / hold the line. I hold the hammer.
+KLAUS: Tag Power on my word. You / hold the hammer. I hold the line.
 ANDY: Aw, that's a clever lady! Okay! / I'll fix twice as fast! Watch me!
 
 == m12_post

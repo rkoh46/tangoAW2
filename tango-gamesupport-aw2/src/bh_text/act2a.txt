@@ -36,7 +36,7 @@ CRUMB: Sir, is he allowed to say / that out loud?
 HAWKE: Who is this?
 CRUMB(h): Pip Hobb, sir! Runner! / Crumb, if you like.
 HAWKE: A runner. How quaint.
-HAWKE: Hobb. I will have your file / pulled. I like a complete board.
+HAWKE: Hobb. I will have your file / pulled. I like to know people.
 CRUMB(h): I have a file?! Gerald, / I have a FILE!
 HAWKE: Gerald?
 CRUMB: My biscuit, sir. Basic / training issue.
@@ -49,22 +49,22 @@ MORTAR: Sir, that is a Marshal who / reads his own mail.
 STURM: Then he reads this. I do not / retreat from a valley.
 
 == m04_day5 | STURM
-HAWKE: Fog is a board with the / lights off. I know it.
-HAWKE: Every square, every shadow. / You are playing blind. I am not.
+HAWKE: I know this fog. Every / ridge, every shadow.
+HAWKE: You are playing blind. / I am not.
 CRUMB(s): Sir, he is right. I just / walked into a tree.
 MORTAR: Crumb. It was a nice tree.
 STURM: Then learn the tree. The fog / belongs to whoever stays in it.
 
 == m04_day10 | STURM
 HAWKE: Impressive. You have / reduced the fog to a rumour.
-HAWKE: I do not mind losing a / square. I mind losing it dull.
-HAWKE: You are not dull. Please / continue.
+HAWKE: I do not mind losing / ground. I mind losing to a bore.
+HAWKE: You are not a bore. Please / continue.
 VON BOLT: He enjoys losing! Kehh... / that is a rare and cheap vice.
 
 == m04_post | STURM
 @SONG co:hawke
-HAWKE(s): Check. Not mate, but / check. I concede the valley.
-HAWKE: Before I fold: why should / I serve you?
+HAWKE(s): Enough. I concede / the valley.
+HAWKE: Before I go: why should / I serve you?
 CRUMB: Sir, is the Marshal giving / up? He looks fine.
 MORTAR: Crumb. He is a gentleman. / It is worse.
 STURM: You will not kneel. You will / command under my banner.
@@ -74,7 +74,7 @@ STURM: Then be the captain. Not / mine. The storm's.
 HAWKE: ...Interesting. That is / a different offer.
 HAWKE: Let me be exact. Green Earth / gave me a desk and a fence.
 HAWKE: Thirty years I inspected / a border and called it duty.
-HAWKE: The Accord froze the board. / I cannot stand a frozen board.
+HAWKE: The Accord froze everything / in place. I cannot stand that.
 HAWKE: I wrote Black Hole's manual / in the margins of the audits.
 CRUMB: The margins, sir? Of the / audits?
 HAWKE: Chapter one is finished. / It is called Patience.
@@ -111,7 +111,7 @@ CRUMB: He read my file, Sergeant. / Then he read it twice.
 CRUMB(s): He said, "Tidy. Very tidy." / And put it away very quietly.
 MORTAR: A man who thanks the fog / is a man to watch.
 VON BOLT: Pay him well. Never / pay him early. Kehh.
-CRUMB(h): Gerald says either boss / would do for the Marshal.
+CRUMB(h): Gerald says the Marshal / likes us. A little.
 
 # ===================================================================================================
 # M5 Night Raid (FREE; Javier defends Skyhaven)
@@ -128,9 +128,9 @@ HAWKE: Ground the wing, and the / lanes belong to whoever sails.
 MORTAR: Sleeping planes, sir. And / sleeping men.
 WICK: Is it all right if I ask / if the men are in the planes?
 HAWKE: The crews sleep in the / barracks. The tanks are empty.
-HAWKE: I do not burn men. I burn / tempo.
+HAWKE: I do not burn men. I burn / aircraft.
 MORTAR: Tell that to the bomber, / Marshal.
-HAWKE: I did not say it was kind. / I said it was tidy.
+HAWKE: I did not say it was kind. / I said it was necessary.
 HAWKE: Javier's tower hears a / mouse sneeze at two miles.
 JAVIER: Hark! The tower of Javier / hears every step. Halt!
 JAVIER: A true foe announces his / name. Sneaking is unknightly!
@@ -144,7 +144,7 @@ VON BOLT: Salvage rights, Marshal! / Burnt metal is still metal.
 HAWKE: I will send the invoice to / the ministry, Colonel.
 @IF HAWKE
 HAWKE: I picked the night. Do / not waste it.
-HAWKE: Eight pieces. Nine moves. / The board is already ours.
+HAWKE: Eight aircraft. Nine days. / This is already decided.
 @OTHER
 [CO]: Eight aircraft. Nine days. / One tower. Begin at the runway.
 @END
@@ -173,11 +173,11 @@ HAWKE: Very. I shall return the / favour.
 @SONG enemy1
 JAVIER(s): My tower is silent. It is / so quiet. Too quiet.
 JAVIER: Eagle shall hear of this! / Once I find a working wire.
-HAWKE: Eight aircraft. No losses / of mine. Tidy.
+HAWKE: Eight aircraft. No losses / of mine. Clean work.
 CRUMB: Sir, I put the lantern / out. Mostly.
 HAWKE: Hobb. The card. Pin it to / the tower door.
 CRUMB: It says, "With the Marshal's / compliments." Sir, that's cold.
-HAWKE: It is courteous. Cold is / merely an effect.
+HAWKE: It is courteous. If it / feels cold, that is incidental.
 JAVIER: Marshal Hawke!? You dined / in my tower! You ate my pie!
 HAWKE: It was an excellent pie, / Sir Javier. I took notes.
 JAVIER: A knight would blush to / answer such a guest!
@@ -219,7 +219,7 @@ DRAKE: I always say: the sea is / just the long way round.
 HAWKE: Every crate for the fence / sails through this chain.
 HAWKE: That is what the Accord / calls "the sea lanes". Drake.
 DRAKE: Hey, dude! Marshal! Man, / you switched colours on us.
-HAWKE: I went where the board moves.
+HAWKE: I went where things move.
 DRAKE: That's cold! Pelicans, hide / the snacks! He'll tidy 'em!
 HAWKE: Island chain. Supply is / the whole war.
 HAWKE: Take the stones one at a / time. Do not skip a stone.
@@ -299,17 +299,17 @@ EAGLE: ...Marshal?! Marshal Hawke. / Of course it's you.
 EAGLE: Eight planes! Eight! Lucky, / Dottie, Big Gus... I NAMED them!
 HAWKE: I know. I read the registry / first. The names are touching.
 EAGLE: You read the-- you TAUGHT / me to fly, and you burned my wing!
-HAWKE: I taught you tempo. You / chose volume.
+HAWKE: I taught you discipline. / You chose volume.
 EAGLE: You're not even sorry!
 HAWKE: I am extremely sorry. I am / also ahead of schedule.
-HAWKE: Both things are true. It is / a skill to hold both.
+HAWKE: Both are true. I do not / lie to myself about either.
 EAGLE: I'll ground you, Hawke. Not / for a day. For GOOD.
 EAGLE: A hole in the tarmac and a / little sign. That's my plan.
-HAWKE: A hole. How tidy. I had a / similar thought about your wing.
+HAWKE: A hole. Neat. I had a / similar plan for your wing.
 EAGLE: Everybody trusted you! Jess / did. The whole ministry did!
 HAWKE: They trusted a fence. I / merely inspected it.
 EAGLE: We kept the lanes open! We / kept the Accord alive!
-HAWKE: You kept it still. A sky / that never leaves is a roof.
+HAWKE: You kept it still. Nothing / has moved in thirty years.
 CRUMB: Marshal, he is very angry.
 HAWKE: He is always angry. Today / he is also correct.
 EAGLE: Who's the kid?
@@ -322,21 +322,21 @@ VON BOLT: A shipyard! Cranes! Gold! / Kehh... the cranes are mine!
 HAWKE: Second pick, Colonel. After / the Foundry.
 MORTAR: Sir, he has twenty-six / thousand. We have eight.
 WICK: Is it all right if that / frightens me?
-HAWKE: It should. That is why I / am on the board.
+HAWKE: It should. That is why I / am here.
 HAWKE: The Foundry builds at three / doors on its own clock.
 HAWKE: It makes what it makes. Do / not feed it.
 
 == m07_day6 | HAWKE
 EAGLE: Bombers! Show them what / weather is!
-HAWKE: Weather is a forecast, / Captain. Yours is wrong.
-EAGLE: Stop being poetic at me!
+HAWKE: I read your weather report, / Captain. It is wrong.
+EAGLE: Stop being calm at me!
 MORTAR: Sir, they are bombing us.
 HAWKE: Yes. Please be somewhere / else.
 
 == m07_day10 | HAWKE
 EAGLE: The ministry doubled my / budget, Marshal!
 EAGLE: Know why? They're scared / of you! Ha!
-HAWKE: Excellent. Fear is cheaper / than arithmetic.
+HAWKE: Excellent. A frightened / ministry spends badly.
 
 == m07_day12 | HAWKE
 EAGLE: Second bomber, Marshal! / Dottie the Second!
@@ -358,12 +358,12 @@ EAGLE: I'll be back. In a bigger / plane.
 HAWKE: Arsenals do not forgive. / Neither do I.
 EAGLE: Why'd you do it, Hawke? You / made me believe in this.
 EAGLE: The wings, the lanes, the / Accord. All of it.
-HAWKE: I believed in the board. The / Accord froze it.
+HAWKE: I believed in an army that / moved. The Accord froze it.
 EAGLE: That's it? That's the / reason?
 HAWKE: It is always a small reason, / Captain. It is rarely a grand one.
 EAGLE: ...I'm telling Jess.
 HAWKE: Do. She keeps a better ledger / than you. She will understand.
-HAWKE: She will not forgive me. That / is also in the numbers.
+HAWKE: She will not forgive me. I / have accepted that.
 CRUMB(s): Sir, he looks like he's / about to cry.
 HAWKE: Hobb. Do not look at him. / It is the only courtesy left.
 EAGLE: Death from above, Marshal. / Next time, from higher.
@@ -371,7 +371,7 @@ HAWKE: I will bring a longer pole.
 STURM: The Arsenal is mine. And the / second Foundry beneath it.
 VON BOLT: And the cranes! Second / pick! Kehh-heh!
 HAWKE: The cranes, Colonel, were / always going to be yours.
-HAWKE: The Foundry is Sturm's. The / board is mine.
+HAWKE: The Foundry is Sturm's. The / plan is mine.
 
 == m07_map | HAWKE
 @SONG co:hawke
@@ -384,4 +384,4 @@ CRUMB: Sir? ...The Marshal is / writing in his book.
 CRUMB(s): Lucky. Dottie. Big Gus. / Why are those names in it?
 HAWKE: Someone should keep the / record. Eagle will not.
 CRUMB: Sir... are you sad?
-HAWKE: I am correct, Hobb. It is / a very similar feeling.
+HAWKE: No. I am correct, Hobb. / It is not the same thing.
