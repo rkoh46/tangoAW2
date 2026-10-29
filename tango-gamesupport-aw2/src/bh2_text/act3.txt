@@ -49,11 +49,11 @@ VON BOLT: Snow! Kehh... the cold hurts / my bones. And bones cost money.
 CLONE ANDY: Okay! Snow! I can fix any-- / ...any ice! Sure!
 @END
 @PARTNER ASUKA
-[CO2]: I read the snow. You hold the / line. We shall not talk.
+[CO2]: I will read the snow. You hold / the line. Stay in touch.
 @PARTNER CRUMB CO
 [CO2]: Hello, Mr Grit! Mr Javier! / I have soup! It's hot! Mostly!
 @PARTNER HAWKE
-[CO2]: I brought coffee. It is already / a solid. Mind your opening.
+[CO2]: I brought coffee. It froze on the / way. Do not follow its example.
 @PARTNER KOAL
 [CO2]: I will lay a road behind us. / White, and wide. Mind the lane.
 @PARTNER KINDLE
@@ -156,7 +156,7 @@ OLAF: Colin is on the lab island! / With Sasha! Do not touch my Colin!
 HAWKE: I do not fight boys, Commander. / I cut supplies.
 OLAF: ...You do not?
 HAWKE: It is written down. Page nine.
-OLAF: Hm. A man with a folder. I / respect a folder.
+OLAF: Ha! A man with a folder! I / respect a folder!
 OLAF: Marshal. Why did you do it? / The Accord kept us safe.
 HAWKE: It kept you still. That is / not the same thing, Commander.
 OLAF: ...Colin said that. In a / letter. Colin is clever.
@@ -208,7 +208,7 @@ GRIT: Patience, tin fella. Ayup.
 GRIT: Tin fella. I got a question. / Why do you talk in capitals?
 JUGGER: CLARIFICATION: I TALK IN / VOLUME. QUERY: IS IT TOO MUCH.
 GRIT: Nope. Reckon it's honest. / Most folks whisper their lies.
-JUGGER: LOGGED. HONESTY: WORTH A / VOLUME. WISH: TO HAVE SAID IT FIRST.
+JUGGER: LOGGED. HONESTY: WORTH THE / VOLUME. SENTIMENT: DETECTED.
 GRIT: Ayup. Next round's on me. / If either of us is left standing.
 JUGGER: AFFIRMATIVE. I WILL BRING / THE SOUP. FLAK MADE EXTRA.
 
@@ -228,7 +228,7 @@ GRIT: Reckon somebody hid a man. / Ayup. In the paperwork.
 
 == m16_post
 @SONG co:grit
-GRIT(s): That's my line, tin fella. / Cut. Reckon I'm fallin' back.
+GRIT(s): That's the last seam, tin fella. / Reckon I'm fallin' back.
 GRIT: Well fought. Ain't many can / read a wire and shoot at once.
 JUGGER: NEGATIVE. I DID NOT SHOOT. / ASUKA ORDERED. I OBEYED.
 GRIT: Ayup. That's the difference / between us. Reckon I'm a free man.
@@ -239,7 +239,7 @@ GRIT: Ask me again in the spring.
 GRIT: Tell Sasha the tin fella can / count. She'll know what I mean.
 ASUKA: Grit. Thank you for fighting / properly.
 GRIT: Ma'am. Reckon I'd do it again. / Reckon I'd lose again.
-GRIT: Tell the Marshal to bring / coffee. The Gate's cold.
+GRIT: Ma'am. Mind the ice on the road / south. It bites.
 
 == m16_map
 @SONG enemy1
@@ -353,7 +353,7 @@ OLAF: Who comes to my harbour? A / brute?! A beast?!
 FLAK: Flak. Flak is Flak. Big man! / Flak smash big man!
 OLAF: Ha! A brute! You are nothing / but muscle!
 FLAK: Flak is muscle. Flak is also / Flak. Both true.
-OLAF: ...That is surprisingly / sound reasoning.
+OLAF: Hm! That is surprisingly / sound reasoning!
 ASUKA: Flak. The harbour has ships / and ground. Hit what is in front.
 FLAK: Hit front. Yes.
 ASUKA: Eat after.
@@ -443,7 +443,7 @@ CLONE ANDY: Okay! Furnaces! I can fix / any-- ...any boiler! Sure!
 @PARTNER CRUMB CO
 [CO2]: Hello, Commander Olaf! The / soup is for anyone who stops shooting.
 @PARTNER HAWKE
-[CO2]: Seventeen tiles to the archive. / I will have breakfast there.
+[CO2]: The archive is seventeen tiles / away. I intend to reach it first.
 @PARTNER KOAL
 [CO2]: A valley road is a road in a / bad mood. I will cheer it up.
 @PARTNER KINDLE
@@ -552,7 +552,7 @@ SASHA: Colin and I will testify. / Lot 42 was sold. We sold it.
 COLIN: I-it's all right, Sis. We're / all in the same boat. A sold boat.
 GRIT: Hold. Hold the book. Don't / read it to the world yet.
 HACHI: Grit's right. If one nation / reads it first, the rest will riot.
-ANDY: Then we free Nell. She signs / first. She can speak first.
+ANDY: Then we get Nell out. She signed / first. She should speak first.
 NARRATION: Far off, a gavel taps once, / on the cushion of the empty chair.
 
 == m18_day8

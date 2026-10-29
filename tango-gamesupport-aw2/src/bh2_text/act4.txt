@@ -66,7 +66,7 @@ CLONE ANDY: Okay! Letters! I can fix / any-- ...any envelope! Sure!
 [CO2]: Hey! I've got your back! I / can fix any-- ...okay! Sure!
 @END
 SAMI: Roger. Grunts, spread out. / Make them bleed for every yard.
-ASUKA: Hold them here. Let them / read while they bleed.
+ASUKA: Hold them here. Let the news / do the rest.
 
 == m20_split
 @SONG ally1
@@ -390,7 +390,7 @@ NARRATION: The cellar floor shudders. / Iron doors roll back. Engines wake.
 NARRATION: Rows of Neotanks, black and / thirty years asleep, grind into the rain.
 JAKE: Yo... those are NEOTANKS.
 HACHI: Kid, you got Neotanks in the / basement? Under the biscuits?
-ASUKA: The Quartermaster's reserve. / He thought of everything but a key.
+ASUKA: The Quartermaster's reserve. / He thought of everything.
 MORTAR: Thirty years in the dark. / And they start on the first turn.
 WICK: Is it all right if I cheer? / Quietly?
 ASUKA: Cheer, Private. Quietly.
@@ -403,7 +403,7 @@ HACHI: I'll tell Aria you've got / the key. She'll want a word.
 HACHI: She'll be loud. Don't take / it personal.
 ASUKA: I look forward to it, Hachi.
 JAKE: Yo, that was wild. Neotanks! / Respect, black lady.
-JAKE: But we're comin' back. Big / time. How's that for service?
+JAKE: But we're comin' back. Big time. / Count on it.
 CRUMB CO: I'm sorry about the cellar, / Mr Hachi.
 HACHI: Kid. Don't be. Keep it. It's / a good basement.
 HACHI: And kid. Whoever wrote that / journal, he's proud of you.
@@ -504,7 +504,7 @@ NARRATION: The Rail East. A heavy train / steams on one line. Eleven cars.
 NARRATION: Two fronts. Andy guards the / rail. Hachi guards the market line.
 ANDY: Okay! The train! Nobody touches / the train! It's got children on it!
 HACHI: Closing-down sale, kid! Everything / half off but the train!
-ASUKA: Eleven cars. Hawke counted the / weight in the Rail Yard. It was heavy.
+ASUKA: Eleven cars. Hawke weighed it at / the Rail Yard. It was far too heavy.
 ASUKA: Door-seal machinery, from Lab 7. / Project 17. I mean to capture it.
 HAWKE: The weight was too great for / children. The manifest lied.
 ANDY: It's not lying! It's got / kids and it's got a machine!
@@ -537,7 +537,7 @@ CLONE ANDY: Okay! A train! Andy's / on it! I'll be gentle. I think.
 @PARTNER CRUMB CO
 [CO2]: Hello, Mr Hachi! It's me! / Crumb! I won't shoot the stalls!
 @PARTNER HAWKE
-[CO2]: A market line is a board of / small squares. I enjoy those.
+[CO2]: A market line has many small / posts. I will take them in order.
 @PARTNER KOAL
 [CO2]: A market road. Wide and / badly cambered. I will fix it.
 @PARTNER KINDLE
@@ -598,7 +598,7 @@ ASUKA: I look forward to meeting her.
 MORTAR: Ma'am. We have a machine, a / key, and a grandson.
 ASUKA: And a door the Allies want / shut, and a man who wants it open.
 WICK: Is it all right if I ask / which of them is right?
-ASUKA: That, Private, is the last / thing in the world I am sure of.
+ASUKA: I wish I knew, Private. I am / not sure of anything tonight.
 
 == m25_warroom
 @SONG own:aria

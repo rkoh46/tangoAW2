@@ -399,7 +399,7 @@ MORTAR: Nobody's, ma'am. No flag. / Heading for the home island.
 ASUKA: Black Hole's island. Where / the key was found.
 WICK: Is it all right if I'm / frightened?
 ASUKA: Yes, Private. Be frightened / of the right thing.
-ASUKA: The Citadel comes first. The / sails will wait.
+ASUKA: We do not know who they are.
 ASUKA: Something is coming. It can wait / until the Citadel is ours.
 
 == m29_warroom
@@ -425,7 +425,7 @@ NARRATION: Nell touches her sister's / sleeve. Aria does not move away.
 @SONG co:sami
 NARRATION: The Orange Line. Trenches, / wire and wall, a day from the Citadel.
 SAMI: Roger. This is the Line, grunts. / Behind it, the Citadel. In front, them.
-SAMI: Dig in. Dig deeper. Then dig / a joke, because morale needs one.
+SAMI: Dig in. Dig deeper. And somebody / tell a joke. Morale needs one.
 RACHEL: By the book, the Line holds / eleven days. We have four. Adapt.
 SAMI: Rachel, kid, put the book down. / Pick up a shovel.
 RACHEL: I can do both. It's rule two.
@@ -463,7 +463,7 @@ CLONE ANDY: Okay! Trenches! I can fix / any-- ...any wall! Sure!
 @PARTNER CRUMB CO
 [CO2]: Miss Sami! Want a biscuit? It's / very, very old! It's still good!
 @PARTNER HAWKE
-[CO2]: Wire first, then trench. Then / the pretence of a reserve. Begin.
+[CO2]: Wire first, then the trench. Their / reserve is a bluff. Begin.
 @PARTNER KOAL
 [CO2]: I will lay a road across the / wire. Wide enough for tanks.
 @PARTNER KINDLE
@@ -486,10 +486,10 @@ ASUKA: Cut the wire, take the trench. / Then the Citadel.
 
 == m30_day5
 SAMI: Rachel! Left belt's open! Fix / it, kid!
-RACHEL: By the book, I'm fixing it! / Rule four: wire is a conversation!
-SAMI: Rule four is a joke! Tell it / louder!
-RACHEL: Nobody laughs at wire!
-SAMI: They will, once it's cut.
+RACHEL: By the book, I'm fixing it! / Rule four: never leave a belt open!
+SAMI: Then why is it open?!
+RACHEL: Nobody told the wire!
+SAMI: Ha! Good. Keep that spirit.
 
 == m30_post
 @SONG co:rachel
@@ -523,7 +523,7 @@ ASUKA: You may, Commander. Bring the / key. And soup.
 == m31_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:nell
 NARRATION: The Last Citadel. Four lines / of defence, four commanders, one hall.
-NELL: Good morning. I'm Nell. I'll be / the first line. I'm told it's a joke.
+NELL: Good morning! I'm Nell, and I'm / your first line. Do be gentle.
 NELL: Commander Asuka. I read your / ledger. I signed the first seal.
 NELL: I'll answer by standing here. / It's the only plan I have.
 ASUKA: Nell. You do not have to stand.
@@ -560,9 +560,9 @@ CLONE ANDY: Okay! Four lines! I can / fix any-- ...anything! Sure!
 @PARTNER CRUMB CO
 [CO2]: Hello, Miss Nell! We're / friends, really! Gerald is, anyway.
 @PARTNER HAWKE
-[CO2]: Four takeovers. I have mapped / each one. Prepare to be surprised.
+[CO2]: Four takeovers. I have mapped / each one. Nothing will surprise us.
 @PARTNER KOAL
-[CO2]: A gauntlet is just a road / with opinions. I will survey it.
+[CO2]: A gauntlet is four roads laid / end to end. I will survey them.
 @PARTNER KINDLE
 [CO2]: Darlings, together we shall / open every act. And close it.
 @PARTNER JUGGER

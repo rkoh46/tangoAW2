@@ -81,7 +81,7 @@ CRUMB CO: Ma'am, they're nice! They / have horses! Can I pet one?
 @IF HAWKE
 HAWKE: An unknown army, and a / disciplined one. That is a concern.
 @IF KOAL
-KOAL: Roman roads. I know the trade. / We shall have a lot to discuss.
+KOAL: Legion roads. I know the trade. / We shall have much to discuss.
 @IF KINDLE
 KINDLE: A fleet of strangers, darlings! / A new audience! I cannot wait.
 @IF JUGGER
