@@ -253,7 +253,7 @@ CLONE ANDY: Okay! Good fight, Grimm! / I can fix any-- ...your knuckles!
 
 == m11_map
 @SONG enemy2
-JUGGER: CRYSTAL HUM: 124 HERTZ. CRATE / HUM: 124 HERTZ. DEDUCTION: SAME.
+JUGGER: CRYSTAL HUM: 41 HERTZ. CRATE / HUM: 41 HERTZ. DEDUCTION: SAME.
 LASH: Same?! Ooh! Same! Can I take / one apart? Just a little one?
 JUGGER: NEGATIVE. LASH: HANDS OFF. / CRYSTAL: NOT A TOY. UNDERSTOOD?
 LASH: Aww. Okay. I'll only listen. / Heehee. It sings in B-flat!
