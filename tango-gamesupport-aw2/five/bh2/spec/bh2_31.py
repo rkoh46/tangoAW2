@@ -1,5 +1,5 @@
 """BH2 M31 The Last Accord (Act V, the final mission, part one): the Accord's four nations across the land, no pipes, no walls: the defences are rivers, mountains and chokepoints. 46 x 28 = 1288 cells (the engine's limit). Asuka + a free partner (Black Hole, army 5) against the Accord, in five armies
-(the engine's five-army mode): Nell's Orange Star (army 1) holds the west; Olaf's Blue Moon (2), Kanbei's Yellow Comet (3) and Eagle's Green Earth (4) are present but dormant in their zones (a few holding units, no property but the HQ: they cannot build) until the stage before them falls, when their stage's troops land.
+(the engine's five-army mode): Nell's Orange Star (army 1) holds the west; Olaf's Blue Moon (2), Kanbei's Yellow Comet (3) and Eagle's Green Earth (4) are present but dormant in their zones (a few holding units; they own their zone's towns but earn nothing while they sleep, so they cannot build) until the stage before them falls, when their stage's troops land and their income starts.
 Part two (Aria's citadel) is bh2_31.
 
 Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md sections 4 and 4b). The shape: a continent crossed by two rivers. The Marne runs from the north edge down the west (x 15) and turns west along y 15 to the edge: Nell's plateau lies inside its bend, behind the river on the east and the south and a mountain wall on the north, reached by three bridges, two on the south, one on the east.
@@ -58,7 +58,7 @@ def build():
     belt(m, "^", [(17, 10), (17, 13)], width=1, seed=58); belt(m, "f", [(17, 1), (20, 1)], width=1, seed=59)
     m.header(armies=5, colours=(OS, BM, YC, GE, BH), team=(1, 1, 1, 1, 2), objective=[5], zones=[(5, 0, 16, 9, 27)], comment=(
         "M31 The Last Accord, part one (normal look, no fog, 46 x 28 = 1288 cells, no time limit, five armies): Asuka + a free tag partner (Black Hole, army 5, HQ 5 (4,23), south-west) against the Accord: Nell's Orange Star (army 1, HQ 1 (8,8), the river plateau); Olaf's Blue Moon (2, HQ 2 (24,6), the lake island), "
-        "Kanbei's Yellow Comet (3, HQ 3 (39,6), the highlands) and Eagle's Green Earth (4, HQ 4 (38,20), the plains) are dormant until their stage (a few holding units, no properties but the HQ). Rivers: the Marne (x 15, then y 15) with bridges (15,8) (4,15) (10,15); the Sere (x 31) with bridges (31,4) (31,11) (31,18) (31,24). "
+        "Kanbei's Yellow Comet (3, HQ 3 (39,6), the highlands) and Eagle's Green Earth (4, HQ 4 (38,20), the plains) are dormant until their stage (a few holding units; their zone's towns are theirs, but they earn nothing until they wake). Rivers: the Marne (x 15, then y 15) with bridges (15,8) (4,15) (10,15); the Sere (x 31) with bridges (31,4) (31,11) (31,18) (31,24). "
         "Com Tower (6,6), (28,15) and (33,21); missile silo (11,17); Black Crystals by Black Hole's HQ. Player: INF6 MECH3 TANK6 MDT3 ART4 ROCK2 RECON1 AA3 APC2 FTR3 BCO2; Nell: see the units' list."))
     m.put("5", 4, 23).put("1", *HQS["1"]).put("2", *HQS["2"]).put("3", *HQS["3"]).put("4", *HQS["4"])
     m.put("t", 6, 6).put("t", 28, 15).put("t", 33, 21).put("M", 11, 17)
@@ -118,6 +118,13 @@ def build():
         m.spread(army, kinds, box, seed=sd, gap=0, avoid=av)
         for u in m.u[before:]:
             u["hold"] = True
+    # (each dormant nation owns its zone's towns from the start: it earns nothing while it sleeps (crate::custom_campaign::cut_funds), so the bases stay empty; the morning it wakes, its income
+    # and factories are its own and it builds at once. The player may raid them first: every one taken before it wakes is one fewer for it.)
+    for (x0, y0, x1, y1) in ((16, 1, 30, 13), (32, 1, 45, 13), (32, 14, 45, 26)):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if m.g[y][x] in "bcap":
+                    m.g[y][x] = m.g[y][x].upper()
     m.note("hq", 4, 23, "Asuka's HQ"); m.note("enemy_hq", *HQS["1"], "Nell's HQ (Orange Star): the first line")
     for i, (nm, who) in enumerate((("2", "Olaf's HQ (Blue Moon)"), ("3", "Kanbei's HQ (Yellow Comet)"), ("4", "Eagle's HQ (Green Earth): the last of part one"))):
         m.note(f"mark_hq{i + 2}", *HQS[nm], who)

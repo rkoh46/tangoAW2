@@ -103,6 +103,8 @@ pub struct Custom {
     pub held_more: Vec<Vec<(u8, u8)>>,
     /// Per mission: sleeping armies ([`crate::custom_campaign::MissionDef::sleepers`]).
     pub sleepers: Vec<Vec<(u8, Vec<(u8, u8)>)>>,
+    /// Per mission: armies cut off once the player holds their HQ ([`crate::custom_campaign::MissionDef::cut_off`]).
+    pub cut_off: Vec<Vec<(u8, (u8, u8))>>,
     /// Per mission: a skin an army wears ([`crate::custom_campaign::MissionDef::skin`]).
     pub skin_army: Vec<Option<(u8, usize)>>,
     /// Per mission: the records of its later stages (in order), and each stage's carry-over rules ([`crate::stage`]).

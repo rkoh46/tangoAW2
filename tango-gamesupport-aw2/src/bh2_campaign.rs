@@ -1088,16 +1088,6 @@ fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, funds: i32, wave: &[(u8, (u
     Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::AddFunds { army, funds }, stage(army, wave)])
 }
 
-/// A nation that is still asleep earns nothing: its HQ's income is taken back at each of army 1's turn starts until the lines before it have fallen (`wake` then gives it its fixed funds).
-fn asleep(army: u8, before: &[(u8, u8)]) -> Trigger {
-    Trigger::new(When::TurnStart, Cond::Not(Box::new(Cond::All(before.iter().map(|&c| owned(c)).collect()))), vec![Action::SetFunds { army, funds: 0 }]).repeating()
-}
-
-/// A nation whose HQ the player holds is cut off: its income is taken back each day (at army 1's turn start, after Nell's own income has come in), so it fights on with what is on the field and cannot rebuild.
-fn fallen(army: u8, hq: (u8, u8)) -> Trigger {
-    Trigger::new(When::TurnStart, owned(hq), vec![Action::SetFunds { army, funds: 0 }]).repeating()
-}
-
 /// What a nation brings when it wakes: its wave is on the field and this bank behind it.
 const M31_WAKE_FUNDS: i32 = 25000;
 
@@ -1127,7 +1117,7 @@ fn bh2_30() -> MissionDef {
 
 /// M31 The Last Accord, the final mission, in two stages on one battle (docs/dev/stages.md). Stage 1 (the gauntlet map `bh2_31`): Asuka + a free partner (Black Hole, the fifth army) against the four nations
 /// of the Accord, each an army of its own colour: Nell's Orange Star (army 1), then Olaf's Blue Moon (2), Kanbei's Yellow Comet (3) and Eagle's Green Earth (4), allied. Each later nation is present but dormant
-/// (a few holding units round its HQ, no property but the HQ) until the HQ before it falls. Eagle's HQ ends stage 1: a scene, then the battle moves in place to stage 2, The Last Citadel (`bh2_31b`): Aria
+/// (a few holding units round its HQ; its zone's towns are its own but earn nothing while it sleeps: crate::custom_campaign::cut_funds) until the HQ before it falls. Eagle's HQ ends stage 1: a scene, then the battle moves in place to stage 2, The Last Citadel (`bh2_31b`): Aria
 /// (Orange Star) leads a revived army of brand-new full-strength units on a plateau fortress; the player's survivors, funds and COs come with it. Capturing Aria's HQ wins the campaign. No time limit, no
 /// Black Hole inventions on the Allied side.
 fn bh2_31() -> MissionDef {
@@ -1146,13 +1136,9 @@ fn bh2_31() -> MissionDef {
     m.held_hq = Some(M31_NELL);
     m.held_more = vec![M31_OLAF, M31_KANBEI, M31_EAGLE];
     m.sleepers = vec![(2, vec![M31_NELL]), (3, vec![M31_NELL, M31_OLAF]), (4, vec![M31_NELL, M31_OLAF, M31_KANBEI])];
+    // (a sleeping nation earns nothing; a fallen one is cut off: crate::custom_campaign::cut_funds)
+    m.cut_off = vec![(1, M31_NELL), (2, M31_OLAF), (3, M31_KANBEI)];
     m.triggers = vec![
-        asleep(2, &[M31_NELL]),
-        asleep(3, &[M31_NELL, M31_OLAF]),
-        asleep(4, &[M31_NELL, M31_OLAF, M31_KANBEI]),
-        fallen(1, M31_NELL),
-        fallen(2, M31_OLAF),
-        fallen(3, M31_KANBEI),
         wake(M31_NELL, &[], 2, M31_WAKE_FUNDS, &OLAF_WAVE, txt("m31_takeover_olaf")),
         wake(M31_OLAF, &[M31_NELL], 3, M31_WAKE_FUNDS, &KANBEI_WAVE, txt("m31_takeover_kanbei")),
         wake(M31_KANBEI, &[M31_NELL, M31_OLAF], 4, M31_WAKE_FUNDS, &EAGLE_WAVE, txt("m31_takeover_eagle")),
@@ -1388,7 +1374,8 @@ mod tests {
         assert_eq!(at(&d, "bh2_29").armies.len(), 3);
         let m31 = at(&d, "bh2_31");
         assert!(m31.held_hq.is_some() && m31.held_more.len() == 3);
-        assert_eq!(m31.triggers.len(), 11, "three sleep, three cut-off, three wakes, the switch and the day-5 scene");
+        assert_eq!(m31.triggers.len(), 5, "three wakes, the switch and the day-5 scene (asleep and cut off: MissionDef::cut_off and sleepers)");
+        assert_eq!(m31.cut_off.len(), 3, "Nell, Olaf and Kanbei are cut off once their HQs fall");
         assert_eq!(m31.armies.len(), 5);
         assert_eq!(m31.day_limit, 0);
         assert_eq!(m31.stages.len(), 1, "the Last Citadel is stage 2 of M31");

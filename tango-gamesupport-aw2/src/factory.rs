@@ -67,6 +67,7 @@ fn after_ai_table_stored(core: &mut Core) {
 }
 
 fn at_turn_start(core: &mut Core) {
+    crate::custom_campaign::cut_funds(core);
     if core.raw_read_8(DETOUR, -1) != 0 {
         // Back from the spawner.
         core.raw_write_8(DETOUR, -1, 0);

@@ -890,6 +890,9 @@ pub struct MissionDef {
     pub held_more: Vec<(u8, u8)>,
     /// Sleeping armies of a gauntlet: (army, the HQs the player must hold before it wakes). Until then the army cannot be defeated by losing its units (its holders may be killed; its wave still lands and fights).
     pub sleepers: Vec<(u8, Vec<(u8, u8)>)>,
+    /// Armies cut off once the player holds their HQ: (army, HQ). From then on the army's income is taken back at each of its turn starts (it fights on with what is on the field). A sleeping army has
+    /// no funds either while it sleeps ([`cut_funds`]).
+    pub cut_off: Vec<(u8, (u8, u8))>,
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
     /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
@@ -1073,6 +1076,7 @@ impl MissionDef {
             held_hq: None,
             held_more: Vec::new(),
             sleepers: Vec::new(),
+            cut_off: Vec::new(),
             skin: None,
             stages: Vec::new(),
         }
@@ -1900,6 +1904,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         held_hq: def.missions.iter().map(|m| m.held_hq).collect(),
         held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
         sleepers: def.missions.iter().map(|m| m.sleepers.clone()).collect(),
+        cut_off: def.missions.iter().map(|m| m.cut_off.clone()).collect(),
         skin_army: def.missions.iter().map(|m| m.skin).collect(),
         stage_records,
         stages: stage_runtime,
@@ -2849,6 +2854,26 @@ fn defeat_army(core: &mut Core) {
     let _ = code;
     if sleeping(core, army as u8) {
         core.gba_mut().cpu_mut().set_thumb_pc(DEFEAT_ARMY_EPILOGUE);
+    }
+}
+
+/// At each army's turn start, just after its income came in (the Black Factory's hook, `factory::at_turn_start`): a sleeping army ([`MissionDef::sleepers`]) or one cut off
+/// ([`MissionDef::cut_off`]: the player holds its HQ) has its funds taken back to 0 (stage 1 only). Done here, not by a repeating trigger: AW2 runs a turn-start event entry once.
+pub fn cut_funds(core: &mut Core) {
+    if !crate::ds_campaign::active(core) || crate::stage::stage(core) > 0 {
+        return;
+    }
+    let army = core.raw_read_16(0x0300_33EC, -1) as u8;
+    let Some(cut) = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.cut_off.get(crate::ds_campaign::mission(core) as usize).cloned()))
+    else {
+        return;
+    };
+    let player = if crate::five::active(core) { 5 } else { 1 };
+    let fallen = cut.iter().any(|&(a, (x, y))| a == army && owner_at(core, x, y) == player);
+    if fallen || sleeping(core, army) {
+        let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army as u32;
+        core.raw_write_32(p, -1, 0);
     }
 }
 
