@@ -100,10 +100,10 @@ KOAL: It was a hinge report.
 NARRATION: The Counting House. A sea / fortress of vaults, cranes and docks.
 NARRATION: Von Bolt's last treasure. A / rooster guards the lead dock.
 VON BOLT: Kehh... my fortress! Fifty / years of interest in granite!
-JESS: Colonel Von Bolt. Green Earth / ends your war chest today.
+JESS: Colonel Von Bolt. Green Earth / is closing your war chest today.
 COLIN: W-we want your gold! To pay / back... what the Accord stole!
 VON BOLT: PAY BACK?! I have never / paid anything back in my life!
-JESS: Then you will learn at close / range. Tanks first. Paperwork after.
+JESS: Then you'll learn it up close, / Colonel.
 COLIN: I-it's all right, Jess! He's / old! We should be gentle!
 VON BOLT: OLD?! I was old before you / were born, boy!
 VON BOLT: Interest! Guard the dock! / Peck anyone who owes me!
@@ -159,16 +159,16 @@ VON BOLT: Gold is easier.
 VON BOLT: Commander Jess! Kehh! A / moment of your time! A SALE!
 JESS: Colonel. You are out of units. / Surrender.
 VON BOLT: I have one thing left. The / truth. Priced to move.
-JESS: What truth.
+JESS: What truth?
 VON BOLT: The key to the door turns / only for a Hobb. The Hobb is a boy.
 VON BOLT: A boy who sleeps with a / biscuit. A good boy. Do not shoot him.
 VON BOLT: His grandfather wrote it: / "If it must close, let a Hobb decide."
-JESS: ...That is a journal. You have / a copy?
+JESS: ...That's a journal. Do you / have a copy?
 VON BOLT: Mine, free, with the sale. / The price is one retreat.
 JESS: One retreat?
 VON BOLT: And a little for the / rooster. He likes millet.
 COLIN: Jess? If it's true, we should / ask Aria. Not shoot.
-JESS: ...Colonel Von Bolt. You are / the worst salesman I ever met.
+JESS: ...Colonel Von Bolt, you are / the worst salesman I've ever met.
 VON BOLT: I am the best. I just / sold you something true. A rarity.
 JESS: Colin. Pull back. Fall back / to the coast. We are not done.
 JESS: But we are not shooting the / boy. Is that clear?
@@ -702,7 +702,7 @@ ARIA: Orange Star, on me! Not one / step back! We end this here!
 == m31_day6
 ARIA: Rachel! Left flank! Don't / let them reach the stair!
 RACHEL: By the book, Aria! By the / book! ...Your book!
-ARIA: Good. Then burn the other / one!
+ARIA: Then follow it! Left flank, / now!
 NELL: Aria. Breathe.
 ARIA: I'm breathing! Loudly!
 

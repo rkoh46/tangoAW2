@@ -72,7 +72,7 @@ ASUKA: Hold them here. Let the news / do the rest.
 @SONG ally1
 NARRATION: The open Allied band. Every / HQ has read it. All talk at once.
 OLAF: Jess! Your ministry bought / the door! Blue Moon sold it!
-JESS: Olaf, I read the same page. / My stamp is on yours.
+JESS: Olaf, I read the same page. / My stamp is on it too.
 JAVIER: Hark! My towers stand on / a keyhole! I demand to know why!
 KANBEI: Kanbei's seal. On the first / page. Kanbei was a fool.
 EAGLE: So who's supposed to be mad / at who here? I'm lost.
@@ -119,18 +119,18 @@ VON BOLT: For EFFECT?! I charge for / effect!
 @SONG own:aria
 NARRATION: Orange Star's castle town. / Rain. A map room above a bakery.
 NARRATION: A woman bends over the plans. / Nell's face. A harder jaw.
-ARIA: Four guards. One window. One / night. Tell me why it fails.
+ARIA: Four guards, one window, one / night. Tell me how it goes wrong.
 ANDY: Uh... it's not my best plan?
-ARIA: That's not a plan, it's a hope. / Hope loses.
+ARIA: Then it's not a plan, Andy. / It's a wish. Wishes get people killed.
 RACHEL: By the book, we should wait / for the others to calm down.
-ARIA: Rachel, the book says Nell is / in a tower. Burn the book.
+ARIA: Your book says wait, Rachel. / Nell's in a tower. Burn the book.
 JAKE: Yo, who's the lady? She sounds / like Nell on a bad day.
-ARIA: I'm Aria. Nell's twin. Your / sister, Rachel. The one you forgot.
+ARIA: I'm Aria. Nell's twin. And / Rachel's sister, if she remembers.
 RACHEL: I never forgot! You left!
-ARIA: I left to build what the Accord / forgot to. It's built. Come.
+ARIA: I left to build the army the / Accord wouldn't. It's ready. Come.
 HACHI: Kid, she's "A." Chairs, depots, / the broadcast. Her handwriting.
 ANDY: You wrote "Build anew"?! I / read it a thousand times!
-ARIA: You read it well. Nell kept / the peace so long it became a sentence.
+ARIA: Then you know what I want. / Nell kept the peace. It caged her.
 ARIA: I'm done being polite. She / walks out of that tower tonight.
 NARRATION: Black Hole's side. The tower / is garrisoned. The rain is cold.
 ASUKA: Nell is in the tower. Andy will / come for her. Let him come.
@@ -605,11 +605,11 @@ ASUKA: I wish I knew, Private. I am / not sure of anything tonight.
 NARRATION: The Allied table. The chair / at the head is filled. Two women.
 NELL: Friends. First, I was wrong. / About the seal.
 ARIA: Sister. Don't. Let me speak.
-ARIA: Four nations sold the door and / lied about it. Black Hole's clerk
-ARIA: lit the match. We have been / burning ever since.
+ARIA: Four nations sold the door and / lied about it. Fine. That's done.
+ARIA: Black Hole used the truth as a / torch, and now we're the ones burning.
 OLAF: Aria! The ledger is true! Do / not expect us to forgive it!
 ARIA: I expect you to be angry at / her. Not at each other.
-ARIA: She writes tiny and wastes no / margin. I compared the letters.
+ARIA: I've seen that handwriting. / Small, neat, not a word wasted.
 ARIA: It's Sonja's hand. Yellow / Comet's daughter, in a black coat.
 KANBEI: ...Kanbei knew. Kanbei kept / silent. It was not betrayal.
 KANBEI: It was a father. Be angry at / her, if you must. Not at him.

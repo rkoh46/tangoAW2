@@ -118,13 +118,13 @@ ASUKA: Commander Jess is counting. / Good. So am I.
 == m02_post
 @SONG enemy2
 JESS(s): The crate is aboard. Fall back, / Watch. Fall back to the coast.
-JESS: File it: Black Hole moved the / crate. Tomorrow I file again.
+JESS: Log it: Black Hole took the / crate. I'll write the report myself.
 JESS: Whatever is inside, my / ministry's stamp is on its paper.
 JESS: I need to know why I signed / it. Do you understand me?
 ASUKA: I do. When I know, you will / know.
 JESS: Is that a promise?
 ASUKA: It is. And I keep every one.
-JESS: ...Good. I will be checking. / Tanks first, paperwork after.
+JESS: ...Good. I'll be watching, / Asuka.
 NARRATION: The quay. Dusk. The crate / swings aboard on a long chain.
 CRUMB CO: Ma'am? Can I ask something? / What does "consignee" mean?
 ASUKA: The one a shipment is for. / The one who is meant to open it.
@@ -178,7 +178,7 @@ JAVIER: Hark! Who trespasses upon / the Calder Foundry? A holy ruin!
 JESS: Javier. It is a shut factory. / With a vault.
 JAVIER: A ruin of honest iron, Dame / Jess! No churl shall defile it!
 JESS: My ministry sealed it. I have / the key. Somewhere in my desk.
-JESS: Black Hole has a Black Factory / and an appetite. Do not let them.
+JESS: Black Hole wants that Black / Factory. Don't let them have it.
 @IF ASUKA
 ASUKA: A cold foundry and a ledger / in its vault. My favourite battle.
 @IF CRUMB CO
@@ -228,7 +228,7 @@ JESS: Signed by clerks I trained. / Sealed. Sent. Nobody asked where.
 JAVIER: I signed nothing like it! A / knight signs what he can read!
 ASUKA: Then you were the only honest / signature on the continent, Sir Javier.
 JAVIER: ...That is the finest insult / I have ever received. I am moved.
-JESS: Four nations, one consignee, / thirty years. Why would we?
+JESS: Four nations. One buyer. Thirty / years. Why would we do that?
 ASUKA: Because everyone sold it, / Commander. And everyone got paid.
 JESS(s): ...I need to sit down.
 JESS: Javier. Fall back. We take / this to Evergreen. To Eagle.
@@ -630,7 +630,7 @@ KOAL: A pipe is a road with a roof. / Mind the lane.
 JESS: Commander Koal. The Fuel Line / is Green Earth's last supply.
 JESS: Touch a seam and I will file / a complaint.
 KOAL: Only one?
-JESS: Three. Tanks first. Paperwork / after. I do not apologise.
+JESS: Three. And I'll use every / one of them.
 ASUKA: Koal. The Line is the artery / to the east. Cut it and Green Earth
 ASUKA: has no fuel to retreat on. / Do it cleanly.
 KOAL: Understood. You give orders / like a road survey.
@@ -641,7 +641,7 @@ KOAL: I paved two thousand miles. / Nobody ever put a sign on it.
 JESS: It was a good road. I drove / it. That is why this hurts.
 KOAL: Then do not hold the seam.
 JESS: I cannot hold anything else.
-JESS: You know what a border is, / Koal? A promise. And you break it.
+JESS: You know what a border is, / Koal? A promise. You're breaking it.
 KOAL: A border is where a road / stops. I broke nothing.
 JESS: You will break the Line. I can / hear the wrench in your belt.
 KOAL: That is the wind in the pipe. / I have not touched it. Yet.
@@ -650,7 +650,7 @@ KOAL: Hold your seams, Commander. I / will respect every one. Until I do not.
 == m08_day5
 JESS: Seam three! Seal it! I won't / let them drain the Line!
 KOAL: A seam is a joint. Joints / fail under load. Mind the lane.
-JESS: I mind it, Koal. I minded it / before you were a flag.
+JESS: I do mind, Koal. I've minded / since before you wore that flag.
 
 == m08_post
 @SONG co:koal
@@ -661,7 +661,7 @@ KOAL: Of course.
 JESS: ...Koal. When Asuka reads that / ledger, ask her about the page.
 JESS: The ministry's page, with my / name on it. I signed it blind.
 KOAL: I will ask. I do not lie / about a road.
-JESS: I know. It is why I let you / finish. Do not tell Eagle.
+JESS: I know. That's why I let you / finish. Don't tell Eagle.
 KOAL: I tell no one anything. / Mind the lane, Commander.
 JESS: Mind your own.
 ASUKA: Koal. Green Earth is closed. / The Allies' table has one nation fewer.
