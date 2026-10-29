@@ -879,16 +879,8 @@ const F22: [(u8, [u8; 3]); 14] = [
     (16, [unit::INFANTRY, unit::MD_TANK, unit::ARTILLERY]),
 ];
 
-/// Black Hole's (army 1's) funds, from the players table.
-fn funds_of_player(core: &Core) -> u32 {
-    let p = core.raw_read_32(0x0849_9598, -1) + 0x3C;
-    core.raw_read_32(p, -1)
-}
-
-/// M27: day 6 or later and the vault (Black Hole's funds) is under 500.
-fn vault_empty(core: &mut Core) -> bool {
-    day(core) >= 6 && funds_of_player(core) < 500
-}
+/// Colin's treasury: the fortress's central city on M27's map (the map's `treasury` note, the city west of the keep). Black Hole's capture of it opens Sonja's sealed note.
+const M27_TREASURY: (u8, u8) = (18, 20);
 
 /// M27 Von Bolt's Note: Von Bolt (forced) + a free partner against Jess + Colin at the Orange Star sea fortress; the player's Black Factory and Deathray (rain).
 fn bh2_27() -> MissionDef {
@@ -908,11 +900,15 @@ fn bh2_27() -> MissionDef {
     m.after = crate::bh2_text::chain(&["m27_map"]);
     m.triggers.push(on_day(2, None, vec![Action::Scene(txt("m27_day2"))]));
     m.triggers.push(on_day(5, None, vec![Action::Scene(txt("m27_day5"))]));
-    // "The vault is empty": from day 6 on, when Black Hole's funds are spent, Von Bolt opens Sonja's note and sells Jess the truth; Jess retreats (the win)
+    // Colin's treasury: when Black Hole captures the fortress's central city, the sealed note is opened (`m27_vault_empty`), Von Bolt sells Jess the truth (`m27_sale`) and Colin's funds are 0:
+    // the Allies cannot buy again. The mission is won the normal way (the HQ or a rout).
     m.triggers.push(Trigger::new(
         When::AfterAction,
-        Cond::Custom(vault_empty),
-        vec![Action::Scene(crate::bh2_text::chain(&["m27_vault_empty", "m27_sale"])), Action::Win],
+        Cond::OwnerAt { x: M27_TREASURY.0, y: M27_TREASURY.1, army: 1 },
+        vec![
+            Action::Scene(crate::bh2_text::chain(&["m27_vault_empty", "m27_sale"])),
+            Action::SetFunds { army: 2, funds: 0 },
+        ],
     ));
     m.flag = flag(27);
     m.stars = 3;
@@ -1499,6 +1495,22 @@ mod tests {
         assert!(RELEASED && dev_flag());
         let used = crate::custom_campaign::text_ids_used(&def());
         assert!(used + 150 <= 3072, "the BH2 Campaign's scenes use {used} text ids: pack or trim");
+    }
+
+    /// M27's treasury is a city of Orange Star's inside the fortress (the map's `treasury` note), and the trigger is a once-only capture trigger that zeroes Colin's funds and does not win.
+    #[test]
+    fn m27_treasury_is_a_marked_orange_star_city_and_its_capture_empties_colins_funds() {
+        let text = include_str!("../five/bh2/bh2_27.txt");
+        assert!(text.contains(&format!("# treasury: ({}, {})", M27_TREASURY.0, M27_TREASURY.1)), "the map marks the treasury");
+        let rows: Vec<&str> = text.lines().filter(|l| !l.starts_with('#') && !l.starts_with("map") && !l.starts_with("armies") && !l.starts_with("unit") && !l.is_empty()).collect();
+        assert_eq!(rows[M27_TREASURY.1 as usize].as_bytes()[M27_TREASURY.0 as usize], b'C', "an Orange Star city (capital C)");
+        let d = def();
+        let m = at(&d, "bh2_27");
+        let t = m.triggers.last().expect("the treasury trigger");
+        assert!(t.once, "once");
+        assert!(matches!(&t.cond, Cond::OwnerAt { x: 18, y: 20, army: 1 }));
+        assert!(t.then.iter().any(|a| matches!(a, Action::SetFunds { army: 2, funds: 0 })), "Colin's funds go to 0");
+        assert!(!t.then.iter().any(|a| matches!(a, Action::Win)), "the win is the normal one");
     }
 
     #[test]

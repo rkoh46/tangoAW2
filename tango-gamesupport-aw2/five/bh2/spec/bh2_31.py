@@ -59,9 +59,9 @@ def build():
     m.header(armies=5, colours=(OS, BM, YC, GE, BH), team=(1, 1, 1, 1, 2), objective=[5], comment=(
         "M31 The Last Accord, part one (normal look, no fog, 46 x 28 = 1288 cells, no time limit, five armies): Asuka + a free tag partner (Black Hole, army 5, HQ 5 (4,23), south-west) against the Accord: Nell's Orange Star (army 1, HQ 1 (8,8), the river plateau); Olaf's Blue Moon (2, HQ 2 (24,6), the lake island), "
         "Kanbei's Yellow Comet (3, HQ 3 (39,6), the highlands) and Eagle's Green Earth (4, HQ 4 (38,20), the plains) are dormant until their stage (a few holding units, no properties but the HQ). Rivers: the Marne (x 15, then y 15) with bridges (15,8) (4,15) (10,15); the Sere (x 31) with bridges (31,4) (31,11) (31,18) (31,24). "
-        "Com Tower (6,6), (28,15) and (33,21); missile silo (11,11); Black Crystals by Black Hole's HQ. Player: INF6 MECH3 TANK6 MDT3 ART4 ROCK2 RECON1 AA3 APC2 FTR3 BCO2; Nell: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1 AA1 FTR1."))
+        "Com Tower (6,6), (28,15) and (33,21); missile silo (11,17); Black Crystals by Black Hole's HQ. Player: INF6 MECH3 TANK6 MDT3 ART4 ROCK2 RECON1 AA3 APC2 FTR3 BCO2; Nell: see the units' list."))
     m.put("5", 4, 23).put("1", *HQS["1"]).put("2", *HQS["2"]).put("3", *HQS["3"]).put("4", *HQS["4"])
-    m.put("t", 6, 6).put("t", 28, 15).put("t", 33, 21).put("M", 11, 11)
+    m.put("t", 6, 6).put("t", 28, 15).put("t", 33, 21).put("M", 11, 17)
     m.stamp("X", 2, 22).stamp("X", 7, 21).stamp("X", 5, 25)
     for (x, y) in [(20, 5), (27, 7), (21, 8), (26, 4), (19, 10), (20, 22), (25, 21)]:
         if m.inside(x, y) and all(m.get(a, b) in "~" for a in range(x - 1, x + 2) for b in range(y - 1, y + 2)):
@@ -103,10 +103,10 @@ def build():
                 m.g[p[1] + dy][p[0] + dx] = "~"
     m.tidy()
     av = "~r=-^IZ#X12345QBCPTbcpt"
-    m.spread(5, {INF: 6, MECH: 3, TANK: 6, MDT: 3, ART: 4, ROCK: 2, RECON: 1, AA: 3, APC: 2}, (1, 16, 14, 26), seed=1, gap=0, avoid=av)
-    m.spread(5, {FTR: 3, BCO: 2}, (1, 16, 14, 26), seed=2, gap=1, avoid=av)
-    m.spread(1, {INF: 6, MECH: 4, TANK: 5, MDT: 5, NEO: 3, ART: 4, ROCK: 3, MIS: 2, RECON: 1, AA: 2}, (3, 3, 13, 14), seed=3, gap=0, avoid=av)
-    m.spread(1, {FTR: 2, BMB: 1}, (3, 3, 13, 14), seed=4, gap=1, avoid=av)
+    m.spread(5, {INF: 6, MECH: 3, TANK: 6, MDT: 3, ART: 4, ROCK: 2, RECON: 1, AA: 3, APC: 2}, (1, 21, 14, 26), seed=1, gap=0, avoid=av)
+    m.spread(5, {FTR: 3, BCO: 2}, (1, 21, 14, 26), seed=2, gap=1, avoid=av)
+    m.spread(1, {INF: 6, MECH: 3, TANK: 5, MDT: 4, NEO: 3, ART: 3, ROCK: 2, MIS: 1, RECON: 1, AA: 1}, (1, 2, 14, 11), seed=3, gap=0, avoid=av)
+    m.spread(1, {FTR: 1, BMB: 1}, (1, 2, 14, 9), seed=4, gap=1, avoid=av)
     # the dormant nations: a few holding units round each HQ (they never move; the stage's troops are what fights)
     for army, kinds, box, sd in ((2, {INF: 2, MDT: 1, ART: 1}, (22, 4, 26, 8), 5), (3, {INF: 2, MDT: 1, ART: 1}, (37, 4, 41, 8), 6), (4, {INF: 2, MDT: 1, AA: 1}, (36, 18, 40, 22), 7)):
         before = len(m.u)

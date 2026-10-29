@@ -96,5 +96,5 @@ def build():
         m.unit(2, k_, x, y)
     clear_fire_lines(m)
     m.note("hq", 10, 4, "Von Bolt's HQ"); m.note("enemy_hq", 20, 23, "Jess + Colin's HQ (objective)"); m.note("foundry", 6, 6, "the old foundry: Black Hole's Black Factory"); m.note("deathray", 14, 1, "the Deathray (Black Hole's), at the top edge")
-    m.note("gate_w", 14, 17, "seam gate in the fortress wall"); m.note("gate_e", 26, 17, "seam gate in the fortress wall")
+    m.note("treasury", 18, 20, "Colin's treasury: the fortress's central city; its capture opens Sonja's sealed note and empties Colin's funds"); m.note("gate_w", 14, 17, "seam gate in the fortress wall"); m.note("gate_e", 26, 17, "seam gate in the fortress wall")
     return m

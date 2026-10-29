@@ -35,6 +35,36 @@ FLAT = ["1" + "." * 10, *["." * 11] * 7, "." * 10 + "2"]
 
 @unittest.skipUnless(HAVE, "needs the AW2 ROM")
 class Lint(unittest.TestCase):
+    def _bh2(self, rows, units):
+        m = build(rows, units)
+        m.source = "bh2"
+        m.meta["colours"] = [1, 5]          # (army 1 moves first, the player's Black Hole is army 2)
+        return m
+
+    def test_iv04_a_first_mover_must_not_reach_the_player_on_day_one(self):
+        """IV04: an army that moves before Black Hole has no unit in reach (move + 1) of a Black Hole unit; a silo a foot soldier can reach is flagged too."""
+        near = [{"army": 1, "kind": 5, "x": 3, "y": 3}, {"army": 2, "kind": 5, "x": 8, "y": 3}]      # Tank (reach 7) 5 cells away
+        far = [{"army": 1, "kind": 5, "x": 1, "y": 1}, {"army": 2, "kind": 5, "x": 9, "y": 8}]
+        self.assertIn("IV04", {p.rule for p in rules.lint(self._bh2(FLAT, near))})
+        self.assertNotIn("IV04", {p.rule for p in rules.lint(self._bh2(FLAT, far))})
+        silo = list(FLAT)
+        silo[5] = silo[5][:3] + "M" + silo[5][4:]
+        foot = [{"army": 1, "kind": 1, "x": 3, "y": 3}, {"army": 2, "kind": 5, "x": 10, "y": 8}]
+        self.assertIn("IV04", {p.rule for p in rules.lint(self._bh2(silo, foot))})
+        # the player moving first (army 1 is Black Hole) has nothing to fear
+        m = self._bh2(FLAT, near)
+        m.meta["colours"] = [5, 1]
+        self.assertNotIn("IV04", {p.rule for p in rules.lint(m)})
+
+    def test_rn01_knows_the_water_animation_phases_of_a_plain_tile(self):
+        """RN01: a tile with at most MAX_PHASES drawings under any neighbours (an animated plain tile) accepts each of them, whatever the key's few samples hold; a tile with many drawings is strict."""
+        from aw2.maplint import render_check as rc
+        a, b = b"a" * 768, b"b" * 768
+        ref = {("rain", (41, False, "sea", 15)): [a] * 6, ("rain", (41, False, "sea", 11)): [a, b] * 3, ("rain", (80, False, "river", 5)): [bytes([i]) * 768 for i in range(6)]}
+        ph = rc.phases(ref)
+        self.assertEqual(ph[("rain", 41, False)], {a, b})
+        self.assertNotIn(("rain", 80, False), ph, "a river tile has six drawings: it stays strict")
+
     def test_clean_control(self):
         self.assertEqual(ids(build(FLAT)), set())
 

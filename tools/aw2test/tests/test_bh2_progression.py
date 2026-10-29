@@ -436,3 +436,28 @@ def bh2_m31_switch_is_deterministic(ctx):
         ctx.log(f"run {run + 1}: {prints[-1]}")
         e.close()
     ctx.eq(prints[0], prints[1], "two runs give the same battle after the switch and a computer turn")
+
+
+@test(name="bh2_m27_treasury_empties_colins_funds", modes=("ds",))
+def bh2_m27_treasury_empties_colins_funds(ctx):
+    """M27 Von Bolt's Note: Black Hole's real capture of Colin's treasury (the fortress's central city (18,20), the map's `treasury` note) plays the sealed-note scenes and sets Colin's (army 2's) funds to 0;
+    the mission is not won by it (the HQ or a rout wins). Spending Black Hole's own money does nothing."""
+    e, g, d = b2.enter(ctx, 27)
+    d.leave_setup()
+    a2.intro(ctx, e, d, "m27", (0,))
+    d.wait_control()
+    g._units_base = g._players_base = None
+    funds2 = lambda: e.u32(g.player(2)["addr"])
+    ctx.check(funds2() > 0, f"Colin has funds at the start ({funds2()})")
+    e.w32(g.player(1)["addr"], 0)                      # (Black Hole's funds at 0: no trigger)
+    e.wait(30)
+    ctx.check(not e.u8(dc.LAST_RESULT) and d.in_battle(), "Black Hole's empty purse is not a win")
+    capture(ctx, e, g, d, (18, 20), 1)
+    pic = dialogue_pic(ctx, e, d, "m27_note")
+    settle(e, g, d)
+    ctx.check(pic is not None, "the sealed-note scene was shown")
+    g._units_base = g._players_base = None
+    ctx.eq(owner(e, 18, 20), 1, "the treasury is Black Hole's")
+    ctx.eq(funds2(), 0, "Colin's funds are 0")
+    ctx.check(not e.u8(dc.LAST_RESULT) and d.in_battle(), "the mission goes on: it is won the normal way")
+    e.close()

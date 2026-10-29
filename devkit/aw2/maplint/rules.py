@@ -59,6 +59,7 @@ RULES = {
     "PP03": ("warn", "a pipeline that is a stub: an end hanging in open terrain (a pipeline ends at the map edge, the sea, mountains or a building) or fewer than 6 cells"),
     "PP04": ("warn", "a pipe seam that changes nothing when broken: it neither joins two parts of the map nor shortens the way between the HQs by at least 6 cells"),
     "IV03": ("error", "BH2 maps: a Laser's row or column crosses a property of its owner (Black Hole): the Laser would shoot its own airport, port or city; place it so its four lines touch none"),
+    "IV04": ("error", "BH2 maps: an army that moves before Black Hole on day 1 has a unit that can reach a Black Hole unit on its first turn (move + range by Manhattan distance, terrain ignored: a safe over-estimate; units that hold are only checked for what they can hit from where they stand)"),
     "IV02": ("error", "BH2 maps: a unit of either army stands in an invention's firing zone at the start (a Laser's row and column, a minicannon's four cells, a Black Cannon's cone, the Deathray's columns): the first turn's shot must hit nothing"),
     "PT02": ("error", "BH2 maps: a port whose door is not open sea a ship can use: it touches no sea cell (shoal and reef are not water for ships), or its sea is a sealed pond, or the way out of its door is walled by reef"),
     "HQ01": ("error", "BH2 maps: an army has one HQ: a second HQ tile (Q) of the same army is a held take-over HQ, which the owner would rather not have: give each army its own colour and HQ instead"),
@@ -835,6 +836,43 @@ def day_one_fire(G):
     return out
 
 
+# (AW2's move points and indirect ranges, for IV04: the first turn's reach)
+_MOVE = {1: 3, 2: 2, 3: 5, 4: 4, 5: 6, 6: 8, 7: 6, 8: 6, 9: 9, 12: 6, 13: 9, 14: 6, 16: 9, 17: 7, 18: 7, 19: 6, 20: 6, 21: 5, 22: 6, 23: 6, 24: 5, 26: 5, 27: 1}
+_INDIRECT = {10: 3, 11: 5, 15: 5, 21: 6}      # artillery, rockets, missiles, battleship: they fire without moving, at up to this range
+
+
+def first_move_safe(G):
+    """IV04 (BH2 maps): no Black Hole unit can be attacked on day 1 by an army that moves before it (the armies move in order, army 1 first: the battle starts with the first army's turn). The reach of a
+    unit is its move + 1 (direct) or its range (indirect), by Manhattan distance and ignoring terrain: a safe over-estimate. A unit that holds (the dormant armies) reaches only its neighbours or its range."""
+    if G.m.source != "bh2" or not G.m.units:
+        return []
+    cols = list(G.m.meta.get("colours", ()))
+    if 5 not in cols:
+        return []
+    bh = cols.index(5) + 1
+    if bh == 1:
+        return []
+    mine = [u for u in G.m.units if u["army"] == bh]
+    out = []
+    for e in G.m.units:
+        if e["army"] >= bh:
+            continue
+        k = e["kind"]
+        reach = _INDIRECT.get(k) or (1 if e.get("hold") else _MOVE.get(k, 6) + 1)
+        for u in mine:
+            d = abs(u["x"] - e["x"]) + abs(u["y"] - e["y"])
+            if d <= reach:
+                out.append(Problem("IV04", u["x"], u["y"], f"a {_unit_name(u['kind'])} of Black Hole can be attacked on day 1 by the {_unit_name(k)} of army {e['army']} at ({e['x']}, {e['y']}) (distance {d}, reach {reach}): it moves before the player"))
+                break
+    # a missile silo a foot soldier of an army that moves first can reach on day 1: the computer launches it at the best cluster of the player's units, wherever they are
+    for x, y in G.cells("M"):
+        for e in G.m.units:
+            if e["army"] < bh and e["kind"] in (1, 2) and abs(e["x"] - x) + abs(e["y"] - y) <= _MOVE[e["kind"]]:
+                out.append(Problem("IV04", x, y, f"the missile silo at ({x}, {y}) can be reached on day 1 by the {_unit_name(e['kind'])} of army {e['army']} at ({e['x']}, {e['y']}): its launch on the player's units (3 HP) comes before the player's first turn"))
+                break
+    return out
+
+
 def laser_own_property(G):
     """IV03 (BH2 maps): a Laser's whole row and column touch no property of Black Hole's own army (nor its HQ)."""
     if G.m.source != "bh2" or not G.m.text:
@@ -921,7 +959,7 @@ def design_checks(G):
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
-CHECKS = [one_hq, laser_own_property, river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, design_checks]
+CHECKS = [one_hq, laser_own_property, river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, first_move_safe, design_checks]
 
 
 def lint(m, only=None):

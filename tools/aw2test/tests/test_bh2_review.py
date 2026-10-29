@@ -87,10 +87,9 @@ def review(ctx, n):
         g._units_base = g._players_base = None
         cnt2, bad2 = deviations(e, g)
         if n == 31:                                       # (a five-army mission: Nell, the first army, moves before the player's turn: her units' fuel is spent, nothing is hit)
-            # (the finale's stage 1 starts with Nell's tanks next to the player's on the plateau's edge ((10,15) beside (10,16)): her day-1 turn, which runs before the player's first control, trades shots, and
-            # the player's units are hurt before they move. Reported to the map's owner; the check keeps only what an invention could do: units out of place)
-            ctx.log(f"M31: the player's first control on day {e.u16(dc.DAY)}; hurt before it: {len([b for b in bad2 if b[4] == 'hp'])} units")
-            bad2 = [b for b in bad2 if b[4] not in ('fuel', 'ammo', 'hp')]
+            # (a five-army mission: Nell, the first army, moves before the player's turn: her units' fuel is spent, nothing is hit: HP and ammo stay full, rule IV04 keeps her out of reach)
+            ctx.log(f"M31: the player's first control on day {e.u16(dc.DAY)}")
+            bad2 = [b for b in bad2 if b[4] != 'fuel']
         ctx.check(not bad2, f"M{n}: the first turn's shots hit nothing (every unit still at full HP after Deploy and the first turn start): {bad2}")
         post = sweeps(ctx, e, g, d, n, "post_", None, front_too=False)
         for view, p in pre.items():
