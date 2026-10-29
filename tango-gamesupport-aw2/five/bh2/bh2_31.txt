@@ -9,6 +9,7 @@
 map bh2_31
 armies 5 9 1 2 4 3 5
 team 1 1 1 1 2
+zone 5 0 16 9 27
 objective 5
 unit 1 1 6 3
 unit 1 1 10 6
@@ -80,16 +81,16 @@ unit 5 5 10 24
 unit 5 5 1 26
 unit 5 6 8 17
 unit 5 7 6 16
-unit 5 7 12 18
-unit 5 10 7 18
-unit 5 10 12 20
-unit 5 10 4 22
-unit 5 10 1 25
-unit 5 11 14 21
+unit 5 7 7 18
+unit 5 10 8 18
+unit 5 10 10 20
+unit 5 10 6 21
+unit 5 10 13 24
+unit 5 11 1 22
 unit 5 11 10 26
 unit 5 14 2 16
-unit 5 14 9 20
-unit 5 14 14 22
+unit 5 14 8 20
+unit 5 14 5 22
 unit 5 16 3 25
 unit 5 16 14 25
 unit 5 16 11 26
@@ -112,9 +113,9 @@ unit 5 19 10 17
 ....Rf....R..f.-..c..a..RRRRRR.-...^.^^Rb^^^^.
 ----=-----=-----cRRRRRRRR...t..-.....fRRc..^^.
 ....R.....R..f.f.R.....c....^^^-^^..ffRfff....
-....RbRc..R....ffR.....RRRRRR.^-^^a..fRcff....
+....RBRC..R....ffR.....RRRRRR.^-^^a..fRcff....
 ..^^^^R..RR....fffffRRRRb.,cRRR=RRRRRaR.....b.
-^^^^^^Rcb....RRRRRRRR....,~,..^-..b.c.R....a..
+^^^^^^RCB....RRRRRRRR....,~,..^-..b.c.R....a..
 .^..B^RRRRRRRR..c,,,,...,~~~,.^-....RR4...RR..
 ....RBRXfRf.....,~~~~..,~r~~~..-.t...RRRRRR...
 ..X.R...ffff...,~~~~~,..~~~~,..-.....b.b..RRc.
@@ -122,4 +123,4 @@ unit 5 19 10 17
 ..fff.ff.CRRRRRR,,~,.......,RRR=RR^.a.c.ff.Ra.
 ..fffXfff.f...f.f.,....b..c....-.^^b.ffffff.^^
 ..ff..fff......RRc.....RRRRRR..-.^^.f.fff.ff^^
-.......c........RRRRRRRR.......-............^^
+.......C........RRRRRRRR.......-............^^

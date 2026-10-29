@@ -56,7 +56,7 @@ def build():
     belt(m, "^", [(1, 19), (5, 18)], width=1, seed=54); belt(m, "f", [(6, 22), (10, 24)], width=1, seed=55); belt(m, "f", [(2, 25), (7, 26)], width=1, seed=57)
     belt(m, "f", [(14, 17), (18, 18)], width=1, seed=50); belt(m, "^", [(28, 17), (30, 19)], width=1, seed=51); belt(m, "f", [(14, 25), (17, 26)], width=1, seed=52)
     belt(m, "^", [(17, 10), (17, 13)], width=1, seed=58); belt(m, "f", [(17, 1), (20, 1)], width=1, seed=59)
-    m.header(armies=5, colours=(OS, BM, YC, GE, BH), team=(1, 1, 1, 1, 2), objective=[5], comment=(
+    m.header(armies=5, colours=(OS, BM, YC, GE, BH), team=(1, 1, 1, 1, 2), objective=[5], zones=[(5, 0, 16, 9, 27)], comment=(
         "M31 The Last Accord, part one (normal look, no fog, 46 x 28 = 1288 cells, no time limit, five armies): Asuka + a free tag partner (Black Hole, army 5, HQ 5 (4,23), south-west) against the Accord: Nell's Orange Star (army 1, HQ 1 (8,8), the river plateau); Olaf's Blue Moon (2, HQ 2 (24,6), the lake island), "
         "Kanbei's Yellow Comet (3, HQ 3 (39,6), the highlands) and Eagle's Green Earth (4, HQ 4 (38,20), the plains) are dormant until their stage (a few holding units, no properties but the HQ). Rivers: the Marne (x 15, then y 15) with bridges (15,8) (4,15) (10,15); the Sere (x 31) with bridges (31,4) (31,11) (31,18) (31,24). "
         "Com Tower (6,6), (28,15) and (33,21); missile silo (11,11); Black Crystals by Black Hole's HQ. Player: INF6 MECH3 TANK6 MDT3 ART4 ROCK2 RECON1 AA3 APC2 FTR3 BCO2; Nell: INF5 MECH3 TANK5 MDT3 ART3 ROCK2 RECON1 AA1 FTR1."))
@@ -95,6 +95,11 @@ def build():
         except ValueError:
             pass
     neutralize(m, 6)
+    # (the camp's economy: every town of the camp's district is Black Hole's from the start, a base's worth of income to build on; the rest of the land is neutral for the player to take as he advances)
+    for y in range(16, 28):
+        for x in range(0, 10):
+            if m.g[y][x] in "bcap":
+                m.g[y][x] = m.g[y][x].upper()
     m.tidy()
     shore(m, 1, (1, 1, W - 2, H - 2), dirs="NS")
     for p in PORTS:

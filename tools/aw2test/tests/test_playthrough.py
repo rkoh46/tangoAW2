@@ -75,7 +75,7 @@ def run(ctx, n):
     bot = None
     if PLAYER == "bot":
         from aw2test.bot import Bot
-        bot = Bot(d, log=ctx.log, goals=[c for _, c in cells.get(stage, [])], cap=42)
+        bot = Bot(d, log=ctx.log, goals=[c for _, c in cells.get(stage, [])], cap=42, own_structures=True, garrison=os.environ.get("AW2TEST_PLAY_GARRISON") == "1")
     while frames < max_frames:
         e.wait(30)
         frames += 30
