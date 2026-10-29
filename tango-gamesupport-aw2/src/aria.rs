@@ -12,8 +12,8 @@
 //!
 //! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
 //! |---|---|---|
-//! | Attack | +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
-//! | Defence | the same as attack, by the unit's HP | the power's own +10% defence |
+//! | Attack | +3% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
+//! | Defence | +3% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
 //! | HP | | +3 to every unit |
 //! | Luck, movement | the game's own | |
 //!
@@ -33,6 +33,8 @@ pub const STARS: (u32, u32) = (0, 7);
 /// Vengeance: displayed HP at or under which a unit attacks and defends harder, and by how much (percent, for attack and defence alike) at 1..8 displayed HP.
 pub const VENGEANCE_HP: u8 = 8;
 pub const VENGEANCE: [i32; 8] = [85, 61, 55, 49, 43, 37, 31, 25];
+/// Her flat bonus: every unit of hers (not an Oozium: no CO changes one, `co_roster::stat`) attacks and defends this much harder (percent), at every HP and power level.
+pub const FLAT: i32 = 3;
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -42,13 +44,13 @@ pub fn is_aria(co: u8) -> bool {
     co == ARIA
 }
 
-/// Her own firepower % for any unit type at power level `mode` (0 day to day, 1 CO Power (she has none), 2 Super Power), in `co_roster::stat`'s fields; nothing for defence, move or range. (The power's own
-/// +10% firepower is added by the caller.)
+/// Her own % for any unit type at power level `mode` (0 day to day, 1 CO Power (she has none), 2 Super Power), in `co_roster::stat`'s fields: [`FLAT`] firepower and defence always, Build Anew's
+/// [`SCOP_ATTACK`] on top; nothing for move or range. (The power's own +10% firepower and defence are added by the caller.)
 pub fn bonus(mode: u8, field: usize) -> i32 {
-    if field == FIREPOWER && mode >= 2 {
-        SCOP_ATTACK
-    } else {
-        0
+    match field {
+        FIREPOWER => FLAT + if mode >= 2 { SCOP_ATTACK } else { 0 },
+        crate::co_roster::DEFENCE => FLAT,
+        _ => 0,
     }
 }
 
@@ -82,10 +84,11 @@ mod tests {
         assert_eq!(ARIA, 93);
         assert!((ARIA as u32) < crate::co_roster::ROOM);
         assert_eq!(STARS, (0, 7), "no CO Power, a Super Power of 7 stars");
-        for t in [DEFENCE, MOVE, crate::co_roster::RANGE] {
+        for t in [MOVE, crate::co_roster::RANGE] {
             assert_eq!([0, 1, 2].map(|m| bonus(m, t)), [0, 0, 0]);
         }
-        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [0, 0, 20]);
+        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [3, 3, 3], "a flat 3% defence");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [3, 3, 23], "a flat 3% attack, Build Anew's 20% on top");
         assert!(crate::co_new::is_new(ARIA) && crate::co_new::is_own(ARIA) && !crate::es_co::is_es(ARIA));
         assert!(crate::co_new::listed(ARIA), "in every Versus list");
         assert_eq!(crate::co_new::like(ARIA), LIKE);

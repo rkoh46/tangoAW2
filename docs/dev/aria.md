@@ -9,7 +9,7 @@ Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos
 ## What she does (the owner's redesign: two small rules of her own)
 | | **Vengeance** (day to day) | **Build Anew** (Super Power, 7 stars) |
 |---|---|---|
-| Attack and defence | a unit with 8 HP or less (displayed) attacks and defends harder: +25% at 8 HP, 6% more per HP lost to +61% at 2, +85% at 1 (never an Oozium); 9 and 10 HP nothing | every unit +20% attack (and the power's own +10% / +10%) |
+| Attack and defence | every unit (not an Oozium) +3%, always; and a unit with 8 HP or less (displayed) attacks and defends harder: +25% at 8 HP, 6% more per HP lost to +61% at 2, +85% at 1 (never an Oozium); 9 and 10 HP nothing | every unit +20% attack (and the power's own +10% / +10%) |
 | HP | | every unit recovers 3 HP (`RepairUnit(unit, 3, 0)`, free) |
 | Luck, movement | the game's own (Asuka keeps Nell's luck and Sturm's movement) | nothing more |
 - **Vengeance** is a per-unit term: `aria::vengeance(hp)` (`aria::VENGEANCE` by displayed HP, the unit's HP in tenths rounded up) added to the firepower in `com_tower::side_firepower` with the other terms of a
