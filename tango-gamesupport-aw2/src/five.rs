@@ -851,6 +851,11 @@ pub fn property_tile(tile: u16) -> Option<(usize, usize)> {
         .find_map(|(kind, row)| row.iter().position(|&t| t == tile).map(|o| (kind, o)))
 }
 
+/// The tile of a property of `kind` (0 HQ, 1 base, 2 city, 3 airport, 4 port, 5 lab) owned by `owner` (0 neutral, armies 1..5).
+pub fn tile_for(kind: usize, owner: u8) -> u16 {
+    PROPERTY_TILES[kind][owner as usize % 6]
+}
+
 /// The neutral tile for a property of `kind` (an HQ becomes a city).
 pub fn neutral_tile(kind: usize) -> u16 {
     PROPERTY_TILES[if kind == 0 { 2 } else { kind }][0]

@@ -1080,9 +1080,9 @@ fn owned(c: (u8, u8)) -> Cond {
     Cond::OwnerAt { x: c.0, y: c.1, army: 5 }
 }
 
-/// A nation's line has fallen: the player holds its HQ, or the whole army was destroyed (a routed army's HQ turns neutral).
+/// A nation's line has fallen: the player holds its HQ, or the whole army was destroyed (a routed army's HQ turns neutral) (the gauntlet engine's [`Cond::LineFallen`]).
 fn fell(c: (u8, u8)) -> Cond {
-    Cond::Any(vec![owned(c), Cond::OwnerAt { x: c.0, y: c.1, army: 0 }])
+    Cond::LineFallen { x: c.0, y: c.1 }
 }
 
 /// The next nation wakes: when this stage's line falls ([`fell`]: its HQ taken or its army destroyed; every line before it fallen too: a stage's HQ taken out of order moves nothing), the
@@ -1090,7 +1090,7 @@ fn fell(c: (u8, u8)) -> Cond {
 fn wake(hq: (u8, u8), before: &[(u8, u8)], army: u8, bank: fn(&mut Core), wave: &[(u8, (u8, u8))], takeover: Scene) -> Trigger {
     let mut all = vec![fell(hq)];
     all.extend(before.iter().map(|&c| fell(c)));
-    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::Custom(bank), stage(army, wave)])
+    Trigger::new(When::AfterAction, Cond::All(all), vec![Action::Scene(takeover), Action::Reveal(army), Action::Custom(bank), stage(army, wave)])
 }
 
 /// A waking nation's war chest: [`M31_WAKE_FUNDS`] and its savings, `rate` for every day before today (the slower the player, the richer the next line). The savings are held back while it
@@ -1163,6 +1163,12 @@ fn bh2_31() -> MissionDef {
     m.sleepers = vec![(2, vec![M31_NELL]), (3, vec![M31_NELL, M31_OLAF]), (4, vec![M31_NELL, M31_OLAF, M31_KANBEI])];
     // (a sleeping nation earns nothing; a fallen one is cut off: crate::custom_campaign::cut_funds)
     m.cut_off = vec![(1, M31_NELL), (2, M31_OLAF), (3, M31_KANBEI)];
+    // (the gauntlet engine: Olaf, Kanbei and Eagle are not on the battlefield until their line comes: no HQ, no units, no turn; each one's lake country, highlands or plains)
+    m.hidden = vec![
+        Hidden { army: 2, hq: M31_OLAF, zone: Rect::new(16, 1, 30, 13) },
+        Hidden { army: 3, hq: M31_KANBEI, zone: Rect::new(32, 1, 45, 13) },
+        Hidden { army: 4, hq: M31_EAGLE, zone: Rect::new(32, 14, 45, 26) },
+    ];
     m.triggers = vec![
         wake(M31_NELL, &[], 2, olaf_chest, &OLAF_WAVE, txt("m31_takeover_olaf")),
         wake(M31_OLAF, &[M31_NELL], 3, kanbei_chest, &KANBEI_WAVE, txt("m31_takeover_kanbei")),

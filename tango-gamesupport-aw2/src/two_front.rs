@@ -1925,7 +1925,7 @@ impl Ground {
     }
 }
 
-fn class_of(core: &Core, tile: u16) -> u8 {
+pub(crate) fn class_of(core: &Core, tile: u16) -> u8 {
     core.raw_read_8(core.raw_read_32(CLASS_TABLE_PTR, -1) + tile as u32, -1)
 }
 

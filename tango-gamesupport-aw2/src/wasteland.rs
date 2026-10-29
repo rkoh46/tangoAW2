@@ -867,7 +867,7 @@ fn blit_column(core: &mut Core) {
 
 /// `RenderMap` (`sub_08021D10`) done here: the visible cells drawn into
 /// BG3's tilemap buffer, and the buffer copied to VRAM.
-fn render_map(core: &mut Core) {
+pub(crate) fn render_map(core: &mut Core) {
     let mut painter = Painter::new(core, drawn(core).and_then(look).map(|l| &l.look));
     let sx = (core.raw_read_16(MAP + 4, -1) as i16 >> 4) as i32;
     let sy = (core.raw_read_16(MAP + 6, -1) as i16 >> 4) as i32;

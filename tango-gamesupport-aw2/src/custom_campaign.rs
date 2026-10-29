@@ -670,6 +670,12 @@ pub enum Cond {
         y: u8,
         army: u8,
     },
+    /// A gauntlet line has fallen at (x, y): the player holds the HQ there, or the army that held it was destroyed (its HQ turned a neutral property). A plain cell (a hidden line's HQ not
+    /// revealed yet, [`MissionDef::hidden`]) has not fallen.
+    LineFallen {
+        x: u8,
+        y: u8,
+    },
     /// An army is defeated (its HQ taken or its units gone).
     ArmyDefeated(u8),
     /// At least `n` of an army's units stand in the rectangle (the escort and
@@ -765,6 +771,9 @@ pub enum Action {
     Strike {
         hp: u8,
     },
+    /// The gauntlet engine: a hidden line ([`MissionDef::hidden`]) of this army comes onto the battlefield: it plays again (its controller the computer), its HQ is built on its cell,
+    /// the neutral properties of its zone become its own and the map is redrawn. Spawn its wave and give it funds in the same trigger.
+    Reveal(u8),
     /// A function of the mission's own.
     Custom(fn(&mut Core)),
     /// The battle moves on to the mission's next stage ([`MissionDef::stages`]) once the scripts have ended: a fade, the stage's map, armies and units, the player's survivors, the stage's
@@ -893,6 +902,9 @@ pub struct MissionDef {
     /// Armies cut off once the player holds their HQ: (army, HQ). From then on the army's income is taken back at each of its turn starts (it fights on with what is on the field). A sleeping army has
     /// no funds either while it sleeps ([`cut_funds`]).
     pub cut_off: Vec<(u8, (u8, u8))>,
+    /// The gauntlet engine's hidden lines: armies that are not on the battlefield while they sleep ([`Self::sleepers`]): no HQ (its cell is plain), no units, no turn (controller 0), no
+    /// funds. [`Action::Reveal`] brings one in when the lines before it fall ([`Cond::LineFallen`]).
+    pub hidden: Vec<Hidden>,
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
     /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
@@ -1024,6 +1036,14 @@ impl MarchDef {
     }
 }
 
+/// A hidden gauntlet line ([`MissionDef::hidden`]): the army, its HQ's cell (plain on the map until it is revealed) and its zone (the neutral properties there become its own when it comes).
+#[derive(Clone, Debug)]
+pub struct Hidden {
+    pub army: u8,
+    pub hq: (u8, u8),
+    pub zone: Rect,
+}
+
 /// A Black Hole structure (Laser, Deathray, Black Cannon, minicannon) of the
 /// mission, on its inventions-list cell `at` (the cell the map's structure
 /// stands on), that cannot fire while `until` does not hold ("jammed": its
@@ -1077,6 +1097,7 @@ impl MissionDef {
             held_more: Vec::new(),
             sleepers: Vec::new(),
             cut_off: Vec::new(),
+            hidden: Vec::new(),
             skin: None,
             stages: Vec::new(),
         }
@@ -1269,6 +1290,10 @@ const SPAWNED: u8 = 100;
 pub const TAKE_OVER: u32 = 0xBCC0_0000;
 /// [`STAGE_NEXT`]: the mission goes on to its next stage ([`crate::stage`]).
 pub const STAGE_NEXT: u32 = 0xBCE0_0000;
+/// `RecountArmyProperties` (`sub_080219AC`, no arguments; a capture calls it too): every army's property counts and income in its record, and `gProperty`, the buildings the map draws.
+const RECOUNT_PROPERTIES: u32 = 0x0802_19AC;
+/// The gauntlet engine's reveal of a hidden line ([`Action::Reveal`]): `| army`.
+pub const REVEAL: u32 = 0xBCF0_0000;
 /// A trigger's once-latch flags: campaign flags [`FLAG_FIRST`]..=[`FLAG_LAST`]
 /// (but AW2's Hard flag, [`FLAG_HARD`]).
 pub const FLAG_FIRST: u8 = 0x20;
@@ -1905,6 +1930,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
         sleepers: def.missions.iter().map(|m| m.sleepers.clone()).collect(),
         cut_off: def.missions.iter().map(|m| m.cut_off.clone()).collect(),
+        hidden: def.missions.iter().map(|m| m.hidden.clone()).collect(),
         skin_army: def.missions.iter().map(|m| m.skin).collect(),
         stage_records,
         stages: stage_runtime,
@@ -2204,6 +2230,12 @@ fn compile_mission(
                 Action::Unlock(k) => {
                     let s = cx.stub(Magic::Call(UNLOCK | *k as u32, 0));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
+                }
+                Action::Reveal(army) => {
+                    let s = cx.stub(Magic::Call(REVEAL | *army as u32, 0));
+                    cmds.push(cmd(0x00, s, 0, 0, 0));
+                    // (then AW2's own RecountArmyProperties: each army's property counts and income, and the building list the map's building sprites are drawn from)
+                    cmds.push(cmd(0x00, RECOUNT_PROPERTIES | 1, 0, 0, 0));
                 }
                 Action::SetFunds { army, funds } => {
                     let s = cx.stub(Magic::Call(FUNDS | *army as u32, *funds));
@@ -2839,7 +2871,24 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
 /// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
 /// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(DEFEAT_ARMY_BODY, Box::new(defeat_army))]
+    vec![(DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive))]
+}
+
+/// AW2's end-of-battle check (`sub_08028BAC`), past its loop that marks each army still in the battle as alive (a byte per army at sp + army): the battle ends when no army of a team is.
+const END_CHECK_ALIVE: u32 = 0x0802_8C0A;
+/// The gauntlet engine: a hidden line that still sleeps is off the battlefield (controller 0, so AW2 does not count it) but its team is not beaten: it is marked alive, so destroying the
+/// line on the field (its last unit) does not end the battle; the line's fall wakes the next one instead ([`wake_after_rout`], [`Action::Reveal`]).
+fn hidden_alive(core: &mut Core) {
+    let lines = hidden_lines(core);
+    if lines.is_empty() {
+        return;
+    }
+    let sp = core.gba().cpu().gpr(13) as u32;
+    for h in lines {
+        if (1..=5).contains(&h.army) && sleeping(core, h.army) {
+            core.raw_write_8(sp + h.army as u32, -1, 1);
+        }
+    }
 }
 
 /// `DefeatArmy(army, code)` (`sub_08028894`) past its prologue, and its epilogue: a sleeping army ([`MissionDef::sleepers`]) is not defeated for having no units left (AW2 asks with code 2 when the last unit dies; its HQ is held, so
@@ -2854,7 +2903,9 @@ fn defeat_army(core: &mut Core) {
     let _ = code;
     if sleeping(core, army as u8) {
         core.gba_mut().cpu_mut().set_thumb_pc(DEFEAT_ARMY_EPILOGUE);
+        return;
     }
+    wake_after_rout(core, army as u8);
 }
 
 /// At each army's turn start, just after its income came in (the Black Factory's hook, `factory::at_turn_start`): a sleeping army ([`MissionDef::sleepers`]) or one cut off
@@ -2870,11 +2921,111 @@ pub fn cut_funds(core: &mut Core) {
     else {
         return;
     };
+    // (the gauntlet engine: a hidden line that still sleeps is not on the battlefield: no turn; set at every army's turn start, the battle's first included)
+    for h in hidden_lines(core) {
+        if sleeping(core, h.army) {
+            let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * h.army as u32;
+            core.raw_write_8(p + 0x1B, -1, 0);
+            core.raw_write_32(p, -1, 0);
+        }
+    }
     let player = if crate::five::active(core) { 5 } else { 1 };
     let fallen = cut.iter().any(|&(a, (x, y))| a == army && owner_at(core, x, y) == player);
     if fallen || sleeping(core, army) {
         let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army as u32;
         core.raw_write_32(p, -1, 0);
+    }
+}
+
+/// A gauntlet line has fallen at (x, y) ([`Cond::LineFallen`]): the player holds it, or it is a neutral property (its army was destroyed and its HQ turned neutral). A plain cell is a
+/// hidden line not revealed yet.
+pub fn line_fallen(core: &Core, x: u8, y: u8) -> bool {
+    let player = if crate::five::active(core) { 5 } else { 1 };
+    let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+    let tile = core.raw_read_16(MAP + 0xA22 + 2 * (row + x as u32), -1);
+    match owner_at(core, x, y) {
+        o if o == player => true,
+        0 => crate::five::property_tile(tile).is_some(),
+        _ => false,
+    }
+}
+
+/// This mission's hidden gauntlet lines ([`MissionDef::hidden`]; stage 1 only).
+fn hidden_lines(core: &Core) -> Vec<Hidden> {
+    if !crate::ds_campaign::active(core) || crate::stage::stage(core) > 0 {
+        return Vec::new();
+    }
+    crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.hidden.get(crate::ds_campaign::mission(core) as usize).cloned()))
+        .unwrap_or_default()
+}
+
+/// [`Action::Reveal`]: the hidden line of `army` comes onto the battlefield (the computer plays it), its HQ is built on its cell and the neutral properties of its zone become its own;
+/// the map on screen is redrawn (the cells off screen are drawn when the camera reaches them).
+fn reveal(core: &mut Core, army: u8) {
+    let Some(h) = hidden_lines(core).into_iter().find(|h| h.army == army) else { return };
+    let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army as u32;
+    core.raw_write_8(p + 0x1B, -1, 2);
+    let (w, hh) = (core.raw_read_16(MAP, -1), core.raw_read_16(MAP + 2, -1));
+    let put = |core: &mut Core, x: u8, y: u8, kind: usize| {
+        let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+        let tile = crate::five::tile_for(kind, army);
+        core.raw_write_16(MAP + 0xA22 + 2 * (row + x as u32), -1, tile);
+        let class = crate::two_front::class_of(core, tile) & 0x1F;
+        core.raw_write_8(MAP + 0x1432 + row + x as u32, -1, class | army << 5);
+    };
+    put(core, h.hq.0, h.hq.1, 0);
+    for y in h.zone.y0..=h.zone.y1.min(hh as u8 - 1) {
+        for x in h.zone.x0..=h.zone.x1.min(w as u8 - 1) {
+            let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+            let tile = core.raw_read_16(MAP + 0xA22 + 2 * (row + x as u32), -1);
+            if let Some((kind, 0)) = crate::five::property_tile(tile) {
+                if kind != 0 && kind != 5 {
+                    put(core, x, y, kind);
+                }
+            }
+        }
+    }
+    // (the record as a battle's start leaves it: the HQ's cell, the property counts by kind and the daily income; AW2's recount, called after this, does the total and the building list)
+    let mut kinds = [0u32; 6];
+    for y in 0..hh as u32 {
+        let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+        for x in 0..w as u32 {
+            let tile = core.raw_read_16(MAP + 0xA22 + 2 * (row + x), -1);
+            if let Some((kind, o)) = crate::five::property_tile(tile) {
+                if o == army as usize {
+                    kinds[kind] += 1;
+                }
+            }
+        }
+    }
+    core.raw_write_8(p + 0x2D, -1, h.hq.0);
+    core.raw_write_8(p + 0x2E, -1, h.hq.1);
+    for k in 1..=4 {
+        core.raw_write_8(p + 0xB + k as u32, -1, kinds[k] as u8);
+    }
+    core.raw_write_32(p + 8, -1, 1000 * kinds[..5].iter().sum::<u32>());
+    crate::wasteland::render_map(core);
+}
+
+/// The gauntlet engine, when a line's army is destroyed (`DefeatArmy`, before AW2 looks for the battle's end): a hidden line whose every line before it has fallen, this one's
+/// included, is on the battlefield again at once (its controller the computer), so AW2 does not end the battle with no enemy left; [`Action::Reveal`] then builds its HQ.
+fn wake_after_rout(core: &mut Core, army: u8) {
+    let Some((sleepers, cut)) = crate::ds_campaign::campaign(core).and_then(|c| {
+        c.model.custom.as_ref().map(|m| {
+            let k = crate::ds_campaign::mission(core) as usize;
+            (m.sleepers.get(k).cloned().unwrap_or_default(), m.cut_off.get(k).cloned().unwrap_or_default())
+        })
+    }) else {
+        return;
+    };
+    let Some(&(_, hq)) = cut.iter().find(|(a, _)| *a == army) else { return };
+    for h in hidden_lines(core) {
+        let Some((_, before)) = sleepers.iter().find(|(a, _)| *a == h.army) else { continue };
+        if before.contains(&hq) && before.iter().all(|&(x, y)| (x, y) == hq || line_fallen(core, x, y)) {
+            let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * h.army as u32;
+            core.raw_write_8(p + 0x1B, -1, 2);
+        }
     }
 }
 
@@ -2894,7 +3045,7 @@ pub fn sleeping(core: &Core, army: u8) -> bool {
             return false;
         }
         // (a line falls when the player holds its HQ or its army was destroyed: a routed army's HQ is neutral)
-        if hqs.iter().any(|&(x, y)| !matches!(owner_at(core, x, y), o if o == player || o == 0)) {
+        if hqs.iter().any(|&(x, y)| !line_fallen(core, x, y)) {
             return true;
         }
         // The moment the line before it falls the army has neither its wave nor its funds yet (the rout check runs before the trigger that wakes it): no units and no funds is still asleep.
@@ -3161,6 +3312,7 @@ pub fn holds(core: &mut Core, c: &Cond) -> bool {
         }
         Cond::PlayerCo(c) => crate::tag::army_co_of(core, crate::ds_campaign::player_army(core) as u32) == *c,
         Cond::OwnerAt { x, y, army } => owner_at(core, *x, *y) == *army,
+        Cond::LineFallen { x, y } => line_fallen(core, *x, *y),
         Cond::ArmyDefeated(army) => {
             let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * *army as u32;
             core.raw_read_16(p + 0x14, -1) != 0
@@ -3301,6 +3453,10 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             0
         }
         Magic::Call(STAGE_NEXT, _) => crate::stage::request(core),
+        Magic::Call(f, _) if f & 0xFFF0_0000 == REVEAL => {
+            reveal(core, (f & 0xF) as u8);
+            0
+        }
         Magic::Call(f, _) if f & 0xFFF0_0000 == CUSTOM_FN => {
             let src = crate::ds_campaign::source(core);
             let func = RULES

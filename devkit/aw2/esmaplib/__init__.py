@@ -47,7 +47,7 @@ class Canvas:
         self.dir = FIVE_DIR / self.campaign
         self.g = [[fill] * w for _ in range(h)]
         self.u = []                       # unit dicts
-        self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "zones": None, "blackhole": False, "nohq": False,
+        self.hdr = {"armies": 2, "colours": (5, 3), "tab": 3, "team": None, "objective": [1], "owners": None, "split": None, "zones": None, "blackhole": False, "nohq": False, "hidden": None,
                     "comment": ""}
         self.notes = []                   # (key, x, y, text): named places, printed with the map and written as comments
         self.reserved = set()             # cells `spread` leaves free (a mission's reinforcement cells: `reserve`)
@@ -625,6 +625,8 @@ class Canvas:
             out.append("blackhole")
         if h.get("nohq"):
             out.append("nohq")
+        if h.get("hidden"):
+            out.append("hidden " + " ".join(str(a) for a in h["hidden"]))
         for u in sorted(self.u, key=lambda u: (u["army"], u["kind"], u["y"], u["x"])):
             s = f"unit {u['army']} {u['kind']} {u['x']} {u['y']}"
             if u["hp"]:

@@ -231,7 +231,9 @@ def grid(m):
     hqs = {int(c): (x, y) for y in range(H) for x in range(W) for c in [ch(x, y)] if c in '12345'}
     n = m['armies']
     # (`nohq` in a BH map file: open ground with no HQ at all, a sky front)
-    assert (sorted(hqs) == list(range(1, n + 1)) or (m.get('nohq') and not hqs)) and len(m['colours']) == n, (m['name'], hqs)
+    # (`hidden 2 3 4`: the gauntlet engine's hidden lines have no HQ until they come)
+    want = [a for a in range(1, n + 1) if a not in (m.get('hidden') or [])]
+    assert (sorted(hqs) == want or (m.get('nohq') and not hqs)) and len(m['colours']) == n, (m['name'], hqs)
 
     # (a map may name the armies that own properties by distance: `owners 1 2` in the BH maps, so a
     # second-stage HQ of a team-mate does not take its neighbour's properties)

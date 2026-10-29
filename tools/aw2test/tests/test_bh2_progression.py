@@ -197,15 +197,16 @@ def bh2_m31_progression(ctx):
     prev = counts(g, (1, 2, 3, 4))
     ctx.log(f"start: units by army {prev}, HQ owners {[owner(e, *c) for _, c, _, _ in HQS]}")
     ctx.eq(stage_of(e), 0, "the battle starts on stage 0")
-    ctx.check([owner(e, *c) for _, c, _, _ in HQS] == [1, 2, 3, 4], "each nation owns its own HQ at the start (armies 1..4)")
-    ctx.check(prev[1] >= 20 and all(0 < prev[a] <= 5 for a in (2, 3, 4)), f"Nell's army is whole; the other nations are a few holding units each: {prev}")
+    ctx.eq([owner(e, *c) for _, c, _, _ in HQS], [1, 0, 0, 0], "only Nell's HQ is on the map at the start (the gauntlet engine: Olaf's, Kanbei's and Eagle's cells are plain)")
+    ctx.check(prev[1] >= 20 and all(prev[a] == 0 for a in (2, 3, 4)), f"Nell's army is whole; the other nations have no units yet: {prev}")
+    ctx.eq([e.u8(g.players_base + 0x3C * a + 0x1B) for a in (2, 3, 4)], [0, 0, 0], "Olaf, Kanbei and Eagle are not in the battle yet (controller 0: no turn)")
 
     def shoot(tag):
         home(g, e)
         return stitch.stitch(Quiet(ctx), g, f"m31_{tag}", w, h)
 
     frames.append((shoot("stage1"), {"title": "Start: Nell's Orange Star holds the river plateau", "marks": marks(0, 0), "lines": [
-        f"Five armies: Orange Star (Nell) {prev[1]} units; Blue Moon (Olaf) {prev[2]}, Yellow Comet (Kanbei) {prev[3]} and Green Earth (Eagle) {prev[4]} are a few holding units round their HQs: dormant, no property but the HQ, no production.",
+        f"Five armies: Orange Star (Nell) {prev[1]} units; Blue Moon (Olaf), Yellow Comet (Kanbei) and Green Earth (Eagle) are not on the map yet: no HQ, no units, no turn (the gauntlet engine).",
         "The next HQ to take is 1 Nell (8,8). No pipes: the Marne, the Sere, the lakes and the highland ring are the defences."]}))
     for k, (name, cell, army, nation) in enumerate(HQS):
         last = k == len(HQS) - 1
@@ -256,6 +257,14 @@ def bh2_m31_progression(ctx):
         ctx.check(owner(e, *cell) == player, f"{name}'s HQ is the player's after the capture")
         ctx.check(cur[woke] - prev[woke] >= WAVES[k], f"{ARMY_NAMES[woke]} wakes with its whole wave ({cur[woke] - prev[woke]} new units for {WAVES[k]} in the list)")
         ctx.check(all(cur[a] == prev[a] for a in (2, 3, 4) if a != woke), f"no other dormant nation changed ({prev} -> {cur})")
+        nxt = HQS[k + 1][1]
+        ctx.eq(owner(e, *nxt), woke, f"{ARMY_NAMES[woke]}'s HQ is built on its cell {nxt} (the gauntlet engine's reveal)")
+        ctx.eq(e.u8(g.players_base + 0x3C * woke + 0x1B), 2, f"{ARMY_NAMES[woke]} is in the battle (the computer's)")
+        zone = {2: (16, 1, 30, 13), 3: (32, 1, 45, 13), 4: (32, 14, 45, 26)}[woke]
+        towns = sum(1 for y in range(zone[1], zone[3] + 1) for x in range(zone[0], zone[2] + 1) if owner(e, x, y) == woke)
+        ctx.check(towns >= 8, f"its zone's towns are its own ({towns} properties)")
+        if woke < 4:
+            ctx.eq(owner(e, *HQS[k + 2][1]), 0, "the next nation's HQ is not built yet")
         pth = shoot(f"stage{k + 2}")
         frames.append((pth, {"title": f"{name}'s HQ falls: {nation_of(woke)} joins", "marks": marks(k + 1, k + 1), "lines": [
             f"{name}'s HQ (taken): {ARMY_NAMES[woke]} wakes and lands {cur[woke] - prev[woke]} units ({cur[woke]} in all). The fallen nations stay on the map: units by army {cur}.",

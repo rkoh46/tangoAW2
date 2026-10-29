@@ -18,6 +18,7 @@ lines more, before a map's rows:
     owners 1 2              the armies whose HQs decide who owns each property (the nearest;
                             default: every HQ), so a team-mate's second-stage HQ takes none
     nohq                    open ground with no HQ at all (a sky front)
+    hidden 2 3 4            the gauntlet engine's hidden lines: these armies start with no HQ on the map (built when they come, MissionDef::hidden)
     blackhole               (Emerald Sun Campaign) this mission fights Black Hole itself: its map may carry Black Hole's
                             inventions; no other ES map may (aw2dev maps lint --source es, rule ES01)
     objective 1 3           the armies that must reach every enemy HQ (default: army 1,
@@ -114,6 +115,9 @@ def parse(paths):
                 continue
             if cur and s.startswith('zone '):
                 extra[cur].setdefault('zones', []).append(tuple(int(x) for x in s.split()[1:]))
+                continue
+            if cur and s.startswith('hidden '):
+                extra[cur]['hidden'] = [int(x) for x in s.split()[1:]]
                 continue
             if cur and s.startswith('owners '):
                 extra[cur]['owners'] = [int(x) for x in s.split()[1:]]
