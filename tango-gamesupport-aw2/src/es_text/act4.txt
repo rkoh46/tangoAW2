@@ -9,7 +9,7 @@ NARRATION: Scorched wasteland all around. / The bays glow like lava.
 NARRATION: No nation owns the bay. / Every nation owns a warehouse.
 NARRATION: Reefs break the glowing bays. / The rivers run red, not blue.
 AURELIA: Four flags on one harbour. / I have never seen a worse plan.
-LIVIA: Four flags and, by my count, / eleven creditors, Prefect.
+LIVIA: Four flags and, by my count, / eleven creditors, Chief.
 LIVIA: The port charges a berth fee / per flag. We have not raised one.
 LIVIA: I am told that is what makes / it free. The fee is for later.
 CASSIUS(h): A joke! Livia made a joke! / Somebody write down the date!
@@ -56,7 +56,7 @@ AURELIA(h): Aye, Legate. I always / wanted a view of a siege.
 
 == m13_day4
 KINDLE: Fire the north dock! Burn / every crane and every plank!
-SOLDIER BH: Ma'am, that is the / cargo wharf. We were told
+SOLDIER BH: Ma'am, that is the / cargo wharf. We were told--
 KINDLE: Cargo can be rebought. A / dock I cannot defend is a dock
 KINDLE: nobody else will use. Let them / have ashes. I love a good flame.
 SONJA: A pity. I wanted that dock. / Still, I shall take the east side.
@@ -116,7 +116,7 @@ JAVIER: By the oath of the towers, / I owe you an honest account.
 JAVIER: You held the Harbour Office / and you did not pillage it.
 SONJA: Yellow Comet agrees, / reluctantly and with notes.
 SONJA: Your Quaestor reads a ledger / as I read a face. I like her.
-SONJA: I read the book before you / did. Do not ask how. S.
+SONJA: I read the book before you / did. Do not ask how.
 NELL: Then the Accord agrees. You are / a conqueror who pays his way.
 NELL: You took a free port and gave / it back. That has no precedent.
 NELL: And Black Hole sits at the / north dock, selling to anyone.
@@ -230,8 +230,8 @@ AURELIA: The wall guns point inland now. / Seaward is safer. I have turned them.
 LIVIA: The camp holds nine hundred tons / of stores. I have counted twice.
 LIVIA: The Consul kept his accounts / better than he kept his scruples.
 CASSIUS: Here. Take it.
-LIVIA: A sealed letter. Have you / opened it?
-CASSIUS: Never. That is what I cannot / forgive. Burn it.
+LIVIA: Your letter. You are giving / it up?
+CASSIUS: I am done carrying it. / Burn it.
 LIVIA: I will keep it. A letter is / evidence. We will need evidence.
 CASSIUS(s): Evidence. Of course. You are / a terrible comfort, Livia.
 KLAUS: The coast is ours from the cape to this / wall. The frontier has moved a long way.
@@ -321,7 +321,7 @@ NELL: Legate Klaus. Nell, from the / council chamber. I can hear gulls.
 KLAUS: You are heard, Madam Chair. / The strait is open. The fleet is spared.
 NELL: I know. Drake wept. Quietly. / Sensei said "hm" for an hour.
 NELL: I voted to open the strait. I / was outvoted by one. It haunts me.
-KLAUS: I would not wish that vote on / you, Madam Chair.
+KLAUS: I am sorry for it, / Madam Chair.
 NELL: Do not be. The council wants the / legion stopped at Stormhold. All of it.
 NELL: Eagle and Hachi hold the gate. / They will not open the archives.
 KLAUS: Then I will open them. Nell, / I will take the city if I must.
