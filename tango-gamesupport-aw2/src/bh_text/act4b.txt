@@ -35,8 +35,8 @@ VON BOLT: Kehh-heh! A harbour of / iron! Every crate has a price!
 VON BOLT: Take the quay whole. I do / not pay for broken cranes.
 @END
 @IF HAWKE
-HAWKE: A frozen harbour and a / navy with a tidy sister. Charming.
-HAWKE: Take the quay at tempo. / Every move on this ice counts.
+HAWKE: A frozen harbour and a / navy with a formidable sister.
+HAWKE: Take the quay quickly. / Every move on this ice counts.
 @END
 @IF KOAL
 KOAL: Quay road, two lanes. Ice / on the shoulder. Mind the lane.
@@ -77,7 +77,7 @@ STURM: The water is mine. Say it / to the quay.
 VON BOLT: Kehh! Every wreck on the / bottom is salvage. Salvage is mine!
 @END
 @PARTNER HAWKE
-HAWKE: The sea front is closed. / Attend the harbour. Tempo.
+HAWKE: The sea front is closed. / Attend the harbour.
 @END
 @PARTNER KINDLE
 KINDLE: The waves applauded, / darlings. Standing, of course.
@@ -163,7 +163,7 @@ GRIT: Reckon the last time I saw / this country I was on a leash.
 GRIT: Babysat a robot with a tin / ear. Blue Moon's whole idea.
 MAX: Nell sent me! She said keep / Blue Moon in the Accord!
 MAX: And the Accord is: nobody / gets stormed alone! Right, Grit?
-GRIT: Right as rain, Max. Ayup. / The valley's ours, son.
+GRIT: Right as rain, Max. / The valley's ours, son.
 [CO]: Fall back across the river. / Hold the west bank.
 [CO]: The convoy will come. Until / then, we stand on what we have.
 @IF STURM
@@ -245,7 +245,7 @@ MAX(s): You ran out of ammo and / still beat me?!
 GRIT: They ran dry, and they got / stubborn. That does it.
 MAX: Argh! That's not fair! / We had them at the bridge!
 GRIT: Max. They counted every / shell. We counted every tank.
-GRIT: Reckon they won on the / counting. Ayup. That's the way.
+GRIT: Reckon they won on the / counting. That's the way.
 MAX: Treachery! Hiding all your / shells in a truck?
 GRIT: It ain't treachery, Max. / It's logistics.
 MAX: ...I hate logistics.

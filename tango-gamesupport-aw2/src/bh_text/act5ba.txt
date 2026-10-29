@@ -426,7 +426,7 @@ STURM: Two fronts. The harbour is one. / The market is the other.
 STURM: Take the Port and the Atoll / at the same time. Neither may call
 STURM: for the other's help. A shop / cannot feed an army that is sunk.
 @IF HAWKE
-HAWKE: A harbour and a market. / Choose your hands.
+HAWKE: A harbour and a market. / Divide the work.
 HACHI: The Marshal! Customer! A / pleasure. Black coffee, no sugar?
 HAWKE: ...You remember.
 HACHI: I sold you the beans.
@@ -473,7 +473,7 @@ SAMI: And you still have the cape. / Grunts, hold the quay!
 @PARTNER JUGGER
 [CO2]: MARKET ASSIGNED. OBJECTIVE: / COUNT THE STOCK. THEN DENY IT.
 @PARTNER HAWKE
-[CO2]: I will take the market. Shops / are won by tempo, not by force.
+[CO2]: I will take the market. Shops / are won by patience, not force.
 @PARTNER LASH
 [CO2]: Ooh, a shop of shiny things! / I take the shop! Alone! Heehee!
 @PARTNER KINDLE
@@ -655,7 +655,7 @@ JAKE: It's AMAZING charge!
 COLIN: Jake, um, my flank is / moving. A lot.
 JAKE: That's the plan! Totally the / plan! ...Is it the plan?
 @IF HAWKE
-HAWKE: There. Colin's flank. A / tempo gap you could drive through.
+HAWKE: There. Colin's flank. A / gap you could drive through.
 @IF JUGGER
 JUGGER: SEAM LOCATED. COLIN, / FLANK, EASTERN SIDE. LOGGED.
 @END

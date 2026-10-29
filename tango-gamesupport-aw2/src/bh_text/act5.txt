@@ -161,7 +161,7 @@ MORTAR: No.
 WICK: ...Is it all right if I feel it / quietly?
 MORTAR: ...Quietly.
 @IF HAWKE
-HAWKE: She withdraws on purpose. She / draws us in, a tempo ahead.
+HAWKE: She withdraws on purpose. She / draws us in, one step ahead.
 HAWKE: Everything she has is in that / castle. All of it.
 @IF VON BOLT
 VON BOLT: All of it? Everything she / owns, behind one set of walls?
@@ -211,7 +211,7 @@ ANDY: What do I do?
 NELL: Hold the platform until the / whistle. Then follow.
 NELL: And if I'm not there to say it, / you call them all. Every colour.
 ANDY: Even the ones who walked out?
-NELL: Especially. A fence you build / alone. A table isn't.
+NELL: Especially. A fence you can build / alone. A table you can't.
 
 # ---------------------------------------------------------------------------------------------
 # M30 Nell's Stand (STURM + a free partner; written for Sturm leading; other leads read through @OTHER)
@@ -289,7 +289,7 @@ STURM: Luck is borrowed. She spends it. / I wait.
 NELL: Nobody's hurt who stays behind / the wall, Sturm. Think about that.
 STURM: I think about walls. They / fall.
 @WITH HAWKE
-HAWKE: Hold the camp. Do not cross this / turn. Her luck burns out on stone.
+HAWKE: Hold the camp. Do not cross this / turn. Luck does not move stone.
 @END
 
 == m30_evac
@@ -435,7 +435,7 @@ VON BOLT: To the ledger, closed in black! / And to second pick!
 STURM: Second pick is still mine.
 @BOND HAWKE
 CRUMB: Marshal? What do you toast / when you win?
-HAWKE: The next board, Quartermaster.
+HAWKE: The next campaign, Quartermaster.
 @BOND KOAL
 KOAL: To the road. May it never need / a sign.
 KINDLE: Darling, every road needs a sign.
@@ -468,7 +468,7 @@ STURM: Mine.
 CRUMB: Sir, are you happy?
 STURM: The world is mine. The storm / rests. ...Do not read into it.
 HAWKE: Marshal's note. Chapter two of / the doctrine: "Succession".
-HAWKE: A good army outlives its founder. / I am merely tidy.
+HAWKE: A good army outlives its founder. / I am merely thorough.
 STURM: Noted.
 NARRATION: In the depot, a crate hums. / Stencilled "HOBB, P." and no-map mark.
 CRUMB: Gerald? That crate is for ME.

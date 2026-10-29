@@ -227,7 +227,7 @@ DRAKE: Toll's the toll, old man. / Salvage rights. Lane upkeep.
 DRAKE: Somebody has to scrub the / reefs. It's not cheap.
 VON BOLT: Scrub the reefs! You / never scrubbed one reef!
 EAGLE: Enough. The Accord does / not argue with salvage thieves.
-EAGLE: You are not an army. You / are an invoice with legs.
+EAGLE: You are not an army. You / are a debt collector.
 VON BOLT: Kehh! Eagle, I have / never been so flattered!
 STURM: Von Bolt. The sea.
 VON BOLT: ...The sea. Yes. I am / hating it now, little storm.
@@ -259,13 +259,13 @@ VON BOLT: I shall buy a mountain / and live on it. Kehh...
 HAWKE: Admirable crossing. I have / been watching.
 STURM: Hawke.
 HAWKE: Marshal Hawke, officially. / Green Earth's marshal.
-HAWKE: I have read your landing / and your Foundry. Interesting.
-HAWKE: Rare, to meet a general who / treats the sea as a ledger.
+HAWKE: I have studied your landing / and your Foundry. Careful work.
+HAWKE: It is rare to meet a general / who plans for the sea.
 VON BOLT: A Marshal! Of Green / Earth! On our radio! Kehh!
 VON BOLT: Does he pay? Does he / owe? I shall inspect him.
-HAWKE: I do not owe, Colonel. / I audit.
+HAWKE: I owe nothing, Colonel. / Others owe me.
 STURM: What do you want, Hawke.
-HAWKE: A board worth commanding. / Fort Verdant has a road.
+HAWKE: A worthy opponent. Fort / Verdant has a road.
 HAWKE: If you can walk it, do / come. I keep coffee for rivals.
 STURM: I will walk it.
 HAWKE: Splendid. Then I shall / see what you are made of.
@@ -274,7 +274,7 @@ HAWKE: Splendid. Then I shall / see what you are made of.
 @SONG enemy2
 CRUMB(s): I gave Gerald to a / seagull. Then took him back.
 WICK(s): Is it all right if I / admit I was sick twice?
-MORTAR: Wick. Everybody was sick. / The Colonel, in a helmet. Not his.
+MORTAR: Wick. Everybody was sick. / The Colonel, in my helmet.
 CRUMB: Sergeant, do you think / the COs ever get scared?
 MORTAR: The tall one doesn't know / how. The old one fears the sea.
 STURM: Private. You carried your / pack through three waves. Why.

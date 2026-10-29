@@ -23,7 +23,7 @@ GRIMM: The Council sealed 'em all / last spring. Koal hasn't slept.
 KOAL: Two thousand miles of road, / and a gate bolted across it.
 KOAL: A road that ends in a gate / is a driveway. I built a driveway.
 KOAL: The Council pays me to build / and then to stop.
-KOAL: I wish to build and not / stop. Take it from me. Try.
+KOAL: I wish to build and not / stop. No one will let me.
 @WITH STURM
 STURM: Yellow Comet seals its / borders and calls it safety.
 STURM: Its roads lead to a wall. / Mine will lead through it.
@@ -80,7 +80,7 @@ KOAL: I will hear you out. Why / take your orders?
 STURM: Because borders end where / we arrive.
 STURM: The Council built you a / road, and a wall to end it.
 STURM: I do not build walls. I / own what lies behind them.
-KOAL: No... end?
+KOAL: A road... with no end?
 STURM: Two thousand miles is a / driveway. Pave me a world.
 STURM: The last mile is mine to / name. I will name it yours.
 KOAL: ...Hm. Send me the survey / maps. All of them.
@@ -155,8 +155,8 @@ KINDLE: The storm himself! You are / taller than the posters.
 STURM: You are loud. That will be / useful. I want your stage.
 KINDLE: Everybody does, darling. / Say it with fire.
 @IF HAWKE
-HAWKE: A fortnight, a plaza, four / towers. The board is tidy.
-KINDLE: Tidy! He says it like / a compliment.
+HAWKE: A fortnight, a plaza, four / towers. A clean brief.
+KINDLE: Clean! He says it like / a compliment.
 HAWKE: It is. I admire a stage that / knows its own geometry.
 KINDLE: ...Keep talking. I do like / being admired by cold men.
 @IF VON BOLT
@@ -266,8 +266,8 @@ SONJA: One general, delivered to / Comet Keep. Any general.
 SONJA: Or in fifteen days my / father's engineers seal the pass.
 SONJA: After that, the highlands / are a winter and a wall.
 HAWKE: One soldier is not worth / a battalion.
-HAWKE: It is a tempo trade, and / a bad one. She wants three
-HAWKE: moves of ours for one of / her pawns. I decline.
+HAWKE: It is a bad trade, and she / knows it. She asks a battalion
+HAWKE: to save one runner. I / decline.
 VON BOLT: He owes me for boots! / A debtor must not die!
 VON BOLT: A dead debtor pays / nothing. Fetch him. Kehh!
 KOAL: He inspected my road. Found / a crack I missed. I owe him.
@@ -296,7 +296,7 @@ KANBEI: And the sparrow on the / radio! Is he fed?
 SONJA: He is bait, Father.
 KANBEI: Bait is a boy with a mother / somewhere. Feed him.
 SONJA: ...I will send a cook. / Close the line.
-HAWKE: Interesting. She obeys him / only where he cannot see.
+HAWKE: Curious. She obeys him / only where he cannot see.
 
 == m14_day3
 CRUMB(s): They moved, sir. Closer. / I stopped eating.
