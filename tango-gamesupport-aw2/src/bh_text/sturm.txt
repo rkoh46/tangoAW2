@@ -33,9 +33,9 @@ VON BOLT: ...Every toll. I did not / say no. Did I? Kehh.
 
 == m03_sturm
 @SONG co:hawke
-STURM: Von Bolt. The Marshal on the / radio. What do you know of him.
+STURM: Von Bolt. The Marshal on the / radio. What do you know of him?
 VON BOLT: He audits. He once held a / ship of mine for a typo.
-STURM: And.
+STURM: And?
 VON BOLT: ...And he was right. I / hated it. I respect him. Kehh.
 STURM: He invited me. He keeps / coffee for rivals.
 VON BOLT: A man who sells coffee to / the enemy is lonely, boy. Or rich.
@@ -92,7 +92,7 @@ STURM: The Arsenal is mine. The / second Foundry is mine.
 HAWKE: And the cranes are the / Colonel's. A fair division.
 STURM: Eagle asked why you did it.
 HAWKE: A small reason. It is / always a small reason.
-STURM: And the true one.
+STURM: And the true reason?
 HAWKE: Nothing moved any more, Lord / Sturm. I cannot bear that.
 HAWKE: You move it. That is the / whole of my loyalty.
 STURM: It will do. For now.
@@ -153,7 +153,7 @@ STURM: Then I will read her.
 == m12_sturm
 @SONG co:koal
 KOAL: Surface condition: good. Shoulder: / three metres. Camber: acceptable.
-STURM: Where does your road end.
+STURM: Where does your road end?
 KOAL: At a gate. They always end / at a gate.
 STURM: Then it is the wrong / road.
 KOAL: ...Yes. That is what I said. / To Grimm. He did not listen.
@@ -180,7 +180,7 @@ KINDLE: Then I shall light it. Every / mile, and a sign: KINDLE WAS HERE.
 
 == m14_sturm
 @SONG sturm
-HAWKE: I will say nothing about the / pass.
+HAWKE: I will say nothing about the / highlands.
 STURM: You have said it.
 HAWKE: I said nothing.
 VON BOLT: He said it with his / eyebrows! Kehh...
@@ -284,7 +284,7 @@ STURM: Draft it. We go to Lab 7.
 == m23_sturm
 @SONG co:lash
 LASH: Sub-basement four! Come and / see! It is SO sad down there!
-STURM: What is in it.
+STURM: What is in it?
 LASH: A cancelled project! He has a / cot, a mug, and a drawer!
 HAWKE: Remember what I said. Toys / stay indoors.
 LASH: He is not a toy! He is a / person! In a drawer! Heehee...
