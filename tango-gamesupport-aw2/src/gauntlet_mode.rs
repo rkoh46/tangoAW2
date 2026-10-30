@@ -148,7 +148,11 @@ fn cinder_sea() -> MissionDef {
     m.triggers = vec![
         arrive(CINDER_DRAKE, &[], 3, sensei_chest, &SENSEI_WAVE, sensei_arrives()),
         arrive(CINDER_SENSEI, &[CINDER_DRAKE], 4, hawke_chest, &HAWKE_WAVE, hawke_arrives()),
+        // Hawke's line is the last: when it falls (his HQ taken or his army routed) the battle is won at once, whatever Drake's and Sensei's cut-off survivors still hold
+        Trigger::new(When::AfterAction, Cond::All(vec![fell(CINDER_HAWKE), fell(CINDER_SENSEI), fell(CINDER_DRAKE)]), vec![Action::Win]),
     ];
+    // (no Setup phase: the battle starts on day 1 with the map's deployment)
+    m.setup = false;
     // Hawke's volcano: from day 3 it erupts every day on 3 cells of the ring round its mountain wall (3 HP, any army's units, never below 1)
     m.volcano = Some(crate::campaign_model::VolcanoDef::new(3, 1, 3, &crate::campaign_model::ring(21, 0, 28, 7)).per_eruption(3));
     m.intro = intro();
@@ -219,7 +223,8 @@ mod tests {
         assert!(matches!(cos[2], CoSpec::Fixed(c) if c == co::SENSEI));
         assert!(matches!(cos[3], CoSpec::Fixed(c) if c == co::HAWKE));
         assert_eq!(m.hidden.iter().map(|h| h.army).collect::<Vec<_>>(), vec![3, 4]);
-        assert_eq!(m.triggers.len(), 2, "Sensei and Hawke each arrive once");
+        assert_eq!(m.triggers.len(), 3, "Sensei and Hawke each arrive once; Hawke's fall wins");
+        assert!(!m.setup, "no Setup phase");
         let map = crate::custom_campaign::built_map("gauntlet_01").expect("the map is built (five/bhmap.py --campaign gauntlet)");
         assert_eq!((map.width, map.height, map.armies), (32, 22, 4));
     }
