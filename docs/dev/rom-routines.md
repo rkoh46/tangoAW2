@@ -170,7 +170,7 @@ Proc scripts (data) that mark screens:
 | `0x0803D238`, `0x0803D28C`, `0x0803CFA4`, `0x0803CF54`, `0x0803D2F8` | design-map loader / save / record | `design5.rs`, `wasteland.rs` |
 | `0x0803B83C` | Select Mode start | `ds_campaign.rs` |
 | `0x0803BA4C`, `0x0803B904`, `0x0803BA00`, `0x0803BC7C` | Campaign New/Continue handlers; Survival's Continue (`MainMenuWarRoom_Continue`); `StartWarRoom`; `GetCampaignSaveFlag` | `ds_campaign.rs`, `suspend.rs`, `campaign_menu.rs` |
-| `0x08081498`, `0x08081E94`, `0x08081EEE`, `0x08081EF6` | wheel: item 8 answers as Link; mode store `0x030033FC` | `mode_menu.rs` |
+| `0x08081498`, `0x08081E94`, `0x08081EEE`, `0x08081EF6` | wheel: items 8 (Survival) and 9 (Gauntlet) answer as Link; mode store `0x030033FC` (Survival: 5, the War Room's New; Gauntlet: 1, Campaign's New) | `mode_menu.rs` |
 | `0x0803CBA0` | AW2 campaign flag set/test (`SET_FLAG`) | `ds_campaign.rs` |
 | `0x08074484` | `RunEventList(list, unit, arg)` (`StartEventScript` `0x08019348`; `0x08019260` scripts ended) | `onyx.rs`, `two_front.rs` |
 | `0x080743E8`, `0x08074384`, `0x080743AA` | `RunMapEventsAfterUnitAction`; `UnitSelectedEvent_Init`; return trap padding | `two_front.rs` |
@@ -242,7 +242,7 @@ AW2 sound ids not listed here have not been catalogued in the code; to find one,
 | `0x087D0000..0x087DFFFF` | unit pictures | `ds_unit_pictures.rs` |
 | `0x087F0000..0x087F4FFF` | CO screen grid | `co_grid.rs` |
 | `0x08800000..0x08DFFFFF` | music (past the 8 MB cartridge) | `ds_music.rs` |
-| `0x08E00000..0x08E4FFFF` | Survival (map table copy for `0x100` ids, `0x08E08000` maps), wheel data (`0x08E40000`) | `survival.rs`, `mode_menu.rs` |
+| `0x08E00000..0x08E4FFFF` | Survival (map table copy for `0x100` ids, `0x08E08000` maps), wheel data (`0x08E40000..0x08E41FFF`: item table, help lines, Survival's labels and palettes, Gauntlet's at `+0x1000`) | `survival.rs`, `mode_menu.rs` |
 | `0x08E50000..0x08E5FFFF` | online menu data (texts `0x08E50000`, wheel labels `0x08E50400`, `0x08E50E00`, sheet `0x08E51400`) | `online_menu.rs` |
 | `0x08E70000..0x08E73FFF`, `0x08E74000..0x08E743FF`, `0x08E75000..0x08E753FF` | two fronts, setup phase, Black Onyx | `two_front.rs`, `setup_phase.rs`, `onyx.rs` |
 | `0x08E80000..0x08EFFFFF` | Dual Strike looks (0x20000 each) | `docs/AW2.md` |

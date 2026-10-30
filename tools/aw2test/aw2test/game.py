@@ -27,6 +27,8 @@ VISUALS_VALUES = {"off": 0, "a": 1, "b": 2, "c": 3}
 
 SELECT_MODE_CURSOR = 0x0300591C   # Select Mode menu item (2 Design Room, 3 Versus, 4 Campaign)
 SELECT_MODE_VERSUS = 3
+WHEEL_STEP, WHEEL_STEP_END = "#wheel-step", "#wheel-step-end"   # timeline markers around a pad step that only the pack's wheel needs
+PACK_CAMPAIGN = 5                # (with the pack the wheel has Gauntlet between Campaign and Versus)
 MAP_TAB = 0x0300596C              # Select Map tab (8 = Design Maps)
 MAP_TAB_DESIGN = 8
 BATTLE_MAIN = 0x08022049
@@ -102,8 +104,15 @@ class Game:
             cur = e.u8(SELECT_MODE_CURSOR)
             if cur == SELECT_MODE_VERSUS:
                 break
+            # Campaign -> Versus is one step on AW2's six-entry wheel and two on the pack's eight-entry one (Gauntlet between): the extra step is marked in the timeline, so that a netplay
+            # replay of the run (its peers have the six-entry wheel: netplay is offline-only for the pack's entries) leaves it out (`Ctx.netplay_replay`).
+            extra = getattr(e, "ds", False) and cur == PACK_CAMPAIGN
+            if extra:
+                e.timeline.append(WHEEL_STEP)
             e.press("UP" if cur < SELECT_MODE_VERSUS else "DOWN", 8)
             e.wait(50)
+            if extra:
+                e.timeline.append(WHEEL_STEP_END)
         if e.u8(SELECT_MODE_CURSOR) != SELECT_MODE_VERSUS:
             raise NavError(f"Select Mode cursor stuck at {cur}")
         e.press("A", 8)  # Versus -> Continue/New (on New)

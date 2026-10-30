@@ -84,7 +84,7 @@ LAND = (1, 3, 4, 5, 6, 8, 0x0A, 0x0B, 0x0C, 0x0E, 0x14)
 WHEELS = (0x08616A08, 0x08616A40)  # the Select Mode carousel's proc scripts (entered, come back)
 CO_SELECT = 0x086165C0   # the CO select screen's proc script
 SELECT_MODE_CURSOR = 0x0300591C
-CAMPAIGN = 4
+CAMPAIGN = "campaign"      # (Select Mode's wheel position by name: 4 without the pack, 5 with it; saves.position)
 GAME_MODE = 0x03003FC1
 MAP_ID = 0x03003FC2
 # Event script slots (gUnknown_0200C528: 10 x 0x18, script pointer first).
@@ -197,11 +197,13 @@ class DsCampaign:
         e.wait(300)
         e.press("A", 8)
         e.wait(150)
+        from . import saves
+        want = saves.position(e, CAMPAIGN)
         for _ in range(8):
             cur = e.u8(SELECT_MODE_CURSOR)
-            if cur == CAMPAIGN:
+            if cur == want:
                 return
-            e.press("UP" if cur < CAMPAIGN else "DOWN", 8)
+            e.press("UP" if cur < want else "DOWN", 8)
             e.wait(50)
         raise NavError(f"Select Mode cursor stuck at {e.u8(SELECT_MODE_CURSOR)}")
 
@@ -572,7 +574,7 @@ class DsCampaign:
             here = c["cos"][first:first + c["counts"][c["tab"]]]
             want = next((co for co in prefs if co in here), c["co"])
             tab, at = c["tab"], here.index(want)
-        for _ in range(12):
+        for _ in range(30):
             c = self.co_cursor()
             if c["at"] == at:
                 break

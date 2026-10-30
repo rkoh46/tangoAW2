@@ -8,7 +8,7 @@ it is there."""
 import os
 import struct
 
-from aw2test import looks, paths, ram
+from aw2test import looks, paths, ram, saves
 from aw2test import rom as romlib
 from aw2test import survival as sv
 from aw2test.emu import Emu
@@ -118,14 +118,14 @@ def hud_shown(e):
 
 @test()
 def survival_on_select_mode(ctx):
-    """Survival is a seventh entry on the wheel with the pack, offline; without
+    """Survival and Gauntlet are the seventh and eighth entries on the wheel with the pack, offline; without
     it the wheel turns its six as ever."""
     e, g = boot(ctx)
     sv.to_select_mode(e)
     seen = set()
     for _ in range(9):
         seen.add(e.u8(sv.SELECT_MODE_CURSOR))
-        if e.u8(sv.SELECT_MODE_CURSOR) == sv.SURVIVAL_POSITION:
+        if ctx.ds and e.u8(sv.SELECT_MODE_CURSOR) == saves.position(e, "survival"):
             shot(ctx, e, "select_mode_survival")
         e.press("UP", 8)
         e.wait(60)
@@ -133,7 +133,7 @@ def survival_on_select_mode(ctx):
         ctx.eq(sorted(seen), list(range(6)), "six wheel positions")
         ctx.eq(e.u32(0x080814F0), 0x0861696C, "the wheel reads the game's own item table")
         return
-    ctx.eq(sorted(seen), list(range(7)), "seven wheel positions")
+    ctx.eq(sorted(seen), list(range(8)), "eight wheel positions")
     ctx.require(sv.wheel_to(e, sv.SURVIVAL_POSITION), "Survival reached")
     e.wait(40)
     shot(ctx, e, "select_mode")

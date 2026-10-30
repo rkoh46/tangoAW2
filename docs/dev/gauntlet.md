@@ -2,7 +2,7 @@
 
 A gauntlet is one battle against several armies that come one after another: only the first line is on the battlefield; each later line comes when the
 lines before it fall. BH2's M31 The Last Accord uses it (Nell, then Olaf, Kanbei and Eagle; then the stage switch to Aria's Citadel, docs/dev/stages.md).
-It is data on a mission, so a game mode of its own can reuse it.
+It is data on a mission, so a game mode of its own can reuse it: the Gauntlet mode ([gauntlet-mode.md](gauntlet-mode.md)) does, with a map's mission started from Select Mode.
 
 | Piece | What it does |
 |---|---|

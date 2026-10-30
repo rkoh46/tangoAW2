@@ -233,11 +233,11 @@ struct Built {
 
 static BUILT: OnceLock<Option<Built>> = OnceLock::new();
 
-fn text_slot(k: u16) -> u32 {
+pub(crate) fn text_slot(k: u16) -> u32 {
     TEXT_TABLE + 4 * (TEXT_BASE + k) as u32
 }
 
-fn string_at(k: u16) -> u32 {
+pub(crate) fn string_at(k: u16) -> u32 {
     STRINGS + STRING_SIZE * k as u32
 }
 

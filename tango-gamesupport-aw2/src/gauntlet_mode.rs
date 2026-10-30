@@ -129,12 +129,13 @@ fn cinder_sea() -> MissionDef {
     m.map = MapSrc::Built("gauntlet_01");
     m.armies = vec![
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(12000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(1).funds(8000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(1).funds(0),
-        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::HAWKE)).team(1).funds(0),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::DRAKE)).team(2).funds(8000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::SENSEI)).team(2).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::HAWKE)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_01");
     m.rank_days = 24;
+    // (the player's army has no team of its own written here: team 0 is its own army number, 1; the three enemies share team 2: with team 1 they were the player's allies)
     // the gauntlet: Drake's and Sensei's HQs are held (taking one defeats nobody: the line's survivors fight on, cut off from their income); Hawke's is the last
     m.held_hq = Some(CINDER_DRAKE);
     m.held_more = vec![CINDER_SENSEI];

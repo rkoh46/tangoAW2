@@ -340,6 +340,8 @@ pub const FLOW_CREDITS_START: u8 = 7;
 pub const FLOW_CREDITS_RUNNING: u8 = 8;
 /// The prologue card has run (a custom campaign's New): its flag is set.
 pub const FLOW_PROLOGUE_SEEN: u8 = 9;
+/// The Gauntlet's way back to Select Mode begins ([`crate::gauntlet::returning`]).
+pub const FLOW_RETURNING: u8 = 10;
 /// Narration picture n (crate::ds_story_art::NARRATION) on the map's layer.
 pub const FLOW_PICTURE: u8 = 16;
 
@@ -563,6 +565,40 @@ fn start_new_proc_script(save: u32, seen: u32) -> Vec<u8> {
     .concat()
 }
 
+/// `ProcScr_MainMenu`, the Select Mode menu: the War Room's flow jumps to it when it is left, which keeps the wheel on the entry that was picked (the menu's start,
+/// [`SELECT_MODE_START`], begins on Campaign).
+const MAIN_MENU_PROC: u32 = 0x0849_E7F8;
+
+/// The Gauntlet's start proc ([`crate::gauntlet`]): fade out, fill the CO screen's lists (the stub answers and the proc goes on), the CO screen (a child: B answers 0 and
+/// goes back to Select Mode), BG0 emptied, `ResetRulesAfterCampaignMap`, then AW2's mission proc (the mission card, the battle) as the campaign's world map ends in.
+fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32) -> Vec<u8> {
+    const BACK: i16 = 100;
+    [
+        proc_cmd(0x1D, 0x1E, 0),
+        proc_cmd(0x02, 0, co_setup),
+        proc_cmd(0x06, 1, CO_SELECT_PROC),
+        proc_cmd(0x28, BACK, 0x0803_BD6D),
+        proc_cmd(0x02, 0, clear),
+        proc_cmd(0x02, 0, RESET_RULES),
+        proc_cmd(0x0D, 0, MISSION_PROC),
+        proc_cmd(0x0B, BACK, 0),
+        proc_cmd(0x02, 0, returning),
+        proc_cmd(0x1D, 0x1E, 0),
+        proc_cmd(0x0D, 0, MAIN_MENU_PROC),
+    ]
+    .concat()
+}
+
+/// The Gauntlet's end proc, where AW2 would open its world map after a mission ([`AFTER_MAP`]): the record saved, the screen faded, Select Mode.
+fn gauntlet_end_script(save: u32) -> Vec<u8> {
+    [
+        proc_cmd(0x02, 0, save | 1),
+        proc_cmd(0x1D, 0x1E, 0),
+        proc_cmd(0x0D, 0, MAIN_MENU_PROC),
+    ]
+    .concat()
+}
+
 pub struct Campaign {
     /// The campaign ([`crate::campaign_model`]): its missions, order, story,
     /// staff roll, rules.
@@ -579,6 +615,9 @@ pub struct Campaign {
     pub ending: u32,
     /// The Normal / Hard choice's help lines ([`crate::campaign_menu`]).
     pub help: [u32; 2],
+    /// The Gauntlet mode's procs ([`crate::gauntlet`]): the CO pick and the battle's start, and the end (save, back to Select Mode).
+    pub gauntlet_start: u32,
+    pub gauntlet_end: u32,
 }
 
 /// The help line under the Normal / Hard choice, per row (no longer than
@@ -647,7 +686,7 @@ fn proc_running(core: &Core, script: u32) -> bool {
     (0..32).any(|k| core.raw_read_32(0x0200_D610 + 0x6C * k, -1) == script)
 }
 
-static BUILT: [OnceLock<Option<Campaign>>; 4] = [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
+static BUILT: [OnceLock<Option<Campaign>>; 5] = [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
 
 /// The campaign chosen ([`source`]; loaded once by its source,
 /// [`crate::campaign_model`]; then the engine's own procs and stubs added).
@@ -684,6 +723,9 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let credits_running = built.add_magic(data::Magic::Flow(FLOW_CREDITS_RUNNING));
             let ending = built.add(&ending_script(credits_start, credits_running));
             let help = DIFFICULTY_HELP.map(|t| built.add(&[t.as_bytes(), &[0]].concat()));
+            let returning = built.add_magic(data::Magic::Flow(FLOW_RETURNING));
+            let gauntlet_start = built.add(&gauntlet_start_script(co_setup, clear, returning));
+            let gauntlet_end = built.add(&gauntlet_end_script(save));
             assert!(built.base + (built.blob.len() as u32) < DATA_END);
             Some(Campaign {
                 model,
@@ -694,6 +736,8 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
                 co_setup,
                 ending,
                 help,
+                gauntlet_start,
+                gauntlet_end,
             })
         })
         .as_ref()
@@ -881,6 +925,7 @@ pub fn tick(core: &mut Core, ds: bool) {
     }
     let on = ds && install(core);
     let session = on && active(core);
+    crate::gauntlet::tick(core);
     if !on && core.raw_read_8(ACTIVE, -1) != 0 {
         core.raw_write_8(ACTIVE, -1, 0);
     }
@@ -914,7 +959,13 @@ pub fn tick(core: &mut Core, ds: bool) {
         let menu = crate::campaign_menu::on_select_mode(core);
         match core.raw_read_8(ACTIVE, -1) {
             1 if !menu => core.raw_write_8(ACTIVE, -1, 2),
-            2 if menu => core.raw_write_8(ACTIVE, -1, 0),
+            2 if menu => {
+                core.raw_write_8(ACTIVE, -1, 0);
+                // (the Gauntlet's session is over: the Campaign sub-menu starts from the DS Campaign again)
+                if source(core) == crate::gauntlet::SOURCE {
+                    core.raw_write_8(SOURCE, -1, 0);
+                }
+            }
             _ => {}
         }
         custom_co_screen(core);
@@ -1096,6 +1147,10 @@ pub fn unlocked_cos(core: &Core) -> Vec<u8> {
     let Some(custom) = &c.model.custom else {
         return Vec::new();
     };
+    // The Gauntlet's roster is every CO the game has, all open (more than the 12 the record's unlock bits keep).
+    if source(core) == crate::gauntlet::SOURCE {
+        return custom.roster.iter().map(|r| r.0).collect();
+    }
     custom
         .roster
         .iter()
@@ -1303,6 +1358,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         (CAMPAIGN_NEW, Box::new(|core: &mut Core| start(core, true))),
         (CAMPAIGN_CONTINUE, Box::new(|core: &mut Core| start(core, false))),
         (CAMPAIGN_END, Box::new(end_of_battle)),
+        (AFTER_MAP, Box::new(after_map)),
         (RESET_RULES_ENTRY, Box::new(mission_start)),
         (SET_FLAG, Box::new(set_flag)),
         (IS_FLAG, Box::new(is_flag)),
@@ -1377,6 +1433,9 @@ fn start(core: &mut Core, new: bool) {
         return;
     }
     core.raw_write_8(REQUEST, -1, 0);
+    if source(core) == crate::gauntlet::SOURCE {
+        return start_gauntlet(core, req);
+    }
     if req == 1 || !progress_valid(core) {
         new_progress(core);
         // New after the Normal/Hard choice (Continue keeps the record's).
@@ -1435,6 +1494,64 @@ fn start(core: &mut Core, new: bool) {
     proc_start_instead(core, if first { c.start_new_proc } else { c.start_proc });
 }
 
+/// The Gauntlet mode's start ([`crate::gauntlet`]), from Campaign New's trapped handler: the mode's record from Flash (kept, never started over: only the session's
+/// flags and wins are cleared), the chosen map (the mission; one map today) with its header in the battle's map table entry, then the start proc (the CO pick, the battle)
+/// or, for Continue, AW2's resume of the run saved halfway.
+fn start_gauntlet(core: &mut Core, req: u8) {
+    crate::gauntlet::consumed(core);
+    // The record: this source's region of its Flash slot, or a new empty one.
+    core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
+    core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
+    load_from_flash(core);
+    if !progress_valid(core) {
+        core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
+        core.raw_write_32(P_MAGIC, -1, spec(core).progress_magic);
+        core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
+    }
+    // Every run is a first play: nothing won, no flag set, no Hard.
+    core.raw_write_32(P_WON, -1, 0);
+    core.raw_write_8(P_NEXT, -1, 0);
+    core.raw_write_8(P_HARD, -1, 0);
+    core.raw_write_range(P_FLAGS, -1, &[0u8; 16]);
+    flags_from_record(core);
+    let missions = campaign(core).map_or(0, |c| c.model.missions);
+    let resume = if req == 2 {
+        crate::suspend::saved_mission_of(core, source(core)).filter(|&m| (m as usize) < missions)
+    } else {
+        // (a new run drops the one saved halfway)
+        crate::suspend::drop_mid_of(core, source(core));
+        None
+    };
+    let mission = resume.unwrap_or(0);
+    crate::ds_worldmap::backup_aw2_state(core);
+    crate::ds_worldmap::write_state(core, &[mission], &[], mission);
+    core.raw_write_8(ACTIVE, -1, 1);
+    core.raw_write_8(MISSION_SET, -1, 0);
+    core.raw_write_8(GAME_MODE, -1, CAMPAIGN);
+    core.raw_write_8(MAP_ID, -1, data::MAP_ID);
+    sync_mission(core);
+    log::info!("gauntlet: map {} {}", mission + 1, if resume.is_some() { "resumed" } else { "starts" });
+    if resume.is_some() {
+        return crate::suspend::resume_mid(core, spec(core).mid_slot);
+    }
+    let Some(c) = campaign(core) else { return };
+    proc_start_instead(core, c.gauntlet_start);
+}
+
+/// Where AW2, past `ResetRulesAfterCampaignMap` at a campaign mission's end, starts the proc of its world map after a mission (`0x0849EBBC`): the Gauntlet's end proc runs
+/// there instead.
+pub const AFTER_MAP: u32 = 0x0803_BADC;
+
+fn after_map(core: &mut Core) {
+    if !crate::gauntlet::session(core) {
+        return;
+    }
+    crate::gauntlet::returning(core);
+    if let Some(script) = campaign(core).map(|c| c.gauntlet_end) {
+        proc_start_instead(core, script);
+    }
+}
+
 /// The campaign's end of battle, past `EndOfGame_FinishCampaignMap`'s
 /// prologue: record the outcome, write which missions the win opens, and
 /// carry on into the function's own tail (`ResetRulesAfterCampaignMap`,
@@ -1446,6 +1563,24 @@ fn end_of_battle(core: &mut Core) {
     }
     let index = core.raw_read_8(MISSION, -1);
     let won = battle_won(core);
+    if source(core) == crate::gauntlet::SOURCE {
+        // The Gauntlet: no progress, no map. The record (`best_score`) is saved by the end proc.
+        crate::five::set_campaign(core, false, 0, 0);
+        crate::suspend::drop_mid_of(core, source(core));
+        core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
+        core.raw_write_8(LAST_RESULT + 1, -1, index);
+        core.raw_write_16(LAST_RESULT + 2, -1, core.raw_read_16(0x0300_4080, -1));
+        log::info!(
+            "gauntlet: map {} {} on day {}",
+            index as u32 + 1,
+            if won { "won" } else { "lost" },
+            core.raw_read_16(0x0300_4080, -1)
+        );
+        let cpu = core.gba_mut().cpu_mut();
+        cpu.set_gpr(4, 0);
+        cpu.set_thumb_pc(CAMPAIGN_END_RESET);
+        return;
+    }
     // A replay (Free Play) changes nothing of the progress.
     let replay = self::won(core, index);
     // (the patched five-army game is for the battle only)
@@ -1545,7 +1680,9 @@ fn best_score(core: &mut Core) {
             cpu.gpr(3) as u32 & 0xFFF,
         );
         let index = core.raw_read_8(MISSION, -1) as u32;
-        if (index as usize) < campaign(core).map_or(0, |c| c.model.missions) && !won(core, index as u8) {
+        // (the Gauntlet records a win only: AW2 calls this for a loss too, with the winner's score)
+        let result_counts = source(core) != crate::gauntlet::SOURCE || battle_won(core);
+        if result_counts && (index as usize) < campaign(core).map_or(0, |c| c.model.missions) && !won(core, index as u8) {
             let at = RECORDS + 8 * index + 4 * hard(core) as u32;
             let old = core.raw_read_32(at, -1);
             if score >= old >> 20 {
@@ -1637,6 +1774,7 @@ pub fn map_start(core: &mut Core) {
     core.raw_write_8(FOG, -1, m.fog as u8);
     set_look(core, m);
     set_controllers(core, m);
+    crate::gauntlet::keep_colour(core, m);
     // Dual Strike's Setup phase before day 1 (crate::setup_phase).
     crate::setup_phase::map_start(core, player_picks(main) && main.native.as_ref().is_none_or(|n| n.setup));
     crate::two_front::map_start(core);
@@ -1896,6 +2034,10 @@ fn landing(core: &mut Core) {
         Some(data::Magic::Flow(FLOW_CO_SETUP)) => co_setup(core),
         Some(data::Magic::Flow(FLOW_SAVE)) => return save(core),
         Some(data::Magic::Flow(FLOW_HIDE)) => 1,
+        Some(data::Magic::Flow(FLOW_RETURNING)) => {
+            crate::gauntlet::returning(core);
+            0
+        }
         Some(data::Magic::Flow(FLOW_CLEAR)) => return clear_bg0(core),
         Some(data::Magic::Flow(FLOW_PROLOGUE)) => return prologue(core),
         Some(data::Magic::Flow(FLOW_PROLOGUE_SEEN)) => {
@@ -2046,5 +2188,39 @@ mod save_tests {
         assert_eq!(f.load(BH2), None);
         assert_eq!(extract_record(&[1, 2], 0, 5), None);
         assert_eq!(extract_record(&record(5, 0)[..10], 0, 5).map(|r| r.len()), Some(10), "a short record (saved before the mission records) loads as far as it goes");
+    }
+
+    #[test]
+    fn the_gauntlet_record_sits_after_bh_and_bh2_in_slot_13_and_touches_neither() {
+        const G: usize = crate::gauntlet::SOURCE;
+        assert_eq!(G, 4);
+        assert_eq!(SOURCES[G].save_slot, SOURCES[BH].save_slot);
+        assert_eq!(SOURCES[G].save_offset as usize, 2 * RECORD_LEN, "right after the BH2 record");
+        assert!(SOURCES[G].save_offset as usize + RECORD_LEN <= 0x1000 - 0x52, "all three records fit one sector's payload");
+        assert_eq!(SOURCES[G].mid_slot, SOURCES[BH].mid_slot, "a run saved halfway shares the BH Campaigns' slot, told apart by the source tag");
+        let mut f = Flash(Default::default());
+        let (bh, bh2) = (record(SOURCES[BH].progress_magic, 0x11), record(SOURCES[BH2].progress_magic, 0x33));
+        f.save(BH, &bh);
+        f.save(BH2, &bh2);
+        let slot_before = f.0[&13].clone();
+        let g = record(SOURCES[G].progress_magic, 0x77);
+        f.save(G, &g);
+        assert_eq!(f.load(G).unwrap(), g);
+        assert_eq!(&f.0[&13][..2 * RECORD_LEN], &slot_before[..], "BH's and BH2's bytes are untouched by a Gauntlet save");
+        // and theirs do not touch the Gauntlet's
+        f.save(BH2, &record(SOURCES[BH2].progress_magic, 0x44));
+        f.save(BH, &record(SOURCES[BH].progress_magic, 0x55));
+        assert_eq!(f.load(G).unwrap(), g);
+        // an older build's slot without the Gauntlet's region has no Gauntlet record
+        let mut old = Flash(Default::default());
+        old.save(BH, &bh);
+        old.save(BH2, &bh2);
+        assert_eq!(old.load(G), None);
+        // the saved-halfway tags of the sources sharing slot 12 differ
+        let tags: Vec<usize> = [BH, ES, BH2, G].iter().map(|&s| if s >= 2 { s << 5 } else { 0 }).collect();
+        let mut t = tags.clone();
+        t.sort();
+        t.dedup();
+        assert_eq!(t.len(), 4, "{tags:?}");
     }
 }

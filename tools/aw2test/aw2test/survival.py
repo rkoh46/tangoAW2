@@ -40,7 +40,7 @@ CHAMPION_BUDGETS = {TIME: 108000, MONEY: 600000, TURN: 120}
 MAPS_FROM = 0xCC
 
 SELECT_MODE_CURSOR = 0x0300591C
-SURVIVAL_POSITION = 6
+SURVIVAL_POSITION = "survival"   # (a name: its place on the wheel is 7 with the pack's eight entries, saves.position)
 SELECT_MAP_PROC = 0x08616C54
 CO_SCREEN_PROC = 0x086165C0
 PROCS = (0x0200D610, 0x0200E418)
@@ -164,6 +164,8 @@ def to_select_mode(e):
 
 
 def wheel_to(e, position, tries=10):
+    from . import saves
+    position = saves.position(e, position)
     for _ in range(tries):
         if e.u8(SELECT_MODE_CURSOR) == position:
             return True
