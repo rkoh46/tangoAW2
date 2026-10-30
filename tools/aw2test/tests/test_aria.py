@@ -3,7 +3,7 @@
     - the CO table's row: 0 stars for the CO Power, 7 for the Super Power, the game's own luck, Orange Star's style and colour bytes, her texts and quote slots;
     - Vengeance: a unit on 8 HP or less (displayed) attacks and defends harder by its HP (+25% at 8, 6% more per HP lost to +61% at 2, +85% at 1; never an Oozium), 9 and 10 HP do not, in every power level, as attacker,
       as counterattacker and as defender, checked against the calculator's ranges;
-    - no CO Power: the map menu never offers "Power" and offers "Super" at 7 stars, the CPU plays her with a Super Power only;
+    - no CO Power: the map menu never offers "Power" and offers "Super" at 8 stars, the CPU plays her with a Super Power only;
     - Build Anew heals 3 HP, adds 20% firepower and nothing else (no move, no funds);
     - the Orange Star HQ is drawn for her."""
 
@@ -44,11 +44,11 @@ def hp_of(g, x, y):
 
 @test(modes=("ds",))
 def aria_row_has_only_a_super_power_and_the_games_luck(ctx):
-    """The CO table's row 93: 0 stars for the CO Power, 7 in all for the Super Power; luck 20 and no bad luck in every level; Orange Star's style and colour bytes (Nell's); her own texts."""
+    """The CO table's row 93: 0 stars for the CO Power, 8 in all for the Super Power; luck 20 and no bad luck in every level; Orange Star's style and colour bytes (Nell's); her own texts."""
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
     g = ctx.start(m, ["aria", "andy"])
-    ctx.eq(g.co_stars(ARIA), (0, 7), "stars: no CO Power, a Super Power of 7")
+    ctx.eq(g.co_stars(ARIA), (0, 8), "stars: no CO Power, a Super Power of 8")
     ctx.eq(g.co_stars(romlib.co_id("sturm")), (0, 10), "(Sturm's own 0 / 10: the precedent)")
     andy = g.e.u32(g.CO_TABLE_POOL) + romlib.CO_RECORD * romlib.co_id("cloneandy")
     ctx.eq([mode_word(g, k, 0x0E) for k in range(3)], [g.e.u16(andy + 0x38 + 0x44 * k + 0x0E) for k in range(3)], "luck is the game's own (Clone Andy's Dual Strike row, 10): no luck trait")
@@ -68,14 +68,14 @@ def aria_row_has_only_a_super_power_and_the_games_luck(ctx):
 
 @test(modes=("ds",))
 def aria_has_no_power_entry_and_the_super_power_costs_seven_stars(ctx):
-    """The map menu never offers "Power" for her (no CO Power: 0 stars), whatever the meter holds; "Super" appears at exactly 7 stars x 9000 and not one point less, and after one power the next costs 20% more."""
+    """The map menu never offers "Power" for her (no CO Power: 0 stars), whatever the meter holds; "Super" appears at exactly 8 stars x 9000 and not one point less, and after one power the next costs 20% more."""
     from aw2test.game import power_star_cost
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
     g = ctx.start(m, ["aria", "andy"])
     addr = g.player(1)["addr"] + 0x20
     for uses in (0, 1):
-        full = power_star_cost(uses) * 7
+        full = power_star_cost(uses) * 8
         for charge, want in ((0, False), (full // 2, False), (full - 1, False), (full, True), (full * 2, True)):
             g.e.w32(addr, charge)
             g.e.wait(4)

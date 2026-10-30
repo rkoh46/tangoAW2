@@ -30,7 +30,7 @@ same engine as M31 (AW2's event engine runs only in campaign mode). It is the ga
 | `gauntlet_01` Cinder Sea | 32 x 22, four armies | Drake (Green Earth, on the field from the start), Sensei (Yellow Comet, north-west island), Hawke (Black Hole, the volcano island) | Naval and air: every HQ is on an island; the volcano (Hawke's island, from day 3, 3 cells of its ring a day, 3 HP) is the only invention. Each arrival brings a wave and a war chest (Sensei 15,000 + 1,000 a day slept, Hawke 20,000 + 1,500) |
 
 How to add a map:
-1. A spec `tango-gamesupport-aw2/five/gauntlet/spec/gauntlet_NN.py` (`Canvas(..., campaign="gauntlet")`; the later lines' HQ cells stay plain and their zones' properties neutral; header `hidden 3 4 ...`), then
+1. A spec per map, numbered like `tango-gamesupport-aw2/five/gauntlet/spec/gauntlet_01.py` (`Canvas(..., campaign="gauntlet")`; the later lines' HQ cells stay plain and their zones' properties neutral; header `hidden 3 4 ...`), then
    `aw2dev maps gen --campaign gauntlet` (writes `five/gauntlet/gauntlet_NN.txt` and `src/gauntlet_map_data.rs`) and `aw2dev maps lint --source gauntlet` (0 errors; the BH2 rules apply).
 2. A mission function in `src/gauntlet_mode.rs` added to `def()`'s missions: armies (army 1 `CoSpec::Pick`, the enemies `Fixed` and on one team), `held_hq` / `held_more` for every line but the last,
    `sleepers`, `cut_off`, `hidden` (HQ cell and zone), one `arrive(..)` trigger per later line (scene, reveal, war chest, wave), `intro` / `victory`.

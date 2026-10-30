@@ -5,15 +5,15 @@
 //! - **Vengeance** (day to day, every level): a unit of hers with [`VENGEANCE_HP`] (8) HP or less (displayed HP, so 80 or less of the unit's 100) attacks AND defends harder, the more the lower its HP
 //!   ([`VENGEANCE`]: +25% at 8, 6% more for each HP lost down to +61% at 2, then +85% at 1; 9 and 10 HP nothing; an Oozium never). [`vengeance`] is added to the battle's firepower in
 //!   `com_tower::side_firepower` (like the other per-unit terms, so the forecast and the CPU's estimates agree) and to the defender's total defence in `co_roster::defence_total` (under AW2's 200 cap).
-//! - **Build Anew** (Super Power, [`STARS`] 7 stars): every unit of hers recovers [`HEAL`] HP (`es_co::each_unit`: `RepairUnit(unit, 3, 0)`, for free) and attacks [`SCOP_ATTACK`]% harder (`stat`, on
+//! - **Build Anew** (Super Power, [`STARS`] 8 stars): every unit of hers recovers [`HEAL`] HP (`es_co::each_unit`: `RepairUnit(unit, 3, 0)`, for free) and attacks [`SCOP_ATTACK`]% harder (`stat`, on
 //!   top of the power's own +10%). Nothing else: no defence, move or funds bonus.
 //! - **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt: her CO row has 0 stars for it, so the map menu has no Power entry, the meter has one mark and the CO page says she has none. The computer
 //!   plays her with Von Bolt's profile ([`AI_LIKE`]), a Super Power as soon as the meter allows.
 //!
-//! | | Day to day, Vengeance | Super Power, Build Anew (7 stars) |
+//! | | Day to day, Vengeance | Super Power, Build Anew (8 stars) |
 //! |---|---|---|
-//! | Attack | +8% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
-//! | Defence | +8% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
+//! | Attack | +7% for every unit, and +25% at 8 HP, +6% per HP lost to +61% at 2, +85% at 1 (not an Oozium) | +20% for every unit (and the power's own +10%) |
+//! | Defence | +7% for every unit, and the same as attack by the unit's HP | the power's own +10% defence |
 //! | HP | | +3 to every unit |
 //! | Luck, movement | the game's own | |
 //!
@@ -29,12 +29,12 @@ pub const AI_LIKE: u8 = 11;
 /// AW2's Sturm (row 10): his CPU power settings fit a CO with no CO Power.
 pub const NO_COP_LIKE: u8 = 10;
 /// Stars of her CO Power (none) and of her Super Power in all.
-pub const STARS: (u32, u32) = (0, 7);
+pub const STARS: (u32, u32) = (0, 8);
 /// Vengeance: displayed HP at or under which a unit attacks and defends harder, and by how much (percent, for attack and defence alike) at 1..8 displayed HP.
 pub const VENGEANCE_HP: u8 = 8;
 pub const VENGEANCE: [i32; 8] = [85, 61, 55, 49, 43, 37, 31, 25];
 /// Her flat bonus: every unit of hers (not an Oozium: no CO changes one, `co_roster::stat`) attacks and defends this much harder (percent), at every HP and power level.
-pub const FLAT: i32 = 8;
+pub const FLAT: i32 = 7;
 /// Build Anew: attack (percent) and HP healed.
 pub const SCOP_ATTACK: i32 = 20;
 pub const HEAL: u8 = 3;
@@ -75,7 +75,7 @@ pub fn vengeance_for(t: u8, hp: u8) -> i32 {
 }
 
 /// The sign players read ([`crate::aria_sign`]): Vengeance's and her flat bonus together, for a unit of type `t` with `hp` (record HP) on the map or in the unit window: `Some((displayed HP, percent))` at 8 to 1
-/// displayed HP (8 HP +33%, 7 +39% ... 2 +69%, 1 +93%), `None` at 9 and 10 HP, for a dead unit and for an Oozium.
+/// displayed HP (8 HP +32%, 7 +38% ... 2 +68%, 1 +92%), `None` at 9 and 10 HP, for a dead unit and for an Oozium.
 pub fn sign(t: u8, hp: u8) -> Option<(u8, i32)> {
     let v = vengeance_for(t, hp);
     (v > 0).then(|| (((hp as u32 + 9) / 10) as u8, FLAT + v))
@@ -108,12 +108,12 @@ mod tests {
     fn her_numbers() {
         assert_eq!(ARIA, 93);
         assert!((ARIA as u32) < crate::co_roster::ROOM);
-        assert_eq!(STARS, (0, 7), "no CO Power, a Super Power of 7 stars");
+        assert_eq!(STARS, (0, 8), "no CO Power, a Super Power of 8 stars");
         for t in [MOVE, crate::co_roster::RANGE] {
             assert_eq!([0, 1, 2].map(|m| bonus(m, t)), [0, 0, 0]);
         }
-        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [8, 8, 8], "a flat 8% defence");
-        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [8, 8, 28], "a flat 8% attack, Build Anew's 20% on top");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, DEFENCE)), [7, 7, 7], "a flat 7% defence");
+        assert_eq!([0, 1, 2].map(|m| bonus(m, FIREPOWER)), [7, 7, 27], "a flat 7% attack, Build Anew's 20% on top");
         assert!(crate::co_new::is_new(ARIA) && crate::co_new::is_own(ARIA) && !crate::es_co::is_es(ARIA));
         assert!(crate::co_new::listed(ARIA), "in every Versus list");
         assert_eq!(crate::co_new::like(ARIA), LIKE);
@@ -135,8 +135,8 @@ mod tests {
     fn the_sign_is_the_flat_bonus_and_vengeance() {
         let shown = |hp: u8| sign(4, hp).map(|(_, p)| p);
         assert_eq!([100, 90, 81].map(shown), [None, None, None], "9 and 10 HP show nothing");
-        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(shown), [33, 39, 45, 51, 57, 63, 69, 93].map(Some));
-        assert_eq!(sign(4, 71), Some((8, 33)));
+        assert_eq!([80, 70, 60, 50, 40, 30, 20, 10].map(shown), [32, 38, 44, 50, 56, 62, 68, 92].map(Some));
+        assert_eq!(sign(4, 71), Some((8, 32)));
         assert_eq!(sign(crate::roster::OOZIUM, 10), None, "never an Oozium");
         assert_eq!(sign(4, 0), None);
         assert_eq!(ramp_colour(8), 31 | (21 << 5), "orange at 8 HP");

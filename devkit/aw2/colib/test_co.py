@@ -439,9 +439,9 @@ class AriaArt(unittest.TestCase):
     def test_aria_is_an_orange_star_co_with_only_a_super_power(self):
         cos, tags = data.load_all()
         a = cos["aria"]
-        self.assertEqual((a["army"], a["stars"], a["hq"]), ("orange_star", {"cop": 0, "scop": 7}, "default"))
+        self.assertEqual((a["army"], a["stars"], a["hq"]), ("orange_star", {"cop": 0, "scop": 8}, "default"))
         self.assertEqual(a["d2d"]["vengeance"], {"hp": 8, "percent": [25, 31, 37, 43, 49, 55, 61, 85]})
-        self.assertEqual(a["d2d"]["mods"], [{"units": "all", "attack": 8, "defence": 8}])
+        self.assertEqual(a["d2d"]["mods"], [{"units": "all", "attack": 7, "defence": 7}])
         self.assertEqual(a["scop"]["mods"], [{"units": "all", "attack": 20}])
         self.assertEqual(a["scop"]["heal"], 3)
         self.assertNotIn("movement", a)

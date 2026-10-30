@@ -7,7 +7,7 @@ and texts), `crumb.rs` (`has_own_quotes`, the `PayForPower` trap calls `aria::po
 Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos/aria_v1.toml`.
 
 ## What she does (the owner's redesign: two small rules of her own)
-| | **Vengeance** (day to day) | **Build Anew** (Super Power, 7 stars) |
+| | **Vengeance** (day to day) | **Build Anew** (Super Power, 8 stars) |
 |---|---|---|
 | Attack and defence | every unit (not an Oozium) +5%, always; and a unit with 8 HP or less (displayed) attacks and defends harder: +25% at 8 HP, 6% more per HP lost to +61% at 2, +85% at 1 (never an Oozium); 9 and 10 HP nothing | every unit +20% attack (and the power's own +10% / +10%) |
 | HP | | every unit recovers 3 HP (`RepairUnit(unit, 3, 0)`, free) |
@@ -16,7 +16,7 @@ Data `cos/aria.toml`, `cos/tags.toml`, art `art/cos/aria/`, framing `art-src/cos
   battle's base damage (Com Towers, skills) and to the defender's total defence in `co_roster::defence_total` (before AW2's 200 cap), so the forecast, the attack, the counterattack and the defence agree; the HP is
   the unit record's at the time the strike is worked out (a counterattack uses the HP the hit left). `data.py` has no mod for it: `cos/aria.toml` says `vengeance = { hp = 8, percent = [25, .., 85] }` and the test
   calculator adds it to firepower and defence in `Ctx.side` (`damage.aria_vengeance`). Tests: `aria_vengeance_scales_with_hp`, `aria_vengeance_defends_too`.
-- **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt. Her CO row has 0 stars for it (`aria::STARS = (0, 7)`), which is all the game needs: the map menu has no "Power" entry (and "Super" appears at exactly
+- **No CO Power**, like AW2's Sturm and Dual Strike's Von Bolt. Her CO row has 0 stars for it (`aria::STARS = (0, 8)`), which is all the game needs: the map menu has no "Power" entry (and "Super" appears at exactly
   7 x 9000, +20% each use), the HUD meter has a mark for the Super Power only, the CO page says she has none (the text is `[cop] text` in her data file, the wording of the page AW2 writes for Sturm), the
   CPU plays her with Von Bolt's profile (`ds_ai::template_of` -> 11) and Sturm's power settings in her row (`co_roster::new_row`): a Super Power as soon as the meter allows, never a CO Power. Her CO Power
   quote slots hold the Super Power's line (nothing reads them). `data.py` lets `stars.cop = 0` without a `[cop]` section's mods or quote.
@@ -54,7 +54,7 @@ of 13 px). The pixel-art importer (`pixelart.py`) got four options for it, all i
   photographs 56 frames; the quote frame is the one with the most text typed.
 
 ## The signs (option E: Vengeance shown on the map, the unit window and the damage forecast)
-Approved from the mock-ups of `devkit/aw2/colib/vengeance_mockups.py`; the rule is `aria::sign(type, hp)` (her flat 8% plus `vengeance_for`: 8 HP +33%, 7 +39%, 6 +45%, 5 +51%, 4 +57%, 3 +63%, 2 +69%, 1 +93%; 10 and 9 HP nothing; an Oozium never; only with the CO
+Approved from the mock-ups of `devkit/aw2/colib/vengeance_mockups.py`; the rule is `aria::sign(type, hp)` (her flat 7% plus `vengeance_for`: 8 HP +32%, 7 +38%, 6 +44%, 5 +50%, 4 +56%, 3 +62%, 2 +68%, 1 +92%; 10 and 9 HP nothing; an Oozium never; only with the CO
 abilities on), and code `aria_sign.rs` with `ds_hud.rs` (`native_sign`, and the strip in `info_flush`). Nothing changes a number or the shared state of the game; everything is in VRAM, palette RAM, the sprite list and `aria_sign::STATE`
 (`ram-map.md`), found again from the unit records every frame, so rollback and save states carry it.
 - **Map**: the HP number of her unit with 8 to 1 displayed HP is drawn in `aria::RAMP` (orange 8, 7, 6, 5, 4, 3, 2, dark red 1), the black box round it kept; the low fuel / ammunition icons (BG2, the cell's top right) and the capture and cargo marks are other tiles of the cell and are
@@ -82,3 +82,6 @@ abilities on), and code `aria_sign.rs` with `ds_hud.rs` (`native_sign`, and the 
 `aw2dev co verify aria --net` (`co_verify_*_aria`, the generic scenarios against `cos/aria.toml` through `cospec.py`: attack, defence, counter and meter, move, economy, the heal of 3, the meter's 7 stars and the
 missing Power entry, the Tag Power with Nell, an unlisted pair, the CPU's Super Power, the HQ, both peers equal), `tests/test_aria.py` (the row, Vengeance at 8 and 9 displayed HP in both levels and as a counterattacker,
 the menu, the CPU, Build Anew's heal and nothing else), `aw2dev test`, `aw2dev co check`, `co balance`, `armyskin check --live` and `kit check`.
+
+**2026-10-30 (the owner):** the flat bonus dropped to 7% (`aria::FLAT`): totals 32% at 8 HP .. 68% at 2 HP, 92% at 1 HP.
+Her Super Power costs 8 stars (was 7; the owner, 2026-10-30).
