@@ -84,6 +84,60 @@ fn main() {
         write_bmp(&out.join(format!("{name}.bmp")), &link.side(0).frame().unwrap());
     };
     shot(&mut link, "teams_0");
+    // AW2_TEAMS_NAV=1: hold DOWN (the CO changes) for 100 frames, then START and hold DOWN on the partner, frame by frame: the frames the
+    // choice changes on (the game's own key repeat), whether the picture changes on that very frame, whether a yellow frame marks the
+    // field in every frame; nav_*.bmp every frame of the first 30 of each hold. Exit 1 on a lagging or unmarked frame.
+    if std::env::var_os("AW2_TEAMS_NAV").is_some() {
+        let mut bad = 0;
+        let pic = |link: &mut tango_backend_mgba::SharedLink| -> Vec<u8> {
+            let f = link.side(0).frame().unwrap();
+            // (the cards and windows' band; the title and tags animate)
+            f[4 * 240 * 40..4 * 240 * 130].to_vec()
+        };
+        let yellow = |f: &[u8]| f.chunks(4).filter(|p| p[0] > 240 && p[1] > 210 && p[2] < 100).count();
+        for (name, stage_keys) in [("co", 0u32), ("partner", START)] {
+            if stage_keys != 0 {
+                press(&mut link, stage_keys);
+                wait(&mut link, 40);
+            }
+            let state = |link: &tango_backend_mgba::SharedLink| -> (Option<u8>, u8) {
+                (
+                    tango_gamesupport_aw2::tag_ui::army_main(link.core(), 0),
+                    link.core().raw_read_8(tango_gamesupport_aw2::tag::TEAMS_PARTNER, -1),
+                )
+            };
+            let mut prev_state = state(&link);
+            let mut prev_pic = pic(&mut link);
+            let mut changes = Vec::new();
+            for i in 0..100 {
+                link.tick([HostInput::keys(DOWN), HostInput::keys(0)]);
+                let st = state(&link);
+                let p = pic(&mut link);
+                let changed_state = st != prev_state;
+                let changed_pic = p != prev_pic;
+                if changed_state {
+                    changes.push(i);
+                }
+                if changed_state != changed_pic && changed_state {
+                    println!("{name} frame {i}: choice changed but the picture did not (lag)");
+                    bad += 1;
+                }
+                if yellow(&p) < 20 {
+                    println!("{name} frame {i}: no yellow frame on the selected field");
+                    bad += 1;
+                }
+                if i < 30 {
+                    let f = link.side(0).frame().unwrap();
+                    write_bmp(&out.join(format!("nav_{name}_{i:03}.bmp")), &f);
+                }
+                prev_state = st;
+                prev_pic = p;
+            }
+            println!("{name}: the choice changed on frames {changes:?}");
+            wait(&mut link, 10);
+        }
+        std::process::exit(if bad == 0 { 0 } else { 1 });
+    }
     // AW2_TEAMS_COS=1: army 1's card for every CO of the Teams list (DOWN steps to the next), as co_NN.bmp
     if std::env::var_os("AW2_TEAMS_COS").is_some() {
         let n = tango_gamesupport_aw2::tag_ui::teams_list(link.core()).len();

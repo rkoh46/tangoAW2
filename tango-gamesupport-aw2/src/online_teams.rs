@@ -51,6 +51,10 @@ const S_DIR: u32 = 9;
 /// (Seat 0, the host) the seat whose team LEFT and RIGHT change on the TEAM field.
 const S_TARGET: u32 = 10;
 
+/// AW2's cursor repeat: frames from the press to the second step, and between the following ones.
+const REPEAT_DELAY: u8 = 10;
+const REPEAT_RATE: u8 = 4;
+
 const NONE: u8 = 0xFF;
 /// The fields, top to bottom: CO, colour, team, partner (with tag pairs), READY.
 const F_CO: u8 = 0;
@@ -219,20 +223,19 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         let prev = core.raw_read_16(seat(s) + S_PREV, -1) as u32;
         core.raw_write_16(seat(s) + S_PREV, -1, keys as u16);
         let pressed = keys & !prev;
-        // A held left or right goes on after a moment (AW2's own menus' repeat).
-        let dir = if keys & KEY_LEFT != 0 {
-            KEY_LEFT
-        } else if keys & KEY_RIGHT != 0 {
-            KEY_RIGHT
-        } else {
-            0
-        };
-        let mut step_dir = pressed & (KEY_LEFT | KEY_RIGHT);
-        if dir == 0 || pressed & (KEY_LEFT | KEY_RIGHT) != 0 {
+        // A held direction goes on as AW2's own menus' cursor does (read from the game's Teams screen: the first step on the press,
+        // the next ten frames later, then one every four).
+        let dirs = KEY_LEFT | KEY_RIGHT | KEY_UP | KEY_DOWN;
+        let dir = [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]
+            .into_iter()
+            .find(|&d| keys & d != 0)
+            .unwrap_or(0);
+        let mut step_dir = pressed & dirs;
+        if dir == 0 || pressed & dirs != 0 {
             core.raw_write_8(seat(s) + S_HELD, -1, 0);
         } else {
             let h = core.raw_read_8(seat(s) + S_HELD, -1).saturating_add(1);
-            if h >= 18 && (h - 18) % 5 == 0 {
+            if h >= REPEAT_DELAY && (h - REPEAT_DELAY) % REPEAT_RATE == 0 {
                 step_dir = dir;
             }
             core.raw_write_8(seat(s) + S_HELD, -1, h);
@@ -250,10 +253,10 @@ pub fn tick(core: &mut Core, inputs: &[u32]) {
         let mut rows: Vec<u8> = vec![F_CO, F_COLOUR, F_TEAM, F_PARTNER, F_READY];
         rows.retain(|&f| (tag_on || f != F_PARTNER) && (n > 2 || f != F_TEAM));
         let at = rows.iter().position(|&f| f == field).unwrap_or(0);
-        if pressed & KEY_DOWN != 0 {
+        if step_dir & KEY_DOWN != 0 {
             field = rows[(at + 1) % rows.len()];
         }
-        if pressed & KEY_UP != 0 {
+        if step_dir & KEY_UP != 0 {
             field = rows[(at + rows.len() - 1) % rows.len()];
         }
         core.raw_write_8(seat(s) + S_FIELD, -1, field);
@@ -664,5 +667,5 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
         ];
         lines.push(cands.iter().find(|t| fits(t)).copied().unwrap_or("A: READY").into());
     }
-    crate::army_cards::draw(core, rgba, &seats, tag_on, &Help { lines });
+    crate::army_cards::draw(core, rgba, &seats, tag_on, &Help { lines }, false);
 }

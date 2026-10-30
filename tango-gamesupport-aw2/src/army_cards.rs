@@ -127,7 +127,8 @@ fn sample_tags(rgba: &[u8], n: usize) -> Option<Vec<Tag>> {
         }
         tags.push(t);
     }
-    tags.iter().any(|t| !t.is_empty()).then_some(tags)
+    // (the game's tag row: 39 with the partner boxes, 55 without; any other row is a frame of the screen on its way)
+    (matches!(row, 39 | 55) && tags.iter().any(|t| !t.is_empty())).then_some(tags)
 }
 
 /// The most common colour of the map's ground (the sea) in the band the cards are drawn in.
@@ -293,18 +294,6 @@ pub struct Help {
 }
 
 /// Draw the screen over the game's own Teams frame in `rgba` (a 240 x 160 RGBA frame).
-/// How a seat's partner is shown (a design choice, until picked): 'A' the game's partner box as a second card under the CO's, 'B' the
-/// partner's face on the card's lower right corner, 'C' a full row in the window (TAG, face, name), 'D' a strip down the card's side.
-pub const PARTNER_STYLE: char = 'A';
-
-fn style() -> char {
-    std::env::var("AW2_PARTNER_STYLE")
-        .ok()
-        .and_then(|v| v.chars().next())
-        .filter(|c| ('A'..='D').contains(c))
-        .unwrap_or(PARTNER_STYLE)
-}
-
 fn glyph(cv: &mut Rgba<'_>, g: &(usize, usize, Vec<Option<Rgb>>), x: i32, y: i32) {
     for (i, c) in g.2.iter().enumerate() {
         if let Some(c) = c {
@@ -313,29 +302,22 @@ fn glyph(cv: &mut Rgba<'_>, g: &(usize, usize, Vec<Option<Rgb>>), x: i32, y: i32
     }
 }
 
-/// The partner's face (the middle of the portrait, where the face is) in a framed square of `size` at (x, y).
-fn partner_face(core: &Core, cv: &mut Rgba<'_>, partner: u8, x: i32, y: i32, size: i32, frame: Rgb, selected: bool) {
-    if selected {
-        yellow_frame(cv, x - 2, y - 2, size + 4, size + 4);
-    }
-    cv.rect(x, y, size, size, frame);
-    cv.rect(x + 1, y + 1, size - 2, size - 2, LIGHT_GRAY);
-    if partner == NONE {
-        let w = online::text_width(core, "-");
-        cv.text(core, x + size / 2 - w / 2, y + size / 2 - 5, "-", GRAY_INK, SHADE);
-    } else {
-        draw_portrait_part(core, cv, partner, (x + 1, y + 1, size - 2, size - 2), (3, 1, 42, 42));
-    }
-}
-
-pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help: &Help) {
+/// `live_tags`: the game's own tags (offline: 1P / CP change with the player) are taken from every frame; online they are 1P..nP and
+/// once seen they are kept, so a frame of the game's screen changing stage never redraws them.
+pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help: &Help, live_tags: bool) {
     let n = seats.len().clamp(2, 5);
     if rgba.len() != online::W * online::H * 4 || seats.len() < 2 {
         return;
     }
-    let st = if tag_pairs { style() } else { 'X' };
     // The game's tags, from this frame, or the last frame that had them.
-    let tags = match sample_tags(rgba, n) {
+    let cached = tag_cache().lock().unwrap().clone();
+    let complete = cached.len() >= n && cached.iter().take(n).all(|t| !t.is_empty());
+    let sampled = if !live_tags && complete {
+        None
+    } else {
+        sample_tags(rgba, n)
+    };
+    let tags = match sampled {
         Some(t) => {
             let mut c = tag_cache().lock().unwrap();
             for (k, tag) in t.iter().enumerate() {
@@ -354,12 +336,9 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
         None => tag_cache().lock().unwrap().clone(),
     };
     let ground = sea(rgba);
-    let wh = match st {
-        'A' => 56,
-        'C' => 52,
-        _ => 44,
-    };
-    let one_line = wh > 44;
+    // (with partners the windows are tall: the partner's box is a second, smaller card; the help plate is one line)
+    let wh = if tag_pairs { 56 } else { 44 };
+    let one_line = tag_pairs;
     let plate_y = if one_line { 85 + wh + 3 } else { 133 };
     let mut canvas = Rgba(rgba);
     let cv = &mut canvas;
@@ -371,12 +350,7 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
         // The card: the CO's portrait, the army's emblem, the frame, the game's tag.
         cv.rect(left, CARD_Y, CARD, CARD, ground);
         if let Some(co) = seat.co {
-            if st == 'D' {
-                // (the card split: the face's middle in the left part, the partner's strip on the right)
-                draw_portrait_part(core, cv, co, (left + 1, CARD_Y + 1, 26, 46), (12, 1, 26, 46));
-            } else {
-                draw_card_face(core, cv, co, left + 1, CARD_Y + 1);
-            }
+            draw_card_face(core, cv, co, left + 1, CARD_Y + 1);
         }
         for (x, y) in [(left, CARD_Y), (left + CARD - 1, CARD_Y)] {
             cv.rect(x, y, 1, CARD, FRAME);
@@ -388,25 +362,6 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
             yellow_frame(cv, left + 1, CARD_Y + 27, 20, 20);
         }
         emblem(core, cv, seat.colour, left + 3, CARD_Y + 29);
-        if tag_pairs && st == 'B' && (seat.partner != NONE || partner_on) {
-            partner_face(
-                core,
-                cv,
-                seat.partner,
-                left + CARD - 29,
-                CARD_Y + CARD - 29,
-                28,
-                FRAME,
-                partner_on,
-            );
-        }
-        if st == 'D' {
-            cv.rect(left + 27, CARD_Y + 1, 19, 46, FRAME);
-            partner_face(core, cv, seat.partner, left + 28, CARD_Y + 14, 17, GRAY_INK, partner_on);
-            if seat.partner != NONE {
-                cv.text(core, left + 28, CARD_Y + 33, "TAG", WHITE, GRAY_INK);
-            }
-        }
         // The team: the game's own team letter on the card's upper left corner.
         if let Some(team) = seat.team {
             if let Some(g) = team_glyph_cached(core, team) {
@@ -483,87 +438,30 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
             (Some(c), p) if p != NONE => Some(crate::tag::compatibility(c, p)),
             _ => None,
         };
-        match st {
-            'A' => {
-                // The game's partner box: a second, smaller card under the CO's own.
-                cv.rect(wx + 3, ry, 30, 28, GRAY_INK);
-                cv.rect(wx + 4, ry + 1, 28, 26, LIGHT_GRAY);
-                if partner_on {
-                    yellow_frame(cv, wx + 1, ry - 2, 34, 32);
-                    cv.rect(wx + 3, ry, 30, 28, GRAY_INK);
-                    cv.rect(wx + 4, ry + 1, 28, 26, LIGHT_GRAY);
-                }
-                if seat.partner == NONE {
-                    let w1 = online::text_width(core, "-");
-                    cv.text(core, wx + 18 - w1 / 2, ry + 9, "-", GRAY_INK, SHADE);
-                } else {
-                    draw_portrait_part(core, cv, seat.partner, (wx + 4, ry + 1, 28, 26), (3, 1, 42, 40));
-                }
-                if w >= 56 {
-                    let room = w - 40;
-                    if seat.partner == NONE {
-                        cv.text(core, wx + 37, ry + 8, "None", GRAY_INK, SHADE);
-                    } else {
-                        cv.text(core, wx + 37, ry + 2, &online::fit(core, &pname, room), ink, SHADE);
-                        if let Some(c) = compat {
-                            cv.text(core, wx + 37, ry + 14, &format!("{c}%"), ink, SHADE);
-                        }
-                    }
+        // The game's partner box: a second, smaller card under the CO's own.
+        cv.rect(wx + 3, ry, 30, 28, GRAY_INK);
+        cv.rect(wx + 4, ry + 1, 28, 26, LIGHT_GRAY);
+        if partner_on {
+            yellow_frame(cv, wx + 1, ry - 2, 34, 32);
+            cv.rect(wx + 3, ry, 30, 28, GRAY_INK);
+            cv.rect(wx + 4, ry + 1, 28, 26, LIGHT_GRAY);
+        }
+        if seat.partner == NONE {
+            let w1 = online::text_width(core, "-");
+            cv.text(core, wx + 18 - w1 / 2, ry + 9, "-", GRAY_INK, SHADE);
+        } else {
+            draw_portrait_part(core, cv, seat.partner, (wx + 4, ry + 1, 28, 26), (3, 1, 42, 40));
+        }
+        if w >= 56 {
+            let room = w - 40;
+            if seat.partner == NONE {
+                cv.text(core, wx + 37, ry + 8, "None", GRAY_INK, SHADE);
+            } else {
+                cv.text(core, wx + 37, ry + 2, &online::fit(core, &pname, room), ink, SHADE);
+                if let Some(c) = compat {
+                    cv.text(core, wx + 37, ry + 14, &format!("{c}%"), ink, SHADE);
                 }
             }
-            'B' | 'D' => {
-                let text = if seat.partner == NONE {
-                    "No partner".to_string()
-                } else {
-                    format!("+ {pname}")
-                };
-                let text = online::fit(core, &text, w - 8);
-                let tw = online::text_width(core, &text);
-                if partner_on {
-                    yellow_frame(cv, wx + 2, ry + 1, tw + 3, 11);
-                }
-                let tink = if seat.partner == NONE && !seat.ready {
-                    GRAY_INK
-                } else {
-                    ink
-                };
-                cv.text(core, wx + 3, ry + 1, &text, tink, SHADE);
-                if let Some(c) = compat.filter(|_| w >= 56) {
-                    cv.text(core, wx + 3, ry + 12, &format!("{c}%"), ink, SHADE);
-                }
-            }
-            'C' => {
-                let mut x = wx + 3;
-                if w >= 80 {
-                    let tw = online::text_width(core, "TAG");
-                    cv.rect(x, ry + 7, tw + 4, 12, INK);
-                    cv.rect(x + 1, ry + 8, tw + 2, 10, BLUE);
-                    cv.text(core, x + 2, ry + 7, "TAG", WHITE, BLUE);
-                    x += tw + 7;
-                }
-                partner_face(core, cv, seat.partner, x, ry, 26, FRAME, partner_on);
-                if w >= 80 {
-                    if seat.partner == NONE {
-                        cv.text(core, x + 30, ry + 8, "None", GRAY_INK, SHADE);
-                    } else {
-                        cv.text(
-                            core,
-                            x + 30,
-                            ry + 2,
-                            &online::fit(core, &pname, w - (x - wx) - 36),
-                            ink,
-                            SHADE,
-                        );
-                        if let Some(c) = compat {
-                            let t = format!("{c}%");
-                            if x + 30 + online::text_width(core, &t) <= wx + w - 3 {
-                                cv.text(core, x + 30, ry + 14, &t, ink, SHADE);
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {}
         }
     }
     // The help box: the game's pink plate (one line when the windows are tall).

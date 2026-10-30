@@ -204,7 +204,7 @@ pub fn teams_list(core: &Core) -> Vec<u8> {
     (0..n.min(64)).map(|k| core.raw_read_8(at + k, -1)).collect()
 }
 
-pub(crate) fn army_main(core: &Core, army: u32) -> Option<u8> {
+pub fn army_main(core: &Core, army: u32) -> Option<u8> {
     let list = teams_list(core);
     list.get(core.raw_read_8(co_index_at(core) + army, -1) as usize)
         .copied()
@@ -272,9 +272,11 @@ pub fn teams_tick(core: &mut Core, ds: bool, remap: bool, keys: u32, prev: u32) 
     let mut keys = keys & !KEY_START;
     if editing != NONE {
         let a = editing as u32;
-        let step: i32 = if pressed & KEY_DOWN != 0 {
+        // (held Up or Down goes on as AW2's own cursor does: the second step ten frames after the press, then every four)
+        let fire = repeat(core, keys, pressed, KEY_UP | KEY_DOWN, 10);
+        let step: i32 = if fire == KEY_DOWN {
             1
-        } else if pressed & KEY_UP != 0 {
+        } else if fire == KEY_UP {
             -1
         } else {
             0
@@ -307,7 +309,7 @@ const REPEAT_DIR: u32 = tag::ARROWS + 4;
 /// Dual Strike's auto-repeat of the arrows, from the keys held: a press (its edge) is one step, a key held on goes on after 12
 /// frames and then every 4 (measured on clean Dual Strike's Versus screen in melonDS). Returns the direction to step, or 0.
 /// `mask` is the arrows the screen uses.
-pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32) -> u32 {
+pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32, delay: u8) -> u32 {
     let held = held & mask;
     let dir = [KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN]
         .into_iter()
@@ -327,10 +329,10 @@ pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32) -> u32
         return dir;
     }
     let n = core.raw_read_8(REPEAT_HELD, -1).saturating_add(1);
-    let (fire, n) = if n == 12 {
+    let (fire, n) = if n == delay {
         (true, n)
-    } else if n >= 16 {
-        (true, 12)
+    } else if n >= delay + 4 {
+        (true, delay)
     } else {
         (false, n)
     };
@@ -364,7 +366,7 @@ fn ds_arrows(core: &mut Core, keys: u32, pressed: u32, armies: u32) -> u32 {
     let idle = [0x26, 0x2D, 0x24].iter().all(|&o| core.raw_read_8(rec + o, -1) == 0);
     let c = core.raw_read_8(rec + CURSOR_AT, -1) as u32;
     let ring = 2 * armies;
-    let fire = repeat(core, keys, pressed, KEY_LEFT | KEY_RIGHT);
+    let fire = repeat(core, keys, pressed, KEY_LEFT | KEY_RIGHT, 12);
     let mut out = keys & !(KEY_LEFT | KEY_RIGHT);
     if c >= ring {
         core.raw_write_8(CELL_TARGET, -1, 0);

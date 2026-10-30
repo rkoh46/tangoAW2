@@ -1,0 +1,39 @@
+# Navigation of the online army page (2 seats, pack on): seat 0 holds LEFT/RIGHT on the CO and the partner for a second and UP/DOWN across the fields, frame by frame (hold: lag and highlight checks, frames of each change = the key repeat). Run: aw2_room_teams <rom> <out> this-file
+# 2 seats pick a map at the same time, each in private on a SELECT MAP of its own (every window shotall at each step: seat k's frames show its own list, the others only the status plate), the draw, the chosen map and the Teams screen. Run: aw2_room_teams <rom> <out> this-file
+n 2
+until maparmies=2 100
+wait 60
+shotall priv_a
+press 0 DOWN
+press 1 RIGHT
+wait 6
+press 0 DOWN
+press 1 DOWN
+wait 6
+press 0 DOWN
+wait 6
+wait 6
+wait 6
+wait 6
+wait 20
+shotall priv_b
+press 0 A
+wait 40
+shotall priv_c
+shotall priv_d
+press 1 A
+wait 2
+shotall chosen
+until teams 600
+wait 60
+shotall nav_start
+hold 0 RIGHT 70 nav_co
+hold 0 LEFT 40 nav_co_back
+press 0 DOWN
+hold 0 RIGHT 30 nav_colour
+press 0 DOWN
+hold 0 RIGHT 70 nav_partner
+hold 0 LEFT 60 nav_partner_back
+hold 0 DOWN 40 nav_fields
+hold 0 UP 40 nav_fields_up
+shotall nav_end

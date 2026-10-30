@@ -1449,7 +1449,7 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
         }
         return keys;
     };
-    let fire = crate::tag_ui::repeat(core, keys, pressed, dpad);
+    let fire = crate::tag_ui::repeat(core, keys, pressed, dpad, 12);
     let (dx, dy) = match fire {
         KEY_RIGHT => (1, 0),
         KEY_LEFT => (-1, 0),
@@ -1606,7 +1606,7 @@ fn offline_cards(core: &Core, rgba: &mut [u8]) -> bool {
         _ => ("Choose a CO.", "Up Down: CO  Left Right: Army  R: Colour"),
     };
     let lines = vec![first.to_string(), keys.to_string()];
-    crate::army_cards::draw(core, rgba, &seats, tag_pairs, &Help { lines });
+    crate::army_cards::draw(core, rgba, &seats, tag_pairs, &Help { lines }, true);
     true
 }
 

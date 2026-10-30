@@ -10,6 +10,10 @@
 //!   until COND MAX    wait for selectmap | teams | battle | turnended | army=N | maparmies=N (MAX x 10 frames)
 //!   shot NAME SEAT    NAME_sSEAT.bmp: that seat's own window
 //!   shotall NAME      the same for every seat
+//!   hold SEAT KEYS FRAMES NAME   SEAT holds KEYS for FRAMES frames, frame by frame: the frames the army page's choice (CO, colour, team,
+//!                     partner, field of that seat) changes on, whether that seat's picture changes on that very frame (a lag is a
+//!                     failure), whether the picture has a yellow frame on the selected field in every frame; NAME_NNN_sSEAT.bmp for
+//!                     the first 30 frames
 //!   same A B SEATS [TOL]  the seats' pictures of shots A and B (shotall) differ in at most TOL pixels (default 300: the
 //!                     game's animations; a leaked page is thousands), exit 1 otherwise
 //!   fv                print the main loop, the turn's army, the running procs and the waiting view's phase
@@ -625,6 +629,55 @@ fn main() {
         match p[0] {
             "wait" => {
                 for _ in 0..p[1].parse::<usize>().unwrap() {
+                    tick(&mut link, &keys);
+                    t += 1;
+                }
+            }
+            "hold" => {
+                let seat: usize = p[1].parse().unwrap();
+                let bits = key_bits(p[2]);
+                let frames: usize = p[3].parse().unwrap();
+                let name = p[4];
+                tango_gamesupport_aw2::online::set_room(names.clone(), seat);
+                let blk = tango_gamesupport_aw2::online_teams::SEL + 0x10 + 0x10 * seat as u32;
+                let state = |link: &mut tango_backend_mgba::SharedLink| -> [u8; 6] {
+                    let mut b = [0u8; 6];
+                    link.peek(blk, &mut b);
+                    b
+                };
+                let band = |f: &[u8]| f[4 * 240 * 36..4 * 240 * 130].to_vec();
+                let yellow = |f: &[u8]| f.chunks(4).filter(|q| q[0] > 240 && q[1] > 210 && q[2] < 100).count();
+                let mut prev = (state(&mut link), band(&link.side(seat).frame().unwrap_or_default()));
+                let mut changes = Vec::new();
+                let mut bad = 0;
+                for i in 0..frames {
+                    let mut k = vec![0; n];
+                    k[seat] = bits;
+                    tick(&mut link, &k);
+                    t += 1;
+                    let f = link.side(seat).frame().unwrap_or_default();
+                    let (st, pic) = (state(&mut link), band(&f));
+                    if st != prev.0 {
+                        changes.push(i);
+                        if pic == prev.1 {
+                            println!("hold {name} frame {i}: the choice changed but the picture did not (lag)");
+                            bad += 1;
+                        }
+                    }
+                    if st[3] != 4 && !f.is_empty() && yellow(&pic) < 20 && st[4] == 0 {
+                        println!("hold {name} frame {i}: no yellow frame on the selected field (field {})", st[3]);
+                        bad += 1;
+                    }
+                    if i < 30 {
+                        write_bmp(&out.join(format!("{name}_{i:03}_s{seat}.bmp")), &f);
+                    }
+                    prev = (st, pic);
+                }
+                println!("hold {name}: seat {seat} choice changed on frames {changes:?}; {bad} bad frame(s)");
+                if bad > 0 {
+                    failed = true;
+                }
+                for _ in 0..6 {
                     tick(&mut link, &keys);
                     t += 1;
                 }
