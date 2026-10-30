@@ -242,7 +242,6 @@ def bh2_m31_progression(ctx):
             ctx.check(not far, f"every survivor stands on or near a deploy cell (the camp): far ones {far}")
             funds_after = int.from_bytes(g.player(player2)["raw"][0:4], "little")
             ctx.eq(funds_after, min(funds_before, 50000), f"the player's funds carry over, at most 50,000 ({funds_before} -> {funds_after})")
-            ctx.eq(int.from_bytes(g.player(2)["raw"][0:4], "little"), 100000, "Aria holds the Citadel with 100,000")
             aria = g.units(army=2)
             ctx.check(len(aria) >= 25 and all(u["hp"] >= 10 or u["hp"] == 100 for u in aria), f"Aria's army is {len(aria)} fresh units")
             ctx.log(f"stage 2: Aria's CO id {g.player(2)['co']}, the player's CO {g.player(1)['co']} (carried {g.player(player2)['co']})")
@@ -279,6 +278,8 @@ def bh2_m31_progression(ctx):
     frames.append((scene, {"title": "The switch: The Last Citadel opens with Aria", "plain": True, "lines": [
         "The same battle, on the second map: Aria's scene, the survivors on the deploy cells in the south-west camp, Aria (Orange Star, CO 93) leading a revived army of brand-new full-strength units."]}))
     home(g, e)
+    # (her 100,000 comes with the stage's opening scene, m31_stage2, its first command: read after the scene)
+    ctx.eq(int.from_bytes(g.player(2)["raw"][0:4], "little"), 100000, "Aria holds the Citadel with 100,000")
     full = stitch.stitch(Quiet(ctx), g, "m31b_full", w, h)
     frames.append((full, {"title": "Stage 2, the whole map: Aria's fortress on high ground", "marks": [("Aria's HQ", (33, 5), "next")], "lines": [
         f"{len(g.units(army=2))} units on the plateau, the player's {len(g.units(army=1))} survivors in the camp. Approaches: the Aisne's bridges and the passes. No pipes."]}))
