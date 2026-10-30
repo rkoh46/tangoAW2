@@ -183,7 +183,7 @@ def run_scenario(a):
     ids = [int(x) for x in a.ids.split(",")] if a.ids else None
     out = Path(a.out or cfg.work("armyskin", f"scenario_{a.name}"))
     out.mkdir(parents=True, exist_ok=True)
-    (out / "script.txt").write_text(scenarios.script(a.name, ids))
+    (out / "script.txt").write_text(scenarios.script(a.name, ids, ds=a.ds or scenarios.SCENARIOS[a.name]["ds"]))
     rc, log = harness.run_script(out / "script.txt", out, ds=a.ds)
     util.say(("PASS" if rc == 0 else "FAIL") + f" {a.name}: shots in {out}")
     return rc

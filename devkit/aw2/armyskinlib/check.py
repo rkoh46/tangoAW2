@@ -222,7 +222,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             for tag, ids in (("skin", sc["ids"]), ("plain", [1] + sc["ids"][1:])):
                 d = out / f"{n}_{tag}"
                 d.mkdir(parents=True, exist_ok=True)
-                (d / "script.txt").write_text(scenarios.script(n, ids))
+                (d / "script.txt").write_text(scenarios.script(n, ids, ds=ds, klaus=[sc["ids"].index(6)] if 6 in sc["ids"] else []))
                 rc, log = harness.run_script(d / "script.txt", d, ds=ds)
                 if rc:
                     fails.append(f"{n}/{tag}: the harness script failed ({log})")
@@ -243,7 +243,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             ids = sc["ids"]
             pics = {}
             for v, vids in (("base", [1] + ids[1:]), ("other", [3] + ids[1:]), ("skin", ids)):
-                rc, log = lk.checkpoint(f"live_{n}_{v}", n, vids, True)
+                rc, log = lk.checkpoint(f"live_{n}_{v}", n, vids, True, klaus=[ids.index(6)] if 6 in ids else None)
                 if rc:
                     fails.append(f"{n}/{v}: the harness script failed ({log})")
                     continue
@@ -268,13 +268,13 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
         for v, ids in variants.items():
             d = out / f"{n}_{v}"
             d.mkdir(parents=True, exist_ok=True)
-            (d / "script.txt").write_text(scenarios.script(n, ids))
+            (d / "script.txt").write_text(scenarios.script(n, ids, ds=ds, klaus=[k] if not sc["five"] else None))
             rc, log = harness.run_script(d / "script.txt", d, ds=ds)
             if rc:
                 fails.append(f"{n}/{v}: the harness script failed ({log})")
             runs[v] = d
         seats = {}
-        for line in scenarios.script(n).splitlines():
+        for line in scenarios.script(n, ds=ds).splitlines():
             w = line.split()
             if len(w) == 3 and w[0] == "shot":
                 seats[w[1]] = int(w[2])
@@ -292,14 +292,15 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             else:
                 forb = {c: k for c, k in forbidden_all.items()}
             left = {c: skin[c] for c in forb if skin.get(c, 0) >= tolerance}
-            need = sc.get("crest", {}).get(shot)
+            # (the skin's own plume and gold are an Emerald Sun CO's designs: only with the pack, where the skin's seat plays Klaus)
+            need = sc.get("crest", {}).get(shot) if ds else None
             if need:
                 # the skin's own art must be there: the plume's red (the battle figures' and the portraits' helmets are drawn by the skin file)
                 reds = sum(k for c, k in skin.items() if c[0] > 150 and c[1] < 100 and c[2] < 100 and c[0] - c[1] > 80)
                 rep.append(f"  {n}/{shot}: {reds} pixels of the skin's crest red (needs >= {need})")
                 if reds < need:
                     fails.append(f"{n}/{shot}: only {reds} pixels of the skin's crest red (>= {need}): the helmet is missing")
-            gold_need = sc.get("gold", {}).get(shot)
+            gold_need = sc.get("gold", {}).get(shot) if ds else None
             if gold_need:
                 # the skin's gold (the domed HQ's windows and finial) must be in the picture
                 from PIL import Image as _Img2
@@ -307,7 +308,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
                 rep.append(f"  {n}/{shot}: {gold} pixels of the skin's gold (needs >= {gold_need})")
                 if gold < gold_need:
                     fails.append(f"{n}/{shot}: only {gold} pixels of the skin's gold (>= {gold_need}): the box's HQ is not the skin's")
-            for box, need_px in ([] if ds else sc.get("crest_boxes", {}).get(shot, [])):   # (AW2's own CO page; with the pack the page is Dual Strike's, its pictures from the pack)
+            for box, need_px in ([] if ds or not sc.get("crest_boxes_es_co") else sc.get("crest_boxes", {}).get(shot, [])):   # (AW2's own CO page, only with an Emerald Sun CO, which the Versus list has with the pack alone, whose own CO page it then is: no box check)
                 # a region (the unit chart's Infantry and Mech cells) must hold the skin's plume
                 from PIL import Image as _Img
                 px = _Img.open(runs["skin"] / f).convert("RGB").crop(box).getdata()

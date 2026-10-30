@@ -49,7 +49,7 @@ def probe(n, colour, ds, out):
     from .. import harness
     d = Path(out) / f"probe_{n}p_colour{colour}"
     d.mkdir(parents=True, exist_ok=True)
-    script = scenarios.header(ids(n, colour), five=(n == 5)) + "props 1\nunits\n"
+    script = scenarios.header(ids(n, colour), five=(n == 5), ds=ds) + "props 1\nunits\n"
     (d / "script.txt").write_text(script)
     rc, log = harness.run_script(d / "script.txt", d, ds=ds)
     text = Path(log).read_text()
@@ -62,7 +62,7 @@ def probe(n, colour, ds, out):
     return cells[8][0], cells[14][0], occupied
 
 
-def script(n, colour, hq, base, occupied=()):
+def script(n, colour, hq, base, occupied=(), ds=True):
     """The harness script: the room's army page with the skin first, the battle, the skin moved to `colour` if the map did not give it that, then a panel, the build menu
     and a battle scene on army 1 (the skin's, or wearing its colour) next to army 2."""
     ctl = controller(n, colour)
@@ -87,7 +87,7 @@ def script(n, colour, hq, base, occupied=()):
         f"goto {c} {base[0]} {base[1]}\nwait 10\npress {c} A\nwait 40\nshot build {c}\npress {c} DOWN\nwait 20\nshot build_mech {c}\npress {c} B\nwait 20\nskincheck\n"
         f"goto {c} {hx} {hy}\nwait 20\npress {c} A\nwait 30\npress {c} A\nwait 30\npress {c} A\nwait 20\npress {c} A\nwait 100\nshot scene2 {c}\nwait 60\nshot scene3 {c}\nskincheck\n"
     )
-    return scenarios.header(ids(n, colour), five=(n == 5)) + body
+    return scenarios.header(ids(n, colour), five=(n == 5), ds=ds) + body
 
 
 def crest(path):
@@ -111,7 +111,7 @@ def run(pairs=None, ds=True, out=None, keep=False, say=print):
         d = out / f"{n}p_colour{colour}"
         d.mkdir(parents=True, exist_ok=True)
         try:
-            (d / "script.txt").write_text(script(n, colour, hq, base, occupied))
+            (d / "script.txt").write_text(script(n, colour, hq, base, occupied, ds))
         except RuntimeError as e:
             fails.append(str(e))
             continue
@@ -123,7 +123,7 @@ def run(pairs=None, ds=True, out=None, keep=False, say=print):
             fails.append(f"{tag}: the harness script failed ({log}){' ' + '; '.join(problems[:2]) if problems else ''}")
             continue
         got = {}
-        for shot, need in NEED.items():
+        for shot, need in (NEED.items() if ds else ()):   # (the plume is an Emerald Sun CO's design: the pack's list has them)
             f = d / f"{shot}_s{controller(n, colour)}.bmp"
             if not f.exists():
                 fails.append(f"{tag}: shot {shot} was not taken")
