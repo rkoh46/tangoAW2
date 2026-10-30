@@ -2146,6 +2146,8 @@ fn unit_slot(core: &mut Core) {
 /// fragments. While the page is up the skins' first idle frames are kept in their slots there.
 const CO_PAGE_LOOP: u32 = 0x0804_3591;
 const CHART_SHEET: u32 = 0x0601_2000;
+/// The page the game's CO page is on (0 the bio .. 4 the unit chart).
+const CO_PAGE_NUMBER: u32 = 0x0300_5940;
 
 fn sync_chart_art(core: &mut Core) {
     for i in 0..skins().len() {
@@ -2172,7 +2174,11 @@ pub fn sync_map_art(core: &mut Core) {
         return;
     }
     if core.raw_read_32(0x0300_0000, -1) == CO_PAGE_LOOP {
-        sync_chart_art(core);
+        // (only on the game's own unit chart, page 4: on the other pages the tiles at `CHART_SHEET` + the skins' slots are the CO's big picture, which the
+        // soldiers' frames used to overwrite: stray fragments over her face on an Emerald Sun army's CO page)
+        if core.raw_read_32(CO_PAGE_NUMBER, -1) == 4 {
+            sync_chart_art(core);
+        }
         return;
     }
     const FRAME: u32 = 0x6C * 32;
