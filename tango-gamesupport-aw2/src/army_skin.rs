@@ -1179,6 +1179,9 @@ pub fn sync_ds(core: &mut Core) {
 
 /// A palette the game has loaded already (the Teams screen loads its emblems' on entry) keeps the colours of the ROM it
 /// was loaded from: where the palette buffer or palette RAM holds a bank equal to `before`, `after` goes in its place.
+/// Only the sprite palettes (banks 16..31: the emblems): the background banks hold the windows' colours, which AW2 loads
+/// from Orange Star's row on the Teams screen whatever the armies are (a skin on that colour used to turn the help box
+/// and every window olive there); a battle loads the army's own window row from the patched table.
 fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
     if before.len() != after.len() || before.len() % 32 != 0 || before == after {
         return;
@@ -1187,7 +1190,7 @@ fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
         let mut ram = [0u8; 0x400];
         core.raw_read_range(base, -1, &mut ram);
         for (b, a) in before.chunks(32).zip(after.chunks(32)) {
-            for bank in 0..32usize {
+            for bank in 16..32usize {
                 if ram[bank * 32..bank * 32 + 32] == *b {
                     core.raw_write_range(base + bank as u32 * 32, -1, a);
                 }

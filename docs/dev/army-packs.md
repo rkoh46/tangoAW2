@@ -26,7 +26,7 @@ Not changed: rules (every CO is allowed, no army-specific rules), the CPU (it pl
 
 - **EWRAM** `0x0203C500` (`army_skin::STATE`, registered in `ram_map.rs`, 16 bytes): `+0..+2` the colour (1..5) skin 0..2 sits on (0 none), `+4..+8` each Teams-screen
   army's choice (0: its colour; else a skin's code), `+0xF` set once the Teams screen has reset them. In the shared console, so rollback, replays, rejoin and every peer agree;
-  **`SIM_VERSION` is 33** (33: Aria, CO 93, `crate::aria`; 32: Crumb's and Clone Andy's own themes, Crumb's HQ Black Hole's again; 31: the choice is taken back when the Versus map list is up, `army_skin::reset_choice`, so a skin chosen and backed out of no longer stays in the menus or on the next Teams screen; 27: the sim's behaviour changed: the byte, the sixth choice and the ROM image's patches; 28: the Dual Strike backups moved below the skins' figures, see §8).
+  **`SIM_VERSION` is 35** (35: a skin's palette refresh reaches the sprite palettes only, so the Teams screen's windows stay AW2's own; 34: Asuka's kit; 33: Aria, CO 93, `crate::aria`; 32: Crumb's and Clone Andy's own themes, Crumb's HQ Black Hole's again; 31: the choice is taken back when the Versus map list is up, `army_skin::reset_choice`, so a skin chosen and backed out of no longer stays in the menus or on the next Teams screen; 27: the sim's behaviour changed: the byte, the sixth choice and the ROM image's patches; 28: the Dual Strike backups moved below the skins' figures, see §8).
 - **The ROM image** is patched by [`sync`] every tick (`pvp::before_tick`, after `five::sync`), from the state alone, idempotently, per console (waiting views run their own consoles). Free ROM at
   `0x09FC0000` (`DATA`) holds a marker word, which skin is patched on each colour, a list of the **originals** of everything patched (one per colour: `restore` puts them back,
   so a rematch, a room's next match or a skin changing colour is exact), and each skin's own pictures (`art_at`). Writes are word-aligned: `raw_write_32` at an odd halfword aligns down (the first
@@ -112,7 +112,7 @@ applied in Python (`armyskinlib/figures.py`), and `check --live` needs the plume
   (LEFT from Orange Star is the skin); the choices become the game's colours when every seat is READY (`write_choices`, `assign`). The chip is the skin's colour; the app's legend and status bar
   use `tango_library::online::skin_accent`.
 - **Offline Versus**: the game's own Teams screen: R / L (or SELECT without the Dual Strike pack) cycle the highlighted army through the six (`pvp::before_tick`, `army_skin::teams_step`);
-  on a five-army map the colours are the armies' own and R / L put a skin on the army or take it off. The emblem, the screen's window colours and the army names follow at once (`refresh_palettes`).
+  on a five-army map the colours are the armies' own and R / L put a skin on the army or take it off. The emblem and the army names follow at once (`refresh_palettes`: sprite palettes only; AW2 paints this screen's windows in Orange Star's colours whatever the armies, `test_teams_look.py`).
 - The replaced colour is not offered to another seat while a skin sits on it; a seat that picks it later moves the skin to the next free colour.
 
 ## 6. Kit: `aw2dev armyskin`
