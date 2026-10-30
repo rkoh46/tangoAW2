@@ -734,6 +734,10 @@ fn end_of_game(core: &mut Core) {
     let champion = champion_now(core);
     let left = core.raw_read_32(LEFT, -1);
     if !won {
+        // SELECT MAP's first row shown shares its IWRAM with the CO screen's list (which the run's
+        // first map just used): it came back as a CO id, the page after the results never drew
+        // and A opened map 0. The courses' list starts at the top again (the cursor keeps its row).
+        core.raw_write_32(LIST_FIRST, -1, 0);
         core.raw_write_8(PHASE, -1, LOST);
         core.raw_write_32(LEFT, -1, 0);
         core.raw_write_32(BONUS, -1, 0);
