@@ -727,14 +727,17 @@ pub fn tick(core: &mut Core, session: bool, aw2_map_script: u32, ds_map_script: 
     // (the art: Omega Land's in a DS Campaign session, AW2's otherwise)
     let own_art = session && art_dims(crate::ds_campaign::art(core)).is_some();
     let art = |ds: u32, aw2: u32| if own_art { ds } else { aw2 };
+    // The BH Campaign on AW2's own map: its tilemap and palettes are the conquest's copies (crate::bh_conquest).
+    let conquest = session && !own_art && crate::bh_conquest::on(core) && crate::bh_conquest::tick(core, session && map_screen(core));
+    let (tilemap_to, palette_to) = if conquest { (crate::bh_conquest::TILEMAP, crate::bh_conquest::PALETTE) } else { (art(TILEMAP, AW2_TILEMAP), art(PALETTE, AW2_PALETTE)) };
     for at in TILES_POOLS {
         set32(core, at, art(TILES, AW2_TILES));
     }
     for at in TILEMAP_POOLS {
-        set32(core, at, art(TILEMAP, AW2_TILEMAP));
+        set32(core, at, tilemap_to);
     }
     for at in PALETTE_POOLS {
-        set32(core, at, art(PALETTE, AW2_PALETTE));
+        set32(core, at, palette_to);
     }
     for at in MISSION_POOLS {
         set32(core, at, pick(MISSION_TABLE, AW2_MISSION_TABLE));
@@ -915,7 +918,7 @@ const OBJ_ON: u16 = 1 << 12;
 const BG3_CHARS: u32 = 0x0600_8000;
 const BG3_MAP: u32 = 0x0600_F000;
 
-fn write_palettes(core: &mut Core, at: u32, bytes: &[u8]) {
+pub(crate) fn write_palettes(core: &mut Core, at: u32, bytes: &[u8]) {
     for base in [PAL_BUFFER, 0x0500_0000] {
         core.raw_write_range(base + at, -1, bytes);
     }
@@ -1023,7 +1026,7 @@ pub fn point_at(core: &mut Core, m: u8) {
 
 /// The mission points of the campaign (map pixels), Omega Land's or the
 /// custom campaign's on AW2's map.
-fn points(core: &Core) -> Vec<(i16, i16)> {
+pub(crate) fn points(core: &Core) -> Vec<(i16, i16)> {
     match crate::ds_campaign::campaign(core) {
         Some(c) => match &c.model.custom {
             Some(custom) => custom.points.iter().map(|p| (p.x, p.y)).collect(),
