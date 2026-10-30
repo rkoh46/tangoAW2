@@ -63,6 +63,14 @@ press 0 RIGHT
 wait 4
 press 0 RIGHT
 wait 4
+press 2 DOWN
+wait 4
+press 2 RIGHT
+wait 4
+press 2 RIGHT
+wait 4
+press 2 RIGHT
+wait 4
 wait 20
 shotall b_fields
 press 0 A

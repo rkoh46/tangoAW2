@@ -447,6 +447,30 @@ pub(crate) fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> Strin
     format!("<{t}>")
 }
 
+/// A part of a CO's Teams portrait (the 48 x 48 face: `sx, sy, sw, sh`) scaled to `dw` x `dh` at (x, y), its clear pixels left as they are.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn draw_portrait_part(
+    core: &Core,
+    cv: &mut crate::online::Rgba<'_>,
+    co: u8,
+    (x, y, dw, dh): (i32, i32, i32, i32),
+    (sx, sy, sw, sh): (i32, i32, i32, i32),
+) {
+    let (px, pal) = crate::tag_ui::portrait48_raw(core, co);
+    for yy in 0..dh {
+        for xx in 0..dw {
+            let (u, v) = ((sx + xx * sw / dw) as usize, (sy + yy * sh / dh) as usize);
+            let t = 6 * (v / 8) + u / 8;
+            let b = px.get(32 * t + 4 * (v % 8) + (u % 8) / 2).copied().unwrap_or(0);
+            let c = ((b >> (4 * (u & 1))) & 15) as usize;
+            if c != 0 {
+                let col = u16::from_le_bytes([pal[2 * c], pal[2 * c + 1]]);
+                cv.put(x + xx, y + yy, crate::online::bgr(col));
+            }
+        }
+    }
+}
+
 /// A CO's Teams card portrait as the game's own card draws it (its presentation row's 48 x 48 face, [`crate::tag_ui::portrait48`]),
 /// inside the card's frame: 46 x 46 pixels one to one at (x, y).
 pub(crate) fn draw_card_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32) {

@@ -103,6 +103,9 @@ fn main() {
     press(&mut link, START);
     wait(&mut link, 40);
     shot(&mut link, "teams_partner");
+    press(&mut link, DOWN);
+    wait(&mut link, 20);
+    shot(&mut link, "teams_partner_set");
     press(&mut link, RIGHT);
     wait(&mut link, 20);
     shot(&mut link, "teams_partner_next");
