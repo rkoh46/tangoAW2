@@ -9,11 +9,11 @@ from . import scenarios
 CKPT = lambda: cfg.work("armyskin", "checkpoints")
 
 
-def checkpoint(name, scenario, ids=None, ds=False):
+def checkpoint(name, scenario, ids=None, ds=False, klaus=None):
     """Play `scenario` (identities `ids`) in the harness and keep its end state as checkpoint `name`. With `ds` the pack and its graphics are on."""
     out = cfg.work("armyskin", f"ckpt_{name}")
     out.mkdir(parents=True, exist_ok=True)
-    (out / "script.txt").write_text(scenarios.script(scenario, ids, checkpoint=name))
+    (out / "script.txt").write_text(scenarios.script(scenario, ids, checkpoint=name, ds=ds, klaus=klaus))
     CKPT().mkdir(parents=True, exist_ok=True)
     env = {"AW2_CKPT_DIR": str(CKPT())}
     if ds:

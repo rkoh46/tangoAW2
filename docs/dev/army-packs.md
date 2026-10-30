@@ -26,7 +26,7 @@ Not changed: rules (every CO is allowed, no army-specific rules), the CPU (it pl
 
 - **EWRAM** `0x0203C500` (`army_skin::STATE`, registered in `ram_map.rs`, 16 bytes): `+0..+2` the colour (1..5) skin 0..2 sits on (0 none), `+4..+8` each Teams-screen
   army's choice (0: its colour; else a skin's code), `+0xF` set once the Teams screen has reset them. In the shared console, so rollback, replays, rejoin and every peer agree;
-  **`SIM_VERSION` is 38** (38: the computer defends its HQ when a foot soldier stands on it in the custom campaigns, `crate::cpu_defend`; 37: the skins' chart soldiers only on the CO page's unit chart; 36: the Emerald Sun COs' faces frame the whole head; 35: a skin's palette refresh reaches the sprite palettes only, so the Teams screen's windows stay AW2's own; 34: Asuka's kit; 33: Aria, CO 93, `crate::aria`; 32: Crumb's and Clone Andy's own themes, Crumb's HQ Black Hole's again; 31: the choice is taken back when the Versus map list is up, `army_skin::reset_choice`, so a skin chosen and backed out of no longer stays in the menus or on the next Teams screen; 27: the sim's behaviour changed: the byte, the sixth choice and the ROM image's patches; 28: the Dual Strike backups moved below the skins' figures, see §8).
+  **`SIM_VERSION` is 39** (39: designs follow the CO and an Emerald Sun CO in another colour gets the skin's crest only, `army_skin::crest_plan`; 38: the computer defends its HQ when a foot soldier stands on it in the custom campaigns, `crate::cpu_defend`; 37: the skins' chart soldiers only on the CO page's unit chart; 36: the Emerald Sun COs' faces frame the whole head; 35: a skin's palette refresh reaches the sprite palettes only, so the Teams screen's windows stay AW2's own; 34: Asuka's kit; 33: Aria, CO 93, `crate::aria`; 32: Crumb's and Clone Andy's own themes, Crumb's HQ Black Hole's again; 31: the choice is taken back when the Versus map list is up, `army_skin::reset_choice`, so a skin chosen and backed out of no longer stays in the menus or on the next Teams screen; 27: the sim's behaviour changed: the byte, the sixth choice and the ROM image's patches; 28: the Dual Strike backups moved below the skins' figures, see §8).
 - **The ROM image** is patched by [`sync`] every tick (`pvp::before_tick`, after `five::sync`), from the state alone, idempotently, per console (waiting views run their own consoles). Free ROM at
   `0x09FC0000` (`DATA`) holds a marker word, which skin is patched on each colour, a list of the **originals** of everything patched (one per colour: `restore` puts them back,
   so a rematch, a room's next match or a skin changing colour is exact), and each skin's own pictures (`art_at`). Writes are word-aligned: `raw_write_32` at an odd halfword aligns down (the first
@@ -207,9 +207,28 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 - The Dual Strike graphics mode and the tilted map (and its hi-res picture) show the skin: the tilt is a host-side overlay of the console's picture, so the palettes, the helmets (the skin's slot instead of the CO's country's), the HQ and the properties are the console's own; the pack's own screens (the CO panel's palette, the CO page's unit chart, the Versus and CO-pick cards with the emblem) take their colours from the skin file. Dual Strike's own pictures of Infantry and Mech are not drawn for the skin (the crested soldiers are AW2-style pixel art: the skin's soldiers keep them in every mode).
 
 
+## Designs follow the CO, colours only recolour
+**The rule (the user's, said more than once):** a CO's unit designs and HQ belong to the CO's own nation; an army colour only recolours them. A skin therefore has two separate things:
+
+| | Decided by | Code |
+|---|---|---|
+| the **palette** (the army's colours, panels, emblem, texts, the names) | the army's *colour*: the skin sits on a colour (`skin_on`, `skin_installed_on`) | `plan`, `sync` |
+| the **designs** (Infantry and Mech on the map, idle and moving, battle figures, the unit panel's portrait, the capture box's soldier and HQ, the HQ on the map, the Dual Strike tilt's unit slots) | the army's *CO* (`design_style`, `design_skin`, `design_on_colour`) | the traps in `traps()`, `map_slot`, `hq_loaded` |
+
+So an Emerald Sun CO (Klaus, Aurelia, Cassius, Livia, Varro: the CO data files with `hq = "emerald_sun"`, `nation_skin`) has the skin's plumed soldiers and domed HQ in **whatever colour** its army wears, and every
+other CO has its own nation's: AW2 draws those by the CO's country already (Black Hole's own tower and soldiers for Hawke, Lash, Adder, Flak, Sturm, Jugger, Koal, Kindle, Von Bolt, Asuka, Crumb; Orange Star's for Andy and
+Aria ...), so the traps simply leave them alone, in the skin's palette when the army wears the skin. Bug of 0.9.0: every trap asked "does this army wear the skin?" (by colour), so Asuka in the Emerald Sun colour got the plumes and the domed HQ.
+
+An Emerald Sun CO whose army wears another colour has the skin's designs in that colour's palette: `army_skin::sync` installs **the crest only** on that colour (`crest_plan`: the plume's red in the unit rows' entry 14 and the
+moving rows', the battle scene's entries 14 and 15, the HQ's gold in the buildings' entry 14, everything else of the row stays the colour's; `applied_at` holds `0x11 + skin`, `crest_on`). Where a campaign forces the skin on
+an army (the Emerald Sun Campaign's player, a custom mission's skinned army: `forced_skin`) the army keeps the skin's designs whatever its CO.
+
+Not changed on purpose: the emblem on the Teams screens and the army box is the colour's (the skin's sun, in its palette) wherever the skin sits; the CO cards, results and the HUD are palettes. The cursor's info panel draws its own small HQ icon, which stays the game's.
+Test: `python3 tools/aw2test/run.py -k army_designs --mode ds` (a Black Hole CO, a base CO and an Emerald Sun CO in the skin's colour, and an Emerald Sun CO in a base colour: the pictures compared as shapes, the palette checked).
+
 ## The HQ follows the CO (`hq = "<skin id>"` in `cos/<id>.toml`)
-An army shows a skin's HQ picture (the domed tower, `[hq] rows` of `skins/<id>.toml`) when it wears the skin **or** when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
-`hq_loaded`). Klaus, Aurelia, Cassius, Livia and Varro have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
+An army shows a skin's HQ picture (the domed tower, `[hq] rows` of `skins/<id>.toml`) when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
+`hq_loaded`) and not merely because the army wears the skin colour (see above). Klaus, Aurelia, Cassius, Livia and Varro have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
 The picture is indexed in the building palette, so it is drawn in the **army's own building colours** (red for Orange Star, a Black Hole army's purple, the skin's green on the skin's army). Without this the HQ came from the country
 of the CO the data was based on (Klaus: Kanbei's, Yellow Comet's pale-green tower). `aw2dev co verify` (facet `hq`), `aw2dev campaign check --hq` and `aw2dev co sheet hq` check and show it. Not covered: the cursor's info panel
 draws its own small HQ icon, which stays the game's.

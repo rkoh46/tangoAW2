@@ -639,6 +639,57 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
     out
 }
 
+/// What an army of colour `host` needs to wear the skin's *designs* in its own colours: the entries the designs use that no colour's row has (the plume's crest
+/// red in the map and moving units' rows and the battle scene's, the HQ's gold in the buildings'). Everything else of the row stays the colour's.
+pub fn crest_plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
+    let mut out = Vec::new();
+    if !(1..=5).contains(&host) {
+        return out;
+    }
+    let i = host as u32 - 1;
+    let make = |kind: Kind, orig: &[u16; 16], r: u32| -> Option<[u16; 16]> {
+        let mut row = *orig;
+        match kind {
+            Kind::Unit => row[14] = skin.crest,
+            Kind::Moved => row[14] = skin.moved_row(&skin.unit_row(orig))[14],
+            Kind::Moving => row[MOVE_ROLE[14]] = skin.crest,
+            Kind::Power if r == 0 => {
+                row[14] = skin.crest;
+                row[15] = skin.crest_dark;
+            }
+            Kind::Building => row[14] = skin.gold,
+            _ => return None,
+        }
+        Some(row)
+    };
+    for &(what, base, colours, span, kind) in TABLES {
+        if i as usize >= colours || !matches!(kind, Kind::Unit | Kind::Moved | Kind::Moving | Kind::Power | Kind::Building) {
+            continue;
+        }
+        let at = base + 32 * (span as u32 * i);
+        let mut data = Vec::new();
+        for r in 0..span as u32 {
+            let orig = row_of(rom, at + 32 * r);
+            data.extend(bytes_of(&make(kind, &orig, r).unwrap_or(orig)));
+        }
+        out.push(Patch { what: what.to_string(), addr: at, data });
+    }
+    if host == 5 {
+        for &(what, at, span, kind, _, _) in BLACK_HOLE_EXTRAS {
+            if !matches!(kind, Kind::Power) {
+                continue;
+            }
+            let mut data = Vec::new();
+            for r in 0..span as u32 {
+                let orig = row_of(rom, at + 32 * r);
+                data.extend(bytes_of(&make(kind, &orig, r).unwrap_or(orig)));
+            }
+            out.push(Patch { what: what.to_string(), addr: at, data });
+        }
+    }
+    out
+}
+
 // ---------- pictures ----------
 
 /// AW2's idle map units: three frames of 27 slots of 4 tiles (TL, TR, BL, BR), 0xD80 bytes a frame; the slot of a
@@ -940,9 +991,81 @@ pub fn applied_on(core: &Core, colour: u8) -> Option<usize> {
         return None;
     }
     match core.raw_read_8(applied_at(colour), -1) {
-        0 => None,
-        k => Some(k as usize - 1),
+        k @ 1..=0x0F => Some(k as usize - 1),
+        _ => None,
     }
+}
+
+/// The skin whose *crest* only is patched on colour `colour` (an army of that colour has a CO of the skin's nation but does not wear the skin).
+pub fn crest_on(core: &Core, colour: u8) -> Option<usize> {
+    if !(1..=5).contains(&colour) || core.raw_read_32(DATA, -1) != MAGIC {
+        return None;
+    }
+    match core.raw_read_8(applied_at(colour), -1) {
+        k @ 0x11..=0x1F => Some(k as usize - 0x11),
+        _ => None,
+    }
+}
+
+/// The army colours of a match, with the CO of each: (army 1..5, colour, CO).
+fn armies(core: &Core) -> Vec<(u32, u8, u8)> {
+    let players = crate::five::players(core);
+    (1..=5u32)
+        .filter(|&a| a < 5 || crate::five::active(core))
+        .map(|a| {
+            (
+                a,
+                core.raw_read_8(players + 0x3C * a + 0x1A, -1),
+                core.raw_read_8(players + 0x3C * a + 0x1D, -1),
+            )
+        })
+        .filter(|&(_, c, _)| (1..=5).contains(&c))
+        .collect()
+}
+
+/// The skin whose designs (units, HQ) CO `co`'s nation has: Emerald Sun's for the Emerald Sun COs (their data files' `hq` line), None for everyone else.
+fn nation_skin(co: u8) -> Option<usize> {
+    let id = hq_style(co)?;
+    skins().iter().position(|s| s.id == id)
+}
+
+/// The skin a campaign forces on an army regardless of its CO (the Emerald Sun Campaign's player, a custom mission's skinned army).
+fn forced_skin(core: &Core, army: u32) -> Option<usize> {
+    let forced = crate::es_campaign::skin_colour(core).is_some()
+        || (crate::ds_campaign::mission_skin(core).is_some() && crate::pvp::in_battle(core));
+    if forced {
+        skin_of_army(core, army)
+    } else {
+        None
+    }
+}
+
+/// The skin whose **designs** army `army` (1..5) shows (Infantry and Mech, battle figures, portrait, capture soldier, HQ): the designs follow the
+/// army's CO, never its colour. An Emerald Sun CO has the skin's, in whatever colour its army wears; every other CO has its own nation's
+/// (AW2 draws those by the CO's country), in the colour's palette (a skin colour included). A campaign that forces a skin on an army keeps it.
+fn design_style(core: &Core, army: u32) -> Option<usize> {
+    if !(1..=5).contains(&army) {
+        return None;
+    }
+    forced_skin(core, army).or_else(|| {
+        let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
+        nation_skin(co).filter(|&i| core.raw_read_32(art_mark(i), -1) == MAGIC)
+    })
+}
+
+/// [`design_style`] for the pictures that need the skin's palette entries (the plume's red): the colour of the army has the skin's palette or its crest.
+pub fn design_skin(core: &Core, army: u32) -> Option<usize> {
+    let i = design_style(core, army)?;
+    let colour = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1A, -1);
+    (skin_installed_on(core, colour) == Some(i) || crest_on(core, colour) == Some(i)).then_some(i)
+}
+
+/// [`design_skin`] of the army that wears `colour`.
+fn design_on_colour(core: &Core, colour: u8) -> Option<usize> {
+    armies(core)
+        .into_iter()
+        .find(|&(_, c, _)| c == colour)
+        .and_then(|(a, _, _)| design_skin(core, a))
 }
 
 /// Every tick: make the ROM image hold the skins the state asks for.
@@ -976,17 +1099,28 @@ pub fn sync(core: &mut Core) {
         None => {}
     }
     let versus = crate::pvp::in_versus(core) || campaign.is_some() || enemy.is_some();
+    let seats = if versus { armies(core) } else { Vec::new() };
     for colour in 1..=5u8 {
-        let want = if versus { skin_on(core, colour) } else { None };
-        let have = applied_on(core, colour);
-        if want == have {
+        // (the skin's colours, or only its crest for an army of that colour whose CO has the skin's designs: the plume and the HQ's gold)
+        let want = if versus { skin_on(core, colour).map(|i| i as u8 + 1) } else { None }.or_else(|| {
+            seats
+                .iter()
+                .find(|&&(_, c, _)| c == colour)
+                .and_then(|&(_, _, co)| nation_skin(co))
+                .map(|i| 0x11 + i as u8)
+        });
+        let have = core.raw_read_8(applied_at(colour), -1);
+        let have = if core.raw_read_32(DATA, -1) == MAGIC { have } else { 0 };
+        if want.unwrap_or(0) == have {
             continue;
         }
-        if have.is_some() {
+        if have != 0 {
             restore_colour(core, colour);
         }
-        if let Some(i) = want {
-            install(core, skin(i), i, colour);
+        match want {
+            Some(k) if k < 0x10 => install(core, skin(k as usize - 1), k as usize - 1, colour),
+            Some(k) => install_crest(core, skin(k as usize - 0x11), k as usize - 0x11, colour),
+            None => {}
         }
     }
 }
@@ -1121,6 +1255,13 @@ fn apply_backup(core: &mut Core, base: u32, max: usize, patches: &[Patch]) {
     }
 }
 
+/// Only the skin's crest on colour `colour`: the plume's red in the unit rows and the battle scene's (entries 14 and 15), the HQ's gold in the buildings' (14).
+fn install_crest(core: &mut Core, skin: &Skin, idx: usize, colour: u8) {
+    let patches = crest_plan(core, skin, colour);
+    apply_backup(core, backup(colour), BACKUP_MAX, &patches);
+    core.raw_write_8(applied_at(colour), -1, 0x11 + idx as u8);
+}
+
 fn install(core: &mut Core, skin: &Skin, idx: usize, colour: u8) {
     let patches = plan(core, skin, idx, colour);
     apply_backup(core, backup(colour), BACKUP_MAX, &patches);
@@ -1190,6 +1331,24 @@ fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
         let mut ram = [0u8; 0x400];
         core.raw_read_range(base, -1, &mut ram);
         for (b, a) in before.chunks(32).zip(after.chunks(32)) {
+            // (sprite banks only: a BG bank holding the same colours is a menu window's, which stays AW2's)
+            // (a patch that changes only a couple of entries, the crest's (see `crest_plan`): the map's unit palette is in the buffer already, with the entries the game
+            // animates (0, 1, 6, 13..15) of its own, so a bank is the colour's when the stable entries match, and only the changed entries are written)
+            let changed: Vec<usize> = (0..16).filter(|&i| b[2 * i..2 * i + 2] != a[2 * i..2 * i + 2]).collect();
+            if changed.len() <= 2 {
+                for bank in 16..32usize {
+                    let row = &ram[bank * 32..bank * 32 + 32];
+                    let same = [2usize, 3, 4, 5, 7, 8, 9, 10, 11, 12]
+                        .iter()
+                        .all(|&i| changed.contains(&i) || row[2 * i..2 * i + 2] == b[2 * i..2 * i + 2]);
+                    if same {
+                        for &i in &changed {
+                            core.raw_write_range(base + bank as u32 * 32 + 2 * i as u32, -1, &a[2 * i..2 * i + 2]);
+                        }
+                    }
+                }
+                continue;
+            }
             for bank in 16..32usize {
                 if ram[bank * 32..bank * 32 + 32] == *b {
                     core.raw_write_range(base + bank as u32 * 32, -1, a);
@@ -1819,7 +1978,7 @@ fn capture_soldier_loaded(core: &mut Core) {
     if r4 < CAPTURE_PALETTES || !(1..=5).contains(&colour) {
         return;
     }
-    let Some(i) = skin_installed_on(core, colour as u8) else { return };
+    let Some(i) = design_on_colour(core, colour as u8) else { return };
     if skin(i).capture.is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
         return;
     }
@@ -1839,7 +1998,7 @@ fn capture_property_copy(core: &mut Core) {
     if r5 != HQ_CLASS || !(1..=5).contains(&r4) {
         return;
     }
-    let Some(i) = skin_installed_on(core, r4 as u8) else { return };
+    let Some(i) = design_on_colour(core, r4 as u8) else { return };
     if skin(i).hq_grid().is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
         return;
     }
@@ -1855,7 +2014,7 @@ fn capture_property_loaded(core: &mut Core) {
     if r5 != HQ_CLASS || !(1..=5).contains(&r4) {
         return;
     }
-    let Some(i) = skin_installed_on(core, r4 as u8) else { return };
+    let Some(i) = design_on_colour(core, r4 as u8) else { return };
     if skin(i).hq_grid().is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
         return;
     }
@@ -1889,7 +2048,7 @@ fn fig_sheet(core: &mut Core) {
         return;
     }
     let colour = core.raw_read_8(SIDE_COLOURS + side, -1) + 1;
-    let Some(skin) = skin_installed_on(core, colour) else {
+    let Some(skin) = design_on_colour(core, colour) else {
         return;
     };
     for c in 0..5u32 {
@@ -1935,7 +2094,7 @@ fn portrait_blob(core: &mut Core) {
         return;
     }
     let army = core.raw_read_8(state + 8, -1) as u32;
-    let Some(skin) = skin_of_army(core, army) else { return };
+    let Some(skin) = design_skin(core, army) else { return };
     let at = fig_slot(core, skin, ty, 2);
     if at != 0 {
         core.gba_mut().cpu_mut().set_gpr(0, at as i32);
@@ -1992,7 +2151,7 @@ fn moving_sheet(core: &mut Core) {
     if !(1..=2).contains(&ty) {
         return;
     }
-    if let Some(skin) = skin_of_army(core, army) {
+    if let Some(skin) = design_skin(core, army) {
         let cpu = core.gba_mut().cpu_mut();
         cpu.set_gpr(1, (move_list(skin) + 4 * ty as u32) as i32);
         cpu.set_thumb_pc(MOVE_FN_LOAD);
@@ -2097,7 +2256,7 @@ pub fn map_slot(core: &Core, army: u32, ty: u8) -> Option<u16> {
     if !(1..=2).contains(&ty) {
         return None;
     }
-    skin_of_army(core, army).map(|skin| slot_of(skin, ty))
+    design_skin(core, army).map(|skin| slot_of(skin, ty))
 }
 
 /// A skin's slot per unit type (halfwords: 0, Infantry, Mech), for the slot function to read.
@@ -2134,7 +2293,7 @@ fn unit_slot(core: &mut Core) {
     if !(1..=2).contains(&ty) {
         return;
     }
-    if let Some(skin) = skin_of_army(core, army) {
+    if let Some(skin) = design_skin(core, army) {
         let cpu = core.gba_mut().cpu_mut();
         cpu.set_gpr(4, (slot_list(skin) + 2 * ty) as i32);
         cpu.set_thumb_pc(SLOT_FN_LOAD);
@@ -2151,7 +2310,7 @@ const CO_PAGE_NUMBER: u32 = 0x0300_5940;
 
 fn sync_chart_art(core: &mut Core) {
     for i in 0..skins().len() {
-        if core.raw_read_32(art_mark(i), -1) != MAGIC || !(1..=5u8).any(|c| applied_on(core, c) == Some(i)) {
+        if core.raw_read_32(art_mark(i), -1) != MAGIC || !(1..=5u8).any(|c| applied_on(core, c) == Some(i) || crest_on(core, c) == Some(i)) {
             continue;
         }
         for unit in [1u8, 2] {
@@ -2170,7 +2329,7 @@ fn sync_chart_art(core: &mut Core) {
 /// On the battle map the game copies one of the sheet's three idle frames to the VRAM sheet; the skins' slots,
 /// past the sheet, follow it (found by comparing, as `crate::roster` does for Dual Strike's units).
 pub fn sync_map_art(core: &mut Core) {
-    if (1..=5u8).all(|c| applied_on(core, c).is_none()) {
+    if (1..=5u8).all(|c| applied_on(core, c).is_none() && crest_on(core, c).is_none()) {
         return;
     }
     if core.raw_read_32(0x0300_0000, -1) == CO_PAGE_LOOP {
@@ -2195,7 +2354,7 @@ pub fn sync_map_art(core: &mut Core) {
     }
     let Some(f) = frame else { return };
     for i in 0..skins().len() {
-        if core.raw_read_32(art_mark(i), -1) != MAGIC || !(1..=5u8).any(|c| applied_on(core, c) == Some(i)) {
+        if core.raw_read_32(art_mark(i), -1) != MAGIC || !(1..=5u8).any(|c| applied_on(core, c) == Some(i) || crest_on(core, c) == Some(i)) {
             continue;
         }
         for unit in [1u8, 2] {
@@ -2245,13 +2404,9 @@ pub fn hq_style(co: u8) -> Option<&'static str> {
     .and_then(|(_, h)| h.as_deref())
 }
 
-/// The skin whose HQ army `army` has: the one it wears, else the one its CO's data file names (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro); the picture takes the army's own building colours.
+/// The skin whose HQ army `army` has: the one its CO's data file names (the HQ follows the CO's nation, not the colour: Black Hole's army in the Emerald Sun colour keeps Black Hole's tower; a campaign's forced skin keeps its own) (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro); the picture takes the army's own building colours.
 fn hq_skin(core: &Core, army: u32) -> Option<usize> {
-    let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
-    skin_of_army(core, army).or_else(|| {
-        let i = skins().iter().position(|s| Some(s.id.as_str()) == hq_style(co))?;
-        (core.raw_read_32(art_mark(i), -1) == MAGIC).then_some(i)
-    })
+    design_style(core, army)
 }
 
 /// `sub_0803F5E4(weather, base)`: loads the building sheet and each army's HQ picture (by the country of its CO) into

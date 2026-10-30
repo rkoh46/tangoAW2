@@ -27,7 +27,7 @@ def run_scenarios(names, out, ds=False, ids=None):
         sc = scenarios.SCENARIOS[n]
         d = Path(out) / n
         d.mkdir(parents=True, exist_ok=True)
-        (d / "script.txt").write_text(scenarios.script(n, (ids or {}).get(n)))
+        (d / "script.txt").write_text(scenarios.script(n, (ids or {}).get(n), ds=ds or sc["ds"]))
         harness.run_script(d / "script.txt", d, ds=ds or sc["ds"])
         dirs[n] = d
     return dirs
