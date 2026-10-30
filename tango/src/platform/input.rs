@@ -397,7 +397,7 @@ impl Default for Mapping {
     fn default() -> Self {
         // Matches the legacy app's defaults: arrows + WASD-ish
         // for L/R, Z/X for A/B, Enter/Space for Start/Select.
-        // Speed-up = LShift. Controller defaults track the
+        // Speed-up = RShift (the owner: Left Shift is too easy to hit). Controller defaults track the
         // legacy app's Xbox-layout bindings.
         let key = |c| PhysicalInput::Key(KeyPhysical(Physical::Code(c)));
         let btn = PhysicalInput::Button;
@@ -437,7 +437,7 @@ impl Default for Mapping {
             // a face button spent on it would be one a DS player can't
             // spare.
             mic: vec![key(Code::KeyE)],
-            speed_up: vec![key(Code::ShiftLeft)],
+            speed_up: vec![key(Code::ShiftRight)],
         }
     }
 }
