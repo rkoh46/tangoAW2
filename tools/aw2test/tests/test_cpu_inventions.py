@@ -571,7 +571,8 @@ def netplay_cpu_inv_bh_campaign(ctx):
     for _ in range(6):
         next_day(e, g, d)
     ctx.check(logged(e, "inv strike") and logged(e, "inv goal"), "the computer sent units and hit inventions in the run")
-    lines = ["seat 0"] + list(e.timeline) + ["wait 60", f"peek {INV:08x} 64"]
+    from aw2test.harness import replay_lines
+    lines = ["seat 0"] + replay_lines(e.timeline) + ["wait 60", f"peek {INV:08x} 64"]
     path = os.path.join(ctx.out, "netplay.txt")
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")

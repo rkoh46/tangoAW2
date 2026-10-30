@@ -13,6 +13,20 @@ from .game import Game, power_star_cost
 from .save import DesignMap
 
 
+def replay_lines(timeline):
+    """The run's inputs for a netplay replay: the steps between the wheel markers (Select Mode's extra Gauntlet step, which only the pack's eight-entry offline wheel has: the replay's peers
+    turn AW2's six) are left out, the markers always."""
+    out, skip = [], False
+    for l in timeline:
+        if l == "#wheel-step":
+            skip = True
+        elif l == "#wheel-step-end":
+            skip = False
+        elif not skip:
+            out.append(l)
+    return out
+
+
 class TestFailure(AssertionError):
     pass
 
@@ -393,7 +407,7 @@ class Ctx:
         """The run so far as an aw2_script file script, in commands every build
         of aw2_script has (wait, press, hold, poke8, poke16)."""
         lines = []
-        for l in list(g.e.timeline) + list(tail):
+        for l in replay_lines(list(g.e.timeline)) + list(tail):
             p = l.split()
             if p[0] == "poke32":
                 a, v = int(p[1], 16), int(p[2], 16)
@@ -424,7 +438,7 @@ class Ctx:
         pressing) and return (all_identical, {addr: bytes on peer 0}, output). `env`: variables for the peers (the ones the run's console had)."""
         # Pokes (a filled power meter) are replayed on both peers on the same
         # tick, with idle frames after them (aw2_netplay_script).
-        lines = ["seat 0"] + list(g.e.timeline) + ["wait 60"] + [f"peek {a:08x} {n}" for a, n in peeks]
+        lines = ["seat 0"] + replay_lines(g.e.timeline) + ["wait 60"] + [f"peek {a:08x} {n}" for a, n in peeks]
         path = os.path.join(self.out, "netplay.txt")
         with open(path, "w") as f:
             f.write("\n".join(lines) + "\n")
