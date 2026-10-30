@@ -42,6 +42,7 @@ def switch_report(ctx, n):
     e, g, d = b2.enter(ctx, n)
     d.leave_setup()
     a2.intro(ctx, e, d, f"m{n}", (0,))
+    bp.to_player_turn(e, g, d)     # (the finale's opening scene runs to its end, as in bh2_m31_progression)
     d.wait_control()
     g._units_base = g._players_base = None
     from tests.test_bh2_review import home

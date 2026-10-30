@@ -406,6 +406,10 @@ def survival_champion_records_and_results(ctx):
     e.press("A", 8)
     e.wait(40)
     ctx.eq(sv.state(e)["phase"], sv.CHOOSING, "A closes the results")
+    # The course page is drawn at once (SELECT MAP's first row had come back as a CO id from
+    # the CO screen's list, so the results stayed up until a key moved the cursor).
+    e.wait(60)
+    ctx.check(sv.text_on(sv.bg0(e), "Infinite", 16, ROW1), "the course page replaces the results without a key")
     # The course screen now says 7 Maps (rank C).
     to_row(e, 3)
     shot = sv.bg0(e)
