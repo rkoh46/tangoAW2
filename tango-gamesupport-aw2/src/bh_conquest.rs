@@ -7,8 +7,9 @@
 //!   and no cell of the tilemap uses them in a session.
 //! - **Conquest.** Entries 1..=9 of a bank are re-tinted (same lightness mapping as the picture map: dark purple to light purple). Black Hole's island (bank 10)
 //!   is Black Hole's from the start. A nation's other banks get a dark twin: banks 6..9 become the tinted copies of banks 11..14, and the tilemap cells of the
-//!   conquered land point at the twin. A cell belongs to the mission whose flag is nearest among the nation's (the nation of a flag is the bank of the nearest
-//!   land cell), so progress shows mission by mission; when all of a nation's missions are won all its land is dark.
+//!   conquered land point at the twin. The land is split into the regions AW2's white (entry 15) border lines enclose (the dashed lines are widened by two
+//!   pixels, a flood fill per bank, specks join the land beside them; a cell goes to the region most of its land pixels are in). A region holding the flag of a
+//!   won mission is dark; a region with no flag goes with the nearest flagged region of its nation; when all of a nation's missions are won all its land is dark.
 //! - **Where it lives.** The campaign's own copies of the tilemap (LZ77) and the palettes sit in the ROM image ([`TILEMAP`], [`PALETTE`]); in a BH Campaign
 //!   session the map screen's literal-pool words point at them (`ds_worldmap::tick`), so the screen's setup, fades and a saved game's Continue all draw
 //!   the conquest. With the map up the tilemap in VRAM and the palette RAM are rewritten when the set of won missions changes. Nothing outside the BH
@@ -57,6 +58,13 @@ pub fn tint(c: u16) -> u16 {
     q(0) | q(1) << 5 | q(2) << 10
 }
 
+/// One of AW2's white-bordered regions of a nation's land.
+pub struct Region {
+    pub bank: u16,
+    /// The centre of its land pixels.
+    pub centre: (f64, f64),
+}
+
 /// What the ROM's map is made of.
 pub struct Layout {
     /// The tilemap entries as the ROM has them (two screens, row by row).
@@ -65,7 +73,20 @@ pub struct Layout {
     pub pal: Vec<u16>,
     /// Per cell: it draws land (a few pixels of entries 1..=9).
     pub land: Vec<bool>,
+    /// The regions the white border lines (entry 15) enclose.
+    pub regions: Vec<Region>,
+    /// Per cell: its region (the one most of its land pixels are in).
+    pub cell_region: Vec<Option<usize>>,
+    /// Per map pixel (512 x 256): its region.
+    pix: Vec<i32>,
 }
+
+const W: usize = 512;
+const H: usize = 256;
+/// A region's core is at least this many pixels (smaller specks join the land around them); borders are dashed, so they are widened by this many
+/// pixels before the regions are told apart.
+const MIN_REGION: usize = 40;
+const GAP: usize = 2;
 
 /// The cell's place (cell x, cell y) on the 64 x 32 layer.
 fn cell_xy(i: usize) -> (i32, i32) {
@@ -74,6 +95,122 @@ fn cell_xy(i: usize) -> (i32, i32) {
 }
 
 impl Layout {
+    /// Reads the map's cells, finds the land, the border lines and the regions between them.
+    pub fn new(map: Vec<u16>, pal: Vec<u16>, tiles: &[u8]) -> Layout {
+        // the pixels: entry and bank per map pixel
+        let mut idx = vec![0u8; W * H];
+        let mut bank = vec![0u16; W * H];
+        let mut land = vec![false; map.len()];
+        for (i, &e) in map.iter().enumerate() {
+            let (cx, cy) = cell_xy(i);
+            let t = (e & 0x3FF) as usize;
+            let (hf, vf, b) = (e >> 10 & 1 != 0, e >> 11 & 1 != 0, e >> 12);
+            let Some(px) = tiles.get(t * 32..t * 32 + 32) else { continue };
+            let mut n = 0;
+            for y in 0..8 {
+                for x in 0..8 {
+                    let (yy, xx) = (if vf { 7 - y } else { y }, if hf { 7 - x } else { x });
+                    let byte = px[yy * 4 + xx / 2];
+                    let v = if xx & 1 != 0 { byte >> 4 } else { byte & 15 };
+                    let at = (cy as usize * 8 + y) * W + cx as usize * 8 + x;
+                    idx[at] = v;
+                    bank[at] = b;
+                    n += (1..=9).contains(&v) as usize;
+                }
+            }
+            land[i] = b >= 10 && n >= 6;
+        }
+        let is_land = |at: usize| bank[at] >= 10 && (1..=9).contains(&idx[at]);
+        let mut wall: Vec<bool> = (0..W * H).map(|at| bank[at] >= 10 && idx[at] == 15).collect();
+        for _ in 0..GAP {
+            let prev = wall.clone();
+            for y in 0..H {
+                for x in 0..W {
+                    if !prev[y * W + x] {
+                        'n: for dy in -1i32..=1 {
+                            for dx in -1i32..=1 {
+                                let (ny, nx) = (y as i32 + dy, x as i32 + dx);
+                                if ny >= 0 && nx >= 0 && (ny as usize) < H && (nx as usize) < W && prev[ny as usize * W + nx as usize] {
+                                    wall[y * W + x] = true;
+                                    break 'n;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // the cores: land away from the borders, connected within a bank; the small ones are left out
+        let mut pix = vec![-1i32; W * H];
+        let mut n = 0i32;
+        let step = |at: usize| {
+            let (y, x) = (at / W, at % W);
+            [(y > 0).then(|| at - W), (y + 1 < H).then(|| at + W), (x > 0).then(|| at - 1), (x + 1 < W).then(|| at + 1)]
+        };
+        let mut seen = vec![false; W * H];
+        for start in 0..W * H {
+            if seen[start] || !is_land(start) || wall[start] {
+                continue;
+            }
+            let mut comp = vec![start];
+            seen[start] = true;
+            let mut k = 0;
+            while k < comp.len() {
+                let at = comp[k];
+                k += 1;
+                for nb in step(at).into_iter().flatten() {
+                    if !seen[nb] && is_land(nb) && !wall[nb] && bank[nb] == bank[start] {
+                        seen[nb] = true;
+                        comp.push(nb);
+                    }
+                }
+            }
+            if comp.len() >= MIN_REGION {
+                for &at in &comp {
+                    pix[at] = n;
+                }
+                n += 1;
+            }
+        }
+        // the rest of the land (the widened borders, specks) joins the nearest core
+        let mut queue: std::collections::VecDeque<usize> = (0..W * H).filter(|&at| pix[at] >= 0).collect();
+        while let Some(at) = queue.pop_front() {
+            for nb in step(at).into_iter().flatten() {
+                if pix[nb] < 0 && is_land(nb) && bank[nb] == bank[at] {
+                    pix[nb] = pix[at];
+                    queue.push_back(nb);
+                }
+            }
+        }
+        let mut sums = vec![(0.0f64, 0.0f64, 0usize, 0u16); n as usize];
+        for at in 0..W * H {
+            if pix[at] >= 0 {
+                let s = &mut sums[pix[at] as usize];
+                s.0 += (at % W) as f64;
+                s.1 += (at / W) as f64;
+                s.2 += 1;
+                s.3 = bank[at];
+            }
+        }
+        let regions = sums.iter().map(|s| Region { bank: s.3, centre: (s.0 / s.2.max(1) as f64, s.1 / s.2.max(1) as f64) }).collect();
+        let cell_region = (0..map.len())
+            .map(|i| {
+                let (cx, cy) = cell_xy(i);
+                let mut count = std::collections::HashMap::new();
+                for y in 0..8 {
+                    for x in 0..8 {
+                        let r = pix[(cy as usize * 8 + y) * W + cx as usize * 8 + x];
+                        if r >= 0 {
+                            *count.entry(r).or_insert(0) += 1;
+                        }
+                    }
+                }
+                count.into_iter().max_by_key(|&(r, c)| (c, -r)).map(|(r, _)| r as usize)
+            })
+            .collect();
+        Layout { map, pal, land, regions, cell_region, pix }
+    }
+
     pub fn bank(&self, i: usize) -> u16 {
         self.map[i] >> 12
     }
@@ -102,37 +239,88 @@ impl Layout {
         pal.iter().flat_map(|c| c.to_le_bytes()).collect()
     }
 
-    /// The nation (bank) of a map point: the bank of the nearest land cell.
-    fn nation_at(&self, x: i32, y: i32) -> Option<u16> {
-        (0..self.map.len())
-            .filter(|&i| self.land[i])
-            .min_by_key(|&i| {
-                let (cx, cy) = cell_xy(i);
-                (cx * 8 + 4 - x).pow(2) + (cy * 8 + 4 - y).pow(2)
-            })
-            .map(|i| self.bank(i))
+    /// The region of the land pixel nearest a map point.
+    fn region_at(&self, x: i32, y: i32) -> Option<usize> {
+        for r in 0..48i32 {
+            let mut best: Option<(i32, usize)> = None;
+            for dy in -r..=r {
+                for dx in -r..=r {
+                    if dx.abs().max(dy.abs()) != r {
+                        continue;
+                    }
+                    let (px, py) = (x + dx, y + dy);
+                    if px >= 0 && py >= 0 && (px as usize) < W && (py as usize) < H {
+                        let p = self.pix[py as usize * W + px as usize];
+                        if p >= 0 && best.is_none_or(|b| dx * dx + dy * dy < b.0) {
+                            best = Some((dx * dx + dy * dy, p as usize));
+                        }
+                    }
+                }
+            }
+            if let Some((_, p)) = best {
+                return Some(p);
+            }
+        }
+        None
     }
 
-    /// The cells drawn dark when the missions at `points` flagged in `won` are won: a nation's land cell goes to the nearest of the nation's flags;
-    /// it is dark when that mission is won, or when all the nation's missions are.
-    pub fn dark_cells(&self, points: &[(i16, i16)], won: u32) -> Vec<bool> {
-        let nation: Vec<Option<u16>> = points.iter().map(|&(x, y)| self.nation_at(x as i32, y as i32)).collect();
+    /// The regions drawn dark when the missions at `points` flagged in `won` are won. A region with flags in it is dark when one of them is won; a region
+    /// without goes with the nearest flagged region of its nation; a nation with all its missions won is dark whole.
+    pub fn dark_regions(&self, points: &[(i16, i16)], won: u32) -> Vec<bool> {
         let is_won = |m: usize| m < 31 && won & (1 << m) != 0;
+        let n = self.regions.len();
+        let home: Vec<Option<usize>> = points.iter().map(|&(x, y)| self.region_at(x as i32, y as i32)).collect();
+        let mut flagged = vec![false; n];
+        let mut dark = vec![false; n];
+        for (m, h) in home.iter().enumerate() {
+            if let Some(r) = *h {
+                flagged[r] = true;
+                dark[r] |= is_won(m);
+            }
+        }
+        let base = dark.clone();
+        for r in 0..n {
+            let bank = self.regions[r].bank;
+            if flagged[r] {
+                continue;
+            }
+            let (cx, cy) = self.regions[r].centre;
+            let near = (0..n).filter(|&q| flagged[q] && self.regions[q].bank == bank).min_by(|&a, &b| {
+                let d = |q: usize| (self.regions[q].centre.0 - cx).powi(2) + (self.regions[q].centre.1 - cy).powi(2);
+                d(a).total_cmp(&d(b))
+            });
+            dark[r] = near.is_some_and(|q| base[q]);
+        }
+        for bank in self.conquered_banks(points, won) {
+            (0..n).filter(|&r| self.regions[r].bank == bank).for_each(|r| dark[r] = true);
+        }
+        dark
+    }
+
+    /// The nations (banks 11..=14) whose missions, by the region of their flags, are all won.
+    fn conquered_banks(&self, points: &[(i16, i16)], won: u32) -> Vec<u16> {
+        let is_won = |m: usize| m < 31 && won & (1 << m) != 0;
+        let home: Vec<Option<usize>> = points.iter().map(|&(x, y)| self.region_at(x as i32, y as i32)).collect();
+        (11..=14u16)
+            .filter(|&bank| {
+                let ms: Vec<usize> = (0..points.len()).filter(|&m| home[m].is_some_and(|r| self.regions[r].bank == bank)).collect();
+                !ms.is_empty() && ms.iter().all(|&m| is_won(m))
+            })
+            .collect()
+    }
+
+    /// The cells drawn dark (see [`Layout::dark_regions`]); a cell is in the region most of its land is in.
+    pub fn dark_cells(&self, points: &[(i16, i16)], won: u32) -> Vec<bool> {
+        let dark = self.dark_regions(points, won);
+        let done = self.conquered_banks(points, won);
         (0..self.map.len())
             .map(|i| {
                 let b = self.bank(i);
-                if !self.land[i] || !(11..=14).contains(&b) {
-                    return false;
+                (11..=14).contains(&b) && match self.cell_region[i] {
+                    Some(r) => dark[r],
+                    // (a speck of land too small to be a region: with its nation)
+                    None => self.land[i] && done.contains(&b),
                 }
-                let (cx, cy) = cell_xy(i);
-                let mine: Vec<usize> = (0..points.len()).filter(|&m| nation[m] == Some(b)).collect();
-                let Some(&near) = mine.iter().min_by_key(|&&m| {
-                    let (x, y) = points[m];
-                    (cx * 8 + 4 - x as i32).pow(2) + (cy * 8 + 4 - y as i32).pow(2)
-                }) else {
-                    return false;
-                };
-                is_won(near) || mine.iter().all(|&m| is_won(m))
             })
             .collect()
     }
@@ -155,15 +343,7 @@ pub fn layout(core: &Core) -> Option<&'static Layout> {
         core.raw_read_range(PALETTE_ROM, -1, &mut pal_raw);
         let map: Vec<u16> = map.chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
         let pal: Vec<u16> = pal_raw.chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
-        let land = map
-            .iter()
-            .map(|&e| {
-                let t = (e & 0x3FF) as usize;
-                let Some(px) = tiles.get(t * 32..t * 32 + 32) else { return false };
-                e >> 12 >= 10 && px.iter().flat_map(|&b| [b & 15, b >> 4]).filter(|v| (1..=9).contains(v)).count() >= 6
-            })
-            .collect();
-        Some(Layout { map, pal, land })
+        Some(Layout::new(map, pal, &tiles))
     })
     .as_ref()
 }
@@ -202,16 +382,54 @@ pub fn tick(core: &mut Core, live: bool) -> bool {
 mod tests {
     use super::*;
 
-    /// A map of two nations' land side by side: bank 11 left (cells 0..4), bank 12 right (cells 4..8), one row (the rest is sea).
+    /// Bank 11's land in three rows of cells: columns 0..4 (a region), a border column, 5..9 (a region), a border column, 10..13 (a region without a flag).
     fn toy() -> Layout {
         let mut map = vec![0u16; 2048];
-        let mut land = vec![false; 2048];
-        for c in 0..8 {
-            map[c] = (if c < 4 { 11 } else { 12 }) << 12 | 5;
-            land[c] = true;
+        for r in 0..3 {
+            for c in 0..14 {
+                map[r * 32 + c] = 11 << 12 | if c == 4 || c == 9 { 2 } else { 1 };
+            }
         }
-        let pal = (0..160).map(|i| 0x6000 | i as u16).collect();
-        Layout { map, pal, land }
+        let mut tiles = vec![0u8; 3 * 32];
+        tiles[32..64].fill(0x33);
+        tiles[64..96].fill(0xFF);
+        Layout::new(map, (0..160).map(|i| 0x6000 | i as u16).collect(), &tiles)
+    }
+
+    fn dark_cols(l: &Layout, d: &[bool]) -> Vec<usize> {
+        (0..14).filter(|&c| (0..3).all(|r| d[r * 32 + c])).collect()
+    }
+
+    #[test]
+    fn the_borders_split_the_land_into_regions() {
+        let l = toy();
+        assert_eq!(l.regions.len(), 3);
+        assert!(l.cell_region[4].is_none() && l.cell_region[0] != l.cell_region[5] && l.cell_region[5] != l.cell_region[10]);
+    }
+
+    #[test]
+    fn a_won_mission_darkens_its_whole_region_and_an_unflagged_one_follows_its_neighbour() {
+        let l = toy();
+        let pts = [(8i16, 12i16), (56, 12)];
+        assert!(l.dark_cells(&pts, 0).iter().all(|&d| !d));
+        assert_eq!(dark_cols(&l, &l.dark_cells(&pts, 1)), vec![0, 1, 2, 3], "the left region only");
+        assert_eq!(dark_cols(&l, &l.dark_cells(&pts, 2)), vec![5, 6, 7, 8, 10, 11, 12, 13], "the right region and the one with no flag beside it");
+        assert_eq!(dark_cols(&l, &l.dark_cells(&pts, 3)), vec![0, 1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13], "all missions won: the whole nation");
+    }
+
+    #[test]
+    fn dark_cells_use_the_twin_banks_and_the_palette_twins_are_tinted() {
+        let l = toy();
+        let dark = l.dark_cells(&[(8, 12), (56, 12)], 1);
+        let map = l.tilemap(&dark);
+        assert_eq!(u16::from_le_bytes([map[0], map[1]]) >> 12, 6, "bank 11's twin is 6");
+        assert_eq!(u16::from_le_bytes([map[2 * 5], map[2 * 5 + 1]]) >> 12, 11, "an open region keeps its bank");
+        let pal = l.palette();
+        let at = |bank: usize, k: usize| u16::from_le_bytes([pal[(bank * 16 + k) * 2], pal[(bank * 16 + k) * 2 + 1]]);
+        assert_eq!(at(0, 10), l.pal[5 * 16 + 10], "the twin's sea entries are the nation's own");
+        assert_eq!(at(0, 3), tint(l.pal[5 * 16 + 3]));
+        assert_eq!(at(4, 3), tint(l.pal[4 * 16 + 3]), "Black Hole's island is tinted from the start");
+        assert_eq!(at(0, 15), l.pal[5 * 16 + 15], "the border entry keeps its colour");
     }
 
     #[test]
@@ -221,35 +439,5 @@ mod tests {
         let lum = |c: u16| (c & 31) + (c >> 5 & 31) + (c >> 10 & 31);
         assert!(lum(dark) < lum(light));
         assert!(lum(tint(0x6F9F)) < lum(light) + 1);
-    }
-
-    #[test]
-    fn a_won_mission_darkens_its_nearest_cells_and_a_whole_nation_all_of_its() {
-        let l = toy();
-        // two missions in nation 11 (cells 0..4: x 4..32), one in nation 12
-        let pts = [(4i16, 4i16), (28, 4), (50, 4)];
-        let none = l.dark_cells(&pts, 0);
-        assert!(none.iter().all(|&d| !d));
-        let first = l.dark_cells(&pts, 1);
-        assert_eq!((0..8).filter(|&c| first[c]).collect::<Vec<_>>(), vec![0, 1], "the first mission's half");
-        let nation = l.dark_cells(&pts, 0b011);
-        assert_eq!((0..8).filter(|&c| nation[c]).collect::<Vec<_>>(), vec![0, 1, 2, 3], "all missions of a nation: all its land");
-        let other = l.dark_cells(&pts, 0b100);
-        assert_eq!((0..8).filter(|&c| other[c]).collect::<Vec<_>>(), vec![4, 5, 6, 7]);
-    }
-
-    #[test]
-    fn dark_cells_use_the_twin_banks_and_the_palette_twins_are_tinted() {
-        let l = toy();
-        let dark = l.dark_cells(&[(4, 4), (28, 4), (50, 4)], 0b100);
-        let map = l.tilemap(&dark);
-        assert_eq!(u16::from_le_bytes([map[0], map[1]]) >> 12, 11, "unconquered cells keep their bank");
-        assert_eq!(u16::from_le_bytes([map[8], map[9]]) >> 12, 7, "bank 12's twin is 7");
-        let pal = l.palette();
-        let at = |bank: usize, k: usize| u16::from_le_bytes([pal[(bank * 16 + k) * 2], pal[(bank * 16 + k) * 2 + 1]]);
-        assert_eq!(at(1, 10), l.pal[(6 * 16) + 10], "the twin's sea entries are the nation's own");
-        assert_eq!(at(1, 3), tint(l.pal[6 * 16 + 3]));
-        assert_eq!(at(4, 3), tint(l.pal[4 * 16 + 3]), "Black Hole's island is tinted from the start");
-        assert_eq!(at(0, 15), l.pal[5 * 16 + 15], "the border entry keeps its colour");
     }
 }
