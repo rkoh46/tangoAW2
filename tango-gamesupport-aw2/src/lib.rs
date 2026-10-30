@@ -45,6 +45,7 @@ pub mod co_powers;
 pub mod co_roster;
 pub mod co_skills;
 pub mod com_tower;
+pub mod cpu_defend;
 pub mod cpu_inventions;
 pub mod cpu_tactics;
 pub mod crumb;
