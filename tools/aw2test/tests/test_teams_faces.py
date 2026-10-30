@@ -32,7 +32,7 @@ PRESENTATION_ROW = 0x44
 FACE = 0x0C
 FACE_TILES = 36
 SELECT_MODE_CURSOR = 0x0300591C
-VERSUS, CAMPAIGN, SURVIVAL = 3, 4, 6
+VERSUS, CAMPAIGN, SURVIVAL = 3, "campaign", "survival"   # (names: the wheel's positions depend on the pack, saves.position)
 MAP_TAB = 0x0300596C
 TAB_DESIGN, TAB_5P = 8, 9
 CRYSTAL_OBJ_TILE = 0x19A        # crate::obelisk
@@ -109,6 +109,8 @@ def check_faces(ctx, g, faces, label, only=None):
 
 
 def wheel(e, pos):
+    from aw2test import saves
+    pos = saves.position(e, pos)
     for _ in range(10):
         if e.u8(SELECT_MODE_CURSOR) == pos:
             return

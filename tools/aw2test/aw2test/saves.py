@@ -12,9 +12,27 @@ import struct
 from . import ram, saveimg
 from .game import NavError, SELECT_MODE_CURSOR, MAP_TAB
 
-# Select Mode's wheel (0x0300591C): UP steps +1.
-VERSUS, CAMPAIGN, WAR_ROOM, SURVIVAL = 3, 4, 5, 6
+# Select Mode's wheel (0x0300591C): UP steps +1. The wheel's positions depend on the pack (crate::mode_menu): AW2's own six (Battle Maps 0, Online 1, Design Room 2, Versus 3,
+# Campaign 4, War Room 5), and with the pack eight: Gauntlet is 4 (directly above Versus on the screen) and Campaign, War Room and Survival follow. `position(e, name)` says
+# where an entry is on this console's wheel; `wheel_to` takes a position or a name.
+PACK_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "gauntlet": 4, "campaign": 5, "war_room": 6, "survival": 7}
+AW2_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "campaign": 4, "war_room": 5}
+VERSUS, CAMPAIGN, WAR_ROOM, SURVIVAL, GAUNTLET = 3, "campaign", "war_room", "survival", "gauntlet"
 DESIGN_ROOM = 2
+
+
+def position(e, where):
+    """The wheel position of an entry by name ("campaign", "war_room", "survival", "gauntlet", ...; a number is itself)."""
+    if isinstance(where, int):
+        return where
+    table = PACK_WHEEL if getattr(e, "ds", False) else AW2_WHEEL
+    if where not in table:
+        raise NavError(f"the {'pack' if getattr(e, 'ds', False) else 'AW2'} wheel has no {where!r}")
+    return table[where]
+
+
+def wheel_size(e):
+    return len(PACK_WHEEL) if getattr(e, "ds", False) else len(AW2_WHEEL)
 WHEELS = (0x08616A08, 0x08616A40)
 PROC_POOL = (0x0200D610, 0x0200E418)
 # Select Map's list: ids per row, the last row, the cursor row and first row shown.
@@ -71,7 +89,8 @@ def wheel(e):
     return None
 
 
-def wheel_to(e, position):
+def wheel_to(e, where):
+    position = globals()["position"](e, where)
     for _ in range(10):
         cur = e.u8(SELECT_MODE_CURSOR)
         if cur == position:

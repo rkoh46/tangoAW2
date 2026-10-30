@@ -41,6 +41,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [map-lint.md](map-lint.md) | `aw2dev maps lint`: rivers, bridges, puddles, joins, units, reachability; what AW2 and Dual Strike allow; before / after pictures |
 | [stages.md](stages.md) | a custom campaign's mission that moves on, in the same battle, to another map (`Action::NextStage`, `MissionDef::stages`): carry-over, five-army, suspend, determinism; `aw2dev stage next / show` |
 | [gauntlet.md](gauntlet.md) | the gauntlet engine: armies that come one after another in one battle (`MissionDef::hidden / sleepers / cut_off`, `Action::Reveal`, `Cond::LineFallen`); BH2 M31, and the base for a game mode of its own; `aw2dev campaign playthrough ... --waves` |
+| [gauntlet-mode.md](gauntlet-mode.md) | the Gauntlet game mode's plumbing: the eight-entry Select Mode wheel (GAUNTLET above Versus), the campaign source that is not in the Campaign menu, the CO pick, the end, the record in slot 13 +0x240, Save/Continue; `aw2dev gauntlet start / test` |
 | [five-suspend.md](five-suspend.md) | a five-army battle saved from the map menu and continued: the record after AW2's block, the Flash and RAM cost; `aw2dev save inspect` |
 | [playthrough.md](playthrough.md) | `aw2dev campaign playthrough bh2 N`: a mission played to its end in the harness, a report and a contact sheet |
 | [bh2-maps.md](bh2-maps.md) | the BH2 Campaign's maps: specs, `aw2dev maps gen --campaign bh2`, lint (IV01: inventions are Black Hole's), pictures, feature coverage, world-map flags, Act I |
