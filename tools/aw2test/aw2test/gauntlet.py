@@ -132,11 +132,8 @@ class Gauntlet(BhCampaign):
         return seen
 
     def win(self, ctx):
-        """The whole gauntlet won: the three lines taken, then the survivors' last unit destroyed (the game's own rout)."""
-        e = self.e
+        """The whole gauntlet won: the three lines taken; Hawke's fall wins (the survivors of the first two lines need not be hunted)."""
         self.play_to_the_last_line(ctx)
-        self.settle()
-        ctx.require(self.force_win(), "the last enemy unit is attacked")
         return self.through_results()
 
     def through_results(self, frames=8000):

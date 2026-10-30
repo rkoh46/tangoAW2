@@ -167,9 +167,7 @@ def gauntlet_mode_win_returns_to_select_mode_and_writes_the_record(ctx):
         ctx.log(f"after {name}'s HQ: units {counts}, controllers {ctrl}")
     ctx.eq([s[2] for s in seen], [[1, 2, 2, 0], [1, 2, 2, 2], [1, 2, 2, 2]], "each fall brings the next line (controllers: Sensei's, then Hawke's turn)")
     ctx.check(seen[0][1][3] == 12 and seen[1][1][4] == 12, f"Sensei's wave (12) and Hawke's wave (12) landed ({seen[0][1]}, {seen[1][1]})")
-    d.settle()
-    png(pic(ctx, e, "before_the_last_blow"))
-    ctx.require(d.force_win(), "the last enemy unit is attacked")
+    ctx.check(seen[2][1][2] > 0 or seen[2][1][3] > 0, f"Drake's and Sensei's survivors are still on the field when Hawke's HQ falls ({seen[2][1]}): the win does not need them hunted")
     worlds = []
     result = None
     tick = 0
@@ -347,8 +345,6 @@ def gauntlet_mode_save_and_continue(ctx):
     d2.capture(ctx, ga.CINDER["sensei"])
     d2.settle()
     d2.capture(ctx, ga.CINDER["hawke"])
-    d2.settle()
-    ctx.require(d2.force_win(), "the last unit is attacked")
     ctx.eq(d2.through_results(), 1, "the continued run is won")
     e2.wait(60)
     done = saves.flash(e2, os.path.join(ctx.out, "finished"))
