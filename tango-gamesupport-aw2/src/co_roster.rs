@@ -526,6 +526,8 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             // Black Insight's luck: Nell's day-to-day maximum roll in every level (her powers do not raise it further), no bad luck
             row[at + 0x0E..at + 0x10].copy_from_slice(&crate::asuka::LUCK.to_le_bytes());
             row[at + 0x10..at + 0x12].copy_from_slice(&0i16.to_le_bytes());
+            // her vision: one more than Sonja's in her powers (their rain takes 1 off)
+            row[at + 0x0C..at + 0x0E].copy_from_slice(&crate::asuka::VISION[mode as usize].to_le_bytes());
         }
         if co == crate::co_new::CRUMB {
             // His luck (Gerald's Blessing: up to 20%, no bad luck).

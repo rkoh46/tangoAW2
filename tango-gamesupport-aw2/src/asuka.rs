@@ -19,7 +19,7 @@
 //! | | Day to day, Black Insight | CO Power, Dark Intel (4 stars) | Super Power, Event Horizon (8 stars in all) |
 //! |---|---|---|---|
 //! | Attack / defence | +5% / +5% | +5% / +5% (and the power's own +10% / +10%) | the same |
-//! | Vision | +1 | +2, sees into woods and reefs | +2, sees into hiding places |
+//! | Vision | +1 | +3 (+2 net in her rain), sees into woods and reefs | +3 (+2 net in her rain), sees into hiding places |
 //! | Terrain stars the enemy loses | 1 | 2 | 3 |
 //! | HP | hidden from the enemy | none | every enemy unit loses 1 HP |
 //! | Enemy ammo and fuel | | halved | halved |
@@ -44,6 +44,8 @@ pub const DAY_BONUS: i32 = 5;
 /// Her powers' HP effect on her own units and on the enemy's, by power level (none in Dark Intel, 1 off every enemy unit in Event Horizon).
 pub const HP_OWN: [u8; 3] = [0, 0, 0];
 pub const HP_ENEMY: [u8; 3] = [0, 0, 1];
+/// Her vision bonus by power level (day to day, Dark Intel, Event Horizon): Sonja's block gives +1 / +2 / +2; her powers get one more, since the rain they bring takes 1 off (the owner: the rain nullified it).
+pub const VISION: [i16; 3] = [1, 3, 3];
 /// AW2 ability bit "strikes first when attacked" (Sonja's Super Power has it; Event Horizon does not).
 pub const STRIKE_FIRST_ABILITY: u32 = 0x04;
 

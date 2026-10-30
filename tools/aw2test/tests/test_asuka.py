@@ -1,9 +1,9 @@
-"""Asuka (CO 92, crate::asuka): Sonja after she defects to Black Hole. Her numbers are Sonja's Dual Strike block (vision +1 / +2 / +2, her HP hidden from the enemy, strike-first in the
+"""Asuka (CO 92, crate::asuka): Sonja after she defects to Black Hole. Her numbers are Sonja's Dual Strike block (vision +1 / +2 / +2, her powers +3: crate::asuka::VISION, her HP hidden from the enemy, strike-first in the
 Super Power, the enemy's terrain stars cut by 1 / 2 / 3, luck 10 with bad luck 5), her powers Hawke's Black Wave and Black Storm on top (her units +1 / +2 HP, the enemy's -1 / -2, never below 1 HP);
 3 / 9 stars (Eagle's meter). Every ability is exercised in real battles on Versus maps and checked against numbers worked out from the formula (the calculator, the game's own tables, the unit records):
     - the CO table's row: stars, vision, luck, bad luck, skills, power procedures, the texts;
     - D2D: the fog vision (+1), the enemy's terrain cut (1 star: the record's defence), the luck range (0..9 and -0..4 a roll, kept: see crate::asuka), hidden HP;
-    - CO Power, Dark Intel: vision +2 and woods / reefs seen, the terrain cut (2), every unit +10 / -10 HP with the cap at 100 and the floor at 1, the cost;
+    - CO Power, Dark Intel: vision +3 (+2 net in its rain) and woods / reefs seen, the terrain cut (2), every unit +10 / -10 HP with the cap at 100 and the floor at 1, the cost;
     - Super Power, Event Horizon: vision, terrain cut 3, +20 / -20 HP, and Counter Break (her units strike first when attacked: the exact order of the two strikes);
     - the power meter's cost and charge, the CPU using her powers, the Tag Powers with Von Bolt and Hawke, netplay.
 Run with TANGOAW2_DS_GRAPHICS=1 for the hidden-HP picture."""
@@ -52,7 +52,7 @@ def hp_of(g, x, y):
 
 @test(modes=("ds",))
 def asuka_row_is_sonjas_numbers_with_hawkes_powers(ctx):
-    """The game's CO table (tangoAW2's copy) row 92: 4 and 8 stars; vision 1 / 2 / 2, luck 10, bad luck 5 and counter 0 in every level (Sonja's Dual Strike block); the skills hidden HP (1),
+    """The game's CO table (tangoAW2's copy) row 92: 4 and 8 stars; vision 1 / 3 / 3 (crate::asuka::VISION), luck 10, bad luck 5 and counter 0 in every level (Sonja's Dual Strike block); the skills hidden HP (1),
     + sees into hiding places (9) and + strikes first (0xD); the power procedures are Hawke's Black Wave and Black Storm; her texts are her own."""
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
@@ -61,7 +61,7 @@ def asuka_row_is_sonjas_numbers_with_hawkes_powers(ctx):
     ctx.eq(g.co_stars(romlib.co_id("eagle")), (3, 9), "(Eagle's own 3 / 9)")
     ctx.eq(g.co_stars(romlib.co_id("sonja")), (3, 5), "(Sonja's own 3 / 5)")
     ctx.eq(g.co_stars(romlib.co_id("hawke")), (5, 9), "(Hawke's own 5 / 9)")
-    ctx.eq([mode_word(g, k, 0x0C) for k in range(3)], [1, 2, 2], "vision +1 / +2 / +2")
+    ctx.eq([mode_word(g, k, 0x0C) for k in range(3)], [1, 3, 3], "vision +1 / +3 / +3 (her powers one more than Sonja's: their rain takes 1 off)")
     ctx.eq([mode_word(g, k, 0x0E) for k in range(3)], [20, 20, 20], "luck 20 (0..19%): Nell's day to day, kept in her powers")
     nell = g.e.u32(g.CO_TABLE_POOL) + romlib.CO_RECORD * romlib.co_id("nell") + 0x38
     ctx.eq(g.e.u16(nell + 0x0E), 20, "(Nell's own day-to-day luck is 20; her powers 60 and 100)")
@@ -121,26 +121,26 @@ def asuka_d2d_vision_is_one_more(ctx):
 
 
 @test(modes=("ds",))
-def asuka_cop_vision_two_more_and_sees_into_woods(ctx):
-    """Dark Intel: vision +2 (plains 5 away seen, 6 not) and the woods 2 away, and the empty woods, are seen (hiding places)."""
+def asuka_cop_vision_three_more_and_sees_into_woods(ctx):
+    """Dark Intel: vision +3, -1 for its rain (plains 5 away seen, 6 not) and the woods 2 away, and the empty woods, are seen (hiding places)."""
     g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
     ctx.power(g, 1, "power")
     g.e.wait(30)
-    # (the rain the power brings takes 1 off: 3 + 2 - 1 = 4 plains; AW2's rain rule)
-    ctx.eq(seen(g, 2 + 4, 14), 1, "plains 4 away: seen (+2 vision, -1 for the rain)")
-    ctx.eq(seen(g, 2 + 5, 14), 0, "5 away: not seen")
+    # (the rain the power brings takes 1 off: 3 + 3 - 1 = 5 plains; AW2's rain rule)
+    ctx.eq(seen(g, 2 + 5, 14), 1, "plains 5 away: seen (+3 vision, -1 for the rain)")
+    ctx.eq(seen(g, 2 + 6, 14), 0, "6 away: not seen")
     ctx.eq(seen(g, 12, 6), 1, "woods 2 away: seen")
     ctx.eq(seen(g, 10, 8), 1, "empty woods: seen")
     ctx.shot(g, "fog_cop")
 
 
 @test(modes=("ds",))
-def asuka_scop_vision_two_more_and_sees_into_woods(ctx):
+def asuka_scop_vision_three_more_and_sees_into_woods(ctx):
     g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
     ctx.power(g, 1, "super")
     g.e.wait(30)
-    ctx.eq(seen(g, 2 + 4, 14), 1, "plains 4 away: seen (+2 vision, -1 for the rain)")
-    ctx.eq(seen(g, 2 + 5, 14), 0, "5 away: not seen")
+    ctx.eq(seen(g, 2 + 5, 14), 1, "plains 5 away: seen (+3 vision, -1 for the rain)")
+    ctx.eq(seen(g, 2 + 6, 14), 0, "6 away: not seen")
     ctx.eq(seen(g, 12, 6), 1, "woods 2 away: seen")
     ctx.shot(g, "fog_scop")
 
@@ -712,14 +712,14 @@ def asuka_rain_gives_back_the_fog_and_the_weather_it_found(ctx):
 
 @test(modes=("ds",))
 def asuka_vision_in_her_rain_is_aw2s_rain_plus_her_bonus(ctx):
-    """Vision follows AW2's rules plus her bonus. AW2's rain takes 1 off every vision (fog of war on): while the power lasts a Tank (vision 3) of hers sees 3 + 2 - 1 = 4 away on plains and not 5, and still sees into the
+    """Vision follows AW2's rules plus her bonus. AW2's rain takes 1 off every vision (fog of war on): while the power lasts a Tank (vision 3) of hers sees 3 + 3 - 1 = 5 away on plains and not 6 (her powers' +3: the owner gave them one more so the rain does not cancel it), and still sees into the
     woods 2 away (hiding places); at her next turn the power and the rain are over: 3 + 1 (Black Insight) = 4 on plains, the woods hidden again, and the fog the Rules had."""
     for which in ("power", "super"):
         g = ctx.start(vision_map(ctx), ["asuka", "andy"], fog=True)
         ctx.power(g, 1, which)
         g.e.wait(40)
         ctx.eq(g.playst()["weather"], 2, f"{which}: it rains as the power is fired")
-        ctx.eq((seen(g, 2 + 4, 14), seen(g, 2 + 5, 14)), (1, 0), f"{which}: during the power: plains 4 away seen, 5 not (3 + 2 - 1)")
+        ctx.eq((seen(g, 2 + 5, 14), seen(g, 2 + 6, 14)), (1, 0), f"{which}: during the power: plains 5 away seen, 6 not (3 + 3 - 1)")
         ctx.eq(seen(g, 12, 6), 1, f"{which}: woods 2 away seen (hiding places)")
         g.end_turn(human=1)
         g.e.wait(60)

@@ -26,11 +26,11 @@ terrain_cut = 1
 
 [cop]
 name = "Dark Intel"
-text = "Rain falls until her next turn. Vision +2, sees into woods and reefs. Enemy cover -2 stars; ammo and fuel halve."
+text = "Rain falls until her next turn. Vision +3, sees into woods and reefs. Enemy cover -2 stars; ammo and fuel halve."
 mods = []
 halve_enemy_ammo_fuel = true
 rain_until_next_turn = true          # AW2's rain (fog of war) from the power until her next turn, then the weather returns
-vision = 2
+vision = 3
 terrain_cut = 2
 quote = ["I have read your", "every move. Observe."]
 
@@ -40,7 +40,7 @@ text = "As Dark Intel, but enemy cover drops 3 stars and all enemy units suffer 
 mods = []
 halve_enemy_ammo_fuel = true
 rain_until_next_turn = true
-vision = 2
+vision = 3
 terrain_cut = 3
 hp_enemy = 1
 quote = ["Event Horizon. Nothing", "escapes it. Not even you."]

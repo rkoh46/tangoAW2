@@ -55,7 +55,7 @@ def rows(co):
         ("Super Power: Event Horizon (+2 / -2 HP)", [("before", frame(scop, "scop_before")), ("quote box", frame(scop, "scop_quote")), ("cut-in", frame(scop, "scop_cutin")), ("just before the flash", frame(scop, "scop_preflash")), ("just after the flash (white between, AW2's ~14 frames)", frame(scop, "scop_postflash")), ("after: Mech 65, Infantry 35", frame(scop, "scop_after"))]),
         ("Tag Power with Von Bolt (Vault Breakers, 115)", [("menu offers Tag", frame(tagt, "tag_menu")), ("the Tag screen sliding in", frame(tagt, "tag_screen_slide")), ("the Tag screen", frame(tagt, "tag_screen")), ("first half: Asuka's Super Power", frame(tagt, "tag_first_half")), ("second half: Von Bolt's", frame(tagt, "tag_second_half"))]),
         ("Counter Break: Andy's Tank attacks, she strikes first", [("before (her Tank at 10)", frame(cb, "cb_before")), ("the scene opens", frame(cb, "cb_f06")), ("her first strike lands", frame(cb, "cb_f17")), ("his reply from the HP he has left", frame(cb, "cb_f24")), ("after: she is at 10, he is at 2", frame(cb, "cb_after"))]),
-        ("Fog of War: vision 3 Tank", [("Andy: sees 3", frame(fog, "fog_andy")), ("Asuka day to day: sees 4", frame(fog, "fog_d2d")), ("Dark Intel: sees 5 and into the woods", frame(fog, "fog_cop"))]),
+        ("Fog of War: vision 3 Tank", [("Andy: sees 3", frame(fog, "fog_andy")), ("Asuka day to day: sees 4", frame(fog, "fog_d2d")), ("Dark Intel: sees 5 in her rain, and into the woods", frame(fog, "fog_cop"))]),
     ]
 
 
