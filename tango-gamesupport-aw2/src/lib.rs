@@ -108,6 +108,8 @@ mod five_map;
 mod five_map_data;
 mod five_patches;
 pub mod fog_view;
+pub mod gauntlet_map_data;
+pub mod gauntlet_mode;
 pub mod grand_bolt;
 pub mod hazard;
 pub mod heal_effect;

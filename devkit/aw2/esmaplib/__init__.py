@@ -43,7 +43,7 @@ class Canvas:
         self.name, self.w, self.h = name, w, h
         self.sname = SEED_NAME.get(name, name)
         # (the campaign key: "bh2_NN" maps belong to the BH2 Campaign, the rest to Emerald Sun)
-        self.campaign = campaign or ("bh2" if name.startswith("bh2_") else "es")
+        self.campaign = campaign or ("bh2" if name.startswith("bh2_") else "gauntlet" if name.startswith("gauntlet_") else "es")
         self.dir = FIVE_DIR / self.campaign
         self.g = [[fill] * w for _ in range(h)]
         self.u = []                       # unit dicts

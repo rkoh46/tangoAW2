@@ -20,7 +20,7 @@ def register(sub):
     m = sub.add_parser("maps", help="map integrity: lint, rules, compare, boot (docs/dev/map-lint.md)")
     ms = m.add_subparsers(dest="mapscmd", required=True)
     a = ms.add_parser("lint", help="check maps (default: the BH Campaign's) and render an annotated picture per map")
-    a.add_argument("--source", default="bh", choices=["bh", "es", "bh2", "versus", "aw2", "ds", "all"])
+    a.add_argument("--source", default="bh", choices=["bh", "es", "bh2", "gauntlet", "versus", "aw2", "ds", "all"])
     a.add_argument("--map", nargs="*", help="only these map names (bh01, 'Pentagon Atoll', aw2_1F, ds_0B4)")
     a.add_argument("--rule", nargs="*", help="only these rule ids")
     a.add_argument("--png", metavar="DIR", help="write annotated pictures here (default devkit/work/maps/lint/<source>)")
@@ -29,7 +29,7 @@ def register(sub):
     a.add_argument("--warn", action="store_true", help="show warnings too (default: errors only for bh / versus)")
     a.set_defaults(fn=lint)
     a = ms.add_parser("gen", help="write the Emerald Sun text maps (five/es/esNN.txt) from their specs (five/es/spec/esNN.py), then build es_map_data.rs")
-    a.add_argument("--campaign", default="es", choices=["es", "bh2"], help="the campaign whose specs to run (es: five/es/spec, bh2: five/bh2/spec)")
+    a.add_argument("--campaign", default="es", choices=["es", "bh2", "gauntlet"], help="the campaign whose specs to run (es: five/es/spec, bh2: five/bh2/spec, gauntlet: five/gauntlet/spec, the Gauntlet mode's maps)")
     a.add_argument("--map", nargs="*", help="only these (es01 es02 ... or bh2_01 ...)")
     a.add_argument("--no-build", action="store_true", help="only write the text maps")
     a.add_argument("--check", action="store_true", help="fail if a text map differs from what its spec makes (nothing written)")
@@ -45,7 +45,7 @@ def register(sub):
     a.add_argument("--sheet", metavar="FILE", help="also one sheet of every changed map, before beside after, half size")
     a.set_defaults(fn=compare)
     a = ms.add_parser("ports", help="every port of the maps (map, army, cell, the sea beside it) with its status (PT01): a table")
-    a.add_argument("--source", default="all", choices=["bh", "es", "bh2", "versus", "all"])
+    a.add_argument("--source", default="all", choices=["bh", "es", "bh2", "gauntlet", "versus", "all"])
     a.set_defaults(fn=ports_table)
     a = ms.add_parser("render-check", help="the game's own pictures of maps against the drawings the games use for river, shoal, bridge and coast tiles (RN01)")
     a.add_argument("--source", default="es", choices=["es", "bh", "bh2", "versus"], help="the maps to check (their pictures: --pictures)")
@@ -77,13 +77,13 @@ def _lib():
 
 
 def _maps(load, source, names=None):
-    if source in ("es", "bh2") and names:
+    if source in ("es", "bh2", "gauntlet") and names:
         # (only the named maps' files: another author's half-written map must not stop yours)
-        loader = load.es_maps if source == "es" else load.bh2_maps
+        loader = {"es": load.es_maps, "gauntlet": load.gauntlet_maps}.get(source, load.bh2_maps)
         return loader(files=[load.FIVE / source / f"{n}.txt" for n in names if (load.FIVE / source / f"{n}.txt").exists()])
     out = []
-    for s in (["bh", "es", "bh2", "versus", "aw2", "ds"] if source == "all" else [source]):
-        out += {"bh": load.bh_maps, "es": load.es_maps, "bh2": load.bh2_maps, "versus": load.versus_maps, "aw2": load.aw2_maps, "ds": load.ds_maps}[s]()
+    for s in (["bh", "es", "bh2", "gauntlet", "versus", "aw2", "ds"] if source == "all" else [source]):
+        out += {"bh": load.bh_maps, "es": load.es_maps, "bh2": load.bh2_maps, "gauntlet": load.gauntlet_maps, "versus": load.versus_maps, "aw2": load.aw2_maps, "ds": load.ds_maps}[s]()
     return out
 
 
@@ -101,17 +101,17 @@ def lint(a):
     report = {}
     for m in maps:
         probs = rules.lint(m, set(a.rule) if a.rule else None)
-        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source in ("es", "bh2") and (p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04")))]
+        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source in ("es", "bh2", "gauntlet") and (p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04")))]
         report[m.name] = [str(p) for p in probs]
         if not a.json:
             if probs:
                 print(f"{m.name} ({m.source} {m.w}x{m.h}): {sum(p.level == 'error' for p in probs)} errors, {sum(p.level == 'warn' for p in probs)} warnings")
                 for p in (probs if a.warn else shown):
                     print("   ", p)
-            elif m.source in ("bh", "es", "bh2", "versus"):
+            elif m.source in ("bh", "es", "bh2", "gauntlet", "versus"):
                 print(f"{m.name}: clean")
-        if m.source in ("bh", "es", "bh2", "versus"):
-            known = dict(rules.KNOWN.get(m.name, {})) if m.source not in ("es", "bh2") else {}
+        if m.source in ("bh", "es", "bh2", "gauntlet", "versus"):
+            known = dict(rules.KNOWN.get(m.name, {})) if m.source not in ("es", "bh2", "gauntlet") else {}
             for p in probs:
                 if p.level != "error":
                     continue
@@ -119,10 +119,10 @@ def lint(a):
                     known[p.rule] -= 1          # (a finding the user has not approved changing: reported below, not failing)
                     continue
                 bad += 1
-        if m.source in ("es", "bh2"):
+        if m.source in ("es", "bh2", "gauntlet"):
             # (the Emerald Sun and BH2 maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
             bad += sum(p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04") for p in probs)
-        if out and (probs or m.source in ("bh", "es", "bh2", "versus")):
+        if out and (probs or m.source in ("bh", "es", "bh2", "gauntlet", "versus")):
             render.draw_map(m, probs).save(out / f"{m.name.replace(' ', '_')}.png")
     if a.json:
         print(json.dumps(report, indent=1))
@@ -134,8 +134,8 @@ def lint(a):
 def gen(a):
     """Run the specs, write their text maps, build `src/es_map_data.rs` with bhmap.py --campaign es (tile joins checked as for the BH maps)."""
     sys.path.insert(0, str(cfg.DEVKIT))
-    from ..esmaplib import load_spec, specs, ES_DIR, BH2_DIR
-    out_dir = BH2_DIR if a.campaign == "bh2" else ES_DIR
+    from ..esmaplib import load_spec, specs, ES_DIR, BH2_DIR, FIVE_DIR
+    out_dir = {"bh2": BH2_DIR, "gauntlet": FIVE_DIR / "gauntlet"}.get(a.campaign, ES_DIR)
     bad = 0
     for p in specs(a.campaign):
         if a.map and p.stem not in a.map:
@@ -249,7 +249,7 @@ def ports_table(a):
     """The port audit: one row per port of the ES, BH and Versus maps: map, owner (army digit, N neutral), cell, the sea body beside it, and OK or the PT01 finding."""
     load, rules, render = _lib()
     rows, bad = [], 0
-    for s in (["bh", "es", "bh2", "versus"] if a.source == "all" else [a.source]):
+    for s in (["bh", "es", "bh2", "gauntlet", "versus"] if a.source == "all" else [a.source]):
         for m in _maps(load, s):
             G = rules.Grid(m)
             hits = {(p.x, p.y): p.rule + " " + p.msg for p in rules.lint(m, {"PT01", "PT02"})}

@@ -327,7 +327,7 @@ def joins(G):
     skip = tc.structure_cells(G.t) | tc.editor_sea(G.t, L["rom"])
     for x, y, p in tc.violations(G.t, L["pairs"], skip):
         out.append(Problem("TJ01", x, y, tc.describe((x, y, p)).split(") ", 1)[1]))
-    if G.m.source in ("bh", "es", "bh2", "versus", "aw2"):
+    if G.m.source in ("bh", "es", "bh2", "gauntlet", "versus", "aw2"):
         for x, y, p in tc.mountain_violations(G.t, L["mountain"]):
             out.append(Problem("TJ03", x, y, tc.describe((x, y, p)).split(") ", 1)[1]))
     for y in range(G.h):
@@ -493,7 +493,7 @@ def _desc(c):
 def reach(G):
     """The BH Campaign's reachability checks (five/bhmap.py check_reach), on a text map; needs the map's text rows."""
     bh = _bh()
-    if G.m.source not in ("bh", "es", "bh2"):
+    if G.m.source not in ("bh", "es", "bh2", "gauntlet"):
         return []
     out = []
     for p in bh.check_reach(G.m.meta):
@@ -536,7 +536,7 @@ def spawned(G):
     """Units the mission's code places by literal coordinates (spawns.py): on terrain they can enter, and not on a unit of the map file.
     A mission with a second front (`bh08` and `bh08b`) is checked against both maps: the spawn must fit at least one."""
     from . import spawns as sp
-    if G.m.source not in ("bh", "es", "bh2"):
+    if G.m.source not in ("bh", "es", "bh2", "gauntlet"):
         return []
     bh = _bh()
     name = G.m.name
@@ -586,7 +586,7 @@ def inventions(G):
 def black_hole_inventions(G):
     """IV01 (BH2 maps): every invention stands nearer to Black Hole's HQ than to any other army's (the owner's rule: the Allies never own one).
     The anchors are the text rows' invention characters; the Deathray (D) must also be on the top edge rows (it fires down)."""
-    if G.m.source != "bh2" or not G.m.text:
+    if G.m.source not in ("bh2", "gauntlet") or not G.m.text:
         return []
     cols = list(G.m.meta.get("colours") or [])[: int(G.m.meta.get("armies") or 0)]
     bh = [i + 1 for i, c in enumerate(cols) if c == 5]
@@ -762,7 +762,7 @@ SEA_MIN = 12
 
 def one_hq(G):
     """HQ01 (BH2 maps): no army has two HQs (no `Q` tile)."""
-    if G.m.source != "bh2":
+    if G.m.source not in ("bh2", "gauntlet"):
         return []
     return [Problem("HQ01", x, y, "a second HQ of the same army (Q): one HQ per army") for x, y in G.cells("Q")]
 
@@ -823,7 +823,7 @@ def ship_bodies(G):
 def day_one_fire(G):
     """IV02 (BH2 maps): nothing is hit on day 1 (docs/AW2.md "Start of the battle": a unit starts out of every structure's reach). The zones are `maplint/zones.py`; a unit that a mission spawns
     later is that mission's own affair."""
-    if G.m.source != "bh2" or not G.m.text:
+    if G.m.source not in ("bh2", "gauntlet") or not G.m.text:
         return []
     from . import zones
     zs = zones.zones_of(G.m.text)
@@ -844,7 +844,7 @@ _INDIRECT = {10: 3, 11: 5, 15: 5, 21: 6}      # artillery, rockets, missiles, ba
 def first_move_safe(G):
     """IV04 (BH2 maps): no Black Hole unit can be attacked on day 1 by an army that moves before it (the armies move in order, army 1 first: the battle starts with the first army's turn). The reach of a
     unit is its move + 1 (direct) or its range (indirect), by Manhattan distance and ignoring terrain: a safe over-estimate. A unit that holds (the dormant armies) reaches only its neighbours or its range."""
-    if G.m.source != "bh2" or not G.m.units:
+    if G.m.source not in ("bh2", "gauntlet") or not G.m.units:
         return []
     cols = list(G.m.meta.get("colours", ()))
     if 5 not in cols:
@@ -875,7 +875,7 @@ def first_move_safe(G):
 
 def laser_own_property(G):
     """IV03 (BH2 maps): a Laser's whole row and column touch no property of Black Hole's own army (nor its HQ)."""
-    if G.m.source != "bh2" or not G.m.text:
+    if G.m.source not in ("bh2", "gauntlet") or not G.m.text:
         return []
     from . import zones
     cols = list(G.m.meta.get("colours", ()))
@@ -904,7 +904,7 @@ def port_doors(G):
     """The BH2 port rule PT02 (the owner's standing rule: a port must touch sea it can launch into): each port has at least one open-sea neighbour (`~`: not shoal, not reef, not a river) whose
     body of open sea is at least SHIP_SEA_MIN cells and that has a second free sea cell beyond it (the way out is not a single cell a reef plugs), and the body is the one the enemy ports and
     coasts share or the map edge's: a ship built there reaches open water."""
-    if G.m.source != "bh2":
+    if G.m.source not in ("bh2", "gauntlet"):
         return []
     out = []
     body = ship_bodies(G)

@@ -154,6 +154,19 @@ def bh2_maps(rom=None, files=None):
     return out
 
 
+def gauntlet_maps(rom=None, files=None):
+    """The Gauntlet mode's maps (five/gauntlet/gauntlet_NN.txt, built by bhmap.py --campaign gauntlet; docs/dev/gauntlet.md): the same MapData as the BH2 maps, source "gauntlet"."""
+    mappy, tc, bhmap = _five()
+    rom = rom or rom_bytes()
+    edge = mappy.sea_edges(rom)
+    paths = files or sorted((FIVE / "gauntlet").glob("gauntlet_[0-9][0-9]*.txt"))
+    out = []
+    for m in bhmap.parse([str(p) for p in paths]):
+        rows = mappy.tiles(m, edge)
+        out.append(MapData(m["name"], "gauntlet", rows, units=m["units"], text=m["rows"], meta=m))
+    return out
+
+
 def versus_maps(rom=None):
     mappy, tc, _ = _five()
     rom = rom or rom_bytes()
