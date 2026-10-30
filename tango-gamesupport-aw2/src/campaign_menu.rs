@@ -130,10 +130,7 @@ fn on_placeholder(core: &Core) -> bool {
     if !crate::ds_weather::is_on(core) || campaign_box(core).is_none() || core.raw_read_8(LEVEL, -1) != 0 {
         return false;
     }
-    let sources = crate::campaign_model::SOURCES
-        .iter()
-        .filter(|s| (s.available)(core))
-        .count();
+    let sources = displayed(core).len();
     core.raw_read_8(CHOICE, -1) as usize > sources
 }
 
@@ -199,10 +196,7 @@ pub fn notice(core: &Core) -> Option<usize> {
     if !crate::ds_weather::is_on(core) || campaign_box(core).is_none() || core.raw_read_8(LEVEL, -1) != NOTICE {
         return None;
     }
-    let sources = crate::campaign_model::SOURCES
-        .iter()
-        .filter(|s| (s.available)(core))
-        .count();
+    let sources = displayed(core).len();
     (core.raw_read_8(CHOICE, -1) as usize)
         .checked_sub(1 + sources)
         .filter(|&k| k < coming(core).len())

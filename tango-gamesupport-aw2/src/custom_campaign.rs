@@ -1304,7 +1304,7 @@ pub const FLAG_FIRST: u8 = 0x20;
 pub const FLAG_LAST: u8 = 0x8F;
 pub const FLAG_HARD: u8 = 0x60;
 
-static RULES: [OnceLock<Rules>; 4] = [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
+static RULES: [OnceLock<Rules>; 5] = [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
 
 /// An error found while compiling.
 pub type Error = String;
@@ -1752,8 +1752,10 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
     if n == 0 || n > MAX_MISSIONS {
         return Err(format!("{n} missions (1..={MAX_MISSIONS})"));
     }
-    if def.roster.is_empty() || def.roster.len() > 24 {
-        return Err("the roster needs 1..=24 COs".into());
+    // (24 unlock bits in a campaign's record, 12 of them COs; the Gauntlet's roster is every CO, all open, and keeps no unlock bits)
+    let most = if def.source == crate::gauntlet::SOURCE { 64 } else { 24 };
+    if def.roster.is_empty() || def.roster.len() > most {
+        return Err(format!("the roster needs 1..={most} COs"));
     }
     // Missions first, then the second fronts after them (as Dual Strike's).
     let mut fronts: Vec<(usize, &FrontDef)> = Vec::new();

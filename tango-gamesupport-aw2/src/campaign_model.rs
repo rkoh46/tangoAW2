@@ -327,7 +327,7 @@ impl Source {
 pub const TAIL_CALLED: u32 = u32::MAX;
 
 /// The sources, in the sub-menu's order (after AW2's own campaign).
-pub static SOURCES: [Source; 4] = [
+pub static SOURCES: [Source; 5] = [
     Source {
         label: "DS CAMPAIGN",
         available: crate::ds_weather::is_on,
@@ -375,6 +375,20 @@ pub static SOURCES: [Source; 4] = [
         mid_slot: 12,
         progress_magic: 0x3242_5741, // "AWB2"
         art: WorldArt::Picture(&crate::world_picture::BH2),
+        has_hard: false,
+    },
+    // The Gauntlet mode's maps ([`crate::gauntlet`]): never listed by the Campaign sub-menu ([`crate::campaign_menu::DISPLAY_ORDER`] leaves it out). Its record follows the BH2 Campaign's in
+    // Flash slot 13; a run saved halfway shares slot 12 (`suspend::source_tag`: 4 << 5).
+    Source {
+        label: "GAUNTLET",
+        available: crate::gauntlet::available,
+        load: crate::gauntlet::load,
+        rules: crate::custom_campaign::rules,
+        save_slot: 13,
+        save_offset: crate::gauntlet::SAVE_OFFSET,
+        mid_slot: 12,
+        progress_magic: crate::gauntlet::MAGIC,
+        art: WorldArt::Aw2,
         has_hard: false,
     },
 ];
