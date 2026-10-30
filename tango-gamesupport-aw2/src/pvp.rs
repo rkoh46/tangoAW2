@@ -613,6 +613,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 31: the Emerald Sun army choice is taken back when the map list is up (crate::army_skin::reset_choice: it used to stay after backing out of the Teams screen),
         // the capture box's palette row follows the army's colour (the skin's too) and a Versus second front keeps the first front's colours, teams and skin.
         // 32: Crumb's and Clone Andy's own themes are songs in the ROM image (crate::es_music), and Crumb's HQ is Black Hole's again (no hq style in cos/crumb.toml).
+        // 38: the computer defends its HQ in the custom campaigns (crate::cpu_defend): its units attack a foot soldier standing on it whatever their order, and close in when none can.
         // 37: an Emerald Sun army's soldiers are kept in the CO page's chart tiles only on the unit chart (page 4), no longer over the big picture of the other pages.
         // 36: the Emerald Sun COs' faces (Teams cards, HUD, battle header) frame the whole head (`mug_scale = 1`): their pictures in the ROM image changed.
         // 35: a skin's palette refresh on the Teams screen reaches the sprite palettes only (the windows stay AW2's own).

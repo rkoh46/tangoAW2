@@ -62,7 +62,7 @@ pub(crate) const SWITCHES: u32 = STATE + 0xF0;
 pub(crate) const OFF: u8 = 1;
 pub(crate) const OFF_BUILD: u8 = 2;
 pub(crate) const OFF_POWER: u8 = 4;
-/// Bit 3: only its unit moves ([`crate::ds_ai_move`]) off.
+/// Bit 3: only its unit moves ([`crate::ds_ai_move`]) off. Bit 4: the defence of an HQ under capture ([`crate::cpu_defend`]) off.
 pub(crate) const OFF_MOVE: u8 = 8;
 
 fn players(core: &Core) -> u32 {

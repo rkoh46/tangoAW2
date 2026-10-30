@@ -2831,6 +2831,10 @@ pub fn ai_unit(core: &mut Core) {
             return;
         }
     }
+    // An HQ under capture is defended whatever the order ([`crate::cpu_defend`]): the unit is played, and its attack is planned there.
+    if !army_out(core) && crate::cpu_defend::engaged(core, u) {
+        return;
+    }
     if is_frozen(core, u) && !army_out(core) && !enemy_adjacent(core, u) {
         core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
         return;

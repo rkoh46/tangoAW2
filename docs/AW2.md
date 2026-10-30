@@ -2716,6 +2716,34 @@ front's advancing units are checked the same way. `AW2TEST_CPUAI_BOT=1 -k bh_cpu
 `aw2test/bot.py` to its day limit + 3 (balance: units by day, result). The Rust test `bh_ai::tests` checks every mission's deployment
 (a minority holds except the designed camps; every foot soldier captures or holds) and every spawn.
 
+### The CPU defends its HQ (`cpu_defend.rs`)
+
+Found in the 0.9.0 playtest (BH M1): a player's Infantry walked onto the enemy HQ with the enemy's units standing round it, and
+took the mission. Orders (above) leave units holding, standing or frozen; `custom_campaign::ai_unit` skips a held or frozen
+foot soldier unless an enemy is next to it, and AW2's attack check (`sub_0805E9DC`, called by the unit queue `sub_0805D438` at
+`0x0805D54C`) weighs trades, not HQs. In the custom campaigns (BH, BH2, Emerald Sun, the gauntlet; not Versus, not the DS
+Campaign) a unit of a CPU army whose team owns an HQ with a foot soldier (Infantry, Mech) of another team on it is not skipped
+(`cpu_defend::engaged`) and, where the check is called, plans (`cpu_defend::plan`, from the `Board` of `ds_ai`):
+
+1. **Attack**: a unit that can hurt the soldier (chart damage above 0: the machine gun, or a cannon with ammunition) and can
+   reach a free square next to it (direct units: movement points and fuel, other teams' units in the way) or has it in range
+   where it stands (indirect units) attacks it, whatever its order; the lowest move cost wins (a unit already next to it fires
+   from where it stands), then the soldier's and the square's position, so it is deterministic. The action is the game's: the
+   trap calls `sub_0805D648(x, y, 4, target, 0)` (it fills the action struct `0x030046C0`: kind 4 an attack, byte 1 the unit,
+   bytes 2..3 where it goes, byte 6 the target's unit index, byte 0x13 set) with the return address at the trap itself (the flag
+   `ds_ai::STATE + 0xF8` says the call is in flight; the return adds 4 to `sp` and goes on at `0x0805D550`), so the executor,
+   the battle scene and the counter-attack are AW2's.
+2. **Close in**: a direct unit that can hurt the soldier but has no square to attack from this turn moves (kind 2, a Wait) to
+   the nearest free square within 2 of the HQ if that is nearer than it stands; foot soldiers that are taking an enemy
+   property stay on it.
+
+A scripted march's unit keeps its path (it is skipped before this). Scripted triggers are not affected. Nothing is read that a
+player could not see (the soldier stands on the CPU's own property) and only emulated memory is used, so online peers, replays
+and rollback agree: `SIM_VERSION` 38. A development switch, `ds_ai::SWITCHES` bit 4, turns the rule off for A/B runs.
+Test: `tests/test_cpu_defends_hq.py` (a soldier captures the HQ of BH M1, BH2 M1 and Emerald Sun M1 with four held
+soldiers two squares away: after the enemy's turn it is dead or hurt and the HQ is still the enemy's; with the switch on the
+same scene shows the old behaviour: the held soldiers do nothing).
+
 ### Adding a mission (for whoever builds the thirty)
 
 **Where.** One file per act: `bh_act1.rs` .. `bh_act5.rs` and `bh_secret.rs`
