@@ -181,9 +181,9 @@ def gauntlet_mode_win_returns_to_select_mode_and_writes_the_record(ctx):
         if (d.scripts_running() or not d.in_battle()) and not d.select_mode_up():
             e.press("A", 4)
         e.wait(14)
-        if not d.in_battle() and not d.select_mode_up() and e.u8(dc.LAST_RESULT):
+        if e.u8(dc.LAST_RESULT) and not d.select_mode_up():
             tick += 1
-            if tick % 5 == 1 and len(shots) < 6:
+            if tick % 3 == 1 and len(shots) < 12:
                 shots.append(png(pic(ctx, e, f"results_{len(shots)}")))
     result = e.u8(dc.LAST_RESULT)
     ctx.eq(result, 1, "the run is won")
