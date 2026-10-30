@@ -16,6 +16,9 @@ use tango_match::{HostInput, Link};
 const A: u32 = 1;
 const START: u32 = 1 << 3;
 const DOWN: u32 = 1 << 7;
+/// Select Mode's cursor (2 Design Room, 3 Versus, 5 Campaign with the pack's wheel).
+const SELECT_MODE_CURSOR: u32 = 0x0300_591C;
+const SELECT_MODE_VERSUS: u8 = 3;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -45,14 +48,27 @@ fn main() {
     wait(&mut link, 300);
     press(&mut link, A);
     wait(&mut link, 150);
-    press(&mut link, DOWN);
-    wait(&mut link, 60);
+    // Campaign to Versus: one step on AW2's wheel, two with the pack's Gauntlet entry between them (a step too few
+    // enters the Gauntlet, whose Teams list is empty: no faces, no CO names). Go by the cursor, as aw2test does.
+    for _ in 0..4 {
+        if link.core_mut().raw_read_8(SELECT_MODE_CURSOR, -1) == SELECT_MODE_VERSUS {
+            break;
+        }
+        press(&mut link, DOWN);
+        wait(&mut link, 60);
+    }
+    assert_eq!(
+        link.core_mut().raw_read_8(SELECT_MODE_CURSOR, -1),
+        SELECT_MODE_VERSUS,
+        "the Select Mode cursor did not reach Versus"
+    );
     for _ in 0..3 {
         press(&mut link, A);
         wait(&mut link, 150);
     }
     let core = link.core_mut();
     let list = tango_gamesupport_aw2::tag_ui::teams_list(core);
+    assert!(!list.is_empty(), "not on Versus' Teams screen: its CO list is empty");
     let find = |core: &mgba::core::Core, name: &str| {
         list.iter()
             .position(|&c| tango_gamesupport_aw2::online_teams::co_label(core, c) == name)
