@@ -1336,7 +1336,8 @@ fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
             // animates (0, 1, 6, 13..15) of its own, so a bank is the colour's when the stable entries match, and only the changed entries are written)
             let changed: Vec<usize> = (0..16).filter(|&i| b[2 * i..2 * i + 2] != a[2 * i..2 * i + 2]).collect();
             if changed.len() <= 2 {
-                for bank in 16..32usize {
+                // (every bank here: only a bank whose ten stable entries are the unit palette's takes the crest, which no menu window's is)
+                for bank in 0..32usize {
                     let row = &ram[bank * 32..bank * 32 + 32];
                     let same = [2usize, 3, 4, 5, 7, 8, 9, 10, 11, 12]
                         .iter()
