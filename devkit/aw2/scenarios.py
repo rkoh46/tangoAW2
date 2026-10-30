@@ -103,9 +103,9 @@ def s_power(fog):
 
 
 def s_asuka(fog):
-    # Asuka (CO 92) for both armies (the CO byte of each player block, +0x1D of 0x02030000 + 0x3C an army: the five-army table rooms use), units of different HP on both sides, then her CO Power
+    # Asuka (CO 92) for both armies (the CO byte of each player block, +0x1D of the game's own table at 0x02023284 + 0x3C an army, as s_aria: 0x02030000 is the five-army rooms' table, which a 2-army game does not read), units of different HP on both sides, then her CO Power
     # (Dark Intel: +1 / -1 HP) on day 1 and her Super Power (Event Horizon: +2 / -2 HP, strike first) on day 2, each army in turn: every peer must hash alike through the HP changes
-    pokes = ["when army=1 day=1 idle do poke 0x02030059 5C", "when army=1 day=1 idle do poke 0x02030095 5C",
+    pokes = ["when army=1 day=1 idle do poke 0x020232DD 5C", "when army=1 day=1 idle do poke 0x02023319 5C",
              "when army=1 day=1 idle do unit 1 inf 5 3 45", "when army=1 day=1 idle do unit 1 tank 6 3 95", "when army=1 day=1 idle do unit 2 inf 10 3 55", "when army=1 day=1 idle do unit 2 tank 9 11 5",
              "when army=1 day=1 idle do meter 1 100", "when army=2 day=1 idle do meter 2 100",
              "when army=1 day=2 idle do meter 1 400", "when army=2 day=2 idle do meter 2 400"]
