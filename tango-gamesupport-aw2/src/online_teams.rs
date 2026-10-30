@@ -408,19 +408,6 @@ fn write_choices(core: &mut Core, n: usize) {
 
 type Rgb = (u8, u8, u8);
 
-fn colour_rgb(c: u8) -> Rgb {
-    match c {
-        c if c >= crate::army_skin::SKIN => {
-            crate::army_skin::swatch((c - crate::army_skin::SKIN) as usize % crate::army_skin::skins().len())
-        }
-        1 => (232, 56, 40),
-        2 => (56, 96, 216),
-        3 => (48, 168, 72),
-        4 => (232, 192, 32),
-        _ => (64, 52, 72),
-    }
-}
-
 /// Face cache: CO -> (tiles, palette, from the CO screens' mug). A face drawn from the fallback is redone once the pack
 /// is there, so an early draw never leaves a wrong picture behind.
 type FaceCache = std::collections::HashMap<u8, (Vec<u8>, [u8; 32], bool)>;
@@ -443,7 +430,7 @@ pub fn co_label(core: &Core, co: u8) -> String {
 
 /// `text` with selection arrows, cut down so it (and the highlight round it) never passes `max_w` pixels: "< text >",
 /// else "<text>", else the text shortened with the arrows kept.
-fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> String {
+pub(crate) fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> String {
     let w = |t: &str| crate::online::text_width(core, t);
     if !on {
         return text.to_string();
@@ -461,7 +448,7 @@ fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> String {
 }
 
 /// A CO's portrait scaled to `sz` pixels square at (x, y).
-fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32, sz: i32) {
+pub(crate) fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32, sz: i32) {
     let mut f = faces().lock().unwrap();
     if f.get(&co).is_none_or(|e| !e.2 && crate::ds_pack::pack().is_some()) {
         let e = match crate::ds_coselect::mug_for_face(core, co) {
@@ -480,6 +467,9 @@ fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i
     } else if crate::tag::ds_id(co) == Some(crate::ds_coselect::VON_BOLT_DS) {
         // Von Bolt: the old man in his machine's dome, without the strip above and the floor below.
         (0, 10, 36)
+    } else if sz == 46 {
+        // (a card's inside: the mug without its outer ring of pixels, one to one)
+        (1, 1, 46)
     } else {
         (0, 0, 48)
     };
@@ -533,264 +523,107 @@ pub fn seat_picks(core: &Core) -> Option<Vec<(u8, u8)>> {
 
 /// (Once everyone is READY the page stays up while the game's own Teams stages go by (its Choose-a-CO and alliance
 /// pictures would show the screen's old picks for a moment), until the page's state is cleared as the Rules come up.)
+///
+/// The page is AW2's own Teams screen ([`crate::army_cards`]): the frame the game drew is kept and the seats' cards,
+/// windows and the help box are drawn over it.
 pub fn draw(core: &Core, rgba: &mut [u8]) {
     if rgba.len() != crate::online::W * crate::online::H * 4 || (!active(core) && !done(core)) {
         return;
     }
+    use crate::army_cards::{Field, Help, Seat};
     let n = players(core);
     let list = crate::tag_ui::teams_list(core);
     let tag_on = tags(core);
     let local = crate::online::room_local_seat();
-    let mut canvas = crate::online::Rgba(rgba);
-    let cv = &mut canvas;
-    cv.rect(0, 0, crate::online::W as i32, 160, crate::online::LIGHT_GRAY);
-    cv.rect(0, 0, crate::online::W as i32, 15, crate::online::BAR);
-    let title = &match crate::unranked::map_played(core).filter(|m| !m.is_empty()) {
-        Some(m) => crate::online::fit(core, &format!("SELECT YOUR ARMY - {m}"), 232),
-        None => "SELECT YOUR ARMY".to_string(),
-    };
-    let w = crate::online::text_width(core, title);
-    cv.text(
-        core,
-        (crate::online::W as i32 - w) / 2,
-        2,
-        title,
-        crate::online::WHITE,
-        crate::online::GRAY_INK,
-    );
-    // The column headings: a strip under the title, over the fields' boxes.
-    let two = n == 2;
-    let (colour_x, team_x, partner_x) = columns(tag_on, two);
-    cv.rect(0, 15, crate::online::W as i32, 11, crate::online::LIGHT_GRAY);
-    let heading = |cv: &mut crate::online::Rgba<'_>, x: i32, t: &str| {
-        let w = crate::online::text_width(core, t);
-        cv.text(
-            core,
-            x + 14 - w / 2,
-            15,
-            t,
-            crate::online::GRAY_INK,
-            crate::online::SHADE,
-        );
-    };
-    cv.text(core, 8, 15, "Player", crate::online::GRAY_INK, crate::online::SHADE);
-    heading(cv, colour_x, "Colour");
-    if !two {
-        heading(cv, team_x, "Team");
-    }
-    if tag_on {
-        heading(cv, partner_x, "Pair");
-    }
-    let top = 27;
-    let rows_h = 143 - top;
-    let rh = (rows_h / n as i32).min(46);
-    for s in 0..n {
-        draw_row(core, cv, s, top + rh * s as i32, rh, &list, tag_on, local, n);
-    }
-    let me = local.min(n - 1);
-    let my_field = core.raw_read_8(seat(me) + S_FIELD, -1);
-    let my_ready = core.raw_read_8(seat(me) + S_READY, -1) == 1;
-    let fits = |t: &str| crate::online::text_width(core, t) <= 228;
-    let text: String = if done(core) {
-        "Everyone is ready!".into()
-    } else if core.raw_read_8(NOTE, -1) > 0 {
-        "Pick at least two different teams.".into()
-    } else if my_ready {
-        "B: Change   Waiting for the others...".into()
-    } else {
-        let mut cands = vec![];
-        if me == 0 && my_field == F_TEAM {
-            cands.push("L R: Seat  Left Right: Team  A: READY");
-            cands.push("L R: Seat  Left Right: Team");
-        }
-        if my_field == F_TEAM {
-            cands.push("Up Down: Field  Left Right: Team  A: READY");
-        }
-        cands.push("Up Down: Field  Left Right: Change  A: READY");
-        cands.push("Up Down: Field  Left Right: Change");
-        cands.into_iter().find(|t| fits(t)).unwrap_or("A: READY").into()
-    };
-    crate::online::bar(cv, core, &text);
-}
-
-/// The fields' columns (the left edge of the colour, team and partner boxes).
-fn columns(tag_on: bool, two: bool) -> (i32, i32, i32) {
-    if two {
-        // (no team column with two players)
-        (116, 0, 148)
-    } else if tag_on {
-        (102, 130, 158)
-    } else {
-        (116, 148, 0)
-    }
-}
-
-/// The width of a field's box (the choice between its two arrows).
-const BOX_W: i32 = 28;
-
-/// A field's box at x: its choice (drawn by `content` at x + 7), between arrows on yellow when it is being changed.
-fn field_box(
-    core: &Core,
-    cv: &mut crate::online::Rgba<'_>,
-    x: i32,
-    y: i32,
-    h: i32,
-    on: bool,
-    content: impl FnOnce(&mut crate::online::Rgba<'_>, i32),
-) {
-    if on {
-        cv.rect(x, y + 1, BOX_W, h - 2, crate::online::YELLOW);
-        cv.text(
-            core,
-            x + 1,
-            y + h / 2 - 5,
-            "<",
-            crate::online::INK,
-            crate::online::SHADE,
-        );
-        cv.text(
-            core,
-            x + BOX_W - 6,
-            y + h / 2 - 5,
-            ">",
-            crate::online::INK,
-            crate::online::SHADE,
-        );
-    }
-    content(cv, x + 7);
-}
-
-/// One seat's row: face, gamertag over CO, then the colour chip, team letter, partner (with tag pairs) and the READY
-/// badge, each in its own box (presentation only). The row of 2 or 3 seats is taller; the fields are the same.
-#[allow(clippy::too_many_arguments)]
-fn draw_row(
-    core: &Core,
-    cv: &mut crate::online::Rgba<'_>,
-    s: usize,
-    y: i32,
-    rh: i32,
-    list: &[u8],
-    tag_on: bool,
-    local: usize,
-    n: usize,
-) {
-    let co = list.get(core.raw_read_8(seat(s) + S_CO, -1) as usize).copied();
-    let colour = core.raw_read_8(seat(s) + S_COLOUR, -1);
-    let team = core.raw_read_8(seat(s) + S_TEAM, -1);
-    let partner = core.raw_read_8(seat(s) + S_PARTNER, -1);
-    let field = core.raw_read_8(seat(s) + S_FIELD, -1);
-    let ready = core.raw_read_8(seat(s) + S_READY, -1) == 1;
-    let mine = s == local;
-    let sel = |f: u8| mine && !ready && field == f;
+    let teams: Vec<u8> = (0..n).map(|s| core.raw_read_8(seat(s) + S_TEAM, -1)).collect();
+    let letters = crate::army_cards::letters(&teams);
     // The host on the TEAM field changes the team of the seat it has picked (its own at first).
     let host_field = core.raw_read_8(seat(0) + S_FIELD, -1);
     let host_ready = core.raw_read_8(seat(0) + S_READY, -1) == 1;
     let target = core.raw_read_8(seat(0) + S_TARGET, -1) as usize % n;
-    let team_on = n > 2
-        && if local == 0 {
-            host_field == F_TEAM && !host_ready && target == s
-        } else {
-            sel(F_TEAM)
-        };
-    // (five rows share their frame lines: one more pixel for the name and the CO under it)
-    let h = if n >= 5 { rh - 1 } else { rh - 2 };
-    let ink = crate::online::INK;
-    let shade = crate::online::SHADE;
-    // The row's window: a thin frame, cream for the player's own.
-    cv.rect(1, y - 1, 238, h + 2, ink);
-    cv.rect(
-        2,
-        y,
-        236,
-        h,
-        if mine {
-            crate::online::CREAM
-        } else {
-            crate::online::WHITE
-        },
-    );
-    cv.rect(2, y, 4, h, colour_rgb(colour));
-    let big = n <= 3;
-    // (with the partner column, the face is the small one: a 10-letter gamertag needs the room)
-    let sz = (h - 2).min(if big && !tag_on { 32 } else { 24 });
-    if let Some(co) = co {
-        draw_face(core, cv, co, 8, y + (h - sz) / 2, sz);
-    }
-    let tx = 8 + sz + 3;
-    let (colour_x, team_x, partner_x) = columns(tag_on, n == 2);
-    // (the name and the CO under it keep to the room left of the colour box: the audit's window for them)
-    crate::online::audit::window(tx, y, colour_x - 3 - tx + 2, h);
-    let name: String = crate::online::room_name(s).chars().take(10).collect();
-    let name = crate::online::fit(core, &name, colour_x - 3 - tx);
-    let name_ink = if mine { crate::online::BLUE } else { ink };
-    let (ny, cy) = if big { (y + 4, y + h - 15) } else { (y, y + h - 11) };
-    cv.text(core, tx, ny, &name, name_ink, shade);
-    let co_name = co.map(|c| co_label(core, c)).unwrap_or_default();
-    let co_text = fit_arrows(core, &co_name, sel(F_CO), colour_x - 3 - tx);
-    let w = crate::online::text_width(core, &co_text);
-    if sel(F_CO) {
-        // (in the small rows the highlight starts under the name, which it must not cover)
-        cv.rect(tx - 2, if big { cy - 1 } else { cy }, w + 4, 11, crate::online::YELLOW);
-    }
-    cv.text(core, tx, cy, &co_text, ink, shade);
-    // Colour chip.
-    let chip_h = (h - 8).min(20);
-    field_box(core, cv, colour_x, y, h, sel(F_COLOUR), |cv, x| {
-        cv.rect(x - 1, y + (h - chip_h) / 2 - 1, 16, chip_h + 2, ink);
-        cv.rect(x, y + (h - chip_h) / 2, 14, chip_h, colour_rgb(colour));
-    });
-    // Team: its letter on a plate like READY's.
-    if n > 2 {
-        field_box(core, cv, team_x, y, h, team_on, |cv, x| {
-            let ph = (h - 8).min(16);
-            let py = y + (h - ph) / 2;
-            cv.rect(x - 1, py - 1, 16, ph + 2, ink);
-            cv.rect(x, py, 14, ph, crate::online::BLUE);
-            // (letters count the teams in use, A, B, ...: A, A, C, C reads A, A, B, B; the team being changed shows its own)
-            let shown = if team_on {
-                team
+    let seats: Vec<Seat> = (0..n)
+        .map(|s| {
+            let ready = core.raw_read_8(seat(s) + S_READY, -1) == 1;
+            let mine = s == local;
+            let f = core.raw_read_8(seat(s) + S_FIELD, -1);
+            let mut field = if mine && !ready {
+                Some(match f {
+                    F_CO => Field::Co,
+                    F_COLOUR => Field::Colour,
+                    F_TEAM => Field::Team,
+                    F_PARTNER => Field::Partner,
+                    _ => Field::Ready,
+                })
             } else {
-                compact_team(
-                    &(0..n)
-                        .map(|k| core.raw_read_8(seat(k) + S_TEAM, -1))
-                        .collect::<Vec<_>>(),
-                    team,
-                )
+                None
             };
-            let l = team_letter(shown).to_string();
-            let lw = crate::online::text_width(core, &l);
-            cv.text(
-                core,
-                x + (14 - lw) / 2,
-                py + (ph - 11) / 2,
-                &l,
-                crate::online::WHITE,
-                crate::online::BLUE,
-            );
-        });
-    }
-    // Partner: a small face, "-" for none.
-    if tag_on {
-        field_box(core, cv, partner_x, y, h, sel(F_PARTNER), |cv, x| {
-            if partner == NONE {
-                let w = crate::online::text_width(core, "-");
-                cv.text(core, x + 7 - w / 2, y + h / 2 - 5, "-", crate::online::GRAY_INK, shade);
-            } else {
-                draw_face(core, cv, partner, x - 1, y + (h - 16) / 2, 16);
+            // (the host's TEAM field is on the seat it picked, wherever that is)
+            if n > 2 && local == 0 {
+                field = if host_field == F_TEAM && !host_ready && target == s {
+                    Some(Field::Team)
+                } else if mine && f == F_TEAM {
+                    None
+                } else {
+                    field
+                };
             }
-        });
-    }
-    // READY badge.
-    let (rx, rw) = (190, 46);
-    let (label, plate, lab_ink) = if ready {
-        ("READY", crate::online::BLUE, crate::online::WHITE)
-    } else if sel(F_READY) {
-        ("READY?", crate::online::YELLOW, ink)
+            Seat {
+                name: crate::online::room_name(s),
+                co: list.get(core.raw_read_8(seat(s) + S_CO, -1) as usize).copied(),
+                colour: core.raw_read_8(seat(s) + S_COLOUR, -1),
+                team: (n > 2).then(|| {
+                    // (the team being changed shows its own letter)
+                    if field == Some(Field::Team) {
+                        teams[s]
+                    } else {
+                        letters[s]
+                    }
+                }),
+                partner: core.raw_read_8(seat(s) + S_PARTNER, -1),
+                ready,
+                mine,
+                field,
+            }
+        })
+        .collect();
+    let me = local.min(n - 1);
+    let my_field = core.raw_read_8(seat(me) + S_FIELD, -1);
+    let my_ready = core.raw_read_8(seat(me) + S_READY, -1) == 1;
+    let fits = |t: &str| crate::online::text_width(core, t) <= 228;
+    let mut lines: Vec<String> = Vec::new();
+    if done(core) {
+        lines.push("Everyone is ready!".into());
+    } else if core.raw_read_8(NOTE, -1) > 0 {
+        lines.push("Pick at least two different teams.".into());
+    } else if my_ready {
+        lines.push("Waiting for the others...".into());
+        lines.push("B: Change".into());
     } else {
-        ("...", crate::online::LIGHT_GRAY, crate::online::GRAY_INK)
-    };
-    cv.rect(rx - 1, y + 2, rw + 2, h - 4, ink);
-    cv.rect(rx, y + 3, rw, h - 6, plate);
-    let lw = crate::online::text_width(core, label);
-    cv.text(core, rx + (rw - lw) / 2, y + h / 2 - 5, label, lab_ink, shade);
+        // (what the field is, and the keys)
+        let partner = core.raw_read_8(seat(me) + S_PARTNER, -1);
+        let co = list.get(core.raw_read_8(seat(me) + S_CO, -1) as usize).copied();
+        lines.push(match my_field {
+            F_CO => "Choose a CO.".to_string(),
+            F_COLOUR => "Choose an army colour.".to_string(),
+            F_TEAM if me == 0 && n > 2 => "Choose a team. L R: another seat's.".to_string(),
+            F_TEAM => "Choose a team.".to_string(),
+            F_PARTNER if partner == NONE => "Partner: none. Choose a partner CO.".to_string(),
+            F_PARTNER => match co {
+                Some(co) => format!(
+                    "Partner: {} ({}%)",
+                    co_label(core, partner),
+                    crate::tag::compatibility(co, partner)
+                ),
+                None => format!("Partner: {}", co_label(core, partner)),
+            },
+            _ => "Everyone ready? Press A.".to_string(),
+        });
+        let cands = [
+            "Up Down: Field  Left Right: Change  A: READY",
+            "Up Down: Field  Left Right: Change",
+            "A: READY",
+        ];
+        lines.push(cands.iter().find(|t| fits(t)).copied().unwrap_or("A: READY").into());
+    }
+    crate::army_cards::draw(core, rgba, &seats, tag_on, &Help { lines });
 }

@@ -133,6 +133,7 @@ pub mod online_conn;
 pub mod online_maps;
 pub mod online_menu;
 pub mod online_stats;
+pub mod army_cards;
 pub mod online_teams;
 pub mod onyx;
 pub mod oozium;

@@ -708,7 +708,13 @@ fn armies(c: &mut Ctx) {
     let colours = [1u8, 2, 4, 3, 5];
     for tags_on in [false, true] {
         for n in 2..=5usize {
-            for (field, fname) in [(0u8, "co"), (3u8, "partner"), (2u8, "team"), (4u8, "ready")] {
+            for (field, fname) in [
+                (0u8, "co"),
+                (3u8, "partner"),
+                (2u8, "team"),
+                (1u8, "colour"),
+                (4u8, "ready"),
+            ] {
                 if field == 3 && !tags_on {
                     continue;
                 }

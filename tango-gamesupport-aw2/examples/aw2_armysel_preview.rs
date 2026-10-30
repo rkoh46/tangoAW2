@@ -66,6 +66,8 @@ fn main() {
         press(&mut link, A);
         wait(&mut link, 150);
     }
+    // (the game's own Teams frame is what the page is drawn over)
+    let base = link.side(0).frame().expect("frame");
     let core = link.core_mut();
     let list = tango_gamesupport_aw2::tag_ui::teams_list(core);
     assert!(!list.is_empty(), "not on Versus' Teams screen: its CO list is empty");
@@ -143,7 +145,7 @@ fn main() {
             -1,
             if tag.contains("notag") { 0 } else { 1 },
         );
-        let mut rgba = vec![0u8; 240 * 160 * 4];
+        let mut rgba = base.clone();
         tango_gamesupport_aw2::online_teams::draw(core, &mut rgba);
         let mut ppm = b"P6\n240 160\n255\n".to_vec();
         for px in rgba.chunks(4) {
@@ -165,7 +167,7 @@ fn main() {
             }
             core.raw_write_range(tango_gamesupport_aw2::online_teams::SEL, -1, &ram);
             tango_gamesupport_aw2::online::set_room(chunk.iter().map(|&i| format!("#{i}")).collect::<Vec<_>>(), 99);
-            let mut rgba = vec![0u8; 240 * 160 * 4];
+            let mut rgba = base.clone();
             tango_gamesupport_aw2::online_teams::draw(core, &mut rgba);
             let mut ppm = b"P6\n240 160\n255\n".to_vec();
             for px in rgba.chunks(4) {
