@@ -76,7 +76,8 @@ def check(ctx, n):
     base = e.u32(PLAYERS)
     have = [e.u8(base + 0x3C * a + 0x1A) for a in range(1, len(want) + 1)]
     ctx.eq(have, want, f"M{n}: the armies' colours are the mission's")
-    skinned = [c for c in range(1, 6) if e.u8(SKIN_APPLIED + c)]
+    # (0x11 + skin: only the skin's crest, on the colour of an army whose CO is an Emerald Sun CO: the designs follow the CO, army_skin::crest_plan)
+    skinned = [c for c in range(1, 6) if 1 <= e.u8(SKIN_APPLIED + c) <= 0x0F]
     ctx.eq(skinned, [want[0]], f"M{n}: the Emerald Sun skin is on the player's colour alone")
     ctx.eq(e.u8(SKIN_APPLIED + want[0]), 1, f"M{n}: it is the Emerald Sun skin (the campaign's only one) on colour {want[0]}")
     e.wait(30)
