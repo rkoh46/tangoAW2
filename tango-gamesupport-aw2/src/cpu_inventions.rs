@@ -116,16 +116,22 @@ pub fn team(core: &Core, army: u32) -> u8 {
 
 /// The army the computer attacks the inventions of: the human in Black Hole's
 /// colour, in the BH Campaign and in Versus with the pack; `None` anywhere else.
+/// The modes where Black Hole's inventions belong to the army in Black Hole's colour: the BH Campaigns and Versus.
+/// (In the DS Campaign a player's army wears its CO's country's colour, so a Black Hole CO makes the player's own army
+/// "the inventions' owner": the enemy's Crystals in Healing Touch were then no target at all.)
+fn in_scope(core: &Core) -> bool {
+    if crate::ds_campaign::active(core) {
+        matches!(crate::ds_campaign::source(core), BH_SOURCE | crate::bh2_campaign::SOURCE)
+    } else {
+        crate::pvp::in_versus(core)
+    }
+}
+
 pub fn owner(core: &Core) -> Option<u32> {
     if !crate::ds_weather::is_on(core) || core.raw_read_8(DEV_OFF, -1) == OFF {
         return None;
     }
-    let ok = if crate::ds_campaign::active(core) {
-        matches!(crate::ds_campaign::source(core), BH_SOURCE | crate::bh2_campaign::SOURCE)
-    } else {
-        crate::pvp::in_versus(core)
-    };
-    if !ok {
+    if !in_scope(core) {
         return None;
     }
     (1..=5u32).find(|&a| colour(core, a) == BLACK_HOLE && controller(core, a) == 1)
@@ -875,7 +881,7 @@ fn own_not_a_target(core: &mut Core) {
     }
     let sp = core.gba().cpu().gpr(13) as u32;
     let lr = core.raw_read_32(sp + 20, -1);
-    if !FIND_CALLERS.contains(&lr) || !moving_army_is_inventions_team(core) {
+    if !FIND_CALLERS.contains(&lr) || !in_scope(core) || !moving_army_is_inventions_team(core) {
         return;
     }
     core.gba_mut().cpu_mut().set_thumb_pc(FIND_NONE);

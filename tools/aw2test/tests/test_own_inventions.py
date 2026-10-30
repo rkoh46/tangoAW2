@@ -166,3 +166,20 @@ def own_inv_bh_campaign_no_fire_at_own(ctx):
     off = fire_at_own(ctx, True)
     live = [n for n, names in off.items() if "Fire" in names]
     ctx.check(len(live) >= 3, f"development byte off: the game's own rule offers Fire at {live} (off: {off})")
+
+
+@test(name="own_inv_ds_campaign_enemy_crystal_is_a_target", modes=("ds",))
+def own_inv_ds_campaign_enemy_crystal_is_a_target(ctx):
+    """Healing Touch, the DS Campaign, the player's COs Hawke and Andy (so the player's army wears Black Hole's colour): the enemy's Black Crystal at (4, 9) is a target. The
+    own-structure rule belongs to Versus and the BH Campaigns: here it hid every Crystal from the player (Fire never offered, the mission's units stalled). The player plays day 1 through the pad and must have hit one."""
+    from aw2test import dscampaign as dc
+    from tests.test_ds_campaign import boot
+    from aw2test.bot import INVENTIONS
+    e, g, d = boot(ctx)
+    d.win_mission(20, 2, cos=[14, 2], log=ctx.log)
+    g._units_base = g._players_base = None
+    ctx.eq(e.u8(0x030033EC), 1, "the player's turn")
+    # The mission starts with six Crystals (hp 99); the test player's Artillery and Tanks fire at them from day 1.
+    entries = [e.read(INVENTIONS + 8 * k, 8) for k in range(16)]
+    live = [b for b in entries if (b[2] | b[3] << 8) >> 6 & 0xF and b[4] > 0]
+    ctx.check(len(live) < 6 or any(b[4] < 99 for b in live), f"the player has hurt the enemy's Crystals ({[(b[0], b[1], b[4]) for b in live]})")
