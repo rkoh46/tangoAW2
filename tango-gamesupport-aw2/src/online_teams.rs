@@ -98,15 +98,15 @@ fn seat(s: usize) -> u32 {
     SEATS + SEAT_SIZE * s as u32
 }
 
-struct Record {
-    controller: u32,
-    colour: u32,
-    team: u32,
-    co: u32,
-    armies: u32,
+pub(crate) struct Record {
+    pub controller: u32,
+    pub colour: u32,
+    pub team: u32,
+    pub co: u32,
+    pub armies: u32,
 }
 
-fn record(core: &Core) -> Record {
+pub(crate) fn record(core: &Core) -> Record {
     let rec = crate::tag_ui::record(core);
     let five = crate::five::active(core);
     Record {

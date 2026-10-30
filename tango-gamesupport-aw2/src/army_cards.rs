@@ -83,57 +83,51 @@ fn yellow(c: Rgb) -> bool {
     c.0 > 230 && c.1 > 230 && c.2 < 110
 }
 
-/// The game's 1P / 2P / CP tags from its frame, one per card: the yellow letters and their dark edge, moved to the cards' tag
-/// row. `None` when the frame has not got `n` of them (the game's screen is fading or changing stage).
+fn bright(c: Rgb) -> bool {
+    yellow(c) || (c.0.min(c.1).min(c.2) > 200)
+}
+
+/// The game's 1P / 2P / CP tags from its frame, one per card (a yellow 1P, a white CP): the bright letters and their dark edge
+/// at the place the game puts them (the yellow ones give the row), moved to the cards' tag row. A card whose tag is not there
+/// (the game's screen fading or changing stage) has an empty one; `None` when no card has any.
 fn sample_tags(rgba: &[u8], n: usize) -> Option<Vec<Tag>> {
-    let mut ys: Vec<(i32, i32)> = Vec::new();
-    for y in 24..130 {
-        for x in 0..online::W as i32 {
-            if yellow(px(rgba, x, y)) {
-                ys.push((x, y));
-            }
-        }
-    }
-    ys.sort_unstable();
-    let mut clusters: Vec<Vec<(i32, i32)>> = Vec::new();
-    for p in ys {
-        match clusters.last_mut() {
-            Some(c) if p.0 - c.last().unwrap().0 <= 6 => c.push(p),
-            _ => clusters.push(vec![p]),
-        }
-    }
-    if clusters.len() != n {
-        return None;
-    }
+    let row = (24..130)
+        .find(|&y| (0..online::W as i32).any(|x| yellow(px(rgba, x, y))))
+        .unwrap_or(CARD_Y + 3);
+    let (first, pitch) = layout(n);
+    let inside = |x: i32, y: i32| (0..online::W as i32).contains(&x) && (0..160).contains(&y);
     let mut tags = Vec::new();
-    for c in &clusters {
-        let (x0, x1) = (c.first().unwrap().0, c.last().unwrap().0);
-        let y0 = c.iter().map(|p| p.1).min().unwrap();
-        let y1 = c.iter().map(|p| p.1).max().unwrap();
-        if y1 - y0 > 12 || x1 - x0 > 16 {
-            return None;
-        }
+    for s in 0..n {
+        let ox = tag_x(n, first + pitch * s as i32);
         let mut t = Tag::new();
-        for y in y0 - 1..=y1 + 1 {
-            for x in x0 - 1..=x1 + 1 {
-                if !(0..online::W as i32).contains(&x) || !(0..160).contains(&y) {
+        for y in row - 1..row + 11 {
+            for x in ox - 1..ox + 14 {
+                if !inside(x, y) {
                     continue;
                 }
                 let c = px(rgba, x, y);
-                let near_yellow = (-1..=1).any(|dy| {
-                    (-1..=1).any(|dx| {
-                        let (qx, qy) = (x + dx, y + dy);
-                        (0..online::W as i32).contains(&qx) && (0..160).contains(&qy) && yellow(px(rgba, qx, qy))
+                let near_bright = |dist: i32| {
+                    (-dist..=dist).any(|dy| {
+                        (-dist..=dist).any(|dx| {
+                            inside(x + dx, y + dy)
+                                && (ox - 1..ox + 14).contains(&(x + dx))
+                                && bright(px(rgba, x + dx, y + dy))
+                        })
                     })
-                });
-                if yellow(c) || (near_yellow && (c.0 as u32 + c.1 as u32 + c.2 as u32) < 200) {
-                    t.push((x - x0, y - y0 + CARD_Y + 3 - 1, c));
+                };
+                let dark = (c.0 as u32 + c.1 as u32 + c.2 as u32) < 120;
+                if bright(c) || (dark && near_bright(1)) {
+                    t.push((x - ox, y - row + CARD_Y + 3, c));
                 }
             }
         }
+        // (a tag is letters: a face's stray white pixels are fewer)
+        if t.iter().filter(|p| bright(p.2)).count() < 12 {
+            t.clear();
+        }
         tags.push(t);
     }
-    Some(tags)
+    tags.iter().any(|t| !t.is_empty()).then_some(tags)
 }
 
 /// The most common colour of the map's ground (the sea) in the band the cards are drawn in.
@@ -202,13 +196,17 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
         Some(t) => {
             let mut c = tag_cache().lock().unwrap();
             for (k, tag) in t.iter().enumerate() {
+                if tag.is_empty() {
+                    continue;
+                }
                 if k < c.len() {
                     c[k] = tag.clone();
                 } else {
-                    c.push(tag.clone());
+                    c.resize(k + 1, Vec::new());
+                    c[k] = tag.clone();
                 }
             }
-            t
+            c.clone()
         }
         None => tag_cache().lock().unwrap().clone(),
     };

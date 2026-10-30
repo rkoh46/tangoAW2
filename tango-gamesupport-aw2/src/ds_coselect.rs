@@ -1548,7 +1548,69 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
 // --- The frame --------------------------------------------------------------------------------------------
 
 /// Draws the screen over the finished picture, if one of ours is up.
+/// Versus' Teams screen offline with the pack, drawn as the online army page is ([`crate::army_cards`]): AW2's own screen
+/// keeps running underneath (its cursor, its keys, its stages: nothing is written) and is drawn over with a card and a
+/// window for every army. `false` when it is not on (the game's own picture, or Dual Strike's, stays).
+fn offline_cards(core: &Core, rgba: &mut [u8]) -> bool {
+    use crate::army_cards::{Field, Help, Seat};
+    if rgba.len() != W * H * 4 || crate::ds_pack::pack().is_none() || crate::online::in_room_match(core) {
+        return false;
+    }
+    let Some((armies, stop)) = versus_view(core) else {
+        return false;
+    };
+    let rec = crate::online_teams::record(core);
+    let n = armies.len().clamp(2, 5);
+    let teams: Vec<u8> = (0..n as u32).map(|k| core.raw_read_8(rec.team + k, -1)).collect();
+    let letters = crate::army_cards::letters(&teams);
+    let mut humans = 0;
+    let seats: Vec<Seat> = (0..n)
+        .map(|k| {
+            let human = core.raw_read_8(rec.controller + k as u32, -1) == 1;
+            if human {
+                humans += 1;
+            }
+            let mine = match stop {
+                Stop::Main(a) | Stop::Partner(a) | Stop::Tab(a) => a == k,
+                Stop::None => false,
+            };
+            Seat {
+                name: if human { format!("Player {humans}") } else { "CPU".into() },
+                co: crate::tag_ui::army_main(core, k as u32),
+                colour: match crate::army_skin::teams_skin(core, k as u32) {
+                    Some(i) => crate::army_skin::SKIN + i as u8,
+                    None => core.raw_read_8(rec.colour + k as u32, -1).clamp(1, 5),
+                },
+                team: (n > 2).then(|| letters[k]),
+                partner: core.raw_read_8(crate::tag::TEAMS_PARTNER + k as u32, -1),
+                ready: false,
+                mine,
+                field: match stop {
+                    Stop::Main(a) if a == k => Some(Field::Co),
+                    Stop::Partner(a) if a == k => Some(Field::Partner),
+                    Stop::Tab(a) if a == k => Some(Field::Controller),
+                    _ => None,
+                },
+            }
+        })
+        .collect();
+    let tag_pairs = crate::ds_weather::is_on(core);
+    // (AW2's own keys here: Up and Down change the CO on the cards' arrows, Left and Right go to the next army)
+    let (first, keys) = match stop {
+        Stop::Partner(_) => ("Choose a partner CO.", "Up Down: Partner  B: Back"),
+        Stop::Tab(_) => ("Choose Player or CP.", "Up Down: Change  B: Back"),
+        _ if tag_pairs => ("Choose a CO. START: partner.", "Up Down: CO  Left Right: Army  R: Colour"),
+        _ => ("Choose a CO.", "Up Down: CO  Left Right: Army  R: Colour"),
+    };
+    let lines = vec![first.to_string(), keys.to_string()];
+    crate::army_cards::draw(core, rgba, &seats, tag_pairs, &Help { lines });
+    true
+}
+
 pub fn apply(core: &Core, rgba: &mut [u8]) {
+    if offline_cards(core, rgba) {
+        return;
+    }
     if rgba.len() != W * H * 4 || !ds_graphics(core) {
         return;
     }

@@ -14,6 +14,8 @@ const SELECT: u32 = 1 << 2;
 const START: u32 = 1 << 3;
 const RIGHT: u32 = 1 << 4;
 const DOWN: u32 = 1 << 7;
+const UP: u32 = 1 << 6;
+const B: u32 = 1 << 1;
 const L: u32 = 1 << 9;
 
 fn write_bmp(path: &std::path::Path, rgba: &[u8]) {
@@ -58,8 +60,14 @@ fn main() {
     wait(&mut link, 300);
     press(&mut link, A);
     wait(&mut link, 150);
-    press(&mut link, DOWN);
-    wait(&mut link, 60);
+    // Campaign to Versus: one step on AW2's wheel, two with the pack's Gauntlet between them (by the cursor, as aw2test does)
+    for _ in 0..4 {
+        if link.core_mut().raw_read_8(0x0300_591C, -1) == 3 {
+            break;
+        }
+        press(&mut link, DOWN);
+        wait(&mut link, 60);
+    }
     for _ in 0..3 {
         press(&mut link, A); // Versus, New, Bean Island
         wait(&mut link, 150);
@@ -68,6 +76,20 @@ fn main() {
         write_bmp(&out.join(format!("{name}.bmp")), &link.side(0).frame().unwrap());
     };
     shot(&mut link, "teams_0");
+    // (the card's tab, a partner pick: the cursor's other stops)
+    press(&mut link, DOWN);
+    wait(&mut link, 20);
+    shot(&mut link, "teams_tab");
+    press(&mut link, UP);
+    wait(&mut link, 20);
+    press(&mut link, START);
+    wait(&mut link, 40);
+    shot(&mut link, "teams_partner");
+    press(&mut link, RIGHT);
+    wait(&mut link, 20);
+    shot(&mut link, "teams_partner_next");
+    press(&mut link, B);
+    wait(&mut link, 40);
     for i in 1..=4 {
         press(&mut link, SELECT);
         wait(&mut link, 20);
