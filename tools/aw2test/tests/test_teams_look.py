@@ -45,6 +45,10 @@ def teams_cards_show_the_committed_faces(ctx):
     bad = 0
     for name, co in COS.items():
         face = Image.open(os.path.join(ART, name, "face_normal.png")).convert("RGBA")
+        # a face framed to show the whole head leaves the picture's background around it (Aria's 231 pixels is the least of the six; the zoomed
+        # Emerald Sun faces had 0 to 404 and filled the square with eyes and nose)
+        clear = sum(1 for y in range(48) for x in range(48) if face.getpixel((x, y))[3] == 0)
+        bad += not ctx.check(clear >= 150, f"{name}: the face shows the whole head, not a zoomed crop ({clear} background pixels in the 48 x 48 square)")
         for col in (0, 1):
             g = ctx.boot_teams(m)
             cos = ["andy", "andy"]
@@ -59,12 +63,16 @@ def teams_cards_show_the_committed_faces(ctx):
             for y in range(48):
                 for x in range(48):
                     r, gg, b, a = face.getpixel((x, y))
+                    if min(x, y, 47 - x, 47 - y) < 3:      # (the card's frame)
+                        continue
+                    if (x < 18 and y >= 30) or (x >= 24 and y < 14):    # (the army's emblem and the 1P / CP tag lie over the face's corners)
+                        continue
                     if a == 0 or not (0 <= y0 + y < 160 and 0 <= x0 + x < 240):
                         continue
                     seen += 1
                     diff += q(rows[y0 + y][x0 + x]) != q((r, gg, b))
             ctx.log(f"{name} {'1P' if col == 0 else 'CP'}: card at ({x0},{y0}), {diff} of {seen} pixels differ")
-            ok = ctx.check(seen > 1500 and diff <= seen // 50, f"{name}: the {'1P' if col == 0 else 'CP'} card shows the committed face ({diff} of {seen} pixels differ)")
+            ok = ctx.check(seen > 400 and diff <= seen // 100, f"{name}: the {'1P' if col == 0 else 'CP'} card shows the committed face ({diff} of {seen} pixels differ)")
             bad += not ok
             g.e.close()
     ctx.eq(bad, 0, "cards with a wrong face")

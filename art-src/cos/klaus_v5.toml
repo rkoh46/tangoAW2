@@ -5,5 +5,7 @@ pixelart = true
 match = "lab"
 flip = true
 frame = [48, 15]
-mug = [68, 18]
+# the face squares are 48 cells at 1x: the whole head fits (the 24-cell default drew it twice too big)
+mug_scale = 1
+mug = [56, 6]
 eyes = [77, 30, 83, 30]

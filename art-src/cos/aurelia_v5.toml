@@ -5,5 +5,9 @@ pixelart = true
 match = "lab"
 flip = false
 frame = [70, 31]
-mug = [87, 46]
+# the face squares are 48 cells at 1x: the whole head fits (the 24-cell default drew it twice too big)
+mug_scale = 1
+mug = [75, 34]
 eyes = [94, 57, 104, 57]
+# the 48-cell face at 1x keeps the picture's own single cells (the lint's default limit is 220)
+max_face_specks = 330
