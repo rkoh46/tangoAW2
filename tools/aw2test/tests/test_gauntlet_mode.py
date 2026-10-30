@@ -458,7 +458,7 @@ _TOOL_CO = int(os.environ.get("AW2TEST_GAUNTLET_CO", "0") or 0)
 
 @test(name="gauntlet_tool_start", modes=("ds",))
 def gauntlet_tool_start(ctx):
-    """`aw2dev gauntlet start [--co N]`: from the title to the Gauntlet's first turn with pictures of each screen on the way: the wheel on GAUNTLET, the CO pick, the mission card, the Setup phase, day 1
+    """`aw2dev gauntlet start [--co N]`: from the title to the Gauntlet's first turn with pictures of each screen on the way: the wheel on GAUNTLET, the CO pick, the Setup phase, day 1
     (AW2TEST_GAUNTLET_CO names the CO, default Andy; AW2TEST_GAUNTLET_OUT where the pictures go)."""
     co = _TOOL_CO or ga.ANDY
     out = os.environ.get("AW2TEST_GAUNTLET_OUT")
@@ -474,19 +474,17 @@ def gauntlet_tool_start(ctx):
     for k in range(600):
         if d.in_battle() and e.u32(0x0849_9598) != 0:
             break
-        if k == 12:
-            png(pic(ctx, e, "3_mission_card"))
         e.press("A", 4) if d.scripts_running() else None
         e.wait(10)
     for _ in range(100):
         if d.in_setup():
             break
         e.wait(10)
-    png(pic(ctx, e, "4_setup"))
+    png(pic(ctx, e, "3_setup"))
     d.leave_setup()
     d.wait_control()
     g._units_base = g._players_base = None
-    png(pic(ctx, e, "5_first_turn"))
+    png(pic(ctx, e, "4_first_turn"))
     ctx.eq(g.player(1)["co"], co, "the pick leads the player's army")
     ctx.log(f"picked {picked}; pictures in {ctx.out}")
     if out:

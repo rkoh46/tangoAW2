@@ -45,5 +45,5 @@ A function in `gauntlet_mode.rs` added to `def()`'s missions (spec `five/gauntle
 several is the screen to build when the second map comes). The enemy armies need teams of their own (team 2: team 0 is "my own number" and 1 is the player's).
 
 ## Aids and tests
-`aw2dev gauntlet start [--co N]` boots the harness into the mode with a picture of each screen (wheel, CO pick, mission card, Setup, first turn); `aw2dev gauntlet test` runs `-k gauntlet_mode`.
+`aw2dev gauntlet start [--co N]` boots the harness into the mode with a picture of each screen (wheel, CO pick, Setup, first turn); `aw2dev gauntlet test` runs `-k gauntlet_mode`.
 `aw2test/gauntlet.py` is the driver (`Gauntlet.start`, `capture`, `win`, `lose`, `best`, `saved_record`); wins use the mission's own captures (Drake's HQ, Sensei's, Hawke's) and the game's rout.

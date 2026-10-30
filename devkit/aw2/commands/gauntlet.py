@@ -1,7 +1,7 @@
 """aw2dev gauntlet: the Gauntlet game mode in the offline harness (docs/dev/gauntlet-mode.md).
 
   gauntlet start [--co N] [--out DIR]   boots the harness straight into the mode (title, Select Mode, GAUNTLET, the CO pick of CO N, the battle) and leaves a picture of each screen on the way:
-                                        1_wheel, 2_co_screen, 3_mission_card, 4_setup, 5_first_turn (PNG, in DIR or the run's folder); N is an AW2 CO id (default 1 Andy; 93 Aria, 92 Asuka)
+                                        1_wheel, 2_co_screen, 3_setup, 4_first_turn (PNG, in DIR or the run's folder); N is an AW2 CO id (default 1 Andy; 93 Aria, 92 Asuka)
   gauntlet test                         the Gauntlet's regression tests (`run.py -k gauntlet_mode --mode ds`)
 """
 import os, subprocess, sys, tempfile
