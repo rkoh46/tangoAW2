@@ -447,6 +447,24 @@ pub(crate) fn fit_arrows(core: &Core, text: &str, on: bool, max_w: i32) -> Strin
     format!("<{t}>")
 }
 
+/// A CO's Teams card portrait as the game's own card draws it (its presentation row's 48 x 48 face, [`crate::tag_ui::portrait48`]),
+/// inside the card's frame: 46 x 46 pixels one to one at (x, y).
+pub(crate) fn draw_card_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32) {
+    let (px, pal) = crate::tag_ui::portrait48_raw(core, co);
+    for yy in 0..46usize {
+        for xx in 0..46usize {
+            let (sx, sy) = (xx + 1, yy + 1);
+            let t = 6 * (sy / 8) + sx / 8;
+            let b = px.get(32 * t + 4 * (sy % 8) + (sx % 8) / 2).copied().unwrap_or(0);
+            let v = ((b >> (4 * (sx & 1))) & 15) as usize;
+            if v != 0 {
+                let c = u16::from_le_bytes([pal[2 * v], pal[2 * v + 1]]);
+                cv.put(x + xx as i32, y + yy as i32, crate::online::bgr(c));
+            }
+        }
+    }
+}
+
 /// A CO's portrait scaled to `sz` pixels square at (x, y).
 pub(crate) fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x: i32, y: i32, sz: i32) {
     let mut f = faces().lock().unwrap();
@@ -467,9 +485,6 @@ pub(crate) fn draw_face(core: &Core, cv: &mut crate::online::Rgba<'_>, co: u8, x
     } else if crate::tag::ds_id(co) == Some(crate::ds_coselect::VON_BOLT_DS) {
         // Von Bolt: the old man in his machine's dome, without the strip above and the floor below.
         (0, 10, 36)
-    } else if sz == 46 {
-        // (a card's inside: the mug without its outer ring of pixels, one to one)
-        (1, 1, 46)
     } else {
         (0, 0, 48)
     };

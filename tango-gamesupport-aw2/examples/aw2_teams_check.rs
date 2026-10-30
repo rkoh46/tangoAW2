@@ -5,7 +5,7 @@
 //! army 2 and presses L, then starts the battle and prints each army's
 //! colour.
 //!
-//! Usage: [AW2_TEAMS_TABS=k] aw2_teams_check <rom> <out-dir>
+//! Usage: [AW2_TEAMS_TABS=k] [AW2_TEAMS_COS=1] aw2_teams_check <rom> <out-dir>
 
 use tango_match::{HostInput, Link};
 
@@ -84,6 +84,16 @@ fn main() {
         write_bmp(&out.join(format!("{name}.bmp")), &link.side(0).frame().unwrap());
     };
     shot(&mut link, "teams_0");
+    // AW2_TEAMS_COS=1: army 1's card for every CO of the Teams list (DOWN steps to the next), as co_NN.bmp
+    if std::env::var_os("AW2_TEAMS_COS").is_some() {
+        let n = tango_gamesupport_aw2::tag_ui::teams_list(link.core()).len();
+        for i in 0..n {
+            shot(&mut link, &format!("co_{i:02}"));
+            press(&mut link, DOWN);
+            wait(&mut link, 25);
+        }
+        return;
+    }
     // (the card's tab, a partner pick: the cursor's other stops)
     press(&mut link, DOWN);
     wait(&mut link, 20);

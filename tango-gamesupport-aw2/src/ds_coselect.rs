@@ -1552,6 +1552,9 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
 /// keeps running underneath (its cursor, its keys, its stages: nothing is written) and is drawn over with a card and a
 /// window for every army. `false` when it is not on (the game's own picture, or Dual Strike's, stays).
 fn offline_cards(core: &Core, rgba: &mut [u8]) -> bool {
+    if std::env::var_os("AW2_TEAMS_OWN").is_some() {
+        return false; // (a test aid: the game's own picture, to put beside this one)
+    }
     use crate::army_cards::{Field, Help, Seat};
     if rgba.len() != W * H * 4 || crate::ds_pack::pack().is_none() || crate::online::in_room_match(core) {
         return false;

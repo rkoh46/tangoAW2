@@ -11,7 +11,7 @@
 //! the seats' current ones, so the card band is redrawn whole.
 
 use crate::online::{self, Rgb, Rgba, BLUE, CREAM, GRAY_INK, INK, LIGHT_GRAY, SHADE, WHITE, YELLOW};
-use crate::online_teams::{co_label, compact_team, draw_face, fit_arrows, team_letter};
+use crate::online_teams::{co_label, compact_team, draw_card_face, draw_face, fit_arrows, team_letter};
 use mgba::core::Core;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -218,9 +218,9 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
     for (s, seat) in seats.iter().take(n).enumerate() {
         let left = first + pitch * s as i32;
         // The card: the CO's portrait, the army's emblem, the frame, the game's tag.
-        cv.rect(left, CARD_Y, CARD, CARD, LIGHT_GRAY);
+        cv.rect(left, CARD_Y, CARD, CARD, ground);
         if let Some(co) = seat.co {
-            draw_face(core, cv, co, left + 1, CARD_Y + 1, 46);
+            draw_card_face(core, cv, co, left + 1, CARD_Y + 1);
         }
         for (x, y) in [(left, CARD_Y), (left + CARD - 1, CARD_Y)] {
             cv.rect(x, y, 1, CARD, FRAME);
