@@ -18,3 +18,21 @@ M31's wiring (`bh2_campaign::bh2_31`): `wake(hq, before, army, chest, wave, scen
 (25,000 and the savings, `war_chest`), the wave. Tests: `bh2_m31_hidden_lines_are_off_the_battlefield` (absent, the turn goes Nell -> player, the reveal),
 `bh2_m31_nell_routed_before_her_hq_falls` (a rout), `bh2_m31_gauntlet_suspend_and_resume` (byte for byte after each reveal), `bh2_m31_progression`,
 `bh2_m31_sleeping_nations_earn_nothing`. Pictures of every wave: `aw2dev campaign playthrough bh2 31 --player bot --god --waves --advance 6` (docs/dev/playthrough.md).
+
+## The Gauntlet mode (its maps)
+
+The Select Mode wheel's GAUNTLET entry (the mode's screens: docs/dev/gauntlet-mode.md) plays maps tied to a fixed line-up of COs, as War Room challenges are: the player picks any one CO and
+fights the map's COs one after another in one battle. Each map is a mission of a small custom campaign, `gauntlet_mode::def()` (campaign source `gauntlet_mode::SOURCE`), so it runs on the
+same engine as M31 (AW2's event engine runs only in campaign mode). It is the gauntlet engine's first use off M31 and outside five-army mode (player army 1).
+
+| Map | Size | The line-up (in order) | Notes |
+|---|---|---|---|
+| `gauntlet_01` Cinder Sea | 32 x 22, four armies | Drake (Green Earth, on the field from the start), Sensei (Yellow Comet, north-west island), Hawke (Black Hole, the volcano island) | Naval and air: every HQ is on an island; the volcano (Hawke's island, from day 3, 3 cells of its ring a day, 3 HP) is the only invention. Each arrival brings a wave and a war chest (Sensei 15,000 + 1,000 a day slept, Hawke 20,000 + 1,500) |
+
+How to add a map:
+1. A spec `tango-gamesupport-aw2/five/gauntlet/spec/gauntlet_NN.py` (`Canvas(..., campaign="gauntlet")`; the later lines' HQ cells stay plain and their zones' properties neutral; header `hidden 3 4 ...`), then
+   `aw2dev maps gen --campaign gauntlet` (writes `five/gauntlet/gauntlet_NN.txt` and `src/gauntlet_map_data.rs`) and `aw2dev maps lint --source gauntlet` (0 errors; the BH2 rules apply).
+2. A mission function in `src/gauntlet_mode.rs` added to `def()`'s missions: armies (army 1 `CoSpec::Pick`, the enemies `Fixed` and on one team), `held_hq` / `held_more` for every line but the last,
+   `sleepers`, `cut_off`, `hidden` (HQ cell and zone), one `arrive(..)` trigger per later line (scene, reveal, war chest, wave), `intro` / `victory`.
+3. Lines: each `Line` is one box (two lines of 176 px: `tools/bh2text/lint.py`'s `px`); the speakers are the map's COs (the player's CO is anyone).
+4. Tests: `cargo test -p tango-gamesupport-aw2 --lib gauntlet` and the harness tests `-k gauntlet`.
