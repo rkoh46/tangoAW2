@@ -1179,6 +1179,9 @@ pub fn sync_ds(core: &mut Core) {
 
 /// A palette the game has loaded already (the Teams screen loads its emblems' on entry) keeps the colours of the ROM it
 /// was loaded from: where the palette buffer or palette RAM holds a bank equal to `before`, `after` goes in its place.
+/// Only the sprite palettes (banks 16..31: the emblems): the background banks hold the windows' colours, which AW2 loads
+/// from Orange Star's row on the Teams screen whatever the armies are (a skin on that colour used to turn the help box
+/// and every window olive there); a battle loads the army's own window row from the patched table.
 fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
     if before.len() != after.len() || before.len() % 32 != 0 || before == after {
         return;
@@ -1187,7 +1190,7 @@ fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
         let mut ram = [0u8; 0x400];
         core.raw_read_range(base, -1, &mut ram);
         for (b, a) in before.chunks(32).zip(after.chunks(32)) {
-            for bank in 0..32usize {
+            for bank in 16..32usize {
                 if ram[bank * 32..bank * 32 + 32] == *b {
                     core.raw_write_range(base + bank as u32 * 32, -1, a);
                 }
@@ -2143,6 +2146,8 @@ fn unit_slot(core: &mut Core) {
 /// fragments. While the page is up the skins' first idle frames are kept in their slots there.
 const CO_PAGE_LOOP: u32 = 0x0804_3591;
 const CHART_SHEET: u32 = 0x0601_2000;
+/// The page the game's CO page is on (0 the bio .. 4 the unit chart).
+const CO_PAGE_NUMBER: u32 = 0x0300_5940;
 
 fn sync_chart_art(core: &mut Core) {
     for i in 0..skins().len() {
@@ -2169,7 +2174,11 @@ pub fn sync_map_art(core: &mut Core) {
         return;
     }
     if core.raw_read_32(0x0300_0000, -1) == CO_PAGE_LOOP {
-        sync_chart_art(core);
+        // (only on the game's own unit chart, page 4: on the other pages the tiles at `CHART_SHEET` + the skins' slots are the CO's big picture, which the
+        // soldiers' frames used to overwrite: stray fragments over her face on an Emerald Sun army's CO page)
+        if core.raw_read_32(CO_PAGE_NUMBER, -1) == 4 {
+            sync_chart_art(core);
+        }
         return;
     }
     const FRAME: u32 = 0x6C * 32;

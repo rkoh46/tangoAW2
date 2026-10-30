@@ -602,6 +602,8 @@ def lint_art(co, root=None, max_specks_large=600, max_specks_small=220):
             limit = max_specks_large if name == "large" else max_specks_small
             if name == "large" and _framing(co).get("max_specks"):
                 limit = int(_framing(co)["max_specks"])      # a picture with a dark ramp keeps its folds' single cells
+            if name != "large" and _framing(co).get("max_face_specks"):
+                limit = int(_framing(co)["max_face_specks"])      # a face at 1x (`mug_scale = 1`) shows the picture's own single cells
             if specks > limit:
                 bad.append(f"{name}: {specks} isolated pixels (at most {limit})")
     bad += lightness_problems(co, pics, pal)
