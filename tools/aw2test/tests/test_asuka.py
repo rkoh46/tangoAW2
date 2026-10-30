@@ -273,7 +273,7 @@ def hp_battle(ctx, which, cos=("asuka", "andy"), **kw):
 
 
 def fire(ctx, g, which, step):
-    """`step`: the HP (internal) every enemy unit loses (0 in Dark Intel, 10 in Event Horizon); hers never change."""
+    """`step`: the HP (internal) every enemy unit loses (10 in Dark Intel, 30 in Event Horizon); hers never change."""
     before_hp = {(u["x"], u["y"]): u["hp"] for u in g.units()}
     before, after = ctx.power(g, 1, which)
     ctx.expect_hp_change(before, after, {1: 0, 2: -step}, f"Asuka's {which}")
@@ -286,28 +286,29 @@ def fire(ctx, g, which, step):
 
 
 @test(modes=("ds",))
-def asuka_cop_black_analysis_heals_one_and_costs_the_enemy_one(ctx):      # (name kept for `co verify`; the CO Power now changes no HP)
-    """CO Power: no HP changes on either side (the units' HP before and after are equal); the meter is spent at the 4-star price (36000, 9000 a star)."""
+def asuka_cop_black_analysis_heals_one_and_costs_the_enemy_one(ctx):      # (name kept for `co verify`; the CO Power costs every enemy unit 1 HP, hers keep theirs)
+    """CO Power: every enemy unit loses 1 HP (10), never below 1 HP: 100 -> 90, 55 -> 45, 5 / 11 / 10 -> 1; hers keep theirs; the meter is spent at the 4-star price (36000, 9000 a star)."""
     g = hp_battle(ctx, "power")
     p = g.player(1)
     ctx.eq(g.charge_power(1, "power"), 4 * 9000, "the CO Power costs 4 stars of 9000")
-    before, after, moved = fire(ctx, g, "power", 0)
-    want = {(x, y): hp for _, x, y, hp in OWN + FOE}
+    before, after, moved = fire(ctx, g, "power", 10)
+    want = {(x, y): hp for _, x, y, hp in OWN}
+    want.update({(11, 10): 90, (6, 4): 45, (20, 12): 1, (21, 12): 1, (22, 14): 1, (24, 6): 90})
     for pos, hp in want.items():
-        ctx.eq(hp_of(g, *pos), hp, f"HP at {pos} after Dark Intel: unchanged (no HP effect)")
+        ctx.eq(hp_of(g, *pos), hp, f"HP at {pos} after Dark Intel")
     ctx.eq(g.player(1)["powers_used"], 1, "one power used (the next costs +20%)")
     ctx.shot(g, "cop_hp")
 
 
 @test(modes=("ds",))
-def asuka_scop_counter_storm_heals_two_and_costs_the_enemy_two(ctx):      # (name kept for `co verify`; the Super Power costs every enemy unit 1 HP)
-    """Super Power: her units keep their HP; every enemy unit loses 1 HP (10): 55 -> 45, 100 -> 90, 5 -> 1, 11 -> 1, 10 -> 1. The price is 8 stars of 9000."""
+def asuka_scop_counter_storm_heals_two_and_costs_the_enemy_two(ctx):      # (name kept for `co verify`; the Super Power costs every enemy unit 3 HP)
+    """Super Power: her units keep their HP; every enemy unit loses 3 HP (30): 55 -> 25, 100 -> 70, 5 -> 1, 11 -> 1, 10 -> 1. The price is 8 stars of 9000."""
     g = hp_battle(ctx, "super")
     ctx.eq(g.charge_power(1, "super"), 8 * 9000, "the Super Power costs 8 stars of 9000")
-    before, after, moved = fire(ctx, g, "super", 10)
-    # hers unchanged, every enemy unit loses 1 HP (10) and never goes below 1 HP
+    before, after, moved = fire(ctx, g, "super", 30)
+    # hers unchanged, every enemy unit loses 3 HP (30) and never goes below 1 HP
     want = {(x, y): hp for _, x, y, hp in OWN}
-    want.update({(11, 10): 90, (6, 4): 45, (20, 12): 1, (21, 12): 1, (22, 14): 1, (24, 6): 90})
+    want.update({(11, 10): 70, (6, 4): 25, (20, 12): 1, (21, 12): 1, (22, 14): 1, (24, 6): 70})
     for pos, hp in want.items():
         ctx.eq(hp_of(g, *pos), hp, f"HP at {pos} after Event Horizon")
     ctx.shot(g, "scop_hp")
@@ -348,7 +349,7 @@ def asuka_powers_last_until_her_next_turn_and_hold_through_the_enemys(ctx):
     ctx.eq(g.player(1)["co_mode"], 0, "and over when her turn comes back")
 
 
-# --- Black Insight: +5% attack and defence ---------------------------------------------------------------------------------------------------
+# --- Black Insight: +10% attack and defence ---------------------------------------------------------------------------------------------------
 
 @test(modes=("ds",))
 def asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the_powers(ctx):
@@ -392,10 +393,10 @@ def asuka_day_to_day_adds_five_percent_attack_and_defence_and_it_stacks_with_the
     m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10)
     g = ctx.start(m, ["andy", "asuka"], humans=(1, 2))
     g.attack((10, 10), (10, 10), (11, 10))
-    ctx.eq(ctx.battle_records(g)[1]["defence"], 110 + damage.ASUKA_DAY_BONUS, "Asuka's Tank on plains defends at 100 + 10 (one star) + her day-to-day bonus (5; Andy's would be 110)")
+    ctx.eq(ctx.battle_records(g)[1]["defence"], 110 + damage.ASUKA_DAY_BONUS, "Asuka's Tank on plains defends at 100 + 10 (one star) + her day-to-day bonus (10; Andy's would be 110)")
 
 
-# --- Dark Intel / Event Horizon: the enemy's ammo and fuel are halved ------------------------------------------------------------------------
+# --- Dark Intel / Event Horizon: the enemy's ammo and fuel each lose a quarter ------------------------------------------------------------------------
 
 AF_KINDS = ["tank", "infantry", "bcopter", "fighter", "artillery", "mech", "recon", "apc", "battleship", "tank", "tank", "tank"]
 AF_FUEL = [99, 70, 45, 23, 22, 21, 9, 3, 1, 2, 5, 4]
@@ -423,22 +424,22 @@ def af_state(g, y):
 
 
 @test(modes=("ds",))
-def asuka_powers_halve_the_enemys_ammo_and_fuel_rounded_down(ctx):
-    """Both powers: every enemy unit's fuel and ammo is halved, rounded down (AW2's own rounding of Drake's fuel flag: 99 -> 49, 21 -> 10, 1 -> 0; the ammo the same: 9 -> 4, 3 -> 1, 1 -> 0, and 0
+def asuka_powers_cut_the_enemys_ammo_and_fuel_by_a_quarter(ctx):
+    """Both powers: every enemy unit loses a quarter of its fuel and ammo, what is left rounded down (3/4: 99 -> 74, 21 -> 15, 1 -> 0; ammo 9 -> 6, 3 -> 2, 1 -> 0; the owner chose a quarter over half), and 0
     stays 0 so Infantry, Recon and APC, which have no ammo stat, are unaffected); her own units keep both."""
     for which in ("power", "super"):
         g = af_game(ctx)
         before_enemy, before_own = af_state(g, 10), af_state(g, 3)
         ctx.eq(before_enemy, list(zip(AF_FUEL, AF_AMMO)), "the setup is on the units")
         ctx.power(g, 1, which)
-        ctx.eq(af_state(g, 10), [(f // 2, a // 2) for f, a in zip(AF_FUEL, AF_AMMO)], f"{which}: the enemy's fuel and ammo, halved and rounded down")
+        ctx.eq(af_state(g, 10), [(f * 3 // 4, a * 3 // 4) for f, a in zip(AF_FUEL, AF_AMMO)], f"{which}: the enemy's fuel and ammo, three quarters kept, rounded down")
         ctx.eq(af_state(g, 3), before_own, f"{which}: her own units' fuel and ammo are untouched")
-        ctx.shot(g, f"halve_{which}")
+        ctx.shot(g, f"quarter_{which}")
 
 
 @test(modes=("ds",))
-def asuka_fuel_and_ammo_halving_with_a_unit_in_a_transport_and_none_for_an_ally(ctx):
-    """A unit of Asuka's own team (an ally in a team game) is not halved, only the other teams' units are; the HP effect and the halving agree on who is an enemy."""
+def asuka_fuel_and_ammo_cut_with_a_unit_in_a_transport_and_none_for_an_ally(ctx):
+    """A unit of Asuka's own team (an ally in a team game) is not cut, only the other teams' units are; the HP effect and the cut agree on who is an enemy."""
     m = ctx.map()
     m.unit(1, "tank", 10, 10).unit(2, "tank", 12, 10).unit(3, "tank", 14, 10)
     g = ctx.start(m, ["asuka", "andy", "max"])
@@ -447,7 +448,7 @@ def asuka_fuel_and_ammo_halving_with_a_unit_in_a_transport_and_none_for_an_ally(
         a = g.unit_addr(g.unit_at(x, 10)["id"])
         g.e.w8(a + 6, (g.e.u8(a + 6) & 0x80) | 60)
     ctx.power(g, 1, "power")
-    ctx.eq([g.unit_at(x, 10)["fuel"] for x in (12, 14)], [30, 30], "both armies of the other teams are halved")
+    ctx.eq([g.unit_at(x, 10)["fuel"] for x in (12, 14)], [45, 45], "both armies of the other teams lose a quarter (60 -> 45)")
 
 
 # --- Counter Break: her units strike first -------------------------------------------------------------------------------------------------
@@ -577,9 +578,9 @@ def run_tag_power(ctx, partner, label, partner_step):
     g.wait_for_input()
     mid = {(u["x"], u["y"]): u["hp"] for u in g.units()}
     ctx.eq(mid[(3, 3)], 45, f"{label}: Event Horizon leaves her Infantry at 45 (no healing)")
-    ctx.eq(mid[(25, 14)], 45, f"{label}: and costs the enemy Infantry 55 -> 45")
+    ctx.eq(mid[(25, 14)], 25, f"{label}: and costs the enemy Infantry 55 -> 25 (3 HP)")
     ctx.eq(mid[(10, 10)], 100, f"{label}: Tank stays at 100")
-    ctx.eq(mid[(11, 10)], 90, f"{label}: enemy Tank 100 -> 90")
+    ctx.eq(mid[(11, 10)], 70, f"{label}: enemy Tank 100 -> 70")
     ctx.eq(ctx.tag_firepower(g, 1, ASUKA), tag.compatibility(romlib.DualStrike(), ASUKA, romlib.co_id(partner)) - 100, f"{label}: tag firepower in the first half")
     ctx.shot(g, f"tag_{partner}_first_half")
     g.open_map_menu()
@@ -600,11 +601,11 @@ def asuka_tag_power_with_von_bolt(ctx):
 
 @test(modes=("ds",))
 def asuka_tag_power_with_hawke(ctx):
-    """Black Eclipse (Asuka + Hawke, 120): Event Horizon (enemy -10) and then Hawke's Black Storm (+20 / -20): the totals are +20 for hers and -30 for the enemy's over the two halves, capped at 100 and floored at 1."""
+    """Black Eclipse (Asuka + Hawke, 120): Event Horizon (enemy -30) and then Hawke's Black Storm (+20 / -20): the totals are +20 for hers and -50 for the enemy's over the two halves, capped at 100 and floored at 1."""
     before, mid, after = run_tag_power(ctx, "hawke", "Black Eclipse", 20)
     ctx.eq(after[(3, 3)], 65, "Infantry 45 -> 45 -> 65")
-    ctx.eq(after[(25, 14)], 25, "enemy Infantry 55 -> 45 -> 25")
-    ctx.eq(after[(11, 10)], 70, "enemy Tank 100 -> 90 -> 70")
+    ctx.eq(after[(25, 14)], 5, "enemy Infantry 55 -> 25 -> 5")
+    ctx.eq(after[(11, 10)], 50, "enemy Tank 100 -> 70 -> 50")
     ctx.eq(after[(10, 10)], 100, "Tank 100 stays")
 
 

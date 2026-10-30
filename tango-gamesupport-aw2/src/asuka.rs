@@ -5,24 +5,24 @@
 //! - **Sonja's Dual Strike block** ([`SONJA_DS`], `co_roster::ds_co`): vision +1 / +2 / +2 in fog, her HP hidden from the enemy (Dual Strike's skill 0x01; the sees-into-hiding-places skill 0x08
 //!   in her powers), the enemy's terrain stars cut by 1 / 2 / 3, the power meter's usual +10% firepower in a power. Sonja's strike-first skill (0x04, Super Power) is masked off in her row.
 //!   Her **luck is Nell's** (maximum roll 20 in every level, no bad luck: the user's choice, replacing Sonja's quirk).
-//! - **No movement trait** any more (the Sturm's-movement charts were dropped with the simplification); her day to day is **+5% attack and defence** again ([`DAY_BONUS`] 5, in every power too).
+//! - **No movement trait** any more (the Sturm's-movement charts were dropped with the simplification); her day to day is **+10% attack and defence** again ([`DAY_BONUS`] 5, in every power too).
 //! - **Hawke's mass-HP procedure** (`sub_08044D70`, called by her own two power functions in `co_powers::asuka_fn`) is now only the carrier of the halving and one HP: Dark Intel ([`HP_ENEMY`] 0, [`HP_OWN`] 0)
-//!   changes no HP, Event Horizon makes every enemy unit lose 1 HP (never below 1); the sparkle and the cut-in are Hawke's (his presentation row is her template, [`LIKE`]).
+//!   changes no HP, Event Horizon makes every enemy unit lose 3 HP (never below 1); the sparkle and the cut-in are Hawke's (his presentation row is her template, [`LIKE`]).
 //! - **Rain until her next turn**: both powers set AW2's own rain (the weather argument of the mass procedure is 2, as Drake's Typhoon's), which Dual Strike's rules give fog of war ([`crate::ds_weather`]). It lasts
 //!   as Drake's does: AW2 ends a weather when every army has ended a turn since it began, so the rain (and the fog it forced) starts when she fires, lasts through the opponents' turn(s) and is gone when her next turn
 //!   begins, for any number of armies. The weather and the fog flag go back to what they were (a fog-on battle keeps its fog). Vision follows AW2's rain (-1) plus her bonus.
-//! - **Drake's halving, extended**: the same procedure's fuel flag (Drake's Tsunami and Typhoon) halves every enemy unit's fuel, rounded down, and `co_powers::mass_unit` halves every enemy unit's
+//! - **Drake's cut, extended** (a quarter since 2026-10-30; the procedure's fuel flag is off): `co_powers::mass_unit` takes a quarter of every enemy unit's fuel and
 //!   ammo the same way (a unit with no ammo stat has 0 and is unaffected). Not Drake's rain.
 //! - **Sonja's art** (the project owner's decision): her presentation row's pictures, palette, expressions and HUD face are AW2's Sonja row; only her name graphic is hers. Her HQ is Black Hole's
 //!   (her row's property style, as Hawke's and Lash's: the HQ follows the CO, not the colour slot).
 //!
 //! | | Day to day, Black Insight | CO Power, Dark Intel (4 stars) | Super Power, Event Horizon (8 stars in all) |
 //! |---|---|---|---|
-//! | Attack / defence | +5% / +5% | +5% / +5% (and the power's own +10% / +10%) | the same |
+//! | Attack / defence | +10% / +10% | +10% / +10% (and the power's own +10% / +10%) | the same |
 //! | Vision | +1 | +3 (+2 net in her rain), sees into woods and reefs | +3 (+2 net in her rain), sees into hiding places |
 //! | Terrain stars the enemy loses | 1 | 2 | 3 |
-//! | HP | hidden from the enemy | none | every enemy unit loses 1 HP |
-//! | Enemy ammo and fuel | | halved | halved |
+//! | HP | hidden from the enemy | every enemy unit loses 1 HP | every enemy unit loses 3 HP |
+//! | Enemy ammo and fuel | | a quarter lost (3/4 kept, rounded down) | the same |
 //! | Weather | | rain with fog until her next turn | the same |
 //! | Luck | 0..19% (Nell's) | same | same |
 //! | Firepower | 0 | +10% (every power) | +10% |
@@ -40,10 +40,10 @@ pub const STARS: (u32, u32) = (4, 8);
 /// Nell's day-to-day maximum luck roll (AW2's table: 20; her powers raise it to 60 and 100, Asuka's keep 20), no bad luck.
 pub const LUCK: i16 = 20;
 /// Her day to day: all her units attack and defend this much better (percent), in every power too. 5 (the owner confirmed it; set 0 to switch it off).
-pub const DAY_BONUS: i32 = 5;
+pub const DAY_BONUS: i32 = 10;
 /// Her powers' HP effect on her own units and on the enemy's, by power level (none in Dark Intel, 1 off every enemy unit in Event Horizon).
 pub const HP_OWN: [u8; 3] = [0, 0, 0];
-pub const HP_ENEMY: [u8; 3] = [0, 0, 1];
+pub const HP_ENEMY: [u8; 3] = [0, 1, 3];
 /// Her vision bonus by power level (day to day, Dark Intel, Event Horizon): Sonja's block gives +1 / +2 / +2; her powers get one more, since the rain they bring takes 1 off (the owner: the rain nullified it).
 pub const VISION: [i16; 3] = [1, 3, 3];
 /// AW2 ability bit "strikes first when attacked" (Sonja's Super Power has it; Event Horizon does not).
@@ -61,8 +61,8 @@ mod tests {
     #[test]
     fn she_is_sonjas_numbers_without_the_extras() {
         assert_eq!(STARS, (4, 8), "the normal cost");
-        assert_eq!(DAY_BONUS, 5, "the +5% is on");
-        assert_eq!((HP_OWN, HP_ENEMY), ([0, 0, 0], [0, 0, 1]));
+        assert_eq!(DAY_BONUS, 10, "the +10% is on (the owner raised it from 5 on 2026-10-30)");
+        assert_eq!((HP_OWN, HP_ENEMY), ([0, 0, 0], [0, 1, 3]));
         assert_eq!(ASUKA, 92);
         assert!((ASUKA as u32) < crate::co_roster::ROOM);
         assert_eq!(crate::co_roster::ds_co(ASUKA), Some(SONJA_DS));

@@ -230,7 +230,7 @@ pub fn stat(co: u8, mode: u8, t: u8, field: usize) -> Option<i32> {
         v += POWER_FIREPOWER;
     }
     if co == crate::co_new::ASUKA && matches!(field, FIREPOWER | DEFENCE) {
-        // her day to day's +5% attack and +5% defence (`asuka::DAY_BONUS`, 0 for now: the one-line toggle), on top of every power's numbers
+        // her day to day's +10% attack and +10% defence (`asuka::DAY_BONUS`, 0 for now: the one-line toggle), on top of every power's numbers
         v += crate::asuka::DAY_BONUS;
     }
     Some(v)

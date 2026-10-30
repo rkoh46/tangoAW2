@@ -122,10 +122,10 @@ CO select grid (Versus' grid no longer draws black cells for Emerald Sun COs the
 | Vision in fog | +1 | +3 (+2 net in her rain), sees into woods and reefs | +3 (+2 net in her rain), sees into hiding places |
 | Enemy terrain stars lost | 1 | 2 | 3 |
 | Hit points | hidden from the enemy | no change | every enemy unit loses 1 HP (never below 1) |
-| Enemy ammo and fuel | | halved, rounded down | halved, rounded down |
+| Enemy ammo and fuel | | a quarter lost (3/4 kept, rounded down) | the same |
 | Luck | 0..19% (Nell's), no bad luck | same | same |
 | Weather | | rain with fog of war until her next turn | the same |
-| Attack / defence | +5% / +5% (`asuka::DAY_BONUS`, a one-line toggle) | +10% firepower, +10% defence (every power) | the same |
+| Attack / defence | +10% / +10% (`asuka::DAY_BONUS`, a one-line toggle) | +10% firepower, +10% defence (every power) | the same |
 - **Removed in the simplification** (before: 3 / 9 stars, Eagle's meter): Sturm's movement (her movement charts are Andy's now), the +5% attack and defence were taken out and **put back by the owner** (`DAY_BONUS` 5; set 0 to switch it off; `damage.ASUKA_DAY_BONUS` in the harness mirrors it), the HP swing of Hawke's Black Wave / Black Storm (her units +1 / +2 HP, the enemy's -1 / -2), and Counter Break (her units strike first when attacked: Sonja's
   strike-first skill 0x04 is masked off her Super Power's row, `co_roster::build`). Kept: Sonja's vision, hidden HP and terrain cut, **Nell's luck**, the halving of ammo and fuel.
 - **Sonja's numbers** are her Dual Strike block (`co_roster::ds_co(92) = 8`): vision, skills 0x01 / 0x09, the enemy's terrain cut. `aw2dev co verify sonja` proves Sonja herself is untouched.
@@ -177,3 +177,8 @@ refresh it with `aw2dev gfx golden` when this line is merged).
 Her kit was cut down at the owner's request: no Sturm's movement, no +5% / +5% (a toggle), no HP swing (Dark Intel none, Event Horizon -1 HP on every enemy unit), no strike-first, 4 / 8 stars; vision, hidden HP, the terrain cut, Nell's luck
 and the halving stay. Tests: `tools/aw2test/tests/test_asuka.py` (the row's stars 4 / 8 and skills 0x01 / 0x09 / 0x09, exact HP before and after in both powers, the meter's 36000 / 72000, no movement trait, the plain strike order, the
 tag powers' halves) and `co verify sonja`.
+
+
+**2026-10-30 (the owner):** her day to day rose to +10% attack and defence (`asuka::DAY_BONUS` 10, from 5) and Event Horizon now takes 3 HP from every enemy unit (`asuka::HP_ENEMY` [0, 0, 3], from 1; never below 1 HP); her powers give vision +3 (their rain takes 1 off). The CO page says "enemy terrain defense" (was "enemy cover").
+Both powers now take a quarter of every enemy unit's ammo and fuel (3/4 kept, rounded down: ammo 9 -> 6, fuel 99 -> 74), not half: Drake's fuel flag is off in her power functions and `co_powers::mass_unit` does both cuts.
+Dark Intel now takes 1 HP from every enemy unit (`asuka::HP_ENEMY` [0, 1, 3]; never below 1 HP).

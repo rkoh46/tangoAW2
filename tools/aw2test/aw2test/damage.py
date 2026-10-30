@@ -78,7 +78,7 @@ def aria_bonus(mode, which):
 ARIA_FLAT = 8       # crate::aria::FLAT: every unit of hers (not an Oozium) +8% firepower and defence
 
 
-ASUKA_DAY_BONUS = 5      # crate::asuka::DAY_BONUS
+ASUKA_DAY_BONUS = 10      # crate::asuka::DAY_BONUS
 CLONE_ANDY = 81
 
 

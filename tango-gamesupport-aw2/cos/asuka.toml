@@ -17,32 +17,33 @@ stars = { cop = 4, scop = 8 }                 # the normal cost (Kanbei 4 / 7, H
 
 [d2d]
 name = "Black Insight"
-text = "Firepower and defense rise by 5%, and vision by 1. Her HP is hidden, enemy cover drops 1 star, and luck is good."
-# (the +5% / +5%: crate::asuka::DAY_BONUS, one line to switch it off)
-mods = [ { units = "all", attack = 5, defence = 5 } ]
+text = "Firepower and defense rise 10%, and vision rises 1. Her HP is hidden, enemy terrain defense drops 1 star, and her luck is good."
+# (the +10% / +10%: crate::asuka::DAY_BONUS, one line to switch it off)
+mods = [ { units = "all", attack = 10, defence = 10 } ]
 vision = 1
 hidden_hp = true
 terrain_cut = 1
 
 [cop]
 name = "Dark Intel"
-text = "Rain falls until her next turn. Vision +3, sees into woods and reefs. Enemy cover -2 stars; ammo and fuel halve."
+text = "Rain until her next turn. Vision +3, sees in woods and reefs. Enemies: -1 HP, -2 terrain stars, -1/4 ammo and fuel."
 mods = []
-halve_enemy_ammo_fuel = true
+halve_enemy_ammo_fuel = true          # (a quarter since 2026-10-30, not half: co_powers::mass_unit; the kit's yardstick reads it as the cut)
 rain_until_next_turn = true          # AW2's rain (fog of war) from the power until her next turn, then the weather returns
 vision = 3
 terrain_cut = 2
+hp_enemy = 1
 quote = ["I have read your", "every move. Observe."]
 
 [scop]
 name = "Event Horizon"
-text = "As Dark Intel, but enemy cover drops 3 stars and all enemy units suffer 1 HP of damage."
+text = "As Dark Intel, but enemy terrain defense drops 3 stars, and all enemy units lose 3 HP."
 mods = []
 halve_enemy_ammo_fuel = true
 rain_until_next_turn = true
 vision = 3
 terrain_cut = 3
-hp_enemy = 1
+hp_enemy = 3
 quote = ["Event Horizon. Nothing", "escapes it. Not even you."]
 
 [lines]

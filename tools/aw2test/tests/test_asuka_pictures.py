@@ -283,7 +283,7 @@ def asuka_pics_hq_follows_the_co(ctx):
 
 @test(modes=("ds",))
 def asuka_pics_ammo_and_fuel(ctx):
-    """The unit panel (cursor on an enemy Tank and on an enemy Battleship) before and after Dark Intel and Event Horizon: fuel 70 -> 35 and ammo 9 -> 4 on the Tank, fuel 99 -> 49 on the Battleship."""
+    """The unit panel (cursor on an enemy Tank and on an enemy Battleship) before and after Dark Intel and Event Horizon: fuel 70 -> 52 and ammo 9 -> 6 on the Tank, fuel 99 -> 74 on the Battleship (a quarter lost)."""
     for which, tag_ in (("power", "cop"), ("super", "scop")):
         m = ctx.map()
         m.unit(1, "tank", 4, 4).unit(2, "tank", 12, 10).unit(2, "infantry", 14, 10)
@@ -300,4 +300,4 @@ def asuka_pics_ammo_and_fuel(ctx):
         g.e.wait(40)
         ctx.shot(g, f"af_{tag_}_after")
         u = g.unit_at(12, 10)
-        ctx.eq((u["fuel"], u["ammo"]), (35, 4), f"{which}: the enemy Tank's fuel 70 -> 35 and ammo 9 -> 4")
+        ctx.eq((u["fuel"], u["ammo"]), (52, 6), f"{which}: the enemy Tank's fuel 70 -> 52 and ammo 9 -> 6")
