@@ -1,0 +1,53 @@
+# Review pictures of the online army page (2 seats, with the pack): every field selected on some seat, a partner chosen, teams, READY, the 'pick two teams' note. Run: aw2_room_teams <rom> <out> this-file (TANGOAW2_DS_ROM set)
+# 2 seats pick a map at the same time, each in private on a SELECT MAP of its own (every window shotall at each step: seat k's frames show its own list, the others only the status plate), the draw, the chosen map and the Teams screen. Run: aw2_room_teams <rom> <out> this-file
+n 2
+until maparmies=2 100
+wait 60
+shotall priv_a
+press 0 DOWN
+press 1 RIGHT
+wait 6
+press 0 DOWN
+press 1 DOWN
+wait 6
+press 0 DOWN
+wait 6
+wait 6
+wait 6
+wait 6
+wait 20
+shotall priv_b
+press 0 A
+wait 40
+shotall priv_c
+shotall priv_d
+press 1 A
+wait 2
+shotall chosen
+until teams 600
+wait 40
+shotall a_start
+press 0 RIGHT
+wait 4
+press 0 RIGHT
+wait 4
+press 1 DOWN
+wait 4
+press 1 RIGHT
+wait 4
+press 0 DOWN
+wait 4
+press 0 DOWN
+wait 4
+press 0 RIGHT
+wait 4
+press 0 RIGHT
+wait 4
+wait 20
+shotall b_fields
+press 0 A
+wait 4
+wait 20
+shotall c_ready
+press 1 B
+wait 4

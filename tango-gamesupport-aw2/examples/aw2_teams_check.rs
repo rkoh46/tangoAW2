@@ -5,7 +5,7 @@
 //! army 2 and presses L, then starts the battle and prints each army's
 //! colour.
 //!
-//! Usage: aw2_teams_check <rom> <out-dir>
+//! Usage: [AW2_TEAMS_TABS=k] aw2_teams_check <rom> <out-dir>
 
 use tango_match::{HostInput, Link};
 
@@ -68,8 +68,16 @@ fn main() {
         press(&mut link, DOWN);
         wait(&mut link, 60);
     }
-    for _ in 0..3 {
-        press(&mut link, A); // Versus, New, Bean Island
+    // AW2_TEAMS_TABS=k: the map list's tab k to the right of 2P (3P, 4P, 5P Predeploy...): a Teams screen of more armies
+    let tabs: u32 = std::env::var("AW2_TEAMS_TABS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    for i in 0..3 {
+        if i == 2 {
+            for _ in 0..tabs {
+                press(&mut link, RIGHT);
+                wait(&mut link, 30);
+            }
+        }
+        press(&mut link, A); // Versus, New, Bean Island (or the first map of the tab)
         wait(&mut link, 150);
     }
     let shot = |link: &mut tango_backend_mgba::SharedLink, name: &str| {
