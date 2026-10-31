@@ -25,33 +25,34 @@ MAP_TAB = 0x0300596C
 TAB_5P = 9
 KEY_ARMY_COLOURS = {1: "Orange Star", 2: "Blue Moon", 3: "Green Earth", 4: "Yellow Comet", 5: "Black Hole"}
 
-CARD_Y = 66   # ds_coselect::CARD_Y
-TAB_Y = 32    # ds_coselect::TAB_Y
+CARD_Y = 36   # army_cards::CARD_Y (the offline Teams screen draws AW2-style cards over the game's own screen)
+CARD = 48     # army_cards::CARD
+EMBLEM_AT = (3, 30)   # our card's emblem (13 x 13 pixels) in the card's lower left corner
+OWN_EMBLEM_AT = (2, 33)   # the game's own card's emblem: 1 pixel left and 3 lower (the picture of army_cards has its own offset)
 
 
 def card_x(n, i):
-    gap = 8 if n <= 4 else 0
-    total = 48 * n + gap * (n - 1)
-    return (240 - total) // 2 + i * (48 + gap)
-
-
-def reference(ctx):
-    """The preview's pictures, drawn from the .nds alone."""
-    out = os.path.join(ctx.out, "ref")
-    os.makedirs(out, exist_ok=True)
-    env = dict(os.environ, TANGOAW2_DS_ROM=paths.ds_rom())
-    subprocess.run([paths.runner("ds_coselect_preview"), out], env=env, check=True, capture_output=True)
-    return out
+    """A card's left edge (army_cards::layout: the first card's left edge and the pitch by the number of cards)."""
+    first, pitch = {2: (46, 96), 3: (22, 72), 4: (8, 58)}.get(n, (0, 48))
+    return first + pitch * i
 
 
 def emblem(rows, n, i):
-    """An army card's emblem (the header's middle two tiles: 16 x 16)."""
-    return shots.crop(rows, card_x(n, i) + 16, CARD_Y, 16, 16)
+    """An army card's emblem (13 x 13 at the card's lower left corner)."""
+    return shots.crop(rows, card_x(n, i) + EMBLEM_AT[0], CARD_Y + EMBLEM_AT[1], 13, 13)
 
 
 def ref_emblems(ctx):
-    rows = shots.read_ppm(os.path.join(reference(ctx), "versus5_plain.ppm"))
-    return [emblem(rows, 5, k) for k in range(5)]
+    """Each army colour's emblem as the game's own Teams screen draws it (`AW2_TEAMS_OWN=1` leaves the game's picture, the
+    cards ours would replace): five armies, the colours 1..5 in order, so the cards of five are the five emblems."""
+    e = Emu(save=paths.base_save(), ds=True, env=dict(BYTE_DRIVEN, AW2_TEAMS_OWN="1"))
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    to_five_army_teams(ctx, g)
+    colours = list(e.read(ram.TEAMS_FIVE + 0x98, 5))
+    ctx.eq(colours, [1, 2, 3, 4, 5], "the reference's armies' colours")
+    rows = shot(ctx, e, "own_teams5")
+    return [shots.crop(rows, 48 * k + OWN_EMBLEM_AT[0], CARD_Y + OWN_EMBLEM_AT[1], 13, 13) for k in range(5)]
 
 
 def shot(ctx, e, name):
@@ -89,16 +90,12 @@ def differs(a, b, need=0.2):
     return n >= need * 240 * 160
 
 
-def blue_title_pixels(rows):
-    """The title's glyphs are Dual Strike's blue gradient (no red, a lot of blue) in the top rows."""
-    return sum(1 for r in rows[:32] for (R, G, B) in r if B > 180 and R < 90 and G < 140)
-
-
 @test(modes=("ds",))
 def ds_coselect_versus_two_armies(ctx):
-    """The Teams screen with two armies: the title, a card for each army with its emblem (the army's colour as the Teams
-    record has it: pixel for pixel Dual Strike's), the tab above it (P1, CPU), and the portraits; the setting off leaves
-    AW2's own screen."""
+    """The Teams screen with two armies, offline with the pack: a card for each army (the CO's portrait, the army's emblem
+    in its lower left corner: pixel for pixel the game's own emblem for the army's colour in the Teams record) and a window
+    under it, drawn over AW2's own screen; R and L change the colour and the card follows. The cards come with the pack,
+    whatever the Dual Strike map graphics setting is (it only chooses the arrows)."""
     g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
     e = g.e
     e.w8(DS_GRAPHICS, 0)
@@ -109,12 +106,11 @@ def ds_coselect_versus_two_armies(ctx):
         e.press("RIGHT", 6)
         e.wait(30)
     on = shot(ctx, e, "versus2_on")
-    ctx.check(differs(off, on), "the screen is Dual Strike's with the setting on")
-    ctx.check(blue_title_pixels(on) > 400 > blue_title_pixels(off), "NORMAL BATTLE's blue title is on it (and not on AW2's)")
     refs = ref_emblems(ctx)
     colours = list(e.read(ram.TEAMS + ram.T_COLOURS, 2))
     for i, c in enumerate(colours):
         ctx.eq(shots.diff_count(emblem(on, 2, i), refs[c - 1], tol=2), 0, f"army {i + 1}'s emblem is {KEY_ARMY_COLOURS[c]}'s")
+        ctx.eq(shots.diff_count(emblem(off, 2, i), refs[c - 1], tol=2), 0, f"army {i + 1}'s emblem is {KEY_ARMY_COLOURS[c]}'s with the setting off")
     # R and L change an army's colour: its card follows, every country's emblem in turn (Blue Moon is the other army's).
     # (one press in a cycle puts the army's skin on, which draws the skin's own emblem: army_skin::teams_step)
     seen = set()
@@ -125,21 +121,23 @@ def ds_coselect_versus_two_armies(ctx):
         c = e.u8(ram.TEAMS + ram.T_COLOURS)
         seen.add(c)
         rows = shot(ctx, e, f"versus2_colour{c}")
-        if not (prev == 5 and c == 1):   # (after Black Hole comes the skin, on the first free colour)
+        skin = prev == 5 and c == 1
+        if not skin:   # (after Black Hole comes the skin, on the first free colour)
             ctx.eq(shots.diff_count(emblem(rows, 2, 0), refs[c - 1], tol=2), 0, f"army 1 as {KEY_ARMY_COLOURS[c]}: its emblem")
         prev = c
     ctx.eq(sorted(seen), [1, 3, 4, 5], "R went through the countries the other army has not, Black Hole included")
-    # With the setting off again the console runs on as before.
+    # With the setting off again the cards stay (and the game runs on as before).
     e.w8(DS_GRAPHICS, 0)
     e.wait(10)
     again = shot(ctx, e, "versus2_off_again")
-    ctx.check(differs(again, on, 0.2), "with the setting off the Dual Strike screen is gone")
+    if not skin:
+        ctx.eq(shots.diff_count(emblem(again, 2, 0), refs[prev - 1], tol=2), 0, f"with the setting off again army 1 is still {KEY_ARMY_COLOURS[prev]}'s card")
 
 
 @test(modes=("ds",))
 def ds_coselect_versus_five_armies(ctx):
     """Five armies: five cards of 48 pixels fill the screen's 240, each its army's emblem (Black Hole the fifth: its grey
-    box), the tabs above them."""
+    box), the windows under them."""
     e = Emu(save=paths.base_save(), ds=True, env=BYTE_DRIVEN)
     g = Game(e, ctx.image)
     ctx.games.append(g)
@@ -158,12 +156,16 @@ def ds_coselect_versus_five_armies(ctx):
     ctx.eq(colours, [1, 2, 3, 4, 5], "the five armies' colours: Black Hole the fifth")
     for i, c in enumerate(colours):
         ctx.eq(shots.diff_count(emblem(on, 5, i), refs[c - 1], tol=2), 0, f"army {i + 1}: {KEY_ARMY_COLOURS[c]}'s emblem")
+    ctx.check(len({str(emblem(on, 5, i)) for i in range(5)}) == 5, "each army's card has its own emblem")
     ctx.eq(card_x(5, 0), 0, "the first card starts at the screen's left edge")
-    ctx.eq(card_x(5, 4) + 48, 240, "the fifth ends at its right edge")
-    # (the cards' foot lines, one army's colour each, run edge to edge)
-    foot = on[CARD_Y + 64 + 3]
-    ctx.check(len({tuple(p) for p in foot[:48]}) == 1 and len({tuple(p) for p in foot[192:240]}) == 1, "the first and fifth cards' foot lines are whole")
-    ctx.check(foot[0] != foot[200], "each army's card has its own colour")
+    ctx.eq(card_x(5, 4) + CARD, 240, "the fifth ends at its right edge")
+    # (the cards' green frames run edge to edge: the first card's left side, the fifth's right side, and the foot of each card
+    # are whole lines, no card cut short or covered by its window)
+    frame = (0, 41, 0)
+    foot = on[CARD_Y + CARD - 1]
+    ctx.check(all(on[y][0] == frame for y in range(CARD_Y, CARD_Y + CARD)), "the first card's left frame is whole")
+    ctx.check(all(on[y][239] == frame for y in range(CARD_Y, CARD_Y + CARD)), "the fifth card's right frame is whole")
+    ctx.check(all(p == frame for p in foot[:CARD]) and all(p == frame for p in foot[192:240]), "the first and fifth cards' foot lines are whole")
 
 
 def pick_partners(ctx, on):
