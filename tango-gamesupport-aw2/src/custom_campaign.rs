@@ -950,6 +950,10 @@ pub struct StageDef {
     pub funds: Option<i32>,
     /// The most funds carried over (None: all of them).
     pub funds_cap: Option<u32>,
+    /// A skin an army of the stage wears: (army 1-based, skin index in [`crate::army_skin`]); None: no skin (the mission's is for the first stage).
+    pub skin: Option<(u8, usize)>,
+    /// HQs of the stage held in the gauntlet's way: a capture defeats nobody (the stage's Win trigger ends the battle, its last line spoken with its army standing).
+    pub held: Vec<(u8, u8)>,
 }
 
 impl StageDef {
@@ -970,6 +974,8 @@ impl StageDef {
             carry: Carry::All,
             funds: None,
             funds_cap: None,
+            skin: None,
+            held: Vec::new(),
         }
     }
 }
@@ -1784,6 +1790,8 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
                 carry: st.carry.clone(),
                 funds: st.funds,
                 funds_cap: st.funds_cap,
+                skin: st.skin,
+                held: st.held.clone(),
             });
             records.push(MissionRecord::Stage(i, k, st));
         }

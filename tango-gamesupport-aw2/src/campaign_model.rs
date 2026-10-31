@@ -124,6 +124,10 @@ pub struct StageRuntime {
     pub carry: crate::custom_campaign::Carry,
     pub funds: Option<i32>,
     pub funds_cap: Option<u32>,
+    /// A skin an army of the stage wears (as [`crate::custom_campaign::MissionDef::skin`]; the mission's own skin is for stage 0 only).
+    pub skin: Option<(u8, usize)>,
+    /// HQs of the stage whose capture defeats nobody (the stage's last line says its words with its army still standing: [`crate::custom_campaign::StageDef::held`]).
+    pub held: Vec<(u8, u8)>,
 }
 
 /// The Black Onyx turned round: Black Hole's own satellite on a day cycle

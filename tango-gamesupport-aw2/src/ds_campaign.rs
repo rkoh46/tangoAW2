@@ -202,7 +202,7 @@ pub fn volcano_spec(core: &Core) -> Option<crate::campaign_model::VolcanoDef> {
 
 /// The mission's held HQ: capturing it does not defeat its army (a custom campaign's).
 pub fn held_hq(core: &Core) -> Option<(u8, u8)> {
-    if !active(core) || is_ds(core) || !in_battle(core) {
+    if !active(core) || is_ds(core) || !in_battle(core) || crate::stage::stage(core) > 0 {
         return None;
     }
     let c = campaign(core)?;
@@ -220,14 +220,12 @@ pub fn mission_skin(core: &Core) -> Option<(u8, usize)> {
     if !active(core) || is_ds(core) || !in_battle(core) {
         return None;
     }
-    campaign(core)?
-        .model
-        .custom
-        .as_ref()?
-        .skin_army
-        .get(mission(core) as usize)
-        .copied()
-        .flatten()
+    let custom = campaign(core)?.model.custom.as_ref()?;
+    let m = mission(core) as usize;
+    match crate::stage::stage(core) as usize {
+        0 => custom.skin_army.get(m).copied().flatten(),
+        k => custom.stages.get(m)?.get(k - 1)?.skin,
+    }
 }
 
 /// Whether (x, y) is one of the mission's held HQs (the first, or one of the gauntlet's further stage HQs).
@@ -235,8 +233,14 @@ pub fn is_held_hq(core: &Core, x: u8, y: u8) -> bool {
     if held_hq(core) == Some((x, y)) {
         return true;
     }
-    if !active(core) || is_ds(core) || !in_battle(core) || crate::stage::stage(core) > 0 {
+    if !active(core) || is_ds(core) || !in_battle(core) {
         return false;
+    }
+    let k = crate::stage::stage(core) as usize;
+    if k > 0 {
+        return campaign(core)
+            .and_then(|c| c.model.custom.as_ref().and_then(|x| x.stages.get(mission(core) as usize)?.get(k - 1).map(|s| s.held.contains(&(x, y)))))
+            .unwrap_or(false);
     }
     campaign(core)
         .and_then(|c| c.model.custom.as_ref().and_then(|m| m.held_more.get(mission(core) as usize).map(|v| v.contains(&(x, y)))))
