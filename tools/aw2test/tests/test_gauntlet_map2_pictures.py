@@ -6,6 +6,7 @@ import os
 import textwrap
 
 from aw2test import gauntlet as ga
+from aw2test import dscampaign as dc
 from aw2test import stitch
 from aw2test.emu import Emu
 from aw2test.game import Game
@@ -74,22 +75,28 @@ def battle_scene(ctx, e, g, d, me=1, them=2, tag="battle"):
     from PIL import Image
     g._units_base = g._players_base = None
     e.w8(ram.ANIM_OPTS, 1)
-    mine = next((u for u in g.units(army=me) if u["type"] == 5 and not u["flags"] & 0x08), None)
     foe = next((u for u in g.units(army=them) if u["type"] in (5, 8)), None)
-    if mine is None or foe is None:
+    if foe is None:
         return None
-    free = next(((mine["x"] + dx, mine["y"] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if g.unit_at(mine["x"] + dx, mine["y"] + dy) is None and g.layer_ok(mine["x"] + dx, mine["y"] + dy)), None) if hasattr(g, "layer_ok") else None
-    if free is None:
-        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            c = (mine["x"] + dx, mine["y"] + dy)
-            if g.unit_at(*c) is None and d.owner(c) == 0:
-                free = c
-                break
-    if free is None:
+    from aw2test.game import NavError
+    mine = free = None
+    for cand in [u for u in g.units(army=me) if u["type"] == 5 and not u["flags"] & 0x08]:
+        spot = next(((cand["x"] + dx, cand["y"] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                     if g.unit_at(cand["x"] + dx, cand["y"] + dy) is None and d.owner((cand["x"] + dx, cand["y"] + dy)) == 0), None)
+        if spot is None:
+            continue
+        d.place_unit(foe, *spot)
+        e.wait(10)
+        ctx.log(f"cand {cand} foe at {spot} foe rec {g.unit_at(*spot)}")
+        try:
+            g.select(cand["x"], cand["y"])
+        except NavError as ex:
+            ctx.log(f"select {cand['x'], cand['y']} failed: {ex}")
+            continue
+        mine, free = cand, spot
+        break
+    if mine is None:
         return None
-    d.place_unit(foe, *free)
-    e.wait(10)
-    g.select(mine["x"], mine["y"])
     g.move_to(mine["x"], mine["y"])
     g.choose("Fire", g.ACTION_MENU)
     g.pick_target(*free)
@@ -101,18 +108,24 @@ def battle_scene(ctx, e, g, d, me=1, them=2, tag="battle"):
             best, ink = p, n
         e.wait(10)
     g.wait_for_input()
+    g._units_base = g._players_base = None
+    left = g.unit_at(*free)
+    if left is not None:
+        d.remove_unit(left)                 # (the placed foe goes: the run goes on without it)
+    e.wait(10)
     return best
 
 
 @test(name="gauntlet_map2_pictures", modes=("ds",))
 def gauntlet_map2_pictures(ctx):
     """Iron Crown and Asuka's Keep, picture by picture (Asuka picked as the player's CO: nobody else's face is on the sheet by chance)."""
-    e = Emu(save=paths.base_save(), ds=ctx.ds, env=dict(ga.MAP2_ENV))
+    e = Emu(save=paths.base_save(), ds=ctx.ds)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    d.open()
+    d.open(map=ga.MAP2)
     d.choose_cos(1, prefs=[ga.ANDY])
+    d.pick_colour(ga.EMERALD_SUN, free=[ga.EMERALD_SUN])
     frames = []
     pic = None
     for _ in range(900):
@@ -143,10 +156,6 @@ def gauntlet_map2_pictures(ctx):
         "Iron Crown, 40 x 26 land map in five armies: the Emerald Sun player in the south-west camp, Grit (Blue Moon) behind the Aube in the west-centre.",
         "Jess's forests, Kanbei's mountain keep and Rachel's lowlands are plain ground: no HQ, no units, no turn yet. Lake (middle) joins the Aube, the Brenne and the Marle."]}))
     day1 = png(ctx, e, "day1_screen")
-    scene1 = battle_scene(ctx, e, g, d, me=5, them=1, tag="iron_battle")
-    if scene1:
-        frames.append((scene1, {"title": "A battle scene on Iron Crown: the Emerald Sun army (fifth army, on Black Hole's colour) against Grit's Blue Moon", "plain": True, "lines": [
-            "The player's Tank fires on one of Grit's units placed next to it for the picture; animations on."]}))
     for k, (key, army, who, nxt) in enumerate(ga.IRON_ORDER[:3]):
         d.capture(ctx, ga.IRON[key], army=5)
         scene = dialogue_pic(ctx, e, d, f"arrive_{nxt}")
@@ -179,10 +188,6 @@ def gauntlet_map2_pictures(ctx):
         "Plateau with Black Crystals, two Black Cannons (dark 3x3) on its south wall, minicannons at the gate and on the west rim, the Laser on the moor, the Styx with four bridges; the player lands in the south-west."]}))
     frames.append((crop_pic(ctx, g, e, (22, 10), "keep_gate"), {"title": "The south gate: Black Cannons and minicannons cover the bridges", "plain": True, "lines": ["Cannons at (19,9) and (25,9), minicannons at (21,10) and (23,10) either side of the gate."]}))
     frames.append((crop_pic(ctx, g, e, (12, 8), "keep_west"), {"title": "The west rim: minicannons and the Laser", "plain": True, "lines": ["Laser (11,9) on the moor (row 9, column 11), minicannons at (15,3) and (15,7) face west."]}))
-    battle = battle_scene(ctx, e, g, d)
-    if battle:
-        frames.append((battle, {"title": "A battle scene on Asuka's Keep: Emerald Sun (sage, red crests) against Black Hole", "plain": True, "lines": [
-            "The player's Tank (Emerald Sun on Orange Star's colour) fires on one of Asuka's units placed next to it for the picture; animations on."]}))
     d.capture(ctx, ga.KEEP_ASUKA, army=1)
     shots = []
     for k in range(120):
@@ -204,3 +209,33 @@ def gauntlet_map2_pictures(ctx):
     os.makedirs(out, exist_ok=True)
     sheet(frames, os.path.join(out, "gauntlet_map2_sheet.png"), "Gauntlet map 2: Iron Crown and Asuka's Keep (played with real captures; the game's own pictures)")
     ctx.log("wrote " + os.path.join(out, "gauntlet_map2_sheet.png"))
+
+
+@test(name="gauntlet_map2_battle_scenes", modes=("ds",))
+def gauntlet_map2_battle_scenes(ctx):
+    """Battle scenes of the Emerald Sun army on both stages (animations on): the player's Tank fires on a unit placed next to it. `gauntlet_map2_battle_sheet.png`: the skin sits on Black Hole's colour on
+    Iron Crown and moves to Orange Star's on Asuka's Keep, where Asuka is Black Hole's."""
+    from PIL import Image
+    e, g, d = start(ctx)
+    frames = []
+    one = battle_scene(ctx, e, g, d, me=5, them=1, tag="iron_battle")
+    ctx.require(one is not None, "a battle scene on Iron Crown")
+    frames.append((one, {"title": "Iron Crown: Emerald Sun (on Black Hole's colour) vs Grit", "plain": True, "lines": ["Animation option A; the foe was placed next to the Tank for the picture."]}))
+    for key, army, who, nxt in ga.IRON_ORDER:
+        d.capture(ctx, ga.IRON[key], army=5)
+        if nxt:
+            d.settle()
+    wait_stage(ctx, e, g, d, 1)
+    d.dialogue()
+    d.wait_control()
+    e.wait(300)
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    ctx.log(f"stage two: army {g.current_army()}, scripts {d.scripts_running()}, day {e.u16(dc.DAY)}")
+    two = battle_scene(ctx, e, g, d, me=1, them=2, tag="keep_battle")
+    ctx.require(two is not None, "a battle scene on Asuka's Keep")
+    frames.append((two, {"title": "Asuka's Keep: Emerald Sun (now on Orange Star's colour) vs Asuka", "plain": True, "lines": ["The skin moved with the stage switch: sage and red crests, not Orange Star's red or Black Hole's grey."]}))
+    e.close()
+    out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
+    os.makedirs(out, exist_ok=True)
+    sheet(frames, os.path.join(out, "gauntlet_map2_battle_sheet.png"), "Gauntlet map 2: the Emerald Sun army's battle scenes on both stages")

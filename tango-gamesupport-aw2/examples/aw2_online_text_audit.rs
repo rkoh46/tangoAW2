@@ -676,6 +676,7 @@ fn main() {
     }
     armies(&mut c);
     proposals(&mut c);
+    gauntlet(&mut c);
     println!("done: {} problems", c.problems);
 }
 
@@ -849,6 +850,49 @@ fn proposals(c: &mut Ctx) {
                     });
                 }
             }
+        }
+    }
+}
+
+/// The Gauntlet's map selector and colour pick: the widest CO names as the enemies (3 to 6 lines), the longest map title, a best result with the widest CO and four-digit figures, every
+/// colour offered.
+fn gauntlet(c: &mut Ctx) {
+    use tango_gamesupport_aw2::gauntlet_mode::Entry;
+    use tango_gamesupport_aw2::gauntlet_ui as gu;
+    use tango_gamesupport_aw2::online_teams as ot;
+    let core = c.link.core_mut();
+    let list = tango_gamesupport_aw2::tag_ui::teams_list(core);
+    let mut by_width: Vec<(i32, u8)> = list
+        .iter()
+        .map(|&co| (tango_gamesupport_aw2::online::text_width(core, &ot::co_label(core, co)), co))
+        .collect();
+    by_width.sort();
+    let widest: Vec<u8> = by_width.iter().rev().take(6).map(|p| p.1).collect();
+    println!("gauntlet: widest CO names {:?}", by_width.iter().rev().take(6).collect::<Vec<_>>());
+    let colours = [1u8, 2, 3, 4, 5, 3];
+    let entry = |n: usize, title: &'static str| Entry {
+        mission: 0,
+        key: "gauntlet_01",
+        title,
+        enemies: widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect(),
+        stages: vec![colours[..n.min(6)].to_vec()],
+    };
+    // a record for mission 0 (the widest CO, 999 days, a four-digit score)
+    let rec = widest[0] as u32 | 999 << 8 | 9999 << 20;
+    core.raw_write_32(tango_gamesupport_aw2::ds_campaign::RECORDS, -1, rec);
+    for n in [3usize, 4, 6] {
+        let entries = [entry(n, "Cinder Sea Of Embers"), entry(n, "Second Map Name"), entry(n, "Third"), entry(n, "Fourth Map")];
+        for cursor in [0usize, 2, 3] {
+            paint(c, &format!("gauntlet_select_{n}_{cursor}"), n == 3 || n == 6, |core, rgba| gu::paint_selector(core, rgba, &entries, cursor));
+        }
+        // (no record: the other line)
+        let e = entry(n, "Cinder Sea");
+        c.link.core_mut().raw_write_32(tango_gamesupport_aw2::ds_campaign::RECORDS, -1, 0);
+        paint(c, &format!("gauntlet_select_{n}_norecord"), false, |core, rgba| gu::paint_selector(core, rgba, &[e.clone()], 0));
+        c.link.core_mut().raw_write_32(tango_gamesupport_aw2::ds_campaign::RECORDS, -1, rec);
+        for (k, &co) in widest.iter().take(2).enumerate() {
+            let e = entry(n, "Cinder Sea");
+            paint(c, &format!("gauntlet_colour_{n}_{k}"), n == 3, |core, rgba| gu::paint_colour_pick(core, rgba, &e, 2, co));
         }
     }
 }

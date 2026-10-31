@@ -1,6 +1,6 @@
 """The Gauntlet's second map (crate::gauntlet_mode: Iron Crown, then Asuka's Keep; docs/dev/gauntlet.md): a five-army land gauntlet (the player, Emerald Sun, is the fifth army) whose four lines
-(Grit, Jess, Kanbei, Rachel) each come when the line before falls, then the stage switch to Asuka's Keep, where taking her HQ wins. `-k gauntlet_map2`. Map 2 is started with
-`TANGOAW2_GAUNTLET_MAP=1` (until Select Mode has a map choice)."""
+(Grit, Jess, Kanbei, Rachel) each come when the line before falls, then the stage switch to Asuka's Keep, where taking her HQ wins. `-k gauntlet_map2`. Map 2 is started from
+the selector's second entry."""
 
 import os
 import subprocess
@@ -27,11 +27,11 @@ def png(ctx, e, name):
 
 def start(ctx, co=ga.ANDY, save=None, env=None):
     """The Gauntlet's map 2 started from Select Mode: (emu, game, driver) with the player in control on day 1."""
-    e = Emu(save=save or paths.base_save(), ds=ctx.ds, env=dict(ga.MAP2_ENV, **(env or {})))
+    e = Emu(save=save or paths.base_save(), ds=ctx.ds, env=env)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    d.start(co)
+    d.start(co, map=ga.MAP2)
     to_player_turn(e, g, d)
     return e, g, d
 
@@ -120,16 +120,25 @@ def gauntlet_map2_stage_two_carries_the_survivors_and_asuka_wins(ctx):
     skin_before = e.u8(ga.SKIN_STATE)
     colour_before = e.u8(g.players_base + 0x3C * 5 + 0x1A)
     ctx.eq((skin_before, colour_before), (5, 5), "stage one: the Emerald Sun skin sits on the fifth army's colour (Black Hole's)")
+    # (a unit that moved this turn is greyed: it must be fresh on the new stage's first turn)
+    tank = next(u for u in g.units(army=5) if u["type"] == 5 and not u["flags"] & 0x08)
+    g.select(tank["x"], tank["y"])
+    g.move_to(tank["x"], tank["y"])
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_for_input()
+    ctx.check(any(u["flags"] & 1 for u in g.units(army=5)), "a unit has waited before the switch")
+    e.w32(g.players_base + 0x3C * 5, 200000)       # (a player who hoarded: the cap applies)
     d.capture(ctx, ga.IRON["rachel"], army=5)
     wait_stage(ctx, e, g, d, 1)
     d.dialogue()
     d.wait_control()
     g._units_base = g._players_base = None
+    ctx.check(not any(u["flags"] & 1 for u in g.units(army=1)), "no survivor arrives greyed out (every unit can act on stage two's first turn)")
     ctx.eq(e.u8(FIVE_ON), 0, "stage two is a two-army game")
     ctx.eq((e.u16(dc.MAP), e.u16(dc.MAP + 2)), (30, 22), "Asuka's Keep is 30 x 22")
     after = sorted((u["type"], u["hp"]) for u in g.units(army=1))
     ctx.check(len(after) >= 0.8 * len(mine), f"the survivors came along ({len(after)} of {len(mine)})")
-    ctx.check(funds(g, 1) <= CARRY_CAP, f"funds carried with a cap ({funds(g, 1)} <= {CARRY_CAP})")
+    ctx.eq(funds(g, 1), CARRY_CAP, "a player who hoarded 200,000 brings the cap")
     asuka = g.units(army=2)
     ctx.check(len(asuka) >= 25, f"Asuka's fresh army is on the keep ({len(asuka)})")
     ctx.eq(funds(g, 2) >= 60000, True, "Asuka holds her fortress with funds")
@@ -182,11 +191,11 @@ def gauntlet_map2_suspend_and_resume(ctx):
 
 
 def resume(ctx, path):
-    e = Emu(save=path, ds=ctx.ds, env=dict(ga.MAP2_ENV))
+    e = Emu(save=path, ds=ctx.ds)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    d.open()
+    d.open(pick=False)
     ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET on Select Mode brings the battle back")
     g._units_base = g._players_base = None
     g.wait_for_input()

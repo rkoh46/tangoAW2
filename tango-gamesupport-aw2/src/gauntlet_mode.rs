@@ -287,8 +287,6 @@ fn iron_crown() -> MissionDef {
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::RACHEL)).team(1).funds(0),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
     ];
-    m.player_skins = vec![0]; // Emerald Sun only
-    m.skin = Some((5, 0)); // the player's army wears Emerald Sun (skin 0) on the colour the enemies leave free
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_02"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
     m.rank_days = 40;
     m.held_hq = Some(IRON_GRIT);
@@ -318,10 +316,9 @@ fn iron_crown() -> MissionDef {
     st.deploy = keep.iter().filter(|u| u.army == 1).map(|u| (u.x, u.y)).collect();
     st.units = keep.into_iter().filter(|u| u.army == 2).collect();
     st.armies = vec![
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::Keep),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Keep),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(crate::co_new::ASUKA)).funds(KEEP_ASUKA_FUNDS),
     ];
-    st.skin = Some((1, 0));
     st.weather = Weather::Rain; // Asuka's rain: the fortress is fogged
     st.fog = true;
     st.carry = Carry::All;
@@ -404,6 +401,76 @@ fn keep_victory() -> Scene {
     ])
 }
 
+// --- What the map selector shows (crate::gauntlet_ui) ---------------------------------------------------------------------------------------------------
+
+/// One of the Gauntlet's maps as the selector lists it: read from the map's mission, so a new map is listed by adding its mission to [`def`] (nothing else).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Entry {
+    /// The mission's index in [`def`] (the record's index too).
+    pub mission: usize,
+    pub key: &'static str,
+    pub title: &'static str,
+    /// The enemy COs in the order they come, with the army colour the map gives each (fixed in the map's data: the player never takes it): the first stage's, then each later stage's.
+    pub enemies: Vec<(u8, u8)>,
+    /// The enemies' colours stage by stage (the player's army must have a colour free in every stage; a skin's host moves between stages).
+    pub stages: Vec<Vec<u8>>,
+}
+
+impl Entry {
+    /// What the player may wear on this map: every army colour the enemies of no stage wear, and the skins when every stage leaves a colour to host them ([`free_colours_staged`]).
+    pub fn free(&self) -> Vec<u8> {
+        free_colours_staged(&self.stages)
+    }
+
+    /// The enemy colours of the stage the battle is on (0: the mission's own map).
+    pub fn stage_enemies(&self, stage: usize) -> &[u8] {
+        self.stages.get(stage).map_or(&[], |v| v.as_slice())
+    }
+}
+
+/// The army choices a player has against enemies who wear `enemy` (AW2's colours 1..5): the five colours in the Teams screen's order (Orange Star, Blue Moon, Yellow Comet,
+/// Green Earth, Black Hole) without the enemies', then the skins (Emerald Sun, code `army_skin::SKIN + i`) while one of the five is free to put it on
+/// (`army_skin::assign`: a skin sits on the lowest colour nobody has). Never an enemy's colour.
+pub fn free_colours(enemy: &[u8]) -> Vec<u8> {
+    free_colours_staged(&[enemy.to_vec()])
+}
+
+/// [`free_colours`] for a map of several stages (a stage switch changes the enemies): a plain colour must be free in every stage (nobody wears it, ever); a skin needs a free colour to sit on
+/// in each stage (it moves at the switch: Iron Crown's Emerald Sun is on Black Hole's colour in stage one and on Orange Star's against Asuka).
+pub fn free_colours_staged(stages: &[Vec<u8>]) -> Vec<u8> {
+    let all: Vec<u8> = stages.iter().flatten().copied().collect();
+    let mut v: Vec<u8> = crate::army_skin::order().into_iter().filter(|c| *c < crate::army_skin::SKIN && !all.contains(c)).collect();
+    let hosted = stages.iter().all(|enemy| (1..=5u8).any(|c| !enemy.contains(&c)));
+    if hosted {
+        v.extend((0..crate::army_skin::skins().len() as u8).map(|i| crate::army_skin::SKIN + i));
+    }
+    v
+}
+
+/// The maps the selector lists, in [`def`]'s order.
+pub fn entries() -> &'static [Entry] {
+    static E: std::sync::OnceLock<Vec<Entry>> = std::sync::OnceLock::new();
+    E.get_or_init(|| {
+        let fixed = |armies: &[ArmyDef]| -> Vec<(u8, u8)> { armies.iter().filter_map(|a| if let CoSpec::Fixed(c) = a.co { Some((c, a.colour)) } else { None }).collect() };
+        def()
+            .missions
+            .iter()
+            .enumerate()
+            .map(|(mission, m)| {
+                let mut stages = vec![fixed(&m.armies)];
+                stages.extend(m.stages.iter().map(|s| fixed(&s.armies)));
+                Entry {
+                    mission,
+                    key: m.key,
+                    title: m.title,
+                    enemies: stages.iter().flatten().copied().collect(),
+                    stages: stages.iter().map(|v| v.iter().map(|e| e.1).collect()).collect(),
+                }
+            })
+            .collect()
+    })
+}
+
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
     let mut missions = vec![cinder_sea(), iron_crown()];
@@ -445,6 +512,33 @@ mod tests {
     }
 
     #[test]
+    fn the_selector_lists_cinder_sea_with_its_enemies_in_order() {
+        let e = entries();
+        assert_eq!(e.len(), def().missions.len());
+        assert_eq!(e[0].title, "Cinder Sea");
+        assert_eq!(e[0].enemies, vec![(co::DRAKE, colour::GREEN_EARTH), (co::SENSEI, colour::YELLOW_COMET), (co::HAWKE, colour::BLACK_HOLE)]);
+    }
+
+    #[test]
+    fn the_free_colours_are_the_five_minus_the_enemies_plus_the_skins() {
+        let skins: Vec<u8> = (0..crate::army_skin::skins().len() as u8).map(|i| crate::army_skin::SKIN + i).collect();
+        assert!(!skins.is_empty(), "Emerald Sun is a skin");
+        // Cinder Sea: Orange Star, Blue Moon and Emerald Sun
+        let mut want = vec![colour::ORANGE_STAR, colour::BLUE_MOON];
+        want.extend(&skins);
+        assert_eq!(entries()[0].free(), want);
+        // no enemy's colour is ever offered, whatever the map
+        for enemy in [vec![], vec![1], vec![3, 4], vec![2, 3, 4, 5]] {
+            let f = free_colours(&enemy);
+            assert!(f.iter().all(|c| !enemy.contains(c)), "{enemy:?} -> {f:?}");
+        }
+        // every colour taken: nothing to wear (a skin has no colour to sit on)
+        assert!(free_colours(&[1, 2, 3, 4, 5]).is_empty());
+        // a skin only where a colour is free to host it
+        assert_eq!(free_colours(&[1, 2, 3, 4]), [vec![5u8], skins].concat());
+    }
+
+    #[test]
     fn the_roster_is_every_co_once() {
         let mut ids: Vec<u8> = ROSTER.iter().map(|r| r.0).collect();
         ids.sort();
@@ -478,8 +572,6 @@ mod tests {
         assert_eq!(m.sleepers.len(), 3);
         assert_eq!(m.cut_off.len(), 3);
         assert_eq!(m.triggers.len(), 4, "three arrivals and the stage switch");
-        assert_eq!(m.player_skins, vec![0], "the player is Emerald Sun");
-        assert_eq!(m.skin, Some((5, 0)), "on the fifth army's colour, the one the enemies leave free");
         assert!(!m.setup);
         let map = crate::custom_campaign::built_map("gauntlet_02").expect("the map is built (aw2dev maps gen --campaign gauntlet)");
         assert_eq!((map.width, map.height, map.armies), (40, 26, 5));
@@ -517,7 +609,6 @@ mod tests {
         assert_eq!(st.armies[0].colour, colour::ORANGE_STAR, "the player's skin moves off Black Hole's colour");
         assert!(matches!(st.armies[1].co, CoSpec::Fixed(c) if c == crate::co_new::ASUKA));
         assert_eq!(st.armies[1].colour, colour::BLACK_HOLE, "Asuka shows Black Hole's colours");
-        assert_eq!(st.skin, Some((1, 0)), "Emerald Sun on the first army");
         assert_eq!(st.held, vec![KEEP_ASUKA]);
         assert_eq!(st.funds_cap, Some(KEEP_CARRY_CAP));
         assert!(matches!(st.carry, Carry::All));
@@ -530,5 +621,28 @@ mod tests {
         assert_eq!(r[KEEP_ASUKA.1 as usize].as_bytes()[KEEP_ASUKA.0 as usize], b'2');
         let text = include_str!("../five/gauntlet/gauntlet_02b.txt");
         assert!(text.contains("\nblackhole"), "the stage's map allows Black Hole's inventions");
+    }
+
+    #[test]
+    fn the_selector_lists_iron_crown_with_all_five_enemies_and_only_emerald_sun_free() {
+        let e = &entries()[1];
+        assert_eq!(e.key, "gauntlet_02");
+        let cos: Vec<u8> = e.enemies.iter().map(|x| x.0).collect();
+        assert_eq!(cos, vec![co::GRIT, co::JESS, co::KANBEI, co::RACHEL, crate::co_new::ASUKA], "Grit, Jess, Kanbei, Rachel, then Asuka of stage two");
+        let colours: Vec<u8> = e.enemies.iter().map(|x| x.1).collect();
+        assert_eq!(colours, vec![colour::BLUE_MOON, colour::GREEN_EARTH, colour::YELLOW_COMET, colour::ORANGE_STAR, colour::BLACK_HOLE]);
+        assert_eq!(e.stages.len(), 2);
+        assert_eq!(e.free(), vec![crate::army_skin::SKIN], "every plain colour is an enemy's in some stage: Emerald Sun is the only choice");
+        // the skin's host: the colour stage one leaves free (Black Hole's), then the one stage two leaves (not Black Hole's: Asuka is)
+        let host = |stage: usize| {
+            let mut c = vec![crate::army_skin::SKIN];
+            c.extend_from_slice(e.stage_enemies(stage));
+            crate::army_skin::assign(&c).1[0]
+        };
+        assert_eq!(host(0), colour::BLACK_HOLE);
+        assert_ne!(host(1), colour::BLACK_HOLE);
+        assert_eq!(host(1), colour::ORANGE_STAR);
+        // Cinder Sea is unchanged by the stages
+        assert_eq!(entries()[0].free(), free_colours(&[colour::GREEN_EARTH, colour::YELLOW_COMET, colour::BLACK_HOLE]));
     }
 }

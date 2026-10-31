@@ -491,7 +491,8 @@ fn arrive(core: &mut Core) {
         r[2] = x as u8;
         r[3] = y as u8;
         // (a fresh arrival: not moved, not carried, no cargo: the transport's cargo came as units of their own)
-        r[REC_FLAGS as usize] &= !0x08;
+        // (and fresh for the stage's first turn: a survivor that had moved or waited before the switch is not greyed out and can act)
+        r[REC_FLAGS as usize] &= !0x09;
         r[7] = 0;
         r[8] = 0;
         let at = base + UNIT * ((army - 1) * stride + j);

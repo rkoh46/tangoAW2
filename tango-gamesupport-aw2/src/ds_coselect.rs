@@ -1611,6 +1611,10 @@ fn offline_cards(core: &Core, rgba: &mut [u8]) -> bool {
 }
 
 pub fn apply(core: &Core, rgba: &mut [u8]) {
+    // The Gauntlet's map selector and colour pick (crate::gauntlet_ui).
+    if crate::gauntlet_ui::draw(core, rgba) {
+        return;
+    }
     if offline_cards(core, rgba) {
         return;
     }

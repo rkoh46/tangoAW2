@@ -91,7 +91,8 @@ def gauntlet_mode_wheel_with_the_pack_on_online_play_is_unchanged(ctx):
 
 @test(modes=("ds",))
 def gauntlet_mode_pick_reaches_the_co_pick_with_every_co_and_b_goes_back(ctx):
-    """GAUNTLET on Select Mode starts at once (no box, no world map): AW2's CO screen with every CO the game has (one pick, no partner); B goes back to Select Mode, on GAUNTLET."""
+    """GAUNTLET on Select Mode starts at once (no box, no world map) on the map selector; A takes the map and AW2's CO screen follows with every CO the game has (one pick, no partner);
+    B on it goes back to the selector, B on the selector back to Select Mode, on GAUNTLET."""
     e, g, d = boot(ctx)
     d.open()
     d.wait_co_screen()
@@ -107,7 +108,11 @@ def gauntlet_mode_pick_reaches_the_co_pick_with_every_co_and_b_goes_back(ctx):
     ctx.check(not d.world_map_up(), "no world map")
     png(pic(ctx, e, "co_screen"))
     e.press("B", 8)
-    ctx.require(e.wait_until(lambda: d.select_mode_up() and e.u8(dc.ACTIVE) == 0, 900, step=10), "B: back on Select Mode, the session over")
+    d.wait_step(ga.SELECTOR)
+    ctx.eq(e.u8(ga.UI_MAP), 0, "B on the CO screen: back on the map selector")
+    png(pic(ctx, e, "selector_again"))
+    e.press("B", 8)
+    ctx.require(e.wait_until(lambda: d.select_mode_up() and e.u8(dc.ACTIVE) == 0, 900, step=10), "B on the selector: back on Select Mode, the session over")
     e.wait(60)
     ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), saves.position(e, "gauntlet"), "the wheel is on GAUNTLET")
     ctx.eq(e.u8(ga.SOURCE), 0, "the Campaign sub-menu's source is back to the DS Campaign")
@@ -331,8 +336,8 @@ def gauntlet_mode_save_and_continue(ctx):
     g2 = Game(e2, ctx.image)
     ctx.games.append(g2)
     d2 = ga.Gauntlet(g2)
-    d2.open()
-    ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET on Select Mode brings the battle back (no CO screen)")
+    d2.open(pick=False)
+    ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET on Select Mode brings the battle back (no selector, no CO screen)")
     ctx.eq(e2.u8(ga.CONTINUING), 1, "the pick asked to continue")
     g2._units_base = g2._players_base = None
     g2.wait_for_input()
@@ -350,6 +355,136 @@ def gauntlet_mode_save_and_continue(ctx):
     done = saves.flash(e2, os.path.join(ctx.out, "finished"))
     ctx.check(ga.MID_SLOT not in done.tags(), f"the finished run's save is dropped ({sorted(done.tags())})")
     ctx.check(ga.saved_record(done) is not None, "its record is written")
+    e2.close()
+
+
+def region_pixels(path_bmp, box):
+    """The RGB pixels of a BMP's box (x0, y0, x1, y1) as a list."""
+    from PIL import Image
+    return list(Image.open(path_bmp).convert("RGB").crop(box).getdata())
+
+
+def hue_share(px, want):
+    """The share of the pixels `want(r, g, b)` accepts."""
+    return sum(1 for r, g, b in px if want(r, g, b)) / max(1, len(px))
+
+
+@test(modes=("ds",))
+def gauntlet_mode_selector_lists_cinder_sea_and_the_enemies_in_order(ctx):
+    """GAUNTLET opens a map selector, not the CO screen: it lists Cinder Sea and, for the highlighted map, the three enemies in the order they come (Drake, Sensei, Hawke) with the army colour the
+    map fixes for each (Green Earth, Yellow Comet, Black Hole: the emblem under each face is drawn in it), and the best result when there is one. A takes the map; B goes back to Select Mode."""
+    e, g, d = boot(ctx)
+    d.open(pick=False)
+    d.wait_step(ga.SELECTOR)
+    maps, enemies, _ = ga.shown(e)
+    ctx.eq(maps, 1, "one map is listed (Cinder Sea)")
+    ctx.eq(enemies, [(9, ga.GREEN_EARTH), (18, ga.YELLOW_COMET), (14, ga.BLACK_HOLE)], "the enemies in order: Drake, Sensei, Hawke, each in the map's fixed colour")
+    ctx.check(not d.on_co_screen(), "no CO screen yet: the selector is the first screen")
+    p = pic(ctx, e, "selector")
+    png(p)
+    # the emblem under each face is the army's: green, yellow, and a dark one (slots 74 px apart from x 10, emblem at +27, y 117)
+    boxes = [(10 + 74 * k + 27, 117, 10 + 74 * k + 43, 133) for k in range(3)]
+    shares = [
+        hue_share(region_pixels(p, boxes[0]), lambda r, g_, b: g_ > r + 30 and g_ > b + 30),
+        hue_share(region_pixels(p, boxes[1]), lambda r, g_, b: r > 180 and g_ > 150 and b < 100),
+        hue_share(region_pixels(p, boxes[2]), lambda r, g_, b: abs(r - g_) < 20 and abs(g_ - b) < 25 and 90 < r < 190),
+    ]
+    ctx.check(shares[0] > 0.2 and shares[1] > 0.02 and shares[2] > 0.15, f"the enemies' emblems wear Green Earth's, Yellow Comet's and Black Hole's colours ({shares})")
+    ctx.eq(e.u8(ga.UI_STEP), ga.SELECTOR, "the selector is up")
+    e.press("DOWN", 6)
+    e.wait(10)
+    ctx.eq(e.u8(ga.UI_MAP_CURSOR), 0, "one map: DOWN stays on it")
+    e.press("A", 6)
+    d.wait_co_screen()
+    ctx.eq(e.u8(ga.UI_MAP), 0, "A took Cinder Sea")
+    ctx.eq((d.session()["mission"], d.session()["map_id"]), (0, 0xF0), "the map is the session's mission")
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_colour_pick_offers_only_the_colours_the_enemies_do_not_wear(ctx):
+    """After the CO pick the colour pick offers exactly Orange Star, Blue Moon and Emerald Sun on Cinder Sea (AW2's five minus the enemies' Green Earth, Yellow Comet and Black Hole, plus the 6th
+    army); LEFT and RIGHT move round them; B goes back to the CO screen."""
+    e, g, d = boot(ctx)
+    d.open()
+    d.wait_co_screen()
+    d.choose_cos(1, prefs=[ga.ANDY])
+    d.wait_step(ga.COLOURS)
+    _, enemies, free = ga.shown(e)
+    ctx.eq(free, ga.CINDER_FREE, "Orange Star, Blue Moon, Emerald Sun")
+    ctx.check(not set(free) & {c for _, c in enemies}, f"no enemy colour is offered ({free} against {enemies})")
+    ctx.eq(e.u8(ga.UI_COLOUR_CURSOR), 0, "the cursor starts on the first")
+    png(pic(ctx, e, "colour_pick_1"))
+    seen = []
+    for _ in range(4):
+        e.press("RIGHT", 4)
+        e.wait(10)
+        seen.append(e.u8(ga.UI_COLOUR_CURSOR))
+    ctx.eq(seen, [1, 2, 0, 1], "RIGHT walks round the three and wraps")
+    e.press("LEFT", 4)
+    e.wait(10)
+    ctx.eq(e.u8(ga.UI_COLOUR_CURSOR), 0, "LEFT goes back")
+    e.press("LEFT", 4)
+    e.wait(10)
+    png(pic(ctx, e, "colour_pick_emerald_sun"))
+    e.press("B", 6)
+    d.wait_co_screen()
+    ctx.eq(e.u8(ga.UI_STEP), 0, "B on the colour pick: the CO screen is back")
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_battle_uses_the_picked_army_colour(ctx):
+    """The battle's army colour is the pick: Orange Star, Blue Moon, and Emerald Sun (the skin sits on the lowest colour no enemy has, Orange Star's; its designs stay the CO's: an Orange Star CO's
+    soldiers). The player's colour byte, the skin's host, the enemies' fixed colours and the player's HQ on the map (a picture of it) are checked for each."""
+    heads = {}
+    for code, label, host, skin in ((ga.ORANGE_STAR, "orange_star", 1, 0), (ga.BLUE_MOON, "blue_moon", 2, 0), (ga.EMERALD_SUN, "emerald_sun", 1, 1)):
+        e, g, d = boot(ctx)
+        d.start(ga.ANDY, colour=code)
+        ctx.eq(g.player(1)["colour"], host, f"{label}: the player's army colour byte")
+        ctx.eq([g.player(a)["colour"] for a in (2, 3, 4)], ga.CINDER_ENEMY_COLOURS, f"{label}: the enemies keep Green Earth, Yellow Comet and Black Hole")
+        ctx.eq(e.u8(ga.HOSTS), skin * host, f"{label}: the skin sits on colour {host}" if skin else f"{label}: no skin")
+        ctx.eq(g.player(1)["co"], ga.ANDY, f"{label}: the CO is the pick")
+        g.goto(3, 18)
+        e.wait(60)
+        p = pic(ctx, e, f"battle_{label}")
+        png(p)
+        heads[label] = region_pixels(p, (60, 30, 180, 130))
+        e.close()
+    mean = lambda px: tuple(sum(c[i] for c in px) / len(px) for i in range(3))
+    m = {k: mean(v) for k, v in heads.items()}
+    ctx.check(len({tuple(round(x / 8) for x in v) for v in m.values()}) == 3, f"the three maps are painted differently ({m})")
+    # Orange Star's HQ and units are red, Blue Moon's blue
+    red_os = hue_share(heads["orange_star"], lambda r, g_, b: r > 200 and g_ < 110 and b < 90)
+    blue_bm = hue_share(heads["blue_moon"], lambda r, g_, b: b > 170 and r < 90 and g_ < 130)
+    red_bm = hue_share(heads["blue_moon"], lambda r, g_, b: r > 200 and g_ < 110 and b < 90)
+    ctx.check(red_os > 0.01 and red_bm < red_os / 3, f"Orange Star's army is red, Blue Moon's is not ({red_os}, {red_bm})")
+    ctx.check(blue_bm > 0.01, f"Blue Moon's army is blue ({blue_bm})")
+    red_es = hue_share(heads["emerald_sun"], lambda r, g_, b: r > 200 and g_ < 110 and b < 90)
+    ctx.check(red_es < red_os / 3, f"Emerald Sun is not Orange Star's red ({red_es} against {red_os})")
+
+
+@test(modes=("ds",))
+def gauntlet_mode_emerald_sun_survives_save_and_continue(ctx):
+    """A run saved halfway in Emerald Sun continues in it (the pick is kept in the mode's progress record and the skin comes back with the battle)."""
+    e, g, d = boot(ctx)
+    d.start(ga.ANDY, colour=ga.EMERALD_SUN)
+    ctx.eq(e.u8(ga.HOSTS), 1, "Emerald Sun is on colour 1")
+    saves.suspend(g)
+    saved = flash_after(ctx, e, "saved")
+    e.close()
+    e2 = Emu(save=saved.path, ds=True)
+    g2 = Game(e2, ctx.image)
+    ctx.games.append(g2)
+    d2 = ga.Gauntlet(g2)
+    d2.open(pick=False)
+    ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET continues the run")
+    g2._units_base = g2._players_base = None
+    g2.wait_for_input()
+    e2.wait(30)
+    ctx.eq(g2.player(1)["colour"], 1, "the player's colour byte")
+    ctx.eq(e2.u8(ga.HOSTS), 1, "Emerald Sun is on again")
+    png(pic(ctx, e2, "continued_emerald_sun"))
     e2.close()
 
 
@@ -385,15 +520,21 @@ def gauntlet_mode_select_with_a_starts_a_new_run_over_a_saved_one(ctx):
     saves.to_select_mode(e2)
     saves.wheel_to(e2, "gauntlet")
     e2.press("A+SELECT", 8)
+    d2.wait_step(ga.SELECTOR)
+    e2.press("A", 6)
     d2.wait_co_screen()
     ctx.eq(e2.u8(ga.CONTINUING), 0, "a new run was asked for")
-    ctx.check(e2.u32(0x03000000) != 0x08022049, "no battle was resumed: the CO screen is up")
+    ctx.check(e2.u32(0x03000000) != 0x08022049, "no battle was resumed: the selector and the CO screen come up")
     png(pic(ctx, e2, "new_run_over_a_save"))
     # (the drop is in the game's directory now and reaches Flash with its next write, as every campaign's New over a save does)
+    e2.press("B", 8)
+    d2.wait_step(ga.SELECTOR)
     e2.press("B", 8)
     ctx.require(e2.wait_until(lambda: d2.select_mode_up() and e2.u8(dc.ACTIVE) == 0, 900, step=10), "B: back on Select Mode")
     e2.wait(60)
     e2.press("A", 8)
+    d2.wait_step(ga.SELECTOR)
+    e2.press("A", 6)
     d2.wait_co_screen()
     ctx.eq(e2.u8(ga.CONTINUING), 0, "the save is gone: GAUNTLET alone starts a new run now")
     e2.close()
@@ -464,9 +605,15 @@ def gauntlet_tool_start(ctx):
     e.wait(40)
     png(pic(ctx, e, "1_wheel"))
     e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    png(pic(ctx, e, "2_map_selector"))
+    e.press("A", 6)
     d.wait_co_screen()
-    png(pic(ctx, e, "2_co_screen"))
+    png(pic(ctx, e, "3_co_screen"))
     picked = d.choose_cos(1, prefs=[co])
+    d.wait_step(ga.COLOURS)
+    png(pic(ctx, e, "4_colour_pick"))
+    d.pick_colour(None)
     for k in range(600):
         if d.in_battle() and e.u32(0x0849_9598) != 0:
             break
@@ -476,11 +623,11 @@ def gauntlet_tool_start(ctx):
         if d.in_setup():
             break
         e.wait(10)
-    png(pic(ctx, e, "3_setup"))
+    png(pic(ctx, e, "5_setup"))
     d.leave_setup()
     d.wait_control()
     g._units_base = g._players_base = None
-    png(pic(ctx, e, "4_first_turn"))
+    png(pic(ctx, e, "6_first_turn"))
     ctx.eq(g.player(1)["co"], co, "the pick leads the player's army")
     ctx.log(f"picked {picked}; pictures in {ctx.out}")
     if out:

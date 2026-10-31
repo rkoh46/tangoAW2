@@ -909,9 +909,6 @@ pub struct MissionDef {
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
     /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
-    /// The looks the player may wear on a Gauntlet map, as indexes of [`crate::army_skin`] skins (the player's army wears one on the free colour; empty: the free plain colours, the enemies' fixed).
-    /// Iron Crown's is Emerald Sun only (`[0]`), `MissionDef::skin` and `StageDef::skin` say where it sits.
-    pub player_skins: Vec<usize>,
     /// Later stages: the battle moves on in place when [`Action::NextStage`] fires, one stage after another ([`StageDef`], docs/dev/stages.md).
     pub stages: Vec<StageDef>,
 }
@@ -953,8 +950,6 @@ pub struct StageDef {
     pub funds: Option<i32>,
     /// The most funds carried over (None: all of them).
     pub funds_cap: Option<u32>,
-    /// A skin an army of the stage wears: (army 1-based, skin index in [`crate::army_skin`]); None: no skin (the mission's is for the first stage).
-    pub skin: Option<(u8, usize)>,
     /// HQs of the stage held in the gauntlet's way: a capture defeats nobody (the stage's Win trigger ends the battle, its last line spoken with its army standing).
     pub held: Vec<(u8, u8)>,
 }
@@ -977,7 +972,6 @@ impl StageDef {
             carry: Carry::All,
             funds: None,
             funds_cap: None,
-            skin: None,
             held: Vec::new(),
         }
     }
@@ -1112,7 +1106,6 @@ impl MissionDef {
             cut_off: Vec::new(),
             hidden: Vec::new(),
             skin: None,
-            player_skins: Vec::new(),
             stages: Vec::new(),
         }
     }
@@ -1794,7 +1787,6 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
                 carry: st.carry.clone(),
                 funds: st.funds,
                 funds_cap: st.funds_cap,
-                skin: st.skin,
                 held: st.held.clone(),
             });
             records.push(MissionRecord::Stage(i, k, st));

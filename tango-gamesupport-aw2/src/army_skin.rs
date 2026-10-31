@@ -1084,6 +1084,8 @@ pub fn sync(core: &mut Core) {
         let c = crate::stage::colour_in_swap(core, army as u32).unwrap_or_else(|| core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1));
         (1..=5).contains(&c).then_some((skin, c))
     });
+    // The Gauntlet's player who picked Emerald Sun wears it on the colour its map leaves free (the designs stay the CO's: the colour only recolours).
+    let enemy = enemy.or_else(|| crate::gauntlet::player_skin(core));
     match enemy {
         Some((skin, c)) => set_host_of(core, skin, c),
         // (leaving the battle: the skin comes off with the host cleared)
