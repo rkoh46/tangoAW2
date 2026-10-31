@@ -8,8 +8,10 @@ The first mode built this way is the Gauntlet (docs/dev/gauntlet-mode.md: read i
 ## A new map for the Gauntlet
 1. Spec and map: `five/gauntlet/spec/gauntlet_NN.py`, `aw2dev maps gen --campaign gauntlet`, `aw2dev maps lint --campaign gauntlet` (docs/dev/map-lint.md). Enemy armies on team 2 (the player's team is its own army number, 1; a team of 1 made the enemies the player's allies).
 2. A mission function in `tango-gamesupport-aw2/src/gauntlet_mode.rs` added to `def()` (copy `cinder_sea`): the player's army `CoSpec::Pick`, the enemy COs fixed, hidden lines (`MissionDef::hidden`, `sleepers`, `cut_off`, `held_hq`/`held_more`) and `arrive(..)` triggers, `rank_days`. Its key is `gauntlet_NN`.
-3. The mode starts mission 0 today (`ds_campaign::start_gauntlet`): with a second map add the map choice (a SELECT MAP list or a small proc of our own, with the map's name, enemy COs and best result from `ds_campaign::RECORDS`) before the CO pick.
-4. Tests: a row for the map in `tests/test_gauntlet_mode.py` / `aw2test/gauntlet.py` (`CINDER`: its HQs), and run `aw2dev gauntlet test`. Pictures: `aw2dev gauntlet start --co N`.
+3. Nothing else lists it: the map selector (`gauntlet_ui.rs`) shows every mission of `def()` with its enemies (`ArmyDef` index 1 on: `CoSpec::Fixed` CO and the **colour the map fixes**) and the best result, and the colour
+   pick offers the colours those enemies do not wear (`gauntlet_mode::Entry::free`: AW2's five minus the enemies', plus Emerald Sun). Fix every enemy's colour in the mission (never leave it to the player's pick); check the new map in
+   `the_free_colours_are_the_five_minus_the_enemies_plus_the_skins`-style tests and the audit page (`aw2_online_text_audit.rs`, `gauntlet`) with its longest names.
+4. Tests: a row for the map in `tests/test_gauntlet_mode.py` / `aw2test/gauntlet.py` (`CINDER`: its HQs, `CINDER_FREE`), and run `aw2dev gauntlet test`, `aw2dev audit text`. Pictures: `aw2dev gauntlet start --co N`, the `gauntlet_walkthrough_pictures` sheets.
 
 ## A new wheel entry (a mode of its own on Select Mode)
 1. `mode_menu.rs`: a new item id (10, ...), an `Extra` (its OBJ palette, its small-label tiles, its data page in ROM: `GAUNTLET_AT` + 0x1000 steps below `SENTINEL`), `TABLE` and `N` (one more entry), the DivRem/wrap
