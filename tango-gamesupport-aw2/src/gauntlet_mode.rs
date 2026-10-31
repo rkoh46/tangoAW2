@@ -189,6 +189,55 @@ fn victory() -> Scene {
     Scene::new(vec![Line::say(co::HAWKE, "Hmph. The sea and the sky were yours today. Enjoy it while it lasts.")])
 }
 
+// --- What the map selector shows (crate::gauntlet_ui) ---------------------------------------------------------------------------------------------------
+
+/// One of the Gauntlet's maps as the selector lists it: read from the map's mission, so a new map is listed by adding its mission to [`def`] (nothing else).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Entry {
+    /// The mission's index in [`def`] (the record's index too).
+    pub mission: usize,
+    pub key: &'static str,
+    pub title: &'static str,
+    /// The enemy COs in the order they come, with the army colour the map gives each (fixed in the map's data: the player never takes it).
+    pub enemies: Vec<(u8, u8)>,
+}
+
+impl Entry {
+    /// What the player may wear on this map: every army colour the enemies do not ([`free_colours`]).
+    pub fn free(&self) -> Vec<u8> {
+        free_colours(&self.enemies.iter().map(|e| e.1).collect::<Vec<_>>())
+    }
+}
+
+/// The army choices a player has against enemies who wear `enemy` (AW2's colours 1..5): the five colours in the Teams screen's order (Orange Star, Blue Moon, Yellow Comet,
+/// Green Earth, Black Hole) without the enemies', then the skins (Emerald Sun, code `army_skin::SKIN + i`) while one of the five is free to put it on
+/// (`army_skin::assign`: a skin sits on the lowest colour nobody has). Never an enemy's colour.
+pub fn free_colours(enemy: &[u8]) -> Vec<u8> {
+    let mut v: Vec<u8> = crate::army_skin::order().into_iter().filter(|c| *c < crate::army_skin::SKIN && !enemy.contains(c)).collect();
+    if !v.is_empty() {
+        v.extend((0..crate::army_skin::skins().len() as u8).map(|i| crate::army_skin::SKIN + i));
+    }
+    v
+}
+
+/// The maps the selector lists, in [`def`]'s order.
+pub fn entries() -> &'static [Entry] {
+    static E: std::sync::OnceLock<Vec<Entry>> = std::sync::OnceLock::new();
+    E.get_or_init(|| {
+        def()
+            .missions
+            .iter()
+            .enumerate()
+            .map(|(mission, m)| Entry {
+                mission,
+                key: m.key,
+                title: m.title,
+                enemies: m.armies.iter().skip(1).filter_map(|a| if let CoSpec::Fixed(c) = a.co { Some((c, a.colour)) } else { None }).collect(),
+            })
+            .collect()
+    })
+}
+
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
     let mut missions = vec![cinder_sea()];
@@ -227,6 +276,33 @@ mod tests {
         assert!(!m.setup, "no Setup phase");
         let map = crate::custom_campaign::built_map("gauntlet_01").expect("the map is built (five/bhmap.py --campaign gauntlet)");
         assert_eq!((map.width, map.height, map.armies), (32, 22, 4));
+    }
+
+    #[test]
+    fn the_selector_lists_cinder_sea_with_its_enemies_in_order() {
+        let e = entries();
+        assert_eq!(e.len(), def().missions.len());
+        assert_eq!(e[0].title, "Cinder Sea");
+        assert_eq!(e[0].enemies, vec![(co::DRAKE, colour::GREEN_EARTH), (co::SENSEI, colour::YELLOW_COMET), (co::HAWKE, colour::BLACK_HOLE)]);
+    }
+
+    #[test]
+    fn the_free_colours_are_the_five_minus_the_enemies_plus_the_skins() {
+        let skins: Vec<u8> = (0..crate::army_skin::skins().len() as u8).map(|i| crate::army_skin::SKIN + i).collect();
+        assert!(!skins.is_empty(), "Emerald Sun is a skin");
+        // Cinder Sea: Orange Star, Blue Moon and Emerald Sun
+        let mut want = vec![colour::ORANGE_STAR, colour::BLUE_MOON];
+        want.extend(&skins);
+        assert_eq!(entries()[0].free(), want);
+        // no enemy's colour is ever offered, whatever the map
+        for enemy in [vec![], vec![1], vec![3, 4], vec![2, 3, 4, 5]] {
+            let f = free_colours(&enemy);
+            assert!(f.iter().all(|c| !enemy.contains(c)), "{enemy:?} -> {f:?}");
+        }
+        // every colour taken: nothing to wear (a skin has no colour to sit on)
+        assert!(free_colours(&[1, 2, 3, 4, 5]).is_empty());
+        // a skin only where a colour is free to host it
+        assert_eq!(free_colours(&[1, 2, 3, 4]), [vec![5u8], skins].concat());
     }
 
     #[test]
