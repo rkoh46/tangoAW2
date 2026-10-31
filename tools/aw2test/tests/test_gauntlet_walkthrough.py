@@ -1,5 +1,5 @@
-"""A Gauntlet run screen by screen, for people to look at (docs/dev/gauntlet-mode.md): Select Mode with the wheel turning to GAUNTLET, the CO screen (a few COs, then Aria picked), the
-mission card and the intro, day 1, each line's fall and the next CO's arrival, the last HQ, VICTORY, the results and Select Mode again. Frames are kept when the screen changes
+"""A Gauntlet run screen by screen, for people to look at (docs/dev/gauntlet-mode.md): Select Mode with the wheel turning to GAUNTLET, the map selector (the map, its enemies in order, the best
+result), the CO screen (a few COs, then Aria picked), the army colour pick (the colours the enemies leave, Emerald Sun taken), the mission card and the intro, day 1, each line's fall and the next CO's arrival, the last HQ, VICTORY, the results and Select Mode again. Frames are kept when the screen changes
 (walk_NN.png) and laid out with their step on `walkthrough_sheet_N.png`."""
 
 import hashlib
@@ -65,7 +65,11 @@ def gauntlet_walkthrough_pictures(ctx):
     e.wait(30)
     w.shot("Select Mode: GAUNTLET (between Campaign and Versus)", force=True)
     e.press("A", 8)
-    w.watch("GAUNTLET picked: to the CO screen", 200, every=15, until=d.on_co_screen)
+    w.watch("GAUNTLET picked: to the map selector", 200, every=15, until=lambda: d.step() == ga.SELECTOR)
+    d.wait_step(ga.SELECTOR)
+    w.shot("Map selector: Cinder Sea, the enemies you will face", force=True)
+    e.press("A", 6)
+    w.watch("Map picked: to the CO screen", 200, every=15, until=d.on_co_screen)
     d.wait_co_screen()
     w.shot("CO screen: any of 36 COs", force=True)
     for k in range(3):
@@ -79,6 +83,13 @@ def gauntlet_walkthrough_pictures(ctx):
             break
         d.co_screen_a()
         e.wait(20)
+    d.wait_step(ga.COLOURS)
+    w.shot("Colour pick: what the enemies leave (Orange Star)", force=True)
+    for k in range(2):
+        e.press("RIGHT", 4)
+        e.wait(14)
+        w.shot("Colour pick: browsing the free colours", force=True)
+    d.pick_colour(None)
     sc = lambda ee: ee.press("A", 4) if d.scripts_running() else None
     w.watch("Loading the battle: mission card", 1500, every=25, press=None, until=d.in_battle)
     quiet = 0

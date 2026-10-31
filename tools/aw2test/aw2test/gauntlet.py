@@ -19,6 +19,26 @@ WHEEL_LAST = 0x03005934           # the wheel's remembered position
 ITEM_TABLE_POOL = 0x080814F0       # a word of the wheel's code that points at its item table
 GAME_TABLE, PACK_TABLE = 0x0861696C, 0x08E40000   # AW2's six-item table; tangoAW2's eight-item one (crate::mode_menu)
 
+# crate::gauntlet_ui::STATE: the map selector (step 1) and the colour pick (step 2)
+UI = 0x0203D080
+UI_STEP, UI_ANSWER, UI_MAP_CURSOR, UI_MAP, UI_COLOUR_CURSOR = UI, UI + 1, UI + 2, UI + 3, UI + 4
+SELECTOR, COLOURS = 1, 2
+PLAYER_COLOUR = lambda g: g.player(1)["colour"]   # (the player's army record's colour byte)
+# the army codes of the Teams screen (crate::army_skin::SKIN: 6 is Emerald Sun) and AW2's colour bytes
+ORANGE_STAR, BLUE_MOON, GREEN_EARTH, YELLOW_COMET, BLACK_HOLE, EMERALD_SUN = 1, 2, 3, 4, 5, 6
+CINDER_FREE = [ORANGE_STAR, BLUE_MOON, EMERALD_SUN]   # AW2's five minus Cinder Sea's enemies (Green Earth, Yellow Comet, Black Hole), then the skin
+CINDER_ENEMY_COLOURS = [GREEN_EARTH, YELLOW_COMET, BLACK_HOLE]
+
+UI_SHOWN = UI + 0x20          # what the step shows: +0 maps listed, +1 enemies, +2.. (CO, colour) pairs, +0x0E free count, +0x0F.. free army codes
+HOSTS = 0x0203C500            # crate::army_skin::STATE: the colour each skin sits on (0 none)
+
+
+def shown(e):
+    """What the selector (the highlighted map) or the colour pick (the map picked) offers: (maps, [(co, colour)] in order, [free army codes])."""
+    b = e.read(UI_SHOWN, 0x17)
+    return b[0], [(b[2 + 2 * k], b[3 + 2 * k]) for k in range(b[1])], list(b[0x0F:0x0F + b[0x0E]])
+
+
 # crate::gauntlet_mode (Cinder Sea): the HQs and the enemy COs in order
 CINDER = {"player": (3, 18), "drake": (27, 18), "sensei": (3, 3), "hawke": (29, 3)}
 ENEMIES = ["Drake", "Sensei", "Hawke"]
@@ -36,13 +56,37 @@ class Gauntlet(BhCampaign):
     def total_picks(self):
         return 1
 
-    def open(self, from_title=True):
-        """Select Mode's GAUNTLET, A: the CO screen (the mode starts at once: no box, no map)."""
+    def step(self):
+        return self.e.u8(UI_STEP)
+
+    def wait_step(self, step, frames=1500):
+        if not self.e.wait_until(lambda: self.step() == step, frames, step=10):
+            raise NavError(f"the Gauntlet's step {step} did not come up (step {self.step()})")
+        self.e.wait(12)
+
+    def open(self, from_title=True, pick=True):
+        """Select Mode's GAUNTLET, A: the map selector (the mode starts at once: no box, no world map); with `pick` A takes the highlighted map and the CO screen follows."""
         e = self.e
         if from_title:
             saves.to_select_mode(e)
         saves.wheel_to(e, "gauntlet")
         e.press("A", 8)
+        if pick:
+            self.wait_step(SELECTOR)
+            e.press("A", 6)
+
+    def pick_colour(self, code=None):
+        """On the colour pick (it follows the CO screen): move the cursor to the army `code` (None: leave it) and A."""
+        e = self.e
+        self.wait_step(COLOURS)
+        if code is not None:
+            want = CINDER_FREE.index(code)
+            for _ in range(8):
+                if e.u8(UI_COLOUR_CURSOR) == want:
+                    break
+                e.press("RIGHT", 4)
+                e.wait(8)
+        e.press("A", 6)
 
     def on_co_screen(self):
         return self.on_co_select() and self.co_cursor() is not None
@@ -52,11 +96,13 @@ class Gauntlet(BhCampaign):
             raise NavError("the Gauntlet's CO screen did not come up")
         self.e.wait(30)
 
-    def start(self, co=ANDY, from_title=True, setup=True):
-        """From the title: GAUNTLET, the pick of `co`, the battle's start, Setup left with Deploy, the intro read: the player in control on day 1. Returns the CO the screen picked."""
+    def start(self, co=ANDY, from_title=True, setup=True, colour=None):
+        """From the title: GAUNTLET, the map (the first), the pick of `co`, the army colour `colour` (an army code; None: the cursor's), the battle's start, Setup left with Deploy, the intro read: the
+        player in control on day 1. Returns the CO the screen picked."""
         e, g = self.e, self.g
         self.open(from_title)
         picked = self.choose_cos(1, prefs=[co])
+        self.pick_colour(colour)
         for _ in range(600):
             if self.in_battle() and e.u32(0x0849_9598) != 0:
                 break
