@@ -189,9 +189,224 @@ fn victory() -> Scene {
     Scene::new(vec![Line::say(co::HAWKE, "Hmph. The sea and the sky were yours today. Enjoy it while it lasts.")])
 }
 
+// --- Gauntlet 02, Iron Crown and Asuka's Keep -------------------------------------------------------------------------------------------------------------
+
+/// The HQs of stage one (five/gauntlet/spec/gauntlet_02.py): Grit's (on the field), Jess's, Kanbei's and Rachel's (hidden). The player is the fifth army (Black Hole's colour wearing the Emerald Sun skin).
+pub const IRON_GRIT: (u8, u8) = (8, 9);
+pub const IRON_JESS: (u8, u8) = (24, 5);
+pub const IRON_KANBEI: (u8, u8) = (34, 6);
+pub const IRON_RACHEL: (u8, u8) = (30, 20);
+/// Asuka's HQ on stage two (five/gauntlet/spec/gauntlet_02b.py).
+pub const KEEP_ASUKA: (u8, u8) = (22, 5);
+/// The most funds the player carries into Asuka's Keep, and what Asuka holds her fortress with.
+const KEEP_CARRY_CAP: u32 = 40000;
+const KEEP_ASUKA_FUNDS: u32 = 80000;
+
+/// Jess's wave: the forests of the north (tanks, Md Tanks, APCs, artillery, foot soldiers).
+const JESS_WAVE: [(u8, (u8, u8)); 14] = [
+    (unit::TANK, (23, 6)),
+    (unit::TANK, (24, 4)),
+    (unit::TANK, (25, 4)),
+    (unit::MD_TANK, (24, 7)),
+    (unit::MD_TANK, (22, 7)),
+    (unit::MD_TANK, (24, 8)),
+    (unit::APC, (23, 5)),
+    (unit::APC, (22, 8)),
+    (unit::INFANTRY, (21, 6)),
+    (unit::INFANTRY, (23, 7)),
+    (unit::ARTILLERY, (24, 3)),
+    (unit::ANTI_AIR, (26, 6)),
+    (unit::RECON, (20, 8)),
+    (unit::MECH, (21, 7)),
+];
+
+/// Kanbei's wave: the keep's plateau (infantry and mechs, a Mega Tank and a Md Tank, artillery and rockets at the south pass).
+const KANBEI_WAVE: [(u8, (u8, u8)); 15] = [
+    (unit::INFANTRY, (32, 3)),
+    (unit::INFANTRY, (35, 3)),
+    (unit::INFANTRY, (31, 4)),
+    (unit::INFANTRY, (37, 4)),
+    (unit::INFANTRY, (33, 5)),
+    (unit::INFANTRY, (35, 5)),
+    (unit::MECH, (33, 6)),
+    (unit::MECH, (35, 6)),
+    (unit::MECH, (32, 7)),
+    (unit::MECH, (33, 8)),
+    (unit::MEGATANK, (35, 8)),
+    (unit::MD_TANK, (37, 8)),
+    (unit::ANTI_AIR, (31, 8)),
+    (unit::ARTILLERY, (34, 9)),
+    (unit::ROCKETS, (32, 9)),
+];
+
+/// Rachel's wave: the lowlands (Recons and Tanks to flank, Md Tanks, copters, artillery).
+const RACHEL_WAVE: [(u8, (u8, u8)); 16] = [
+    (unit::RECON, (29, 18)),
+    (unit::RECON, (33, 17)),
+    (unit::TANK, (31, 20)),
+    (unit::TANK, (29, 20)),
+    (unit::TANK, (31, 21)),
+    (unit::MD_TANK, (28, 19)),
+    (unit::MD_TANK, (30, 19)),
+    (unit::MD_TANK, (33, 20)),
+    (unit::ARTILLERY, (31, 22)),
+    (unit::ROCKETS, (29, 22)),
+    (unit::B_COPTER, (31, 19)),
+    (unit::B_COPTER, (33, 19)),
+    (unit::INFANTRY, (27, 20)),
+    (unit::INFANTRY, (32, 21)),
+    (unit::MECH, (29, 21)),
+    (unit::ANTI_AIR, (29, 17)),
+];
+
+fn jess_chest(core: &mut Core) {
+    war_chest(core, 2, 20000, 1000);
+}
+fn kanbei_chest(core: &mut Core) {
+    war_chest(core, 3, 20000, 1500);
+}
+fn rachel_chest(core: &mut Core) {
+    war_chest(core, 4, 25000, 2000);
+}
+
+/// A scene on a day's start (the stage's day scenes).
+fn on_day(d: u16, then: Vec<Action>) -> Trigger {
+    Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, then).repeating()
+}
+
+/// Iron Crown, stage one: the player (a free CO, the Emerald Sun army, the fifth) against Grit (Blue Moon), Jess (Green Earth), Kanbei (Yellow Comet) and Rachel (Orange Star), one after another on one land map; Rachel's fall moves
+/// the battle in place to Asuka's Keep (stage two). Every enemy colour is fixed in its army's data (a colour pick for the player offers the colour the enemies leave free: Black Hole's here, `player_colours`).
+fn iron_crown() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_02", "Iron Crown");
+    m.objective = "Break Grit's river line, then Jess's, Kanbei's and Rachel's, and take Asuka's Keep.";
+    m.map = MapSrc::Built("gauntlet_02");
+    m.armies = vec![
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).team(1).funds(9000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).team(1).funds(0),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KANBEI)).team(1).funds(0),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::RACHEL)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
+    ];
+    m.player_skins = vec![0]; // Emerald Sun only
+    m.skin = Some((5, 0)); // the player's army wears Emerald Sun (skin 0) on the colour the enemies leave free
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_02"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.rank_days = 40;
+    m.held_hq = Some(IRON_GRIT);
+    m.held_more = vec![IRON_JESS, IRON_KANBEI, IRON_RACHEL];
+    m.sleepers = vec![(2, vec![IRON_GRIT]), (3, vec![IRON_GRIT, IRON_JESS]), (4, vec![IRON_GRIT, IRON_JESS, IRON_KANBEI])];
+    m.cut_off = vec![(1, IRON_GRIT), (2, IRON_JESS), (3, IRON_KANBEI)];
+    m.hidden = vec![
+        Hidden { army: 2, hq: IRON_JESS, zone: Rect::new(18, 0, 29, 12) },
+        Hidden { army: 3, hq: IRON_KANBEI, zone: Rect::new(30, 0, 39, 13) },
+        Hidden { army: 4, hq: IRON_RACHEL, zone: Rect::new(19, 14, 39, 25) },
+    ];
+    m.triggers = vec![
+        arrive(IRON_GRIT, &[], 2, jess_chest, &JESS_WAVE, jess_arrives()),
+        arrive(IRON_JESS, &[IRON_GRIT], 3, kanbei_chest, &KANBEI_WAVE, kanbei_arrives()),
+        arrive(IRON_KANBEI, &[IRON_GRIT, IRON_JESS], 4, rachel_chest, &RACHEL_WAVE, rachel_arrives()),
+        // Rachel's line is the last of stage one: a scene, then the battle moves on to Asuka's Keep
+        Trigger::new(
+            When::AfterAction,
+            Cond::All(vec![fell(IRON_RACHEL), fell(IRON_KANBEI), fell(IRON_JESS), fell(IRON_GRIT)]),
+            vec![Action::Scene(keep_switch()), Action::NextStage],
+        ),
+    ];
+    m.setup = false;
+    // Stage two: Asuka's Keep. The player's survivors land on the cells the map deploys the first army on; the player's skin moves to Orange Star's colour (Asuka is Black Hole's).
+    let keep = crate::es_campaign::deployment("gauntlet_02b");
+    let mut st = StageDef::new(MapSrc::Built("gauntlet_02b"));
+    st.deploy = keep.iter().filter(|u| u.army == 1).map(|u| (u.x, u.y)).collect();
+    st.units = keep.into_iter().filter(|u| u.army == 2).collect();
+    st.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Keep),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(crate::co_new::ASUKA)).funds(KEEP_ASUKA_FUNDS),
+    ];
+    st.skin = Some((1, 0));
+    st.weather = Weather::Rain; // Asuka's rain: the fortress is fogged
+    st.fog = true;
+    st.carry = Carry::All;
+    st.funds_cap = Some(KEEP_CARRY_CAP);
+    st.held = vec![KEEP_ASUKA];
+    st.intro = keep_intro();
+    st.victory = keep_victory();
+    st.triggers = vec![
+        on_day(4, vec![Action::Scene(keep_day4())]),
+        on_day(8, vec![Action::Scene(keep_day8())]),
+        // her HQ is held (taking it defeats nobody) so her army stands while she says her last line with her own face; the Win ends the battle
+        Trigger::new(When::AfterAction, fell(KEEP_ASUKA), vec![Action::Win]),
+    ];
+    m.stages = vec![st];
+    m.intro = iron_intro();
+    m.stars = 3;
+    m
+}
+
+fn iron_intro() -> Scene {
+    Scene::new(vec![
+        Line::say(co::GRIT, "Hey! Welcome to the Iron Crown. This river and these hills are mine."),
+        Line::say(co::GRIT, "If you want to cross the Aube, you'll have to get past my artillery first!"),
+        Line::say(co::GRIT, "And I'm not the only one waiting out here. Don't get comfortable!"),
+    ])
+}
+
+fn jess_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::GRIT, Mood::Sad, "Dang! They crossed my river and I couldn't stop them. Jess, you're up!"),
+        Line::feel(co::JESS, Mood::Happy, "You got it, Grit! The forest is on my side, so watch your step!"),
+        Line::say(co::JESS, "I'm going to show you how Green Earth fights. Ready or not!"),
+    ])
+}
+
+fn kanbei_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::JESS, Mood::Sad, "Oh no! The forest wasn't enough? Kanbei, please take over!"),
+        Line::say(co::KANBEI, "I understand. You have fought well to reach my mountains."),
+        Line::say(co::KANBEI, "But courage alone does not take a keep. Come, let us see you climb."),
+    ])
+}
+
+fn rachel_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::KANBEI, Mood::Sad, "The keep has fallen. Rachel, the lowlands are yours to hold."),
+        Line::feel(co::RACHEL, Mood::Happy, "You came all this way? Nice! Let's see if you can handle Orange Star's best!"),
+        Line::say(co::RACHEL, "I'm Rachel, and I won't let you take another step!"),
+    ])
+}
+
+fn keep_switch() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::RACHEL, Mood::Sad, "No way! My whole line is gone? That wasn't supposed to happen!"),
+        Line::say(crate::co_new::ASUKA, "Rachel, retire. The file on this army is almost complete."),
+        Line::say(crate::co_new::ASUKA, "Come to my keep. I have prepared for you."),
+    ])
+}
+
+fn keep_intro() -> Scene {
+    Scene::new(vec![
+        Line::say(crate::co_new::ASUKA, "I have read your every move. Observe."),
+        Line::say(crate::co_new::ASUKA, "Every gate and every gun of this keep stands where you will step."),
+        Line::say(crate::co_new::ASUKA, "The rain will blind you. It will not blind me. Begin."),
+    ])
+}
+
+fn keep_day4() -> Scene {
+    Scene::new(vec![Line::say(crate::co_new::ASUKA, "Day four. You crossed the river, as predicted. The next page is the wall.")])
+}
+
+fn keep_day8() -> Scene {
+    Scene::new(vec![Line::say(crate::co_new::ASUKA, "Your army grows thin and my file does not. Surrender is also in the record.")])
+}
+
+fn keep_victory() -> Scene {
+    Scene::new(vec![
+        Line::say(crate::co_new::ASUKA, "Impossible. I did not record this ending."),
+        Line::say(crate::co_new::ASUKA, "No. Not impossible, only unrecorded. Well played. I will update the file."),
+    ])
+}
+
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
-    let mut missions = vec![cinder_sea()];
+    let mut missions = vec![cinder_sea(), iron_crown()];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
         source: SOURCE,
@@ -236,5 +451,84 @@ mod tests {
         ids.dedup();
         assert_eq!(ids.len(), ROSTER.len());
         assert!(ROSTER.iter().all(|r| r.1), "every CO is open from the start");
+    }
+
+    /// The text map's rows (five/gauntlet/*.txt: the rows are the lines of the map's width after the header).
+    fn rows(text: &'static str, w: usize) -> Vec<&'static str> {
+        text.lines().filter(|l| l.len() == w && !l.starts_with('#') && !l.contains(' ')).collect()
+    }
+
+    #[test]
+    fn iron_crown_is_a_gauntlet_of_four_in_five_armies() {
+        let d = def();
+        assert_eq!(d.missions.len(), 2, "Cinder Sea and Iron Crown");
+        let m = &d.missions[1];
+        assert_eq!(m.key, "gauntlet_02");
+        let cos: Vec<_> = m.armies.iter().map(|a| a.co).collect();
+        assert!(matches!(cos[0], CoSpec::Fixed(c) if c == co::GRIT));
+        assert!(matches!(cos[1], CoSpec::Fixed(c) if c == co::JESS));
+        assert!(matches!(cos[2], CoSpec::Fixed(c) if c == co::KANBEI));
+        assert!(matches!(cos[3], CoSpec::Fixed(c) if c == co::RACHEL));
+        assert!(matches!(cos[4], CoSpec::Pick), "the player (the fifth army) picks one CO");
+        let colours: Vec<_> = m.armies.iter().map(|a| a.colour).collect();
+        assert_eq!(colours, vec![colour::BLUE_MOON, colour::GREEN_EARTH, colour::YELLOW_COMET, colour::ORANGE_STAR, colour::BLACK_HOLE], "every enemy colour is fixed on its army");
+        assert_eq!(m.hidden.iter().map(|h| h.army).collect::<Vec<_>>(), vec![2, 3, 4], "Jess, Kanbei and Rachel are hidden");
+        assert_eq!(m.held_hq, Some(IRON_GRIT));
+        assert_eq!(m.held_more, vec![IRON_JESS, IRON_KANBEI, IRON_RACHEL]);
+        assert_eq!(m.sleepers.len(), 3);
+        assert_eq!(m.cut_off.len(), 3);
+        assert_eq!(m.triggers.len(), 4, "three arrivals and the stage switch");
+        assert_eq!(m.player_skins, vec![0], "the player is Emerald Sun");
+        assert_eq!(m.skin, Some((5, 0)), "on the fifth army's colour, the one the enemies leave free");
+        assert!(!m.setup);
+        let map = crate::custom_campaign::built_map("gauntlet_02").expect("the map is built (aw2dev maps gen --campaign gauntlet)");
+        assert_eq!((map.width, map.height, map.armies), (40, 26, 5));
+        assert!(map.width as u32 * map.height as u32 <= 1288, "the engine's five-army limit");
+        // no hidden army has a unit on the map at the start (their waves land when they arrive)
+        assert!(map.units.iter().all(|u| u.army == 1 || u.army == 5));
+    }
+
+    #[test]
+    fn iron_crown_waves_land_on_ground_and_inside_their_zones() {
+        let m = &def().missions[1];
+        let r = rows(include_str!("../five/gauntlet/gauntlet_02.txt"), 40);
+        assert_eq!(r.len(), 26);
+        let at = |c: (u8, u8)| r[c.1 as usize].as_bytes()[c.0 as usize] as char;
+        for (army, wave) in [(2u8, &JESS_WAVE[..]), (3, &KANBEI_WAVE[..]), (4, &RACHEL_WAVE[..])] {
+            let zone = m.hidden.iter().find(|h| h.army == army).unwrap().zone;
+            for &(kind, c) in wave {
+                assert!(".Rf".contains(at(c)), "army {army}: kind {kind} at {c:?} stands on {:?}", at(c));
+                assert!(c.0 as i32 >= zone.x0 as i32 && c.0 as i32 <= zone.x1 as i32 && c.1 as i32 >= zone.y0 as i32 && c.1 as i32 <= zone.y1 as i32, "army {army} {c:?} is outside its zone");
+            }
+        }
+        // the hidden HQs' cells are plain ground until their lines come (the HQ is built on them)
+        for hq in [IRON_JESS, IRON_KANBEI, IRON_RACHEL] {
+            assert!(".R".contains(at(hq)), "{hq:?} is {:?}", at(hq));
+        }
+        assert_eq!(at(IRON_GRIT), '1');
+    }
+
+    #[test]
+    fn asuka_keep_is_the_second_stage() {
+        let m = &def().missions[1];
+        assert_eq!(m.stages.len(), 1);
+        let st = &m.stages[0];
+        assert!(matches!(st.armies[0].co, CoSpec::Keep), "the player's CO comes along");
+        assert_eq!(st.armies[0].colour, colour::ORANGE_STAR, "the player's skin moves off Black Hole's colour");
+        assert!(matches!(st.armies[1].co, CoSpec::Fixed(c) if c == crate::co_new::ASUKA));
+        assert_eq!(st.armies[1].colour, colour::BLACK_HOLE, "Asuka shows Black Hole's colours");
+        assert_eq!(st.skin, Some((1, 0)), "Emerald Sun on the first army");
+        assert_eq!(st.held, vec![KEEP_ASUKA]);
+        assert_eq!(st.funds_cap, Some(KEEP_CARRY_CAP));
+        assert!(matches!(st.carry, Carry::All));
+        assert!(st.units.iter().all(|u| u.army == 2), "only Asuka's units: the survivors replace the player's");
+        assert!(st.deploy.len() >= 30, "room for the survivors: {}", st.deploy.len());
+        assert_eq!(st.triggers.len(), 3, "two day scenes and the Win");
+        let map = crate::custom_campaign::built_map("gauntlet_02b").expect("the stage's map is built");
+        assert_eq!((map.width, map.height, map.armies), (30, 22, 2));
+        let r = rows(include_str!("../five/gauntlet/gauntlet_02b.txt"), 30);
+        assert_eq!(r[KEEP_ASUKA.1 as usize].as_bytes()[KEEP_ASUKA.0 as usize], b'2');
+        let text = include_str!("../five/gauntlet/gauntlet_02b.txt");
+        assert!(text.contains("\nblackhole"), "the stage's map allows Black Hole's inventions");
     }
 }

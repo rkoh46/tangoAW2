@@ -239,7 +239,8 @@ pub fn is_held_hq(core: &Core, x: u8, y: u8) -> bool {
     let k = crate::stage::stage(core) as usize;
     if k > 0 {
         return campaign(core)
-            .and_then(|c| c.model.custom.as_ref().and_then(|x| x.stages.get(mission(core) as usize)?.get(k - 1).map(|s| s.held.contains(&(x, y)))))
+            .and_then(|c| c.model.custom.as_ref())
+            .and_then(|c2| c2.stages.get(mission(core) as usize)?.get(k - 1).map(|s| s.held.contains(&(x, y))))
             .unwrap_or(false);
     }
     campaign(core)

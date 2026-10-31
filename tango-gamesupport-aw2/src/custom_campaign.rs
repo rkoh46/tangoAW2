@@ -909,6 +909,9 @@ pub struct MissionDef {
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
     /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
+    /// The looks the player may wear on a Gauntlet map, as indexes of [`crate::army_skin`] skins (the player's army wears one on the free colour; empty: the free plain colours, the enemies' fixed).
+    /// Iron Crown's is Emerald Sun only (`[0]`), `MissionDef::skin` and `StageDef::skin` say where it sits.
+    pub player_skins: Vec<usize>,
     /// Later stages: the battle moves on in place when [`Action::NextStage`] fires, one stage after another ([`StageDef`], docs/dev/stages.md).
     pub stages: Vec<StageDef>,
 }
@@ -1109,6 +1112,7 @@ impl MissionDef {
             cut_off: Vec::new(),
             hidden: Vec::new(),
             skin: None,
+            player_skins: Vec::new(),
             stages: Vec::new(),
         }
     }
