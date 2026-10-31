@@ -197,10 +197,23 @@ def static(skin_path=None, say=print):
 
 
 # ---------------------------------------------------------------------------------------------------------------- live
+def _windows():
+    """The colours of AW2's window row (BG bank 8) for each of the five armies, as the shots show them: every window, menu and dialogue box is drawn in them, in the host colour's
+    version, whatever army the skin is. They are not the army's colours (the skin leaves them alone), so the checks must not count them."""
+    rom = Rom()
+    out = set()
+    for c in range(5):
+        for i in range(1, 16):
+            v = rom.u16(0x085AC8BC + 32 * c + 2 * i)
+            out.add(tuple(((v >> s) & 31) * 255 // 31 for s in (0, 5, 10)))
+    return out
+
+
 def _colours(path):
     im = Image.open(path).convert("RGB")
     from collections import Counter
-    return Counter(im.getdata())
+    win = _windows()
+    return Counter(p for p in im.getdata() if p not in win)
 
 
 def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
