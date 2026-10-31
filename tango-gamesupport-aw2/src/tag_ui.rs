@@ -273,7 +273,7 @@ pub fn teams_tick(core: &mut Core, ds: bool, remap: bool, keys: u32, prev: u32) 
     if editing != NONE {
         let a = editing as u32;
         // (held Up or Down goes on as AW2's own cursor does: the second step ten frames after the press, then every four)
-        let fire = repeat(core, keys, pressed, KEY_UP | KEY_DOWN, 10);
+        let fire = repeat_at(core, (PARTNER_HELD, PARTNER_DIR), keys, pressed, KEY_UP | KEY_DOWN, 10);
         let step: i32 = if fire == KEY_DOWN {
             1
         } else if fire == KEY_UP {
@@ -305,30 +305,39 @@ const CELL_PULSE: u32 = tag::ARROWS + 2;
 /// The arrows' auto-repeat (see [`repeat`]): frames held, the direction held.
 const REPEAT_HELD: u32 = tag::ARROWS + 3;
 const REPEAT_DIR: u32 = tag::ARROWS + 4;
+/// The partner pick's own repeat state (UP and DOWN while a partner cell is open): apart from the cells' walk's, which the same
+/// frame's call would otherwise reset (the walk's held RIGHT then counted as a new press every frame).
+const PARTNER_HELD: u32 = tag::ARROWS + 0xA;
+const PARTNER_DIR: u32 = tag::ARROWS + 0xB;
 
 /// Dual Strike's auto-repeat of the arrows, from the keys held: a press (its edge) is one step, a key held on goes on after 12
 /// frames and then every 4 (measured on clean Dual Strike's Versus screen in melonDS). Returns the direction to step, or 0.
 /// `mask` is the arrows the screen uses.
 pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32, delay: u8) -> u32 {
+    repeat_at(core, (REPEAT_HELD, REPEAT_DIR), held, pressed, mask, delay)
+}
+
+/// [`repeat`] with its state at `(frames held, direction)`.
+fn repeat_at(core: &mut Core, (at_held, at_dir): (u32, u32), held: u32, pressed: u32, mask: u32, delay: u8) -> u32 {
     let held = held & mask;
     let dir = [KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN]
         .into_iter()
         .find(|&d| held & d != 0)
         .unwrap_or(0);
-    let last = core.raw_read_8(REPEAT_DIR, -1) as u32;
+    let last = core.raw_read_8(at_dir, -1) as u32;
     if dir == 0 {
         if last != 0 {
-            core.raw_write_8(REPEAT_DIR, -1, 0);
-            core.raw_write_8(REPEAT_HELD, -1, 0);
+            core.raw_write_8(at_dir, -1, 0);
+            core.raw_write_8(at_held, -1, 0);
         }
         return 0;
     }
     if pressed & dir != 0 || last != dir {
-        core.raw_write_8(REPEAT_DIR, -1, dir as u8);
-        core.raw_write_8(REPEAT_HELD, -1, 0);
+        core.raw_write_8(at_dir, -1, dir as u8);
+        core.raw_write_8(at_held, -1, 0);
         return dir;
     }
-    let n = core.raw_read_8(REPEAT_HELD, -1).saturating_add(1);
+    let n = core.raw_read_8(at_held, -1).saturating_add(1);
     let (fire, n) = if n == delay {
         (true, n)
     } else if n >= delay + 4 {
@@ -336,7 +345,7 @@ pub(crate) fn repeat(core: &mut Core, held: u32, pressed: u32, mask: u32, delay:
     } else {
         (false, n)
     };
-    core.raw_write_8(REPEAT_HELD, -1, n);
+    core.raw_write_8(at_held, -1, n);
     if fire {
         dir
     } else {
