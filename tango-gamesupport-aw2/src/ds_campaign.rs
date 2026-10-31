@@ -1575,10 +1575,15 @@ fn start_gauntlet(core: &mut Core, req: u8) {
 
 /// The Gauntlet's map is `mission` (the selector's pick, or the one a run saved halfway was on): the session's mission and its header in the battle's map table entry.
 pub fn choose_gauntlet_map(core: &mut Core, mission: usize) {
+    set_gauntlet_mission(core, mission);
+    sync_mission(core);
+}
+
+/// The session's mission only (a run continued on a later stage keeps that stage's header).
+pub fn set_gauntlet_mission(core: &mut Core, mission: usize) {
     let mission = mission as u8;
     crate::ds_worldmap::write_state(core, &[mission], &[], mission);
     core.raw_write_8(MISSION_SET, -1, 0);
-    sync_mission(core);
 }
 
 /// The army colour the player picked for the Gauntlet's battle (an army code of the Teams screen: 1..5, or a skin's `army_skin::SKIN + i`; 0: none, the map's own), kept in the mode's

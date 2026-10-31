@@ -40,9 +40,10 @@ Both directions work for the five-army game: M31's stage 1 is five-army (the pla
 ## Limits
 
 - At most 40 units are carried (the carry buffer, `ram_map::STAGE`); the campaigns' armies start with at most 40.
-- A stage has no second front, marches, jams, volcano, onyx, Black Factory table or held HQs of its own (the mission's apply to stage 1; held HQs are off after a switch). Named units of different stages
+- A stage has no second front, marches, jams, volcano, onyx or Black Factory table of its own (the mission's apply to stage 1). Its held HQs are its own list, `StageDef::held` (the mission's `held_hq` / `held_more` are off after a switch): a boss's HQ held so her army stands while she speaks, a `Win` trigger ending the battle (Gauntlet map 2's Asuka). Named units of different stages
   share the mission's latch namespace: do not name two units alike across stages.
 - A battle saved on stage 1 of a five-army mission (M31's gauntlet) and one on a four-army later stage both resume (`docs/dev/five-suspend.md`); a *five-army later stage* saved is written (the stage mark, then the five-army record) but untested.
+- The survivors arrive fresh: a unit that had moved or waited before the switch is not greyed out on the stage's first turn (the unit record's flags 0x01 and 0x08 are cleared).
 - The day counter restarts at 1 on the new stage; the intro and any day-one trigger of the stage play again.
 - A five-army *destination* stage is wired (`set_campaign(true, ..)`) but untested.
 

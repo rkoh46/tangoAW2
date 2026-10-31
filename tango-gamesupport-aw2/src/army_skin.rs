@@ -1081,7 +1081,7 @@ pub fn sync(core: &mut Core) {
     }
     // A custom campaign's mission may name a skin for one of its armies (BH2's M26: the Emerald Sun legion is the enemy): it takes that army's colour.
     let enemy = crate::ds_campaign::mission_skin(core).filter(|_| crate::pvp::in_battle(core)).and_then(|(army, skin)| {
-        let c = crate::stage::colour_in_swap(core, army as u32).unwrap_or_else(|| core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1));
+        let c = core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1);
         (1..=5).contains(&c).then_some((skin, c))
     });
     // The Gauntlet's player who picked Emerald Sun wears it on the colour its map leaves free (the designs stay the CO's: the colour only recolours).

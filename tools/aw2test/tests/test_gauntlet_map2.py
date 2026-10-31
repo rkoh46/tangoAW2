@@ -36,14 +36,14 @@ def start(ctx, co=ga.ANDY, save=None, env=None):
     return e, g, d
 
 
-def to_player_turn(e, g, d, frames=24000):
+def to_player_turn(e, g, d, frames=24000, army=5):
     """The fifth army moves last: A through the scripts until it is the player's turn with nothing running (Grit's turn goes by)."""
     for _ in range(frames // 20):
         if d.scripts_running():
             e.press("A", 4)
-        elif g.current_army() == 5 and d.in_battle():
+        elif g.current_army() == army and d.in_battle():
             e.wait(30)
-            if g.current_army() == 5 and not d.scripts_running():
+            if g.current_army() == army and not d.scripts_running():
                 break
         e.wait(16)
     d.wait_control()
@@ -154,7 +154,8 @@ def gauntlet_map2_stage_two_carries_the_survivors_and_asuka_wins(ctx):
 
 @test(name="gauntlet_map2_suspend_and_resume", modes=("ds",))
 def gauntlet_map2_suspend_and_resume(ctx):
-    """Saved after Grit's fall (Jess's line on the field) and on Asuka's Keep, then continued from Select Mode: byte for byte as saved, five-army again for the first, and the stage number back for the second."""
+    """Saved after Grit's fall (Jess's line on the field) and continued from Select Mode: byte for byte as saved, five-army again, the saved map (Iron Crown, not the selector's first) with its rules:
+    the next fall still reveals the next line."""
     from tests.test_five_suspend import whole_battle, compare_whole
     e, g, d = start(ctx)
     d.capture(ctx, ga.IRON["grit"], army=5)
@@ -165,28 +166,41 @@ def gauntlet_map2_suspend_and_resume(ctx):
     ctx.check(not saved.problems(), f"every slot passes its check ({saved.problems()})")
     e.close()
     e, g, d = resume(ctx, saved.path)
+    ctx.eq(d.session()["mission"], ga.MAP2, "the run continues on the map it was saved on")
     ctx.eq(e.u8(FIVE_ON), 2, "resumed: the five-army mission is on")
     compare_whole(ctx, before, whole_battle(g), "after Grit's fall, resumed")
     for key, army, who, nxt in ga.IRON_ORDER[1:3]:
         d.capture(ctx, ga.IRON[key], army=5)
         d.settle()
-    d.capture(ctx, ga.IRON["rachel"], army=5)
-    wait_stage(ctx, e, g, d, 1)
-    d.dialogue()
-    d.wait_control()
-    g._units_base = g._players_base = None
+        ctx.check(len(g.units(army=nxt)) >= WAVES[nxt] - 1, f"{who}'s fall still brings the next line after a resume ({len(g.units(army=nxt))} units)")
+    e.close()
+
+
+@test(name="gauntlet_map2_stage_two_suspend_and_resume", modes=("ds",))
+def gauntlet_map2_stage_two_suspend_and_resume(ctx):
+    """Saved on Asuka's Keep (map menu > Save) and continued from Select Mode: the stage number, the two-army game, the survivors, Asuka's army and the skin's colour come back byte for byte, and
+    taking her HQ still wins."""
+    from tests.test_five_suspend import whole_battle, compare_whole
+    e, g, d = to_stage_two(ctx)
+    to_player_turn(e, g, d, army=1)
     before = whole_battle(g)
     ctx.eq(stage(e), 1, "on stage two")
+    # (the map menu is opened on an empty cell: the nearest ones to the landing, not the first in the fogged plateau)
+    cells = g.empty_cells
+    g.empty_cells = lambda: sorted(cells(), key=lambda c: abs(c[0] - 3) + abs(c[1] - 18))
     saves.suspend(g)
     saved = saves.flash(e, os.path.join(ctx.out, "saved2"))
     ctx.check(not saved.problems(), f"stage two: every slot passes its check ({saved.problems()})")
     e.close()
     e, g, d = resume(ctx, saved.path)
     ctx.eq(stage(e), 1, "resumed on stage two")
-    compare_whole(ctx, before, whole_battle(g), "on Asuka's Keep, resumed")
+    after = whole_battle(g)
+    # (the player table's records of the armies the stage does not have (3..5) hold what the resume's own start left there, as on M31's stage two: only armies 1 and 2 are compared (record 0 is the neutral one))
+    keep = lambda b: dict(b, players=b["players"][0x3C:0x3C * 3])
+    compare_whole(ctx, keep(before), keep(after), "on Asuka's Keep, resumed")
     ctx.eq(e.u8(ga.SKIN_STATE), 1, "the skin is on the player's colour after the resume")
-    d.capture(ctx, ga.KEEP_ASUKA, army=1)
-    ctx.eq(d.through_results(), 1, "the resumed stage is won")
+    ctx.eq([e.u8(g.players_base + 0x3C * a + 0x1A) for a in (1, 2)], [1, 5], "the colours: the player's Orange Star with the skin, Asuka's Black Hole")
+    ctx.eq(d.owner(ga.KEEP_ASUKA), 2, "Asuka's HQ is on the resumed map")
     e.close()
 
 

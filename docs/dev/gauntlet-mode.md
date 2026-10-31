@@ -58,7 +58,7 @@ game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of 
 A function in `gauntlet_mode.rs` added to `def()`'s missions (spec `five/gauntlet/spec/gauntlet_NN.py`, `aw2dev maps gen --campaign gauntlet`): the selector lists it, with its enemies, and the colour pick
 offers what its enemies leave, from the mission alone. **The enemies' colours are the map's data**: each enemy `ArmyDef::new(colour::.., CoSpec::Fixed(co))` in `armies` (index 1 on, in the order they
 come) is what the selector shows and what the player may not wear; `Entry::free` computes the offered colours (AW2's five minus those, then Emerald Sun while one of the five is free to host it), so a
-map that fixes other colours changes the offer with no other edit. The enemy armies need teams of their own (team 2: team 0 is "my own number" and 1 is the player's).
+map that fixes other colours changes the offer with no other edit. The enemy armies need teams of their own (team 2: team 0 is "my own number" and 1 is the player's). A map with later stages lists their enemies too and keeps a plain colour out of the offer if any stage's enemy wears it ([gauntlet.md](gauntlet.md), "Colours and stages"); a five-army map has the player in army 5 (its pick is the CO screen's army-1 pick, army 1 a fixed enemy).
 
 ## Aids and tests
 `aw2dev gauntlet start [--co N]` boots the harness into the mode with a picture of each screen (wheel, map selector, CO pick, colour pick, Setup, first turn); `aw2dev gauntlet test` runs `-k gauntlet_mode`.
