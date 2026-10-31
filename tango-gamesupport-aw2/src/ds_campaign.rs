@@ -117,6 +117,8 @@ const P_HARD: u32 = PROGRESS + 6;
 /// The campaigns cleared (bit 0 Normal, bit 1 Hard): kept by New, so Hard
 /// stays open once Normal has been cleared (as Dual Strike opens it).
 const P_CLEARS: u32 = PROGRESS + 7;
+/// The Gauntlet's army colour choice ([`gauntlet_choice`]): the byte the campaigns keep their clears in, which the Gauntlet (one run, no Hard) never uses.
+const P_COLOUR: u32 = P_CLEARS;
 const P_WON: u32 = PROGRESS + 8;
 /// The player's last Intel > General choice (crate::two_front's posture
 /// XOR General: 0 is General), which the next two-front battle starts with
@@ -342,6 +344,13 @@ pub const FLOW_CREDITS_RUNNING: u8 = 8;
 pub const FLOW_PROLOGUE_SEEN: u8 = 9;
 /// The Gauntlet's way back to Select Mode begins ([`crate::gauntlet::returning`]).
 pub const FLOW_RETURNING: u8 = 10;
+/// The Gauntlet's choosing steps ([`crate::gauntlet_ui`]): the map selector opens, the colour pick opens, a step is up (the start proc waits while it is), how it ended
+/// (1: A, on; 0: B, back), and the start proc comes round again (B on the CO screen or on the colour pick).
+pub const FLOW_PICK_SELECT: u8 = 11;
+pub const FLOW_PICK_COLOUR: u8 = 12;
+pub const FLOW_PICK_UP: u8 = 13;
+pub const FLOW_PICK_ANSWER: u8 = 14;
+pub const FLOW_PICK_AGAIN: u8 = 15;
 /// Narration picture n (crate::ds_story_art::NARRATION) on the map's layer.
 pub const FLOW_PICTURE: u8 = 16;
 
@@ -569,15 +578,26 @@ fn start_new_proc_script(save: u32, seen: u32) -> Vec<u8> {
 /// [`SELECT_MODE_START`], begins on Campaign).
 const MAIN_MENU_PROC: u32 = 0x0849_E7F8;
 
-/// The Gauntlet's start proc ([`crate::gauntlet`]): fade out, fill the CO screen's lists (the stub answers and the proc goes on), the CO screen (a child: B answers 0 and
-/// goes back to Select Mode), BG0 emptied, `ResetRulesAfterCampaignMap`, then AW2's mission proc (the mission card, the battle) as the campaign's world map ends in.
-fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32) -> Vec<u8> {
+/// The Gauntlet's start proc ([`crate::gauntlet`]): fade out; the map selector ([`crate::gauntlet_ui`], B goes back to Select Mode); fill the CO screen's lists (the stub answers and
+/// the proc goes on); the CO screen (a child: B answers 0 and the proc comes round again, to the selector); the colour pick (B: round again, to the CO screen); the progress saved
+/// (the colour is kept for Continue), BG0 emptied, `ResetRulesAfterCampaignMap`, then AW2's mission proc (the mission card, the battle) as the campaign's world map ends in.
+#[allow(clippy::too_many_arguments)]
+fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32, save: u32, flows: [u32; 5]) -> Vec<u8> {
     const BACK: i16 = 100;
+    const AGAIN: i16 = 101;
+    let [select, colour, up, answer, again] = flows;
     [
         proc_cmd(0x1D, 0x1E, 0),
+        proc_cmd(0x02, 0, select),
+        proc_cmd(0x14, 0, up),
+        proc_cmd(0x28, BACK, answer),
         proc_cmd(0x02, 0, co_setup),
         proc_cmd(0x06, 1, CO_SELECT_PROC),
-        proc_cmd(0x28, BACK, 0x0803_BD6D),
+        proc_cmd(0x28, AGAIN, 0x0803_BD6D),
+        proc_cmd(0x02, 0, colour),
+        proc_cmd(0x14, 0, up),
+        proc_cmd(0x28, AGAIN, answer),
+        proc_cmd(0x02, 0, save | 1),
         proc_cmd(0x02, 0, clear),
         proc_cmd(0x02, 0, RESET_RULES),
         proc_cmd(0x0D, 0, MISSION_PROC),
@@ -585,6 +605,10 @@ fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32) -> Vec<u8> {
         proc_cmd(0x02, 0, returning),
         proc_cmd(0x1D, 0x1E, 0),
         proc_cmd(0x0D, 0, MAIN_MENU_PROC),
+        // (a label is found by scanning on to it and an end stops the scan: the proc that comes round again goes last)
+        proc_cmd(0x0B, AGAIN, 0),
+        proc_cmd(0x02, 0, again),
+        proc_cmd(0x00, 0, 0),
     ]
     .concat()
 }
@@ -724,7 +748,8 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let ending = built.add(&ending_script(credits_start, credits_running));
             let help = DIFFICULTY_HELP.map(|t| built.add(&[t.as_bytes(), &[0]].concat()));
             let returning = built.add_magic(data::Magic::Flow(FLOW_RETURNING));
-            let gauntlet_start = built.add(&gauntlet_start_script(co_setup, clear, returning));
+            let flows = [FLOW_PICK_SELECT, FLOW_PICK_COLOUR, FLOW_PICK_UP, FLOW_PICK_ANSWER, FLOW_PICK_AGAIN].map(|f| built.add_magic(data::Magic::Flow(f)));
+            let gauntlet_start = built.add(&gauntlet_start_script(co_setup, clear, returning, save, flows));
             let gauntlet_end = built.add(&gauntlet_end_script(save));
             assert!(built.base + (built.blob.len() as u32) < DATA_END);
             Some(Campaign {
@@ -1514,6 +1539,10 @@ fn start_gauntlet(core: &mut Core, req: u8) {
     core.raw_write_8(P_HARD, -1, 0);
     core.raw_write_range(P_FLAGS, -1, &[0u8; 16]);
     flags_from_record(core);
+    if req != 2 {
+        // (a new run has no army colour yet; a run continued keeps the one saved with it)
+        core.raw_write_8(P_COLOUR, -1, 0);
+    }
     let missions = campaign(core).map_or(0, |c| c.model.missions);
     let resume = if req == 2 {
         crate::suspend::saved_mission_of(core, source(core)).filter(|&m| (m as usize) < missions)
@@ -1522,20 +1551,37 @@ fn start_gauntlet(core: &mut Core, req: u8) {
         crate::suspend::drop_mid_of(core, source(core));
         None
     };
+    // (a new run's map is the selector's pick, [`choose_gauntlet_map`]: the first map stands in until then)
     let mission = resume.unwrap_or(0);
     crate::ds_worldmap::backup_aw2_state(core);
-    crate::ds_worldmap::write_state(core, &[mission], &[], mission);
     core.raw_write_8(ACTIVE, -1, 1);
-    core.raw_write_8(MISSION_SET, -1, 0);
     core.raw_write_8(GAME_MODE, -1, CAMPAIGN);
     core.raw_write_8(MAP_ID, -1, data::MAP_ID);
-    sync_mission(core);
+    choose_gauntlet_map(core, mission as usize);
     log::info!("gauntlet: map {} {}", mission + 1, if resume.is_some() { "resumed" } else { "starts" });
     if resume.is_some() {
         return crate::suspend::resume_mid(core, spec(core).mid_slot);
     }
     let Some(c) = campaign(core) else { return };
     proc_start_instead(core, c.gauntlet_start);
+}
+
+/// The Gauntlet's map is `mission` (the selector's pick, or the one a run saved halfway was on): the session's mission and its header in the battle's map table entry.
+pub fn choose_gauntlet_map(core: &mut Core, mission: usize) {
+    let mission = mission as u8;
+    crate::ds_worldmap::write_state(core, &[mission], &[], mission);
+    core.raw_write_8(MISSION_SET, -1, 0);
+    sync_mission(core);
+}
+
+/// The army colour the player picked for the Gauntlet's battle (an army code of the Teams screen: 1..5, or a skin's `army_skin::SKIN + i`; 0: none, the map's own), kept in the mode's
+/// progress record so a run saved halfway continues in it.
+pub fn gauntlet_choice(core: &Core) -> u8 {
+    core.raw_read_8(P_COLOUR, -1)
+}
+
+pub fn set_gauntlet_choice(core: &mut Core, code: u8) {
+    core.raw_write_8(P_COLOUR, -1, code);
 }
 
 /// Where AW2, past `ResetRulesAfterCampaignMap` at a campaign mission's end, starts the proc of its world map after a mission (`0x0849EBBC`): the Gauntlet's end proc runs
@@ -2036,6 +2082,22 @@ fn landing(core: &mut Core) {
         Some(data::Magic::Flow(FLOW_HIDE)) => 1,
         Some(data::Magic::Flow(FLOW_RETURNING)) => {
             crate::gauntlet::returning(core);
+            0
+        }
+        Some(data::Magic::Flow(FLOW_PICK_SELECT)) => {
+            crate::gauntlet_ui::begin_select(core);
+            0
+        }
+        Some(data::Magic::Flow(FLOW_PICK_COLOUR)) => {
+            crate::gauntlet_ui::begin_colour(core);
+            0
+        }
+        Some(data::Magic::Flow(FLOW_PICK_UP)) => crate::gauntlet_ui::up(core) as u32,
+        Some(data::Magic::Flow(FLOW_PICK_ANSWER)) => core.raw_read_8(crate::gauntlet_ui::ANSWER, -1) as u32,
+        Some(data::Magic::Flow(FLOW_PICK_AGAIN)) => {
+            if let Some(script) = campaign(core).map(|c| c.gauntlet_start) {
+                return proc_start_instead(core, script);
+            }
             0
         }
         Some(data::Magic::Flow(FLOW_CLEAR)) => return clear_bg0(core),

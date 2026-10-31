@@ -113,6 +113,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("battle scenes: state and effects", (0x0203_F800, 0x200)),
     ("Survival", (0x0203_FA00, 0x310)),
     ("DS Campaign", (0x0203_FD10, 0x50)),
+    ("Gauntlet's map selector and colour pick (crate::gauntlet_ui::STATE)", (crate::gauntlet_ui::STATE, crate::gauntlet_ui::STATE_LEN)),
     ("CPU tactics, heal effect, Oozium, stun, battle distance, Teams list", (0x0203_FD60, 0x1A0)),
     ("design list, joypad and invention picks", (0x0203_FF00, 0x100)),
     ("five armies: the player table, moved (crate::five::PLAYERS: six 0x3C-byte slots)", (crate::five::PLAYERS, 6 * 0x3C)),

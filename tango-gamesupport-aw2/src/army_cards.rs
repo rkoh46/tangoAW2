@@ -146,7 +146,7 @@ fn sea(rgba: &[u8]) -> Rgb {
         .unwrap_or((152, 224, 232))
 }
 
-fn emblem(core: &Core, cv: &mut Rgba<'_>, colour: u8, x: i32, y: i32) {
+pub(crate) fn emblem(core: &Core, cv: &mut Rgba<'_>, colour: u8, x: i32, y: i32) {
     let (w, pixels) = if colour >= crate::army_skin::SKIN {
         let n = crate::army_skin::skins().len().max(1);
         (

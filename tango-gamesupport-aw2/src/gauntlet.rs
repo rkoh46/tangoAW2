@@ -5,9 +5,9 @@
 //! The flow, screen by screen:
 //! 1. Select Mode: GAUNTLET (a wheel entry that answers like Battle Maps and Link: A starts the mode at once). The pick stores Campaign's New as the mode and asks
 //!    for this source ([`picked`]); the game's own Campaign New handler (trapped, `ds_campaign::start`) runs [`crate::ds_campaign::start_gauntlet`] instead of the campaign's.
-//! 2. The CO pick: AW2's CO screen with every CO the game has (one CO, no partner: the mission's `CoSpec::Pick`; B goes back to Select Mode). The screen is one
-//!    proc script ([`start_script`]): fade out, the screen's lists ([`crate::ds_campaign`]'s `FLOW_CO_SETUP`), the CO screen, then (the campaign's own path from its map)
-//!    `ResetRulesAfterCampaignMap` and the mission proc: the mission card, the intro scene, the battle.
+//! 2. The start proc ([`start_script`] is `ds_campaign`'s `gauntlet_start_script`): the **map selector** ([`crate::gauntlet_ui`]: the Gauntlet's maps, the enemies each brings in order, the best
+//!    result; B goes back to Select Mode), the **CO pick** (AW2's CO screen with every CO the game has: one CO, no partner; B goes back to the selector), the **army colour pick**
+//!    (the colours the map's enemies do not wear; B goes back to the CO screen), then `ResetRulesAfterCampaignMap` and the mission proc: the mission card, the intro scene, the battle.
 //! 3. The battle, then AW2's own VICTORY / DEFEAT and results screen (score, rank, a record when it beats the best), as in the campaign.
 //! 4. The end: `end_of_battle` records the run, `ResetRulesAfterCampaignMap`, and where AW2 would open its world map ([`crate::ds_campaign::AFTER_MAP`]) [`end_script`] runs: the record is
 //!    saved, the screen fades and Select Mode comes back. Retrying is picking GAUNTLET again.
@@ -129,16 +129,45 @@ pub fn best(core: &Core, mission: u8) -> Option<Best> {
     decode(core.raw_read_32(crate::ds_campaign::RECORDS + 8 * mission as u32, -1))
 }
 
-/// At the map's start: the player's army keeps the colour the mission gives it. AW2's CO screen gives an army the colour of its CO's country (Kanbei's army would be Yellow
-/// Comet's, Drake's Green Earth's: the colours of the enemy armies of a map the player picks any CO for), which the Gauntlet's free pick must not do.
+/// At the map's start: the player's army wears the colour it picked ([`crate::gauntlet_ui`]'s colour pick: one the map's enemies do not wear), or the colour the mission gives it when
+/// nothing was picked. AW2's CO screen gives an army the colour of its CO's country (Kanbei's army would be Yellow Comet's, Drake's Green Earth's: the colours of the enemy armies of a
+/// map the player picks any CO for), which the Gauntlet's free pick must not do. A skin (Emerald Sun) sits on the lowest colour no army has (`army_skin::assign`): [`player_skin`]
+/// puts it on while the battle lasts; its designs stay the CO's (the colour only recolours).
 pub fn keep_colour(core: &mut Core, m: &crate::campaign_model::MissionInfo) {
     if !session(core) {
         return;
     }
     let players = core.raw_read_32(0x0849_9598, -1);
     let at = players + 0x3C + 0x1A;
-    let want = m.colours[0];
+    let want = player_colour(core, m);
     if core.raw_read_8(at, -1) != want {
         core.raw_write_8(at, -1, want);
     }
+}
+
+/// The colour (1..5) the player's army has in this mission's battle: its pick, a skin's host, or the mission's own.
+fn player_colour(core: &Core, m: &crate::campaign_model::MissionInfo) -> u8 {
+    let choice = crate::ds_campaign::gauntlet_choice(core);
+    if choice == 0 {
+        return m.colours[0];
+    }
+    let mut choices = vec![choice];
+    choices.extend_from_slice(&m.colours[1..(m.armies as usize).clamp(1, 4)]);
+    crate::army_skin::assign(&choices).0[0]
+}
+
+/// The skin the player's army wears (its index) and the colour it sits on, once the pick was a skin: from the colour pick on, so the ROM's palettes hold it before the map's graphics load (a
+/// palette the game has loaded keeps the colours it was loaded with). The colour is the lowest the map's enemies do not wear (`army_skin::assign`, as the player's army byte gets it
+/// in [`keep_colour`]).
+pub fn player_skin(core: &Core) -> Option<(usize, u8)> {
+    if !session(core) {
+        return None;
+    }
+    let choice = crate::ds_campaign::gauntlet_choice(core);
+    let skin = choice.checked_sub(crate::army_skin::SKIN)? as usize;
+    let entry = crate::gauntlet_mode::entries().get(crate::ds_campaign::mission(core) as usize)?;
+    let mut choices = vec![choice];
+    choices.extend(entry.enemies.iter().map(|e| e.1));
+    let host = *crate::army_skin::assign(&choices).1.get(skin)?;
+    (host != 0 && skin < crate::army_skin::skins().len()).then_some((skin, host))
 }
