@@ -138,7 +138,7 @@ fn cinder_sea() -> MissionDef {
     // (the player's army has no team of its own written here: team 0 is its own army number, 1; the three enemies share team 2: with team 1 they were the player's allies)
     // the gauntlet: Drake's and Sensei's HQs are held (taking one defeats nobody: the line's survivors fight on, cut off from their income); Hawke's is the last
     m.held_hq = Some(CINDER_DRAKE);
-    m.held_more = vec![CINDER_SENSEI];
+    m.held_more = vec![CINDER_SENSEI, CINDER_HAWKE]; // (Hawke's too: his army must still stand while he says his last line, else AW2 draws face 0, Nell's; the Win trigger ends the battle)
     m.sleepers = vec![(3, vec![CINDER_DRAKE]), (4, vec![CINDER_DRAKE, CINDER_SENSEI])];
     m.cut_off = vec![(2, CINDER_DRAKE), (3, CINDER_SENSEI)];
     m.hidden = vec![
@@ -186,7 +186,7 @@ fn hawke_arrives() -> Scene {
 }
 
 fn victory() -> Scene {
-    Scene::new(vec![Line::feel(co::HAWKE, Mood::Sad, "Hmph. The sea and the sky were yours today. Enjoy it while it lasts.")])
+    Scene::new(vec![Line::say(co::HAWKE, "Hmph. The sea and the sky were yours today. Enjoy it while it lasts.")])
 }
 
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
