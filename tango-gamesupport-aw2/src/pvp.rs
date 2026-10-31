@@ -619,6 +619,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 35: a skin's palette refresh on the Teams screen reaches the sprite palettes only (the windows stay AW2's own).
         // 33: Aria (CO 93, crate::aria), an Orange Star CO in every Versus list with only a Super Power: the CO table, the Teams order, the texts and the pictures are 93 rows long, a hurt unit of hers attacks harder (Vengeance) and her Super Power heals 3 HP and adds 20% firepower. Asuka's kit is simplified in the same number: no movement trait, no +5%, no HP swing (Event Horizon takes 1 HP from every enemy unit), no strike-first, 4 / 8 stars, +5% attack and defence kept, and both her powers bring AW2's rain with fog of war until her next turn (the weather is set by the mass procedure, lasting as Drake's).
         // 40: the online army page's directions repeat as AW2's own menus' cursor does (first step on the press, the next ten frames later, then every four), Up and Down too (crate::online_teams REPEAT_DELAY).
+        // 41: Emerald Sun no longer patches the windows' palette row (BG 8: `0x080D4188`, `0x08183C28`, `0x085AC8BC`): every window, menu and dialogue box is AW2's own look for the colour (army_skin::TABLES).
         crate::inspect::SIM_VERSION
     }
 

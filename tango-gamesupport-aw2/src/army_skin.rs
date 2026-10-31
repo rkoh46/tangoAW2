@@ -106,15 +106,14 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("moved units (copy)", 0x085A_DA88, 5, 1, Kind::Moved),
     ("moving units", 0x0810_EA60, 5, 1, Kind::Moving),
     ("buildings", 0x080D_3F04, 5, 1, Kind::Building),
-    ("CO panel", 0x080D_4188, 5, 1, Kind::Hue),
+    // (not the windows' row, BG 8: the CO panel's table `0x080D4188`, the HUD panel's `0x08183C28` and `0x085AC8BC` are one palette, the one every window,
+    // menu, dialogue and page of the game is drawn in. They stay AW2's own, the colour's: the skin recolours the army, never the game's windows)
     ("table 8104264", 0x0810_4264, 5, 1, Kind::Hue),
     ("table 8106984", 0x0810_6984, 5, 1, Kind::Hue),
     ("power colours", 0x084F_2BC8, 5, 2, Kind::Power),
     ("buildings (second set)", 0x080D_3E04, 5, 1, Kind::Building),
     ("battle gauge", 0x0816_D498, 5, 1, Kind::Hue),
-    ("HUD panel (BG 8)", 0x0818_3C28, 5, 1, Kind::Hue),
     ("table 85A9BBC", 0x085A_9BBC, 5, 1, Kind::Hue),
-    ("table 85AC8BC", 0x085A_C8BC, 5, 1, Kind::Hue),
     ("turn banner", 0x080A_1238, 4, 1, Kind::Banner),
     // the capture box's soldier and building (`sub_08041128`, `sub_0804103c`: palette row `0x081213F4 + 32 * colour`, the army's colour)
     ("capture box", 0x0812_1414, 5, 1, Kind::Hue),
