@@ -173,6 +173,18 @@ def gauntlet_map2_suspend_and_resume(ctx):
         d.capture(ctx, ga.IRON[key], army=5)
         d.settle()
         ctx.check(len(g.units(army=nxt)) >= WAVES[nxt] - 1, f"{who}'s fall still brings the next line after a resume ({len(g.units(army=nxt))} units)")
+    # the switch after a resume: the player keeps control of the new stage's turn (it once ended by itself ~700 frames in: the resume's mission reset wiped the engine's latches)
+    d.capture(ctx, ga.IRON["rachel"], army=5)
+    wait_stage(ctx, e, g, d, 1)
+    to_player_turn(e, g, d, army=1)
+    ctx.eq(stage(e), 1, "the resumed run reached Asuka's Keep")
+    ctx.eq([e.u8(g.players_base + 0x3C * a + 0x1B) for a in (1, 2)], [1, 2], "the player is human, Asuka the computer's")
+    seen = set()
+    for _ in range(30):
+        e.wait(100)
+        seen.add((g.current_army(), d.scripts_running() and 0))
+    ctx.eq({a for a, _ in seen}, {1}, "3000 frames later it is still the player's turn (nothing ended it)")
+    ctx.eq(len(g.units(army=1)) >= 30, True, "the survivors are on the keep")
     e.close()
 
 
@@ -195,12 +207,22 @@ def gauntlet_map2_stage_two_suspend_and_resume(ctx):
     e, g, d = resume(ctx, saved.path)
     ctx.eq(stage(e), 1, "resumed on stage two")
     after = whole_battle(g)
-    # (the player table's records of the armies the stage does not have (3..5) hold what the resume's own start left there, as on M31's stage two: only armies 1 and 2 are compared (record 0 is the neutral one))
-    keep = lambda b: dict(b, players=b["players"][0x3C:0x3C * 3])
+    # (the player table of a two-army game is the neutral record and armies 1..4: records 0..2 are state (funds, COs, power meters, controllers) and compared byte for byte; the absent armies 3 and 4 are
+    # zero but for the byte AW2's resume marks them with (+0x2D = 0x80, a derived property-count byte); "record 5" is whatever RAM follows the table, not a record)
+    keep = lambda b: dict(b, players=b["players"][:0x3C * 3])
     compare_whole(ctx, keep(before), keep(after), "on Asuka's Keep, resumed")
+    for a in (3, 4):
+        was, now = bytearray(before["players"][0x3C * a:0x3C * a + 0x3C]), bytearray(after["players"][0x3C * a:0x3C * a + 0x3C])
+        ctx.check(not any(was) and not any(now[:0x2D]) and not any(now[0x2E:]), f"army {a} is absent before and after the resume (only the derived byte +0x2D differs: {was[0x2D]:#x} -> {now[0x2D]:#x})")
     ctx.eq(e.u8(ga.SKIN_STATE), 1, "the skin is on the player's colour after the resume")
     ctx.eq([e.u8(g.players_base + 0x3C * a + 0x1A) for a in (1, 2)], [1, 5], "the colours: the player's Orange Star with the skin, Asuka's Black Hole")
     ctx.eq(d.owner(ga.KEEP_ASUKA), 2, "Asuka's HQ is on the resumed map")
+    d.capture(ctx, ga.KEEP_ASUKA, army=1)
+    ctx.eq(d.through_results(), 1, "the resumed stage is won: Asuka's HQ ends the battle with VICTORY")
+    e.wait(60)
+    done = saves.flash(e, os.path.join(ctx.out, "finished"))
+    rec = ga.saved_record(done)
+    ctx.check(rec is not None and ga.record_best(rec, ga.MAP2) is not None, "the win wrote the map's record")
     e.close()
 
 

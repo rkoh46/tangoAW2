@@ -179,6 +179,21 @@ def bh2_m31_gauntlet_suspend_and_resume(ctx):
     ctx.log(f"saved record sizes {sizes}")
     bp.wait_stage(ctx, e, g, d, 1)
     ctx.eq(bp.stage_of(e), 1, "Eagle's fall still ends the gauntlet: the battle is on stage 2")
+    # (a run continued after a takeover still gives the player the Citadel's turn: nothing ends it by itself)
+    for _ in range(60):
+        if g.current_army() == 1 and not d.scripts_running():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(40)
+    ctx.eq(g.current_army(), 1, "it is the player's turn on the Citadel")
+    for k in range(30):
+        e.wait(100)
+        if g.current_army() != 1:
+            ctx.check(False, f"the player's first turn on the Citadel ended by itself after {k * 100} frames (army {g.current_army()})")
+            break
+    else:
+        ctx.check(True, "3000 frames later it is still the player's turn on the Citadel")
     e.close()
 
 

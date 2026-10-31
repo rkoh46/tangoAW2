@@ -466,6 +466,11 @@ fn arrive(core: &mut Core) {
         let rec = pl + PLAYER * (k + 1);
         core.raw_write_8(rec + 0x1A, -1, core.raw_read_8(COLOURS + 1 + k, -1));
         core.raw_write_8(rec + 0x1D, -1, core.raw_read_8(COS + 1 + k, -1));
+        // (the controller and the team too: the switch's `Load` fills them into the table the game had then, and after a five-army stage the game's players pointer moves to the other table a frame
+        // later, which kept whatever the battle's start or a resume had left: a run continued from a save had army 1, Grit's or Nell's, as the computer's, and the player's first turn on the new stage
+        // was played by the CPU)
+        core.raw_write_8(rec + 0x1B, -1, core.raw_read_8(CONTROLLERS + 1 + k, -1));
+        core.raw_write_8(rec + 0x2A, -1, core.raw_read_8(TEAMS + 1 + k, -1));
     }
     let army = player_army(core);
     let stride = slots(core);
@@ -571,6 +576,20 @@ pub fn continue_on(core: &mut Core, k: u8) {
                 None => crate::five::set_campaign(core, false, 0, 0),
             }
         }
+    }
+}
+
+/// The battle's stage header in the map table entry again (a continued run's mission was set after [`continue_on`] put it there).
+pub fn write_current_header(core: &mut Core) {
+    let k = stage(core);
+    let m = core.raw_read_8(crate::ds_campaign::MISSION, -1) as usize;
+    let Some(rec) = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|x| x.stage_records.get(m)).and_then(|v| v.get((k as usize).wrapping_sub(1)).copied()))
+    else {
+        return;
+    };
+    if let Some((_, h)) = native_of(core, rec as usize) {
+        crate::ds_campaign::write_header(core, &h);
     }
 }
 

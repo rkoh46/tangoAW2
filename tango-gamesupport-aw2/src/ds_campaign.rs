@@ -1575,15 +1575,27 @@ fn start_gauntlet(core: &mut Core, req: u8) {
 
 /// The Gauntlet's map is `mission` (the selector's pick, or the one a run saved halfway was on): the session's mission and its header in the battle's map table entry.
 pub fn choose_gauntlet_map(core: &mut Core, mission: usize) {
-    set_gauntlet_mission(core, mission);
-    sync_mission(core);
-}
-
-/// The session's mission only (a run continued on a later stage keeps that stage's header).
-pub fn set_gauntlet_mission(core: &mut Core, mission: usize) {
     let mission = mission as u8;
     crate::ds_worldmap::write_state(core, &[mission], &[], mission);
     core.raw_write_8(MISSION_SET, -1, 0);
+    sync_mission(core);
+}
+
+/// A run continued from a save ([`crate::suspend`]'s block just applied): the saved mission is the session's, with its header (the stage's, on a later stage) in the map table entry, and
+/// nothing else touched: the latches the save restored (COUNTDOWN) stay, which a [`sync_mission`] would clear.
+pub fn continue_gauntlet_map(core: &mut Core, mission: usize) {
+    let m = mission as u8;
+    crate::ds_worldmap::write_state(core, &[m], &[], m);
+    core.raw_write_8(MISSION, -1, m);
+    core.raw_write_8(MISSION_SET, -1, 1);
+    if crate::stage::stage(core) > 0 {
+        crate::stage::write_current_header(core);
+    } else if let Some(c) = campaign(core) {
+        if let Some((_, header)) = c.model.built.headers.iter().find(|h| h.0 as usize == mission) {
+            let header = *header;
+            write_header(core, &header);
+        }
+    }
 }
 
 /// The army colour the player picked for the Gauntlet's battle (an army code of the Teams screen: 1..5, or a skin's `army_skin::SKIN + i`; 0: none, the map's own), kept in the mode's

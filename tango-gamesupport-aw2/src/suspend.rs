@@ -381,15 +381,10 @@ fn applied_ds(core: &mut Core) {
         crate::stage::restore_saved(core, k);
         core.raw_write_32(BLOCK + at, -1, 0);
     }
-    // The Gauntlet's map is not in AW2's world map state (the mode has none): the saved mission (the low five bits of the block's byte) is the map the run continues on. On a later stage the
-    // stage's header is in place already ([`crate::stage::continue_on`]): only the mission changes.
+    // The Gauntlet's map is not in AW2's world map state (the mode has none): the saved mission (the low five bits of the block's byte) is the map the run continues on, with the stage's header
+    // on a later stage; the latches just restored stay.
     if crate::gauntlet::session(core) {
-        let mission = (b[2] & 0x1F) as usize;
-        if crate::stage::stage(core) == 0 {
-            crate::ds_campaign::choose_gauntlet_map(core, mission);
-        } else {
-            crate::ds_campaign::set_gauntlet_mission(core, mission);
-        }
+        crate::ds_campaign::continue_gauntlet_map(core, (b[2] & 0x1F) as usize);
     }
     // A two-front battle's other front and state (saved after the block).
     if let Some(at) = mark_in_buffer(core, FRONTS_MARK) {

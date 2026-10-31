@@ -414,14 +414,19 @@ def bh2_m31_stage_two_suspend_and_resume(ctx):
     ctx.eq(owner(e, 33, 5), 2, "Aria's HQ is on the map")
     capture(ctx, e, g, d, (33, 5), 1)
     ctx.eq(owner(e, 33, 5), 1, "Aria's HQ is the player's after the capture")
+    results = set()
     for _ in range(60):
+        results.add(e.u8(dc.LAST_RESULT))
         if e.u8(dc.LAST_RESULT) or not d.in_battle():
             break
         if d.scripts_running():
             e.press("A", 4)
         e.wait(40)
+    ctx.log(f"results seen {sorted(results)}")
     ctx.log(f"result {e.u8(dc.LAST_RESULT)} in_battle {d.in_battle()} state {e.u16(0x030032D8)} army {e.u8(0x030033EC)} scripts {d.scripts_running()} players {[ (a, g.player(a)['raw'][0x14:0x16].hex(), g.player(a)['raw'][0x1B]) for a in range(1,4)]}")
     ctx.check(bool(e.u8(dc.LAST_RESULT)) or not d.in_battle(), "after the resume, Aria's HQ taken wins the mission")
+    ctx.check(2 not in results and e.u8(dc.LAST_RESULT) != 2, "and it is a win, not a defeat")
+    ctx.check(g.player(2)["raw"][0x14:0x16] != b"\0\0" and g.player(1)["raw"][0x14:0x16] == b"\0\0", "Aria's army is the one defeated (the player's stands)")
     e.close()
 
 
