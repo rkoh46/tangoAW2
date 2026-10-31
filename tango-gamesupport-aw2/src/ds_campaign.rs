@@ -1527,7 +1527,9 @@ fn start_gauntlet(core: &mut Core, req: u8) {
         crate::suspend::drop_mid_of(core, source(core));
         None
     };
-    let mission = resume.unwrap_or(0);
+    // (until Select Mode has a map choice: the harness's aid `TANGOAW2_GAUNTLET_MAP=<n>` starts map n, docs/dev/env-aids.md)
+    let aid = std::env::var("TANGOAW2_GAUNTLET_MAP").ok().and_then(|v| v.parse::<u8>().ok()).filter(|&m| (m as usize) < missions);
+    let mission = resume.or(aid).unwrap_or(0);
     crate::ds_worldmap::backup_aw2_state(core);
     crate::ds_worldmap::write_state(core, &[mission], &[], mission);
     core.raw_write_8(ACTIVE, -1, 1);

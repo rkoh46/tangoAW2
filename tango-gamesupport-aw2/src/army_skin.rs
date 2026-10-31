@@ -1081,7 +1081,7 @@ pub fn sync(core: &mut Core) {
     }
     // A custom campaign's mission may name a skin for one of its armies (BH2's M26: the Emerald Sun legion is the enemy): it takes that army's colour.
     let enemy = crate::ds_campaign::mission_skin(core).filter(|_| crate::pvp::in_battle(core)).and_then(|(army, skin)| {
-        let c = core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1);
+        let c = crate::stage::colour_in_swap(core, army as u32).unwrap_or_else(|| core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1));
         (1..=5).contains(&c).then_some((skin, c))
     });
     match enemy {
@@ -1121,6 +1121,20 @@ pub fn sync(core: &mut Core) {
             Some(k) if k < 0x10 => install(core, skin(k as usize - 1), k as usize - 1, colour),
             Some(k) => install_crest(core, skin(k as usize - 0x11), k as usize - 0x11, colour),
             None => {}
+        }
+        refresh_slots(core, colour);
+    }
+}
+
+/// A colour's palettes changed in the ROM image while a battle is on (a stage switch moved a skin to another colour: the new colour's palettes were loaded onto the army's rows before the skin
+/// was on it): the rows of every army that wears the colour load them again.
+fn refresh_slots(core: &mut Core, colour: u8) {
+    if !crate::pvp::in_battle(core) || !crate::ds_campaign::active(core) {
+        return;
+    }
+    for (a, c, _) in armies(core) {
+        if c == colour {
+            crate::pvp::force_slot_palettes(core, a - 1, colour);
         }
     }
 }

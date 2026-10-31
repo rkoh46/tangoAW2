@@ -318,7 +318,7 @@ fn iron_crown() -> MissionDef {
     st.deploy = keep.iter().filter(|u| u.army == 1).map(|u| (u.x, u.y)).collect();
     st.units = keep.into_iter().filter(|u| u.army == 2).collect();
     st.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Keep),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Keep),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(crate::co_new::ASUKA)).funds(KEEP_ASUKA_FUNDS),
     ];
     st.skin = Some((1, 0));

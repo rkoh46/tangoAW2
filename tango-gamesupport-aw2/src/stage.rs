@@ -174,6 +174,12 @@ pub fn stage(core: &Core) -> u8 {
     core.raw_read_8(STAGE_AT, -1)
 }
 
+/// The colour the stage being switched to gives army `army` (1..4), while the swap runs (the armies' records get it only at the swap's end: a skin that moves to the stage's colour is
+/// installed in the ROM image before the stage's map loads its palettes, as at a battle's start).
+pub fn colour_in_swap(core: &Core, army: u32) -> Option<u8> {
+    ((1..=4).contains(&army) && swapping(core)).then(|| core.raw_read_8(COLOURS + army, -1)).filter(|c| (1..=5).contains(c))
+}
+
 /// A swap is running: what is on the screen is neither stage's yet.
 pub fn swapping(core: &Core) -> bool {
     core.raw_read_8(BUSY, -1) != 0

@@ -23,6 +23,13 @@ GAME_TABLE, PACK_TABLE = 0x0861696C, 0x08E40000   # AW2's six-item table; tangoA
 CINDER = {"player": (3, 18), "drake": (27, 18), "sensei": (3, 3), "hawke": (29, 3)}
 ENEMIES = ["Drake", "Sensei", "Hawke"]
 TITLE = "Cinder Sea"
+# crate::gauntlet_mode (Iron Crown, map 2, mission 1: `TANGOAW2_GAUNTLET_MAP=1` starts it): the player is the fifth army; the lines in order; stage two is Asuka's Keep
+IRON = {"player": (4, 22), "grit": (8, 9), "jess": (24, 5), "kanbei": (34, 6), "rachel": (30, 20)}
+IRON_ORDER = [("grit", 1, "Grit", 2), ("jess", 2, "Jess", 3), ("kanbei", 3, "Kanbei", 4), ("rachel", 4, "Rachel", None)]   # (HQ key, its army, CO, the army it brings)
+KEEP_ASUKA = (22, 5)
+MAP2_ENV = {"TANGOAW2_GAUNTLET_MAP": "1"}
+SKIN_STATE = 0x0203C500             # crate::army_skin::STATE: +0 the colour (1..5) skin 0 (Emerald Sun) sits on
+STAGE_AT = 0x0203DCA0               # crate::ram_map::STAGE: +0 the stage the battle is on
 
 # AW2 CO ids (crate::co_new, crate::es_co): the pick any CO can be
 ANDY, MAX, SAMI, KANBEI, JAVIER, CLONE_ANDY, CRUMB, KLAUS, AURELIA, CASSIUS, LIVIA, ASUKA, ARIA = 1, 2, 4, 6, 77, 81, 82, 86, 87, 88, 89, 92, 93
