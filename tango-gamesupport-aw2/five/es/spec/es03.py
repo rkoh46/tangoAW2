@@ -1,8 +1,8 @@
-"""M3 The Wall (Act I): Aurelia's siege of Javier's walled town of Muro Alto, in the rain.
+"""M3 The Wall (Act I): Lili's siege of Javier's walled town of Muro Alto, in the rain.
 
 Design (docs/dev/map-design.md). The situation: Javier holds a walled town on the coast, an inner keep with the HQ, three Com Towers and a factory; Drake's
-battleship lies off the coast road. Aurelia's siege train comes from the south with an airport, a base and a few cities.
-- Lanes: the walled town has four gates (north under the battleship, west over the Muro river, east from the vineyards, south from the legion's farms)
+battleship lies off the coast road. Lili's siege train comes from the south with an airport, a base and a few cities.
+- Lanes: the walled town has four gates (north under the battleship, west over the Muro river, east from the vineyards, south from the corps's farms)
   and the keep one (south). Outside the walls a west road and a south road reach three of them; the vineyards on the east and the river farms on the west
   are the flanks. Foot soldiers climb the rock anywhere.
 - Where the fight happens: the south farms and the river farms below the wall (villages every few cells, the silo by the west road), then the town's
@@ -58,7 +58,7 @@ def build():
         "Enemy: INF4 MECH2 TANK3 AA1 ART2 ROCK1 (hold) + BS1, towers (9,10) (16,10) (21,14), factory (23,10)."))
     m.ascii(MAP)
     m.tidy()
-    # Aurelia's siege train in the south farms
+    # Lili's siege train in the south farms
     m.spread(1, {ART: 3, ROCK: 2}, (1, 22, 28, 23), seed=1, gap=2)
     m.spread(1, {RECON: 2, TANK: 2}, (3, 19, 28, 21), seed=2, gap=2)
     m.spread(1, {INF: 4, MECH: 2, AA: 1}, (2, 18, 29, 22), seed=3, gap=1)
@@ -72,7 +72,7 @@ def build():
     m.unit(2, BS, 16, 0, hold=True)
     m.note("hq", 4, 22, "player HQ"); m.note("enemy_hq", 16, 12, "objective: Javier's HQ in the keep")
     m.note("gate_n", 16, 6, "north gate (under the battleship)"); m.note("gate_w", 7, 12, "west gate over the Muro bridge (6,12)")
-    m.note("gate_e", 25, 12, "east gate from the vineyards"); m.note("gate_s", 13, 17, "south gate from the legion's farms")
+    m.note("gate_e", 25, 12, "east gate from the vineyards"); m.note("gate_s", 13, 17, "south gate from the corps's farms")
     m.note("keep_gate", 16, 15, "the keep's only gate")
     m.note("silo", 3, 13, "neutral missile silo by the west road")
     m.note("airport", 10, 22, "player airport"); m.note("bomber_cell", 11, 22, "day-2 Bomber cell")

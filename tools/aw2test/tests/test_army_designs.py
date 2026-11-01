@@ -3,8 +3,8 @@
 Real Versus battles on the Emerald Sun colour (the Teams screen's R puts the skin on army 1), the CO of army 1 being
   - a Black Hole CO (Asuka): the map Infantry and the HQ are Black Hole's pictures, in Emerald Sun's palette;
   - a base nation's CO (Andy): Orange Star's pictures, in Emerald Sun's palette;
-  - an Emerald Sun CO (Klaus): the skin's plumed Infantry and domed HQ, in Emerald Sun's palette;
-and an Emerald Sun CO in a base colour (Klaus without the skin): the skin's pictures in the colour's own palette, with only the plume's red (unit palette entry 14) and the HQ's gold (building entry 14) added.
+  - an Emerald Sun CO (Tabitha): the skin's plumed Infantry and domed HQ, in Emerald Sun's palette;
+and an Emerald Sun CO in a base colour (Tabitha without the skin): the skin's pictures in the colour's own palette, with only the plume's red (unit palette entry 14) and the HQ's gold (building entry 14) added.
 
 Shapes are compared, not colours: the pictures drawn are the 4-tile idle Infantry (the map's unit tiles, found by the BG map's entries) and the 16 x 32 HQ sprite, and their palette-index bytes are looked up
 among AW2's pictures of every country and the skin's own (read from the console's ROM image, where the skin's pictures are kept). The palette is the unit palette row of army 1's colour (ROM image)."""
@@ -15,7 +15,7 @@ import re
 from aw2test import rom as romlib
 from aw2test.harness import test
 
-ASUKA, ANDY, KLAUS = 92, 1, 86
+ASUKA, ANDY, TABITHA = 92, 1, 86
 STATE = 0x0203C500                      # army_skin::STATE: +0 the colour the first skin sits on, +4.. the Teams screen's choices
 ART = 0x09FD0000                        # army_skin::art_at(0) = DATA + 0x10000: the first skin's pictures (map Infantry, Mech, HQ ...)
 UNIT_SHEET, FRAME_BYTES, SLOT_TABLE = 0x0810BE60, 0xD80, 0x08499608
@@ -178,9 +178,9 @@ def base_co(ctx):
 
 @test(name="army_designs_es_co_in_the_skin_colour", modes=("ds",))
 def es_co(ctx):
-    check(ctx, "klaus_in_es", KLAUS, True, "es", "skin")
+    check(ctx, "tabitha_in_es", TABITHA, True, "es", "skin")
 
 
 @test(name="army_designs_es_co_in_a_base_colour", modes=("ds",))
 def es_co_base_colour(ctx):
-    check(ctx, "klaus_yellow", KLAUS, False, "es", "colour", blue=True)
+    check(ctx, "tabitha_yellow", TABITHA, False, "es", "colour", blue=True)

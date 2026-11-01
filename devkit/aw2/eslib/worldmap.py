@@ -96,8 +96,8 @@ def sheet(review, runs, out):
     S = 3
     cw = 480 * S + 40
     imgs = {k: _bmp(review / f"es_world_map_{k}.png") for k, _ in STAGES}
-    names = ["Landfall", "Testudo", "The Wall", "Second Legion", "Dust and Wheels", "Tribute", "Mare Nostrum", "Hammer and Anvil", "Grain Ships", "Quiet Pass", "Treasure Train", "Siege of Iron", "Free Port",
-             "Varro's Gambit", "Pax Romana", "Sol Invictus"]
+    names = ["Landfall", "The Ridge", "The Wall", "Second Corps", "Dust and Wheels", "The Ledger", "The Silver Sea", "Two Hands", "Grain Ships", "Quiet Pass", "Treasure Train", "Iron Bastion", "Free Port",
+             "Caulder's Gambit", "The Strait", "Silver Nova"]
     H = 70 + len(STAGES) * (240 * S + 50) + 330 + 60 + 2 * 230 + 40
     sh = Image.new("RGB", (cw, H), rd.BG)
     rd.text(sh, (14, 10), "Emerald Sun Campaign: the world map is Dual Strike's Omega Land. 16 flags in story order (Aurea's home island is the south-west island, off the nodes).", size=17)

@@ -99,7 +99,7 @@ class AsukaRule(unittest.TestCase):
             src = Path(t) / "tango-gamesupport-aw2" / "src"
             (src / "es_text").mkdir(parents=True)
             (src / "es_act1.rs").write_text("let who = co_new::ASUKA;\n")
-            (src / "es_text" / "act1.txt").write_text("KLAUS: Hello.\nASUKA: no.\n")
+            (src / "es_text" / "act1.txt").write_text("TABITHA: Hello.\nASUKA: no.\n")
             (src / "es_cos.rs").write_text("(92, \"asuka\")\n")        # the portraits table may name her
             (src / "es_text.rs").write_text("")
             old, msgs = cli.cfg.REPO, []
@@ -118,7 +118,7 @@ class AsukaRule(unittest.TestCase):
             src = Path(t) / "tango-gamesupport-aw2" / "src"
             (src / "es_text").mkdir(parents=True)
             (src / "es_act2.rs").write_text("let who = co_new::ARIA;\nlet variable = 1; // Maria\n")
-            (src / "es_text" / "act2.txt").write_text("KLAUS: Hello.\nARIA: no.\n")
+            (src / "es_text" / "act2.txt").write_text("TABITHA: Hello.\nARIA: no.\n")
             (src / "es_co.rs").write_text("(crate::co_new::ARIA, 1) => HEAL3,\n")      # a table keyed by CO id may name her
             (src / "es_text.rs").write_text("")
             old, msgs = cli.cfg.REPO, []

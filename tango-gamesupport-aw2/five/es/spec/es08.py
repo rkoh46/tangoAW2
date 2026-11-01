@@ -1,10 +1,10 @@
-"""M8 Hammer and Anvil (Act II, rain): Klaus and Cassius, as a pair, break the Orange Star border force at Ironhold.
+"""M8 Hammer and Anvil (Act II, rain): Tabitha and Lili, as a pair, break the Orange Star border force at Ironhold.
 
-Design (docs/dev/map-design.md). The situation: the legion (one army, the first Tag) comes from the west over the Brimwater canal; Max holds Ironhold,
+Design (docs/dev/map-design.md). The situation: the corps (one army, the first Tag) comes from the west over the Brimwater canal; Max holds Ironhold,
 a ring of crags with a front gate and a rear gate, Sasha's column camps on the south-east plain with her own factories. Both are allies.
 - Lanes: the canal has three crossings (the north road's bridge, the two-lane causeway in the middle, the south road's bridge) and a farm bridge on the
-  ring road; past it the north road runs round the crags to the rear gate (Cassius's flank, the Hammer), the causeway road goes to the front gate
-  (Klaus's line, the Anvil) and the south road heads for Sasha's camp.
+  ring road; past it the north road runs round the crags to the rear gate (Lili's flank, the Hammer), the causeway road goes to the front gate
+  (Tabitha's line, the Anvil) and the south road heads for Sasha's camp.
 - Where the fight happens: the causeway head (the silo (16,7), the east-bank villages), the fields north and south of the crags (forward neutral bases
   (21,4) and (21,17)), then the two gates.
 - Properties: villages three cells apart on both banks and round the crags; the ring's inside is Max's yard (HQ, two factories, cities); Sasha's camp
@@ -62,7 +62,7 @@ def build():
                  (16, 1), (19, 2), (17, 11), (19, 7), (17, 18), (19, 23), (16, 5),
                  (25, 1), (29, 1), (33, 1), (37, 5), (31, 6), (36, 9), (35, 12), (26, 16), (23, 19), (27, 23), (37, 17), (23, 15), (30, 14)])
     m.tidy()
-    # --- the legion on the west bank
+    # --- the corps on the west bank
     m.spread(1, {ART: 2, AA: 1}, (1, 7, 7, 15), seed=1, gap=1)
     m.spread(1, {MDT: 2, TANK: 4, RECON: 2}, (5, 5, 12, 17), seed=2, gap=1)
     m.spread(1, {INF: 4, MECH: 3}, (2, 4, 12, 18), seed=3, gap=1)

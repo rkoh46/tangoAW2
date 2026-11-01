@@ -89,7 +89,7 @@ def bh2_saves_share_slot_13_with_the_bh_campaign_and_emerald_sun_keeps_its_own(c
     d.start_es(new=False, pick=False)
     d.wait_world_map()
     ctx.eq(e.u8(es.SOURCE), es.ES, "the Emerald Sun session")
-    ctx.eq(d.unlocked(), [es.KLAUS], "Emerald Sun Continue: its record")
+    ctx.eq(d.unlocked(), [es.TABITHA], "Emerald Sun Continue: its record")
     e.close()
 
 

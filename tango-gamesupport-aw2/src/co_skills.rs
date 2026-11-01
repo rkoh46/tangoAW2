@@ -319,11 +319,15 @@ fn move_done(core: &mut Core) {
 /// (before rain's -1): Scout +1, Eagle Eye +2.
 const VISION_DONE: u32 = 0x0804_2DA6;
 fn vision_done(core: &mut Core) {
-    if !any_on(core) {
-        return;
-    }
     let army = core.gba().cpu().gpr(4) as u32;
-    let add = (if has(core, army, SCOUT) { 1 } else { 0 }) + (if has(core, army, EAGLE_EYE) { 2 } else { 0 });
+    // (Lili's Enigma: her units ignore rain's -1 vision)
+    let lili = if crate::ds_weather::is_on(core) { crate::es_co::rain_vision(core, army) } else { 0 };
+    let skills = if any_on(core) {
+        (if has(core, army, SCOUT) { 1 } else { 0 }) + (if has(core, army, EAGLE_EYE) { 2 } else { 0 })
+    } else {
+        0
+    };
+    let add = skills + lili;
     if add != 0 {
         let cpu = core.gba_mut().cpu_mut();
         let r5 = cpu.gpr(5);

@@ -235,7 +235,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             for tag, ids in (("skin", sc["ids"]), ("plain", [1] + sc["ids"][1:])):
                 d = out / f"{n}_{tag}"
                 d.mkdir(parents=True, exist_ok=True)
-                (d / "script.txt").write_text(scenarios.script(n, ids, ds=ds, klaus=[sc["ids"].index(6)] if 6 in sc["ids"] else []))
+                (d / "script.txt").write_text(scenarios.script(n, ids, ds=ds, tabitha=[sc["ids"].index(6)] if 6 in sc["ids"] else []))
                 rc, log = harness.run_script(d / "script.txt", d, ds=ds)
                 if rc:
                     fails.append(f"{n}/{tag}: the harness script failed ({log})")
@@ -256,7 +256,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             ids = sc["ids"]
             pics = {}
             for v, vids in (("base", [1] + ids[1:]), ("other", [3] + ids[1:]), ("skin", ids)):
-                rc, log = lk.checkpoint(f"live_{n}_{v}", n, vids, True, klaus=[ids.index(6)] if 6 in ids else None)
+                rc, log = lk.checkpoint(f"live_{n}_{v}", n, vids, True, tabitha=[ids.index(6)] if 6 in ids else None)
                 if rc:
                     fails.append(f"{n}/{v}: the harness script failed ({log})")
                     continue
@@ -281,7 +281,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
         for v, ids in variants.items():
             d = out / f"{n}_{v}"
             d.mkdir(parents=True, exist_ok=True)
-            (d / "script.txt").write_text(scenarios.script(n, ids, ds=ds, klaus=[k] if not sc["five"] else None))
+            (d / "script.txt").write_text(scenarios.script(n, ids, ds=ds, tabitha=[k] if not sc["five"] else None))
             rc, log = harness.run_script(d / "script.txt", d, ds=ds)
             if rc:
                 fails.append(f"{n}/{v}: the harness script failed ({log})")
@@ -305,7 +305,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             else:
                 forb = {c: k for c, k in forbidden_all.items()}
             left = {c: skin[c] for c in forb if skin.get(c, 0) >= tolerance}
-            # (the skin's own plume and gold are an Emerald Sun CO's designs: only with the pack, where the skin's seat plays Klaus)
+            # (the skin's own plume and gold are an Emerald Sun CO's designs: only with the pack, where the skin's seat plays Tabitha)
             need = sc.get("crest", {}).get(shot) if ds else None
             if need:
                 # the skin's own art must be there: the plume's red (the battle figures' and the portraits' helmets are drawn by the skin file)

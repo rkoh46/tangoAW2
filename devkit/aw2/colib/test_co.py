@@ -7,7 +7,7 @@ from PIL import Image
 from .. import cfg
 from . import data, importer as I, namefont, style
 
-COS = ("klaus", "aurelia", "cassius", "livia")
+COS = ("tabitha", "lili", "caulder")
 
 
 class Data(unittest.TestCase):
@@ -15,9 +15,9 @@ class Data(unittest.TestCase):
         cos, tags = data.load_all()
         self.assertEqual(data.problems(cos, tags), [])
 
-    def test_four_emerald_sun_cos_with_six_pairs(self):
+    def test_three_silver_nova_cos_with_three_pairs(self):
         cos, tags = data.load_all()
-        es = [c for c, d in cos.items() if d["army"] == "emerald_sun"]
+        es = [c for c, d in cos.items() if d["army"] == "silver_nova"]
         self.assertEqual(sorted(es), sorted(COS))
         pairs = {frozenset((p["a"], p["b"])) for p in tags["pair"]}
         for a in es:
@@ -39,9 +39,9 @@ class Data(unittest.TestCase):
     def test_a_bad_file_is_caught(self):
         cos, tags = data.load_all()
         cos = copy.deepcopy(cos)
-        cos["klaus"]["stars"] = {"cop": 6, "scop": 5}
-        cos["klaus"]["cop"]["mods"] = [{"units": "all", "attack": 90}]
-        del cos["livia"]["portrait"]
+        cos["tabitha"]["stars"] = {"cop": 6, "scop": 5}
+        cos["tabitha"]["scop"]["mods"] = [{"units": "all", "attack": 90}]
+        del cos["lili"]["portrait"]
         tags = copy.deepcopy(tags)
         tags["pair"][0]["stars"] = 3
         msgs = " ".join(data.problems(cos, tags))
@@ -54,12 +54,12 @@ class Data(unittest.TestCase):
             self.assertTrue(fits, f"{full} is {w} px")
 
     def test_the_name_graphics_fit_48_pixels(self):
-        for n in ("Klaus", "Aurelia", "Cassius", "Livia"):
+        for n in ("Tabitha", "Lili", "Caulder"):
             g = namefont.name_grid(n)
             self.assertEqual(g.shape, (16, 48))
-            self.assertTrue((g[:, 0] == 0).all() and (g[:, 47] == 0).all() or n == "Cassius", n)
+            self.assertTrue((g[:, 0] == 0).all() and (g[:, 47] == 0).all() or n in ("Tabitha", "Caulder"), n)      # (the two long names may use the whole 48 pixels)
         with self.assertRaises(ValueError):
-            namefont.name_grid("Cassiusss")
+            namefont.name_grid("Tabithaaaaa")
 
 
 class Art(unittest.TestCase):
@@ -79,12 +79,12 @@ class Art(unittest.TestCase):
     def test_the_lint_catches_bad_art(self):
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)
-            d = root / "klaus"
+            d = root / "tabitha"
             d.mkdir()
             for n in I.FILES:
-                (d / f"{n}.png").write_bytes((I.ART_DIR / "klaus" / f"{n}.png").read_bytes())
-            (d / "name.png").write_bytes((I.ART_DIR / "klaus" / "name.png").read_bytes())
-            self.assertEqual(I.lint_art("klaus", root), [])
+                (d / f"{n}.png").write_bytes((I.ART_DIR / "tabitha" / f"{n}.png").read_bytes())
+            (d / "name.png").write_bytes((I.ART_DIR / "tabitha" / "name.png").read_bytes())
+            self.assertEqual(I.lint_art("tabitha", root), [])
             # a coloured pixel against transparency, and a wrong size
             a = np.array(Image.open(d / "face_normal.png"))
             ys, xs = np.nonzero(a == 15)
@@ -92,7 +92,7 @@ class Art(unittest.TestCase):
             Image.fromarray(a, mode="P").save(d / "face_normal.png")
             im = Image.open(d / "face_sad.png").crop((0, 0, 40, 48))
             im.save(d / "face_sad.png")
-            msg = " ".join(I.lint_art("klaus", root))
+            msg = " ".join(I.lint_art("tabitha", root))
             self.assertIn("without an outline", msg)
             self.assertIn("40 x 48", msg)
 

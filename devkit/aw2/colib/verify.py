@@ -13,7 +13,8 @@ from pathlib import Path
 
 from .. import cfg, util
 
-COS = ["klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy", "asuka", "aria"]
+COS = ["tabitha", "lili", "caulder", "crumb", "cloneandy", "asuka", "aria"]
+NO_SCOP = ("lili",)      # only a CO Power: the quick run plays its CO Power level where the others play the Super Power
 COLUMNS = ["d2d", "cop", "scop", "meter", "tag", "cpu", "net"]
 TITLES = {"d2d": "Day to day", "cop": "CO Power", "scop": "Super Power", "meter": "Meter / stars", "tag": "Tag Powers", "cpu": "CPU use", "net": "Online determinism"}
 # Tests of the older suites that are also evidence for a cell of the table (the same CO and ability, played by the same harness).
@@ -23,12 +24,9 @@ LEGACY = {
     ("crumb", "scop"): ["crumb_geralds_blessing"],
     ("crumb", "tag"): ["tag_crumb", "tag_crumb_no_one_left_behind"],
     ("cloneandy", "tag"): ["tag_clone_andy"],
-    ("klaus", "cop"): ["es_klaus_testudo_cuts_the_counterattack_by_a_quarter", "es_klaus_testudo_counter_damage_number_is_the_cut_one"],
-    ("klaus", "scop"): ["es_klaus_legio_aeterna_heals_three_hp_and_testudo_moves_further"],
-    ("aurelia", "scop"): ["es_aurelia_onager_splash_costs_the_units_beside_the_target_one_hp", "es_aurelia_onager_needs_an_indirect_attack"],
-    ("cassius", "scop"): ["es_cassius_triumph_a_vehicle_that_attacked_moves_once_more_but_cannot_fire", "es_cassius_triumph_is_for_vehicles_only",
-                          "es_cassius_triumph_an_unused_extra_move_ends_with_the_turn"],
-    ("livia", "cop"): ["es_livia_collects_funds_when_she_pays_for_a_power"],
+    ("tabitha", "scop"): ["es_tabitha_firestorm_is_deterministic"],
+    ("lili", "cop"): ["es_lili_enigma_is_deterministic"],
+    ("caulder", "scop"): ["es_caulder_cataclysm_is_deterministic"],
     # Asuka (CO 92) has no co_verify_* scenarios: her own suite (tools/aw2test/tests/test_asuka.py) proves every ability with numbers.
     ("asuka", "d2d"): ["asuka_row_is_sonjas_numbers_with_hawkes_powers", "asuka_d2d_vision_is_one_more", "asuka_enemy_terrain_cover_is_cut_one_two_three_stars",
                        "asuka_luck_is_nells_and_there_is_no_bad_luck", "asuka_ground_units_pay_one_movement_point_for_every_terrain", "asuka_hp_is_hidden_from_the_enemy",
@@ -67,12 +65,12 @@ def list_tests(cos, quick=False):
     def mine(n):
         parts = n[len("co_verify_"):]
         if re.match(r"hq_(m\d+|tag)$", parts):          # (the missions' and the pairs' HQ checks belong to the Emerald Sun COs)
-            return any(c in cos for c in ("klaus", "aurelia", "cassius", "livia", "varro"))
+            return any(c in cos for c in ("tabitha", "lili", "caulder"))
         return any(re.search(rf"(^|_){c}(_|$)", parts) for c in cos)
     names = [n for n in names if mine(n)]
     if quick:
-        keep = ("stats_{c}_scop", "move_{c}_scop", "economy_{c}_1000", "meter_{c}", "cpu_{c}_scop", "hooks_{c}", "range_aurelia_scop_edge", "cloneandy_scop")
-        want = {k.format(c=c) for k in keep for c in cos}
+        keep = ("stats_{c}_{p}", "move_{c}_{p}", "economy_{c}_1000", "meter_{c}", "cpu_{c}_{p}", "hooks_{c}", "range_tabitha_scop_edge", "cloneandy_scop")
+        want = {k.format(c=c, p="cop" if c in NO_SCOP else "scop") for k in keep for c in cos}
         names = [n for n in names if n[len("co_verify_"):] in want or n.startswith("co_verify_tag_" + cos[0] + "_with_")]
     return names
 

@@ -1,0 +1,19 @@
+# Tabitha, imported directly from tabitha_v1.jpg (the owner's pixel art, 1408 x 1408, native cells of about 4.4 x 4.0 px, 320 x 351). Coordinates are native cells of the picture as supplied (she faces front, a little to the left: kept).
+pixelart = true
+# The picture's "transparent" background is a checkerboard baked into the JPEG: the light, colourless pixels connected to the border become one flat white before the grid is found (`checker`);
+# `checker_seeds` floods the three pockets of it enclosed by her arm and torso and under her hair (picture pixels).
+checker = true
+checker_seeds = [[565, 474], [570, 500], [560, 450], [775, 494], [790, 520], [770, 470], [644, 310], [650, 320]]
+large_scale = 1
+frame = [104, 18]
+mug_scale = 1
+mug = [128, 28]
+eyes = [142, 52, 166, 60]
+bg_tolerance = 30
+max_specks = 1700
+max_face_specks = 400
+# Colours her palette must keep an entry for (native cells, the mean of each group): the amber irises, the face's skin.
+protect = [
+  [[162, 58], [163, 58], [147, 59], [148, 59], [143, 52], [157, 53], [157, 54], [173, 57], [172, 58]],
+  [[145, 45], [154, 45], [156, 45], [157, 45], [158, 45], [145, 46], [146, 46], [154, 46], [155, 46], [156, 46]],
+]

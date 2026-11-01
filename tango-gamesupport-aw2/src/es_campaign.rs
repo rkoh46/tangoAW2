@@ -1,4 +1,4 @@
-//! The Emerald Sun Campaign: sixteen missions played as Emerald Sun, tangoAW2's sixth army (Roman-themed; `docs/dev/army-packs.md`), with four Roman
+//! The Silver Nova Campaign (the Emerald Sun Campaign before the recast): sixteen missions played as Silver Nova, tangoAW2's sixth army (`docs/dev/army-packs.md`), with three
 //! COs and a boss ([`crate::es_co`]). The second custom campaign on the BH Campaign's data-driven engine ([`crate::custom_campaign`]); the story is
 //! `docs/ES_CAMPAIGN.md`, the dialogue `src/es_text/*.txt` ([`crate::es_text`]), the maps `five/es/spec/*.py` -> `five/es/*.txt` -> `es_map_data.rs`
 //! (`aw2dev maps gen`), the missions `es_act1.rs` .. `es_act4.rs`. Developer guide: `docs/dev/es-campaign.md`.
@@ -15,29 +15,25 @@ use crate::campaign_model::Model;
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_co;
 
-/// The roster, in unlock order: Klaus is open at the start; Aurelia joins after M3, Cassius after M4, Livia and Colin (her tag partner) after M6, Kanbei (a tag partner) after M10.
-pub const ROSTER: [(u8, bool); 6] = [
-    (es_co::KLAUS, true),
-    (es_co::AURELIA, false),
-    (es_co::CASSIUS, false),
-    (es_co::LIVIA, false),
+/// The roster, in unlock order: Tabitha is open at the start; Lili joins after M3, Colin (a tag partner) after M6, Kanbei (a tag partner) after M10. (The Roman roster had six entries; Colin's and Kanbei's unlock bits moved from 4, 5 to 2, 3.)
+pub const ROSTER: [(u8, bool); 4] = [
+    (es_co::TABITHA, true),
+    (es_co::LILI, false),
     (co::COLIN, false),
     (co::KANBEI, false),
 ];
 
 /// Roster indexes by name, for `recruits`.
 pub mod roster {
-    pub const KLAUS: u8 = 0;
-    pub const AURELIA: u8 = 1;
-    pub const CASSIUS: u8 = 2;
-    pub const LIVIA: u8 = 3;
-    pub const COLIN: u8 = 4;
-    pub const KANBEI: u8 = 5;
+    pub const TABITHA: u8 = 0;
+    pub const LILI: u8 = 1;
+    pub const COLIN: u8 = 2;
+    pub const KANBEI: u8 = 3;
 }
 
 /// The COs the player may lead with in a free-pick mission (Colin and Kanbei are tag partners only).
 pub fn leads() -> Vec<u8> {
-    vec![es_co::KLAUS, es_co::AURELIA, es_co::CASSIUS, es_co::LIVIA]
+    vec![es_co::TABITHA, es_co::LILI]
 }
 
 /// The campaign's source index in [`crate::campaign_model::SOURCES`].
@@ -149,9 +145,8 @@ fn credits() -> Vec<CreditSection> {
     };
     vec![
         sec("EMERALD SUN", &["A tangoAW2 story", "Sol invictus"]),
-        sec("THE LEGION", &["KLAUS", "The Legate", "AURELIA", "The Engineer"]),
-        sec("THE LEGION", &["CASSIUS", "The Cavalry", "LIVIA", "The Quaestor"]),
-        sec("THE SENATE", &["VARRO", "The Consul"]),
+        sec("THE NOVA CORPS", &["TABITHA", "The Commander", "LILI", "The Quartermaster"]),
+        sec("THE DIRECTORATE", &["CAULDER", "The Director"]),
         sec(
             "THE ACCORD",
             &[
@@ -261,9 +256,9 @@ mod tests {
 
     #[test]
     fn roster_order() {
-        assert_eq!(ROSTER[0], (es_co::KLAUS, true));
+        assert_eq!(ROSTER[0], (es_co::TABITHA, true));
         assert!(ROSTER[1..].iter().all(|r| !r.1));
-        assert_eq!(ROSTER[roster::LIVIA as usize].0, es_co::LIVIA);
+        assert_eq!(ROSTER[roster::LILI as usize].0, es_co::LILI);
         assert_eq!(ROSTER[roster::KANBEI as usize].0, co::KANBEI);
         assert!(ROSTER.len() as u32 <= crate::ds_campaign::BOND_SHIFT);
     }

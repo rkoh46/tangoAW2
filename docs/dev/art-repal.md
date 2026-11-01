@@ -37,10 +37,10 @@ Pass is exit 0; a picture that cannot be mapped (`--keep-index` past the palette
 
 ## The CO importer's `match` key
 The pixel-art importer's last step (`colib/pixelart.py` `quantise`, marked "art repal hook") maps every native cell to the CO's 14 colours. The framing file
-(`art-src/cos/<id>_v5.toml`) chooses the rule with `match = "luma" | "rgb" | "lab"`: **default `luma`** (the weighted rule above) for a new CO; `lab` is the Lab
+(`art-src/cos/<id>_v1.toml`) chooses the rule with `match = "luma" | "rgb" | "lab"`: **default `luma`** (the weighted rule above) for a new CO; `lab` is the Lab
 distance the approved COs were imported with. A caller that passes no `match` (the illustration importer) keeps `lab`.
 
-Compared on the approved art (`aw2dev art repal importsheet`; numbers over the figure's cells of the large art, "dark" = source luma below 90):
+Compared on the first approved art (Klaus, Aurelia, Cassius and Livia, since replaced by Tabitha, Lili and Caulder, whose art uses the default Lab rule; `aw2dev art repal importsheet`; numbers over the figure's cells of the large art, "dark" = source luma below 90):
 
 | CO | rule | luma error all / dark | Lab error all / dark | cells changed from lab |
 |---|---|---|---|---|

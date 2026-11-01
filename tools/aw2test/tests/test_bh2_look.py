@@ -1,6 +1,6 @@
 """BH2 M32 Through the Door (development build, crate::bh2_campaign): the enemy army wears the Emerald Sun skin and nothing of Green Earth (`-k bh2_m32_look`).
 
-The mission gives Klaus + Aurelia's army the colour Green Earth as a host (`MissionDef::skin`: the skin sits on that colour, `army_skin`); the game then draws every Green Earth picture from the skin's. The test enters the mission, deploys,
+The mission gives Caulder + Tabitha's army the colour Green Earth as a host (`MissionDef::skin`: the skin sits on that colour, `army_skin`); the game then draws every Green Earth picture from the skin's. The test enters the mission, deploys,
 and photographs what the player sees of the enemy: the whole screen with the cursor on the enemy HQ, on an enemy base, on an enemy Infantry and on an enemy Tank (the terrain and unit panels), and the start of the enemy's own turn (its CO
 panel and banner). The pictures (3x, AW2TEST_REVIEW_DIR/m26_look_*.png) are looked at: the HQ is the skin's (pale stone, the sun), the units grey stone with red plumes, the panels the skin's emblem.
 It also checks the skin's state byte: the skin sits on the colour army 2 has."""

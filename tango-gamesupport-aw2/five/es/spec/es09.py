@@ -2,7 +2,7 @@
 
 Design (docs/dev/map-design.md). The situation: Black Hole's freight yards: Kite Hill, a plateau crowned with rock and guarded by minicannons, holds
 the air depot (12,4); the HOBB harbour on the east (the barges moored on the lava bay, the HQ, a factory and an airfield on the quay); the walled
-freight yard in the south-east with the Black Cannon and the pipe factory. The legion lands in the south-west with an airport, a base and a strong
+freight yard in the south-east with the Black Cannon and the pipe factory. The corps lands in the south-west with an airport, a base and a strong
 air wing; the clock is ten days.
 - Lanes: the Kite river runs west to east across the map with four bridges (the west road, the farm track, the centre road, the east road); north of it
   three roads climb to the plateau's three gaps (west, south, east) and the harbour road; south of it the south road runs to the freight yard, which
@@ -22,7 +22,7 @@ from aw2.esmaplib import *
 def build():
     m = Canvas("es09", 34, 22)
     m.header(armies=2, colours=(OS, BH), objective=[1], blackhole=True,
-             comment="M9 Grain Ships (province: Kite Hill and the HOBB freight yards, Black Hole's harbour): the Aurean legion lands on the south-west road, crosses the Kite river and takes the "
+             comment="M9 Grain Ships (province: Kite Hill and the HOBB freight yards, Black Hole's harbour): the Novarian corps lands on the south-west road, crosses the Kite river and takes the "
                      "depot airport on the plateau (depot) and sinks the three HOBB barges (barge1..3) moored in the bay by day 10. "
                      "Wasteland look (lava bay). The HOBB pipeline (pipe wall x22, y16..21, seam at (22,19)) walls off the south-east freight yard and the Black Cannon: break the seam (attack it) to open a flank. Two approaches: north over the three bridges and up the hill's gaps, or east along the south road through the freight yard and the Black Cannon's shadow. "
                      "Threat/answer: minicannons (W/E/S on the depot's gaps), Black Cannon and Deathray shoot ground and sea only -> Fighters/Bombers/B Copters ignore them, Artillery outranges the minicannons; "

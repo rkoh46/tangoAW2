@@ -1,14 +1,14 @@
-"""BH2 M32 Through the Door (secret mission, Act V): the Emerald Sun legion lands on Black Hole's own island. A free pair against one army under Klaus + Aurelia (Emerald Sun). Normal look, clear.
+"""BH2 M32 Through the Door (secret mission, Act V): the Emerald Sun corps lands on Black Hole's own island. A free pair against one army under Caulder + Tabitha (Emerald Sun). Normal look, clear.
 
 Design (docs/dev/map-design.md, docs/BH2_CAMPAIGN.md sections 4 and 4b). The shape: a diagonal strip: the home island is a band of land from the north-west corner to the south-east corner, a dozen cells wide, with the sea in the other two corners, so both coasts are long staircases with beaches.
-The situation: Black Hole holds the north-west end: its HQ, a base district, two ports on the south-west coast. Klaus's first landing holds the south-east end (his HQ, a beachhead of bases) and a long north-east coast where the legion comes ashore in waves (spawns marked on the map):
-  day 3: Cassius's cavalry (Recons and Tanks) on the north-east beach cells `mark_cav*`;
-  day 5: Aurelia's siege (Artillery, Rockets and Md Tanks) on the south-east beach cells `mark_siege*`;
-  day 7: Livia's fleet (Battleship, Cruisers, a Submarine and Landers) at sea off the north-east coast, the `mark_fleet*` cells.
+The situation: Black Hole holds the north-west end: its HQ, a base district, two ports on the south-west coast. Tabitha's first landing holds the south-east end (his HQ, a beachhead of bases) and a long north-east coast where the corps comes ashore in waves (spawns marked on the map):
+  day 3: the vanguard (Recons and Tanks) on the north-east beach cells `mark_cav*`;
+  day 5: Lili's siege (Artillery, Rockets and Md Tanks) on the south-east beach cells `mark_siege*`;
+  day 7: Lili's fleet (Battleship, Cruisers, a Submarine and Landers) at sea off the north-east coast, the `mark_fleet*` cells.
 The Emerald Sun skin belongs to the enemy army (the engine applies the skin to the player's army in an Emerald Sun battle only; for BH2's enemy it is a hook: see docs/dev/bh2-maps.md).
 - Lanes: the island's spine road from the north-west to the south-east, a coast road on each side, the beaches on both coasts for the ships and Landers.
 - Where the fight happens: the middle of the strip (the Com Tower (20,14) and the missile silo (22,12)), then the depot.
-- Threats and answers: the cavalry's speed -> Black Hole's Tanks and Rockets behind the wall; the siege's range -> Recons and Fighters-free strikes by Tanks; Livia's Battleship -> Black Hole's Cruisers and Submarine and artillery on the beach.
+- Threats and answers: the cavalry's speed -> Black Hole's Tanks and Rockets behind the wall; the siege's range -> Recons and Fighters-free strikes by Tanks; Lili's Battleship -> Black Hole's Cruisers and Submarine and artillery on the beach.
 """
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
@@ -16,9 +16,9 @@ from aw2.esmaplib import *
 from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, snap_coast, fix_rungs
 
 W, H = 40, 28
-CAV = [(12, 4), (15, 6), (18, 8), (20, 11)]                      # Cassius's landing cells (day 3)
-SIEGE = [(37, 24), (35, 25), (38, 22), (33, 26)]                 # Aurelia's (day 5)
-FLEET = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)]            # Livia's ships (day 7), at sea off the north-east coast
+CAV = [(12, 4), (15, 6), (18, 8), (20, 11)]                      # Lili's landing cells (day 3)
+SIEGE = [(37, 24), (35, 25), (38, 22), (33, 26)]                 # Lili's (day 5)
+FLEET = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)]            # Lili's ships (day 7), at sea off the north-east coast
 
 
 def build():
@@ -31,9 +31,9 @@ def build():
     belt(m, "^", [(4, 2), (9, 4)], width=1, seed=1); belt(m, "^", [(12, 10), (16, 8)], width=1, seed=2); belt(m, "^", [(24, 18), (28, 16)], width=1, seed=3); belt(m, "^", [(30, 22), (35, 22)], width=1, seed=4); belt(m, "^", [(3, 12), (7, 14)], width=1, seed=5)
     belt(m, "f", [(8, 8), (13, 12)], width=1, seed=6); belt(m, "f", [(16, 15), (20, 19)], width=1, seed=7); belt(m, "f", [(27, 10), (31, 13)], width=1, seed=8); belt(m, "f", [(25, 22), (29, 24)], width=1, seed=9); belt(m, "f", [(14, 4), (17, 6)], width=1, seed=10)
     m.header(armies=2, colours=(BH, GE), objective=[1], comment=(
-        "M32 Through the Door (secret; normal look, clear): a free pair (Black Hole, HQ 1 (7,6), the north-west of its own island) against one army under Klaus + Aurelia (the Emerald Sun legion, HQ 2 (32,21), the south-east end). The island is a diagonal strip. "
-        "Waves: day 3 cavalry on mark_cav cells, day 5 siege on mark_siege cells, day 7 Livia's fleet on mark_fleet cells. Com Tower (20,14), missile silo (22,12). "
-        "Player: INF3 MECH1 TANK3 MDT1 ART2 RECON1 AA1 CR1 SUB1; Klaus: INF5 MECH3 TANK4 MDT2 ART2 ROCK1 RECON1 CR1 SUB1."))
+        "M32 Through the Door (secret; normal look, clear): a free pair (Black Hole, HQ 1 (7,6), the north-west of its own island) against one army under Caulder + Tabitha (the Emerald Sun corps, HQ 2 (32,21), the south-east end). The island is a diagonal strip. "
+        "Waves: day 3 cavalry on mark_cav cells, day 5 siege on mark_siege cells, day 7 Lili's fleet on mark_fleet cells. Com Tower (20,14), missile silo (22,12). "
+        "Player: INF3 MECH1 TANK3 MDT1 ART2 RECON1 AA1 CR1 SUB1; Tabitha: INF5 MECH3 TANK4 MDT2 ART2 ROCK1 RECON1 CR1 SUB1."))
     m.put("1", 7, 6).put("2", 32, 21).put("t", 20, 14).put("M", 22, 12)
     PORTS = [snap_coast(m, 6, 12), snap_coast(m, 12, 20)]
     for (x, y) in PORTS:
@@ -70,11 +70,11 @@ def build():
         m.unit(1, k_, x, y)
     for k_, (x, y) in zip([CR, SUB], m.sea_near(36, 12, 2, box=(30, 6, 39, 16), deep=False)):
         m.unit(2, k_, x, y)
-    m.note("hq", 7, 6, "Black Hole's HQ"); m.note("enemy_hq", 32, 21, "Klaus + Aurelia's HQ (objective)")
+    m.note("hq", 7, 6, "Black Hole's HQ"); m.note("enemy_hq", 32, 21, "Caulder + Tabitha's HQ (objective)")
     for i, (x, y) in enumerate(CAV):
-        m.note(f"mark_cav{i + 1}", x, y, "day 3: Cassius's cavalry lands here")
+        m.note(f"mark_cav{i + 1}", x, y, "day 3: the vanguard lands here")
     for i, (x, y) in enumerate(SIEGE):
-        m.note(f"mark_siege{i + 1}", x, y, "day 5: Aurelia's siege lands here")
+        m.note(f"mark_siege{i + 1}", x, y, "day 5: Lili's siege lands here")
     for i, (x, y) in enumerate(FLEET):
-        m.note(f"mark_fleet{i + 1}", x, y, "day 7: Livia's ship arrives here")
+        m.note(f"mark_fleet{i + 1}", x, y, "day 7: Lili's ship arrives here")
     return m

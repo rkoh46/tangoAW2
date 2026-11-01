@@ -1,6 +1,6 @@
-"""M6 Tribute (Act II): Livia's race for the market city of Aurelhaven: own twenty-two properties at once by day 16.
+"""M6 Tribute (Act II): Lili's race for the market city of Aurelhaven: own twenty-two properties at once by day 16.
 
-Design (docs/dev/map-design.md). The situation: Livia holds the market square in the middle of the city with a little army and two factories; Colin's
+Design (docs/dev/map-design.md). The situation: Lili holds the market square in the middle of the city with a little army and two factories; Colin's
 guild holds the Guildhall quarter in the north-west, Hachi's the Counting House in the south-east, each with factories and an airfield; between them
 is a city of neutral houses, about one every three cells. It is a capture race against two allied rivals, not a siege.
 - Lanes: four avenues leave the square (north, west to the docks, east to the gardens, south over the Mill Water canal); the dock street, the mill street
@@ -9,9 +9,9 @@ is a city of neutral houses, about one every three cells. It is a capture race a
 - Where the fight happens: in the quarters between the square and the two guilds (the north market, the docks, the gardens, the mill quarter and Salt
   Row across the canal), each a cluster of houses round a crossing; the neutral bases at the docks (8,20) and in the gardens (31,13) are forward
   factories for whoever takes them.
-- Properties: 73 in all, 54 of them neutral (after the 12% cut of neutral cities): the race is real for both guilds too (the computer captures). Livia's two bases and airport build the
+- Properties: 73 in all, 54 of them neutral (after the 12% cut of neutral cities): the race is real for both guilds too (the computer captures). Lili's two bases and airport build the
   infantry for it; the guilds' airfields send copters at her capturers.
-- Threats and answers: the guilds' tanks at the capturers -> Livia's tanks and artillery on the avenues' crossings, mechs in the houses; copters -> keep
+- Threats and answers: the guilds' tanks at the capturers -> Lili's tanks and artillery on the avenues' crossings, mechs in the houses; copters -> keep
   the capturers under the tank screen; losing houses back -> hold the quarters next to the square first, then reach out.
 """
 import sys, pathlib
@@ -25,7 +25,7 @@ W, H = 40, 32
 def build():
     m = Canvas("es06", W, H)
     m.header(armies=3, colours=(GE, BM, OS), team=[1, 2, 2], objective=[1], comment=(
-        "M6 Tribute (Aurelhaven): own 22 properties at once by the end of day 16 (capture only). Player (Livia) HQ 1 (20,16) in the square, bases (18,14) (22,18), airport (18,19); "
+        "M6 Tribute (Aurelhaven): own 22 properties at once by the end of day 16 (capture only). Player (Lili) HQ 1 (20,16) in the square, bases (18,14) (22,18), airport (18,19); "
         "Colin HQ 2 (4,3) in the Guildhall quarter; Hachi HQ 3 (35,28) in the Counting House quarter. The harbour on the west edge (ports (3,9) Colin's, (3,19) neutral); "
         "the Mill Water canal from the harbour (3,22) to the east edge (39,24), bridged at x6, 12, 20, 24, 31, 36. Neutral forward bases (8,20) (31,13). "
         "Player INF4 MECH2 TANK2 RECON1 MDT1 ART2; Colin INF3 TANK2 RECON1 ART1; Hachi the same."))
@@ -80,7 +80,7 @@ def build():
     m.spread(1, {INF: 4, MECH: 2, TANK: 2, RECON: 1, MDT: 1, ART: 2}, (14, 11, 26, 21), seed=1, gap=1)
     m.spread(2, {INF: 3, TANK: 2, RECON: 1, ART: 1}, (3, 1, 13, 9), seed=2, gap=1)
     m.spread(3, {INF: 3, TANK: 2, RECON: 1, ART: 1}, (29, 24, 39, 31), seed=3, gap=1)
-    m.note("square", 20, 16, "the market square: Livia's HQ")
+    m.note("square", 20, 16, "the market square: Lili's HQ")
     m.note("hq2", 4, 3, "Colin's HQ (the Guildhall)").note("hq3", 35, 28, "Hachi's HQ (the Counting House)")
     m.note("canal", 3, 22, "the Mill Water, harbour to the east edge, seven bridges")
     m.note("salt_row", 8, 28, "Salt Row across the canal").note("gardens", 31, 13, "the gardens' neutral base")

@@ -89,7 +89,7 @@ def _record(ctx, e, n, tag, out):
     won = int.from_bytes(rec[8:12], "little")
     ctx.eq(won, (1 << n) - 1, f"{tag}: the record has missions 1..{n} won")
     mask = rec[0x0D] | rec[0x0E] << 8 | rec[0x0F] << 16
-    ctx.eq(mask, es.unlocked_before(n + 1) & 0x3F, f"{tag}: the COs unlocked after mission {n}")
+    ctx.eq(mask, es.unlocked_before(n + 1) & 0xF, f"{tag}: the COs unlocked after mission {n}")
     return img
 
 

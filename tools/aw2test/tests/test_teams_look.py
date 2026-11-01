@@ -1,7 +1,7 @@
 """The Normal Battle TEAMS screen's look with the new COs and the Emerald Sun skin.
 
 * The CO cards (`teams_cards_show_the_committed_faces`): each custom CO's 48 x 48 face on the card, in the 1P and the CP column, is the committed
-  `art/cos/<id>/face_normal.png` pixel for pixel (the screen's colours, 5 bits a channel). Until 0.9.1 the four Emerald Sun COs' faces were
+  `art/cos/<id>/face_normal.png` pixel for pixel (the screen's colours, 5 bits a channel). Until 0.9.1 Silver Nova's COs' faces were
   cut from the picture at twice the size (`mug_scale` missing in their framing files), so the card showed eyes and nose only.
 * The windows (`teams_windows_stay_aw2s_with_the_skin`): AW2's own screen paints its help box in Orange Star's window colours whichever armies
   are chosen (checked with each of AW2's five); the Emerald Sun skin on a seat's army must not change them (it used to turn the box olive when it
@@ -17,7 +17,7 @@ from tests.test_teams_faces import OAM
 import struct
 
 ART = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "art", "cos")
-COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "asuka": 92, "aria": 93}
+COS = {"tabitha": 86, "lili": 87, "caulder": 88, "asuka": 92, "aria": 93}
 HELP_BOX = (12, 150)          # inside the help box at the bottom
 HELP_BOX_EDGE = (4, 138)      # its border
 

@@ -262,7 +262,7 @@ class Ctx:
 
     def attack(self, g, src, dst, target, expect_base=None, expect_weapon=None, counter_keep=100):
         """Move src -> dst, fire at target, and check every number the game produced (`counter_keep`: the percent of the counterattack that gets
-        through, Klaus's Testudo 75)."""
+        through, 100 unless a rule cuts it)."""
         att0 = g.unit_at(*src)
         dfd0 = g.unit_at(*target)
         self.require(att0 is not None and dfd0 is not None, f"units at {src} and {target}")

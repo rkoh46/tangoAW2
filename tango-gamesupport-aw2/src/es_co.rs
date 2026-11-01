@@ -1,41 +1,51 @@
-//! The Emerald Sun Campaign's five COs (`docs/ES_CAMPAIGN.md` section 2, data files `cos/*.toml`, kit `aw2dev co`): **Klaus**, **Aurelia**, **Cassius**, **Livia** and the
-//! boss-only **Varro**, tangoAW2's own COs 86..90 (after Crumb and the dialogue's face-only ids), with the Dual Strike pack only. They are built the way Crumb is
-//! ([`crate::crumb`]): the numbers are [`bonus`], called by [`crate::co_roster::stat`]; luck, stars, unit cost and the power texts are theirs ([`INFO`]); a power's effect
-//! on the units is a function the game calls for each unit of the army ([`each_unit`]); Livia's funds are a trap on the power's payment and on the day's income.
+//! The Silver Nova Campaign's three COs, **Tabitha**, **Lili** and **Caulder**, tangoAW2's own COs 86..88 (after Crumb and the dialogue's face-only ids), with the Dual Strike pack only.
+//! (They replace the Roman COs Klaus, Aurelia, Cassius, Livia and Varro; `docs/dev/silver-nova.md`.) They are built the way Crumb is ([`crate::crumb`]): the numbers are [`bonus`], called by
+//! [`crate::co_roster::stat`]; luck, stars and the power texts are theirs ([`INFO`]); a power's effect on the units is a function the game calls for each unit of the army ([`each_unit`]);
+//! Firestorm is a strike function ([`crate::co_powers`]) and Enigma a weather function ([`lili`]).
 //!
-//! Placeholder pictures: each takes a Dual Strike CO's art ([`Info::donor`]) until the portrait work (`aw2dev co portrait`, branch `escampaign`) composes its own.
+//! Slots: ids 86, 87 and 88 are Tabitha, Lili and Caulder (the Roman Klaus, Aurelia and Cassius slots, so every CO index, War Room record, suspend save and online record stays
+//! valid); ids 89 and 90 (Livia and Varro) are **retired**: their rows are still built, as copies of Lili's and Caulder's ([`canon`]), but no list offers them ([`crate::co_new::listed`]).
 //!
-//! | CO | Day to day | CO Power | Super Power |
+//! | CO | Day to day | CO Power | Super CO Power |
 //! |---|---|---|---|
-//! | **Klaus** 4/8 | Imperium: all units +10% attack and defence, Infantry and Mech +10% more | Testudo: +20% defence on top, Infantry and Mech +1 move, counterattacks against his attacks do 25% less | Legio Aeterna: heal 3 HP, +1 move, +20% attack, Infantry and Mech +40% attack and defence |
-//! | **Aurelia** 3/7 | Ballistics: Artillery and Rockets +1 range, indirect units +10% attack, vehicles -10% attack | Ballista: indirect +1 range more, +30% attack | Onager: the same, and each indirect hit costs the enemy units beside the target 1 HP (never below 1 HP) |
-//! | **Cassius** 3/7 | Impetus: vehicles +1 move, +10% attack, -10% defence | Charge: vehicles +1 move more, +30% attack | Triumph: +40% attack, a vehicle that has attacked may move once more |
-//! | **Livia** 3/6 | Ledger: income +25%, units cost 10% more | Tribute: 200 funds a property | Mare Nostrum: ships +2 move, +30% attack, 100 funds a property |
-//! | **Varro** 4/8 | Imperator: all units +15% attack and defence | Edict: +25% attack, +15% defence on top, +1 move | Sol Invictus: +45% attack, +30% defence, +1 move, heal 2 HP |
+//! | **Tabitha** 0/9 | Mega Boost: all units +18% attack and defence | none | Firestorm (9 stars): 8 HP to every unit within 2 of the best site (AW2's meteor pick, Von Bolt's animation), no stun |
+//! | **Lili** 3/0 | Lullaby: all units +10% attack and defence | Enigma (3 stars): sand, snow or rain at random for two days; her units ignore weather and move 1 more | none |
+//! | **Caulder** 0/4 | Hypothesis: all units +18% attack and defence, Sturm's movement (every terrain costs 1) | none | Cataclysm (4 stars): heal 5 HP, +25% attack and defence more |
 //!
-//! "Vehicles" are the ground vehicles (Md Tank, Megatank, Tank, Recon, APC, Neotank, Piperunner, Anti-Air); "indirect" Artillery, Rockets, Missiles and the Battleship; "naval" every ship.
+//! The power's own +10% firepower and +10% defence (every power gets them from the game) are inside the "+25%": Cataclysm's [`bonus`] is 18 + 25 - 10 = 33, so a unit totals +43% in the power.
 
 use mgba::core::Core;
 
 use crate::co_new::FIRST;
 use crate::co_roster::{DEFENCE, FIREPOWER, MOVE, RANGE};
-use crate::ds_weather::is_on;
 
-pub const KLAUS: u8 = FIRST + 14;
-pub const AURELIA: u8 = FIRST + 15;
-pub const CASSIUS: u8 = FIRST + 16;
-pub const LIVIA: u8 = FIRST + 17;
-pub const VARRO: u8 = FIRST + 18;
-/// The dialogue's Emerald Sun legionary: the Black Hole trooper's face with its colours turned (a face only, no CO).
+pub const TABITHA: u8 = FIRST + 14;
+pub const LILI: u8 = FIRST + 15;
+pub const CAULDER: u8 = FIRST + 16;
+/// Retired slots (Livia 89, Varro 90): rows that copy [`LILI`] and [`CAULDER`], in no list.
+pub const RETIRED_A: u8 = FIRST + 17;
+pub const RETIRED_B: u8 = FIRST + 18;
+/// The dialogue's Silver Nova soldier: the Black Hole trooper's face with its colours turned (a face only, no CO).
 pub const LEGIONARY_FACE: u8 = FIRST + 19;
-pub const ALL: [u8; 5] = [KLAUS, AURELIA, CASSIUS, LIVIA, VARRO];
+/// The three COs a list may offer.
+pub const ALL: [u8; 3] = [TABITHA, LILI, CAULDER];
+/// Every row this module owns (the three and the two retired): the CO table builds them all.
+pub const ROWS: [u8; 5] = [TABITHA, LILI, CAULDER, RETIRED_A, RETIRED_B];
 
 pub fn is_es(co: u8) -> bool {
-    (KLAUS..=VARRO).contains(&co)
+    (TABITHA..=RETIRED_B).contains(&co)
 }
 
-/// Whether the Emerald Sun COs are in Versus' CO lists: released with the campaign (0.8.8). Varro, the campaign's boss with a
-/// placeholder face, stays out of Versus ([`crate::co_new::listed`]).
+/// A retired slot's CO is the one it copies; every other id is itself.
+pub fn canon(co: u8) -> u8 {
+    match co {
+        RETIRED_A => LILI,
+        RETIRED_B => CAULDER,
+        c => c,
+    }
+}
+
+/// Whether the three are in Versus' CO lists.
 pub fn in_versus() -> bool {
     true
 }
@@ -55,109 +65,75 @@ pub struct Info {
     pub defeat: &'static str,
     /// The AW2 CO it takes after: its theme, its CPU profile, its place in the lists.
     pub like: u8,
-    /// The Dual Strike CO whose pictures it wears until its own are composed (a Dual Strike id).
+    /// The Dual Strike CO whose pictures it wears if it has none of its own (a Dual Strike id).
     pub donor: u8,
-    /// Stars of the CO Power and of the Super Power in all.
+    /// Stars of the CO Power and of the Super Power in all (0: the CO has none).
     pub stars: (u32, u32),
     /// Luck per power level (AW2's rows: 10 is 0..9%) and bad luck.
     pub luck: [i16; 3],
-    /// Unit cost per power level as a percentage *change* (the CO table's field is added to 100: Livia's +10% is 10, a CO with no change 0).
+    /// Unit cost per power level as a percentage *change* (the CO table's field is added to 100).
     pub cost: [i16; 3],
 }
 
-pub const INFO: [Info; 5] = [
+pub const INFO: [Info; 3] = [
     Info {
-        name: "Klaus",
-        bio: "Legate of the Emerald Sun, a stern and fair soldier's soldier. Hit: Discipline Miss: Being doubted",
-        d2d: "All units possess superior offense and defense. Infantry and Mech units fight best of all.",
-        cop: "Defense rises by 20%, and foot soldiers move 1 more space. Enemy counters to his attacks are weaker.",
-        scop: "Restores 3 HP, adds 1 space of movement and 20% firepower. Foot soldiers gain 40% firepower and defense.",
-        cop_name: "Testudo",
-        scop_name: "Legio Aeterna",
-        quotes: ["Shields up! Close ranks,\rand not one step back!", "The legion does not fall.\rRise, and march again!", "Hold the line.\rWe march together."],
-        victory: "Order restored. March at dawn.",
-        defeat: "The legion... will remember.",
-        like: 6,
+        name: "Tabitha",
+        bio: "Belongs to Silver Nova. A daughter of Dr. Caulder, she is extremely cruel and vindictive. Hit: Breakfast in bed Miss: \"Stupid Weak People\"",
+        d2d: "All units fight with 18% more firepower and defense.",
+        cop: "Tabitha has no CO Power. She saves all her energy for her Super CO Power.",
+        scop: "Deals 8 damage automatically to the most expensive group of enemies in 13 tiles. Cannot kill.",
+        cop_name: "",
+        scop_name: "Firestorm",
+        quotes: ["Stupid weak people!", "Stupid weak people!", "Stupid weak people!"],
+        victory: "Mission complete. Dismissed.",
+        defeat: "I do not accept this result.",
+        like: 10,
         donor: 7,
-        stars: (4, 8),
+        stars: (0, 9),
         luck: [10, 10, 10],
         cost: [0, 0, 0],
     },
     Info {
-        name: "Aurelia",
-        bio: "Siege engineer of the Emerald Sun. She thinks in arcs and angles. Hit: Range Miss: Walking",
-        d2d: "Artillery and Rockets gain 1 space of range, and all indirect units have 10% more firepower. Vehicles are 10% weaker.",
-        cop: "Indirect units gain 1 more space of range, and their firepower rises by 30%.",
-        scop: "Indirect units gain 1 more space of range and 30% firepower. Each of their hits also costs enemy units next to the target 1 HP.",
-        cop_name: "Ballista",
-        scop_name: "Onager",
-        quotes: ["Wind the windlass!\rLet the walls hear it!", "Loose the onagers!\rStone for every wall!", "Measure twice.\rFire once."],
-        victory: "The wall is down. Fetch the ladders.",
-        defeat: "Bad footing. Next time, higher ground.",
-        like: 5,
+        name: "Lili",
+        bio: "The youngest child of Dr. Caulder. Numerous experiments have left her mind permanently shattered. Hit: Mr. Bear Miss: Broken \"toys\"",
+        d2d: "All units fight with 10% more firepower and defense.",
+        cop: "For two days the weather turns to sand, snow or rain at random. Her units ignore weather and move 1 more space.",
+        scop: "Lili has no Super CO Power. Her one trick is the Enigma.",
+        cop_name: "Enigma",
+        scop_name: "",
+        quotes: ["Tee hee! Let's go,\rMr. Bear!", "Tee hee! Let's go,\rMr. Bear!", "Tee hee! Let's go,\rMr. Bear!"],
+        victory: "Mr. Bear says we won. Yay!",
+        defeat: "Oh no. Mr. Bear, they broke all the toys.",
+        like: 9,
         donor: 6,
-        stars: (3, 7),
+        stars: (3, 0),
         luck: [10, 10, 10],
         cost: [0, 0, 0],
     },
     Info {
-        name: "Cassius",
-        bio: "Dashing cavalry commander of the Emerald Sun. Lives for the charge. Hit: Speed Miss: Patience",
-        d2d: "Vehicles move 1 space more and have 10% more firepower, but their defense is 10% lower.",
-        cop: "Vehicles move 1 more space, and their firepower rises by 30%.",
-        scop: "Vehicles move 1 more space, and their firepower rises by 40%. A vehicle that has attacked can move once more.",
-        cop_name: "Charge",
-        scop_name: "Triumph",
-        quotes: ["With me! Ride them down!\rGlory is a short road!", "Strike, and strike again!\rThey will sing of this!", "Try to keep up, Klaus!\rI am already ahead."],
-        victory: "Ha! Write it down, scribe. Write it down!",
-        defeat: "Not like this. NOT like this!",
-        like: 8,
-        donor: 9,
-        stars: (3, 7),
-        luck: [10, 10, 10],
-        cost: [0, 0, 0],
-    },
-    Info {
-        name: "Livia",
-        bio: "Senator and treasurer of the Emerald Sun. She wins wars with ledgers, not swords. Hit: Accounts Miss: Mud",
-        d2d: "Properties yield 25% more funds, but units cost 10% more.",
-        cop: "Collects 200 funds for every property owned.",
-        scop: "Naval units move 2 spaces more, and their firepower rises by 30%. Collects 100 funds for every property owned.",
-        cop_name: "Tribute",
-        scop_name: "Mare Nostrum",
-        quotes: ["Thank you for your\rgenerous contribution.", "The sea is ours. Again.\rSend the fleet!", "A moment.\rI am counting."],
-        victory: "The books balance. So does the war.",
-        defeat: "Impossible. I audited this.",
-        like: 16,
-        donor: 17,
-        stars: (3, 6),
-        luck: [10, 10, 10],
-        cost: [10, 10, 10],
-    },
-    Info {
-        name: "Varro",
-        bio: "Imperator of the Emerald Sun and Klaus's old patron. Grand and ruthless. Hit: Patronage Miss: Being refused",
-        d2d: "All units are better paid, better armed and better fed. Firepower and defense rise by 15%.",
-        cop: "Firepower rises by 25% and defense by 15% more, and unit movement increases by 1 space.",
-        scop: "Restores 2 HP to all units. Firepower rises by 45% and defense by 30%, and movement increases by 1 space.",
-        cop_name: "Edict",
-        scop_name: "Sol Invictus",
-        quotes: ["By the Consul's authority,\rthe Senate decrees...", "Sol Invictus! The sun\rdoes not set on Aurea!", "Two banners, one\rpurse. Mine."],
-        victory: "The Senate will be told what I tell it.",
-        defeat: "My boy... you do not know what you have done.",
+        name: "Caulder",
+        bio: "The head of Silver Nova. He seeks a world where he is free to carry out his terrible experiments. Hit: Unrestricted experiments Miss: Ethics",
+        d2d: "All units fight with 18% more firepower and defense. Every terrain costs just 1 move.",
+        cop: "Caulder has no CO Power. He saves all his energy for his Super CO Power.",
+        scop: "Restores 5 HP to all units. Firepower and defense rise by a further 25%.",
+        cop_name: "",
+        scop_name: "Cataclysm",
+        quotes: ["Fascinating...", "Fascinating...", "Fascinating..."],
+        victory: "As predicted. Log the result.",
+        defeat: "An unexpected variable.",
         like: 14,
         donor: 15,
-        stars: (4, 8),
-        luck: [10, 10, 20],
+        stars: (0, 4),
+        luck: [10, 10, 10],
         cost: [0, 0, 0],
     },
 ];
 
 pub fn info(co: u8) -> Option<&'static Info> {
-    INFO.get(co.checked_sub(KLAUS)? as usize)
+    INFO.get(canon(co).checked_sub(TABITHA)? as usize)
 }
 
-/// The AW2 CO a Emerald Sun CO takes after.
+/// The AW2 CO a Silver Nova CO takes after.
 pub fn like(co: u8) -> u8 {
     info(co).map_or(1, |i| i.like)
 }
@@ -167,8 +143,7 @@ pub fn name(co: u8) -> Option<&'static [u8]> {
 }
 
 /// A text by [`crate::co_new`]'s slot (the six quotes are the CO Power's, the Super Power's and the Tag Power's, twice).
-/// A CO's text as the page shows it: the project owner's words (names, bio, power names, quotes, lines) where she has them, this campaign's own numbers in the
-/// descriptions of what the CO and the powers do.
+/// A CO's text as the page shows it: names, bio and quotes from the data file, this campaign's numbers in the descriptions of what the CO and the powers do.
 pub fn text_of(co: u8, which: u16) -> Option<Vec<u8>> {
     use crate::co_new::*;
     match which {
@@ -198,71 +173,38 @@ pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
 
 // --- The numbers --------------------------------------------------------------------
 
-fn foot(t: u8) -> bool {
-    matches!(t, 1 | 2)
-}
-
-/// Ground vehicles (not the indirect ones).
-fn vehicle(t: u8) -> bool {
-    matches!(t, 3 | 4 | 5 | 6 | 7 | 8 | 9 | 14)
-}
-
-/// Artillery, Rockets, Missiles, the Battleship.
-fn indirect(t: u8) -> bool {
-    matches!(t, 10 | 11 | 15 | 21)
-}
-
-fn naval(t: u8) -> bool {
-    matches!(t, 18 | 21 | 22 | 23 | 24 | 26)
-}
+/// Tabitha's and Caulder's day to day (percent attack and defence) and Caulder's extra in his Super Power (percent, with the power's own +10 inside it).
+pub const TABITHA_DAY: i32 = 18;
+pub const CAULDER_DAY: i32 = 18;
+pub const CAULDER_SCOP_EXTRA: i32 = 25;
+pub const LILI_DAY: i32 = 10;
+/// The power's own +10% firepower and defence, which every power gets from the game ([`crate::co_roster::stat`]).
+const POWER_OWN: i32 = 10;
+/// Cataclysm's HP.
+pub const CATACLYSM_HEAL: u8 = 5;
 
 /// The CO's own firepower %, defence %, move and range for unit type `t` at power level `mode` (0 day to day, 1 CO Power, 2 Super Power), in
 /// [`crate::co_roster::stat`]'s fields (what every power adds to firepower is added by the caller).
-pub fn bonus(co: u8, mode: u8, t: u8, field: usize) -> i32 {
-    let m = mode.min(2) as i32;
-    let on = |b: bool, v: i32| if b { v } else { 0 };
-    match (co, field) {
-        (KLAUS, FIREPOWER) => 10 + on(foot(t), 10) + on(m == 2, 20 + on(foot(t), 40)),
-        (KLAUS, DEFENCE) => 10 + on(foot(t), 10) + on(m == 1, 20) + on(m == 2, on(foot(t), 40)),
-        (KLAUS, MOVE) => on(m == 1, on(foot(t), 1)) + on(m == 2, 1),
-        (AURELIA, FIREPOWER) => on(indirect(t), 10 + on(m > 0, 30)) - on(vehicle(t), 10),
-        (AURELIA, RANGE) => on(matches!(t, 10 | 11), 1) + on(m > 0, on(indirect(t), 1)),
-        (CASSIUS, FIREPOWER) => on(vehicle(t), 10 + on(m == 1, 30) + on(m == 2, 40)),
-        (CASSIUS, DEFENCE) => -on(vehicle(t), 10),
-        (CASSIUS, MOVE) => on(vehicle(t), 1 + on(m > 0, 1)),
-        (LIVIA, FIREPOWER) => on(m == 2, on(naval(t), 30)),
-        (LIVIA, MOVE) => on(m == 2, on(naval(t), 2)),
-        (VARRO, FIREPOWER) => 15 + on(m == 1, 25) + on(m == 2, 45),
-        (VARRO, DEFENCE) => 15 + on(m == 1, 15) + on(m == 2, 30),
-        (VARRO, MOVE) => on(m > 0, 1),
-        _ => 0,
+pub fn bonus(co: u8, mode: u8, _t: u8, field: usize) -> i32 {
+    let m = mode.min(2);
+    match (canon(co), field) {
+        (TABITHA, FIREPOWER | DEFENCE) => TABITHA_DAY,
+        (LILI, FIREPOWER | DEFENCE) => LILI_DAY,
+        (LILI, MOVE) => (m == 1) as i32,
+        (CAULDER, FIREPOWER | DEFENCE) => CAULDER_DAY + if m == 2 { CAULDER_SCOP_EXTRA - POWER_OWN } else { 0 },
+        _ => {
+            let _ = RANGE;
+            0
+        }
     }
 }
 
-/// Funds a day on top of the income: Livia's Ledger, 25% of what a property pays (`per_property`, the Rules screen's Funds: 1000 by default, so 250 a property that earns).
-pub fn income_bonus(co: u8, earners: i32, per_property: i32) -> i32 {
-    if co == LIVIA {
-        per_property.max(0) / 4 * earners
-    } else {
-        0
-    }
-}
-
-/// The Tag Power's compatibility of a pair of an Emerald Sun CO (Klaus .. Livia) with a CO that `cos/tags.toml` does not list ("Every unlisted pair is 95"; Dual Strike's own default).
+/// The Tag Power's compatibility of a pair of a Silver Nova CO with a CO that `cos/tags.toml` does not list ("Every unlisted pair is 95"; Dual Strike's own default).
 pub const UNLISTED_PAIR: u8 = 95;
 
-/// Whether `co` is one of the four of the data files (Klaus, Aurelia, Cassius, Livia: the ones `cos/tags.toml` has pairs for; Varro is boss-only).
+/// Whether `co` is one of the three of the data files (the ones `cos/tags.toml` has pairs for).
 pub fn has_pairs(co: u8) -> bool {
-    (KLAUS..=LIVIA).contains(&co)
-}
-
-/// Funds her powers collect for each property that earns: Tribute 200, Mare Nostrum 100.
-pub fn tribute(co: u8, power: u8) -> i32 {
-    match (co, power) {
-        (LIVIA, 1) => 200,
-        (LIVIA, 2) => 100,
-        _ => 0,
-    }
+    (TABITHA..=CAULDER).contains(&co)
 }
 
 // --- Thumb code: a power's effect on each unit -----------------------------------------------
@@ -272,19 +214,19 @@ const ROM: u32 = 0x0874_2400;
 const HEAL3: u32 = ROM;
 /// Clone Andy's Hyper Upgrade unit effect: heal 4 HP, for free (`crate::co_new`'s presentation row).
 pub const HEAL4: u32 = ROM + 0x100;
+/// Cataclysm's: heal 5 HP, for free.
+pub const HEAL5: u32 = ROM + 0x180;
+/// Enigma's power function (weather, then AW2's usual power procedure).
+pub const ENIGMA: u32 = ROM + 0x200;
 const SENTINEL: u32 = ROM + 0x3FC;
-const MAGIC: u32 = 0x4553_4331; // "1CSE"
+const MAGIC: u32 = 0x4553_4332; // "2CSE"
 /// AW2's `RepairUnit(unit, hp, pay)`, Thumb.
 const REPAIR: u32 = 0x0802_9AF9;
-/// Andy's CO Power unit effect: `RepairUnit(unit, 2, 0)`.
-const HEAL2: u32 = 0x0804_44ED;
 /// The default unit effect (none).
 const NOTHING: u32 = 0x0804_4531;
-
-/// Legio Aeterna's unit effect: heal 3 HP, for free.
-fn heal3() -> Vec<u8> {
-    heal(3)
-}
+/// AW2's usual power procedure (the quote and the cut-in) and its weather setter (`sub_08035144(weather)`), both Thumb.
+const DEFAULT_POWER: u32 = 0x0804_43D9;
+const SET_WEATHER: u32 = 0x0803_5145;
 
 /// A power's unit effect: `RepairUnit(unit, hp, 0)`, for free.
 fn heal(hp: u8) -> Vec<u8> {
@@ -299,335 +241,234 @@ fn heal(hp: u8) -> Vec<u8> {
     a.finish()
 }
 
+/// Enigma: `sub_08035144(2)` (the weather the trap [`weather_pick`] replaces by the roll), then AW2's usual power procedure with the argument it was given.
+fn enigma() -> Vec<u8> {
+    let mut a = crate::crumb::Asm::new();
+    a.op(0xB530); // push {r4, r5, lr}
+    a.op(0x1C04); // adds r4, r0, #0
+    a.op(0x2002); // movs r0, #2  (the weather: the trap on SET_WEATHER's entry rolls it)
+    a.call(SET_WEATHER);
+    a.op(0x1C20); // adds r0, r4, #0
+    a.call(DEFAULT_POWER);
+    a.op(0xBC30); // pop {r4, r5}
+    a.op(0xBC01); // pop {r0}
+    a.op(0x4700); // bx r0
+    a.finish()
+}
+
 pub fn install(core: &mut Core) {
     if core.raw_read_32(SENTINEL, -1) == MAGIC {
         return;
     }
-    core.raw_write_range(HEAL3, -1, &heal3());
+    core.raw_write_range(HEAL3, -1, &heal(3));
     core.raw_write_range(HEAL4, -1, &heal(4));
+    core.raw_write_range(HEAL5, -1, &heal(CATACLYSM_HEAL));
+    core.raw_write_range(ENIGMA, -1, &enigma());
     core.raw_write_32(SENTINEL, -1, MAGIC);
 }
 
 /// The presentation row's unit effect (a Thumb function the game calls for each unit of the army) for power 0 (CO Power) or 1 (Super Power).
 pub fn each_unit(co: u8, power: u8) -> u32 {
-    match (co, power) {
-        (KLAUS, 1) => HEAL3 | 1,
-        (VARRO, 1) => HEAL2,
+    match (canon(co), power) {
+        (CAULDER, 1) => HEAL5 | 1,
         (crate::co_new::ARIA, 1) => HEAL3 | 1,
         _ => NOTHING,
     }
 }
 
-// --- Livia's funds -----------------------------------------------------------------------------
+// --- Lili's Enigma -----------------------------------------------------------------------------
+//
+// Enigma sets the weather to snow, rain or (with the Dual Strike features on, which every Silver Nova CO needs) a sandstorm, drawn from the game's own random number
+// generator (`sandstorm::next_random`: the same on every peer and every rollback), for two days:
+// - snow and rain are AW2's own power weather (`sub_08035144`), made two days long by the flag Olaf's snow uses ([`crate::ds_weather`]'s `POWER_SNOW`);
+// - the sandstorm is [`crate::sandstorm`]'s one-day state, switched on by the roll and switched off again here after two of Lili's turn starts (the engine's own
+//   day count only runs in Random weather, so a Rules screen with fixed weather would keep the sand for ever);
+// - a map whose weather is permanent keeps it: Enigma only gives her units the immunity and the move there.
+// Her units are immune while Enigma runs, both days ([`enigma_on`], [`weather_immune`]): no sandstorm range cut, no snow fuel doubling, +1 move ([`second_day_move`] on day 2) and +1 vision offsets rain's -1 ([`rain_vision`]).
+// The state rides in a suspended game's tag tail ([`lili_state`]): +0 turn starts left, +1 her army, +2 the weather rolled (1 snow, 2 rain, 3 sand), +40 the army of the last tick.
 
+/// RAM (`ram_map::REGIONS`): the state above.
+pub const LILI_STATE: u32 = 0x0203_C980;
+pub const LILI_BYTES: u32 = 40;
+pub const LILI_LEN: u32 = LILI_BYTES + 1;
+const LILI_TURN: u32 = LILI_STATE + LILI_BYTES;
 const CURRENT_ARMY: u32 = 0x0300_33EC;
-const PLAYER: u32 = 0x3C;
-/// `PayForPower(army, mode)`'s entry (the map menu's Power and Super, the computer's choice).
-const PAY_FOR_POWER: u32 = 0x0804_438C;
+/// gPlaySt's weather mode: 2 is permanent weather.
+const WEATHER_MODE: u32 = 0x0300_3FED;
+pub const SNOW: u8 = 1;
+pub const RAIN: u8 = 2;
+pub const SAND: u8 = 3;
 
-pub fn power_paid(core: &mut Core) {
-    if !is_on(core) {
-        return;
-    }
-    let mode = core.gba().cpu().gpr(1) as u8;
+/// Whether Lili's Enigma is running for the army: from the activation through her second turn start after it, as long as the weather it drew
+/// (the state [`LILI_STATE`]: turn starts left, her army). Her CO Power itself ends at her next turn start; the immunity, the +1 move and the vision
+/// last the two days.
+pub fn enigma_on(core: &Core, army: u32) -> bool {
+    (1..=5).contains(&army)
+        && core.raw_read_8(LILI_STATE, -1) != 0
+        && core.raw_read_8(LILI_STATE + 1, -1) as u32 == army
+        && canon(crate::co_roster::army_co(core, army).0) == LILI
+}
+
+/// Whether the army's units ignore weather: Lili in Enigma's two days, or in her CO Power on a map where the weather is permanent (no state starts there).
+pub fn weather_immune(core: &Core, army: u32) -> bool {
+    (1..=5).contains(&army)
+        && crate::co_roster::abilities_enabled(core)
+        && (enigma_on(core, army) || crate::co_roster::army_co(core, army) == (LILI, 1))
+}
+
+/// Her units' extra move while Enigma runs on its second day, when the CO Power (mode 1) is over and the CO table gives day-to-day numbers: +1 for
+/// every unit (the table's own +1 covers the first day). (the table call names no army: Enigma's own army is taken).
+pub fn second_day_move(core: &Core) -> i32 {
+    let army = core.raw_read_8(LILI_STATE + 1, -1) as u32;
+    (enigma_on(core, army) && crate::co_roster::army_co(core, army) == (LILI, 0)) as i32
+}
+
+/// The vision Lili's units regain in rain while Enigma runs (rain takes 1 off): +1.
+pub fn rain_vision(core: &Core, army: u32) -> i32 {
+    (enigma_on(core, army) && core.raw_read_8(crate::ds_weather::WEATHER, -1) == RAIN) as i32
+}
+
+/// The weather Enigma draws: snow, rain or sand (without the sandstorm, only snow or rain).
+pub fn roll(r: u32, sand: bool) -> u8 {
+    let n = if sand { 3 } else { 2 };
+    1 + (r % n) as u8
+}
+
+/// The trap on `sub_08035144`'s entry (r0 the weather): while Lili's CO Power is being paid, the weather is the roll. Returns the weather it chose.
+pub fn weather_pick(core: &mut Core) -> Option<u8> {
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    if !(1..=5).contains(&army) {
-        return;
+    if !(1..=5).contains(&army) || crate::co_powers::activating(core, army) != (LILI, 1) {
+        return None;
     }
-    let co = crate::co_roster::army_co(core, army).0;
-    let per = tribute(co, mode);
-    if per == 0 {
-        return;
+    if core.raw_read_8(WEATHER_MODE, -1) == 2 {
+        // permanent weather: nothing changes (r0 stays what the game has)
+        let w = core.raw_read_8(crate::ds_weather::WEATHER, -1);
+        core.gba_mut().cpu_mut().set_gpr(0, w as i32);
+        return None;
     }
-    let n = crate::co_powers::earners(core, army);
-    let p = crate::five::players(core) + PLAYER * army;
-    let funds = core.raw_read_32(p, -1) as i64 + (per * n) as i64;
-    core.raw_write_32(p, -1, funds.clamp(0, 999_999) as u32);
+    let weather = roll(crate::sandstorm::next_random(core), true);
+    core.raw_write_8(LILI_STATE, -1, 2);
+    core.raw_write_8(LILI_STATE + 1, -1, army as u8);
+    core.raw_write_8(LILI_STATE + 2, -1, weather);
+    if weather == SAND {
+        crate::sandstorm::start_power_sand(core);
+    }
+    // (sand is clear weather to the game: the sandstorm is [`crate::sandstorm`]'s own state)
+    let arg = if weather == SAND { 0 } else { weather as i32 };
+    core.gba_mut().cpu_mut().set_gpr(0, arg);
+    Some(weather)
 }
 
-/// `PayForPower(army, mode)`'s entry is trapped once, by [`crate::crumb::traps`] (one trap an address): it calls this.
-pub const POWER_PAID_AT: u32 = PAY_FOR_POWER;
-
-// --- The powers' rules: Testudo, Onager, Triumph ------------------------------------------------
-//
-// Three effects the numbers cannot say, each a trap at a game routine and each a pure function of emulated memory (the units, the player blocks, the
-// battle records), so every peer and every rollback works them out alike:
-//
-// - **Testudo** (Klaus's CO Power): the enemy's counterattack against one of his attacks does 25% less damage. `sub_08024DDC(target, attacker)` applies a
-//   strike's damage (`+0xC` is the attacker's damage before the target's defence, `+0x14` the forecast's); the trap sits at its first instruction after the
-//   push. A counterattack is the strike of the battle's defender record (`0x030013B0`) at the attacker's (`0x030013D0`); when the attacker's army is Klaus
-//   in his CO Power both numbers are cut to 75% (whole numbers, rounded down), so the forecast and the hit agree.
-// - **Onager** (Aurelia's Super Power): `sub_08041978` has worked a battle out and is about to charge the power meters (the trap `co_powers::attacker_charged`
-//   at `0x08041CB8` calls [`onager`]): when the attacker is an indirect unit of Aurelia's army in her Super Power and struck from range, every unit of another team
-//   on a cell next to the target (the four cells beside it, hidden units too, never an Oozium) loses 1 HP, and a unit on 1 HP stays on 1. The attacker's cell is the
-//   move's destination (`0x03003100`), because the work-out puts the unit back on its old cell.
-// - **Triumph** (Cassius's Super Power): `sub_080424FC` ends the selected unit's action (`+1` bit 0 = done). Called from a battle's end (the four return
-//   addresses in [`BATTLE_ENDS`], the calls at `0x080419FC`, `0x08041E00`, `0x08041E50`, `0x08040972`) for a vehicle of a Cassius army in his Super Power that has not yet had its extra move, the trap at `0x08042532` (the
-//   `orrs` that sets done) leaves the unit not done and sets its bit in [`MOVED_AFTER_ATTACK`]. The unit can be picked up again; while its bit is set Fire is
-//   hidden (the two Fire rows' show tests are trapped), so it can move and do anything but attack, and any ordinary end of its action (Wait, ...) clears the bit
-//   and finishes it as always. The bits are cleared when the turn changes hands and as soon as the army's active CO is not Cassius in his Super Power
-//   ([`forget_moves`]: a Tag Power's Change puts the partner in his place and every unit may move again, and the partner's units may fire). They ride in a
-//   suspended game after the tag tail ([`moved_state`], `crate::suspend`). The computer's Cassius gets the extra move too: its unit queue (`sub_0805D438`)
-//   takes a unit that is not done, checks for an attack and runs the pass's routine, which moves it (and fires when the move ends beside a foe); the action executor
-//   (`sub_0805FD64`) then carries out the action the step set up. For a unit with its bit set an attack action is turned into a Wait where the unit goes
-//   ([`ai_executor`]), so a later pass of the queue moves it without a shot and the Wait ends it as for a person.
-
-const BATTLE_ATTACKER: u32 = 0x0300_13D0;
-const BATTLE_DEFENDER: u32 = 0x0300_13B0;
-const CO_ABILITIES: u32 = 0x0300_3FC8;
-const UNITS_POINTER: u32 = 0x0849_9594;
-const UNIT: u32 = 12;
-const SELECTED_UNIT: u32 = 0x0300_40D8;
-const DESTINATION: u32 = 0x0300_3100;
-const MAP: u32 = 0x0201_E450;
-const PLAYER_TEAM: u32 = 0x2A;
-const SLOTS: u32 = 320;
-
-fn abilities_on(core: &Core) -> bool {
-    core.raw_read_8(CO_ABILITIES, -1) != 0
-}
-
-/// Testudo keeps this share (percent) of a counterattack's damage.
-pub const TESTUDO_KEEPS: i32 = 75;
-
-/// `sub_08024DDC(target r0, attacker r1)` after its push: the counterattack's damage numbers.
-const STRIKE_APPLIED: u32 = 0x0802_4DDE;
-fn strike_applied(core: &mut Core) {
-    if !is_on(core) || !abilities_on(core) {
-        return;
-    }
-    let cpu = core.gba().cpu();
-    let (target, attacker) = (cpu.gpr(0) as u32, cpu.gpr(1) as u32);
-    if attacker != BATTLE_DEFENDER || target != BATTLE_ATTACKER {
-        return;
-    }
-    let army = crate::co_roster::battle_army(core, target);
-    if !(1..=5).contains(&army) || crate::co_roster::army_co(core, army) != (KLAUS, 1) {
-        return;
-    }
-    for at in [0x0C, 0x14] {
-        let v = core.raw_read_16(attacker + at, -1) as i16 as i32;
-        core.raw_write_16(attacker + at, -1, (v * TESTUDO_KEEPS / 100) as u16);
-    }
-}
-
-fn army_at(core: &Core, unit: u32) -> u32 {
-    crate::five::army_of_index(core, unit.wrapping_sub(core.raw_read_32(UNITS_POINTER, -1)) / UNIT)
-}
-
-fn team_of(core: &Core, army: u32) -> u8 {
-    core.raw_read_8(crate::five::players(core) + 0x3C * army + PLAYER_TEAM, -1)
-}
-
-/// The HP (tenths) a unit with `hp` is left with after Onager's splash: 1 shown HP less, a unit on its last stays.
-pub fn splash_hp(hp: u16) -> u16 {
-    if hp > 10 {
-        hp - 10
+/// The weather Enigma rolled and has running (0 none).
+pub fn rolled(core: &Core) -> u8 {
+    if core.raw_read_8(LILI_STATE, -1) != 0 {
+        core.raw_read_8(LILI_STATE + 2, -1)
     } else {
-        hp
+        0
     }
 }
 
-/// The battle `sub_08041978` has worked out (attacker: the selected unit, defender index in `defender`) is about to charge the meters.
-pub fn onager(core: &mut Core, defender: u32) {
-    if !abilities_on(core) || defender == 0 || defender >= SLOTS {
-        return;
+fn end_enigma(core: &mut Core) {
+    if core.raw_read_8(LILI_STATE + 2, -1) == SAND {
+        crate::sandstorm::end_power_sand(core);
     }
-    let units = core.raw_read_32(UNITS_POINTER, -1);
-    let att = core.raw_read_32(SELECTED_UNIT, -1);
-    if att < units || att >= units + UNIT * SLOTS {
-        return;
-    }
-    let army = army_at(core, att);
-    if !(1..=5).contains(&army)
-        || crate::co_roster::army_co(core, army) != (AURELIA, 2)
-        || !indirect(core.raw_read_8(att, -1))
-    {
-        return;
-    }
-    let dfd = units + UNIT * defender;
-    if core.raw_read_8(dfd, -1) == 0 {
-        return;
-    }
-    let (tx, ty) = (core.raw_read_8(dfd + 2, -1) as i32, core.raw_read_8(dfd + 3, -1) as i32);
-    let (ax, ay) = (
-        core.raw_read_16(DESTINATION, -1) as i16 as i32,
-        core.raw_read_16(DESTINATION + 2, -1) as i16 as i32,
-    );
-    if (ax - tx).abs() + (ay - ty).abs() < 2 {
-        return;
-    }
-    let mine = team_of(core, army);
-    for (dx, dy) in [(0, -1), (1, 0), (0, 1), (-1, 0)] {
-        let Some(u) = crate::unit_actions::unit_at(core, tx + dx, ty + dy) else {
-            continue;
-        };
-        if u == dfd || team_of(core, army_at(core, u)) == mine || crate::oozium::immune(core, u) {
-            continue;
-        }
-        let w = core.raw_read_16(u + 4, -1);
-        let hp = w & 0x7F;
-        let left = splash_hp(hp);
-        if left != hp {
-            core.raw_write_16(u + 4, -1, (w & !0x7F) | left);
+    for k in 0..LILI_BYTES {
+        if core.raw_read_8(LILI_STATE + k, -1) != 0 {
+            core.raw_write_8(LILI_STATE + k, -1, 0);
         }
     }
 }
 
-/// One bit per unit slot (320): the unit attacked under Triumph and has its extra move left. EWRAM `ram_map::REGIONS`; +0x28 the army whose turn it was last tick.
-pub const MOVED_AFTER_ATTACK: u32 = 0x0203_C980;
-pub const MOVED_BYTES: u32 = 40;
-pub const MOVED_LEN: u32 = MOVED_BYTES + 1;
-const MOVED_TURN: u32 = MOVED_AFTER_ATTACK + MOVED_BYTES;
-
-fn moved_bit(core: &Core, i: u32) -> bool {
-    core.raw_read_8(MOVED_AFTER_ATTACK + i / 8, -1) & (1 << (i % 8)) != 0
-}
-
-fn set_moved_bit(core: &mut Core, i: u32, on: bool) {
-    let b = core.raw_read_8(MOVED_AFTER_ATTACK + i / 8, -1);
-    let v = if on { b | 1 << (i % 8) } else { b & !(1 << (i % 8)) };
-    if v != b {
-        core.raw_write_8(MOVED_AFTER_ATTACK + i / 8, -1, v);
+/// A map starts: no Enigma carries over.
+pub fn map_start(core: &mut Core) {
+    for k in 0..=LILI_BYTES {
+        if core.raw_read_8(LILI_STATE + k, -1) != 0 {
+            core.raw_write_8(LILI_STATE + k, -1, 0);
+        }
     }
 }
 
-/// The unit slot of a unit record (None for a pointer outside gUnits).
-fn slot_of(core: &Core, unit: u32) -> Option<u32> {
-    let units = core.raw_read_32(UNITS_POINTER, -1);
-    let i = unit.wrapping_sub(units) / UNIT;
-    (unit >= units && i != 0 && i < SLOTS).then_some(i)
-}
-
-/// The return addresses (Thumb) with which a battle ends a unit's action by `sub_080424FC`: no defender, the map-only battle, the scene's
-/// end, an attack on a structure.
-const BATTLE_ENDS: [u32; 4] = [0x0804_1A01, 0x0804_1E05, 0x0804_1E55, 0x0804_0977];
-/// `sub_080424FC` at its `orrs r0, r1` (r0 the unit's flags, r1 = 1) that sets the unit's done bit.
-const ACTION_DONE: u32 = 0x0804_2532;
-fn action_done(core: &mut Core) {
-    if !is_on(core) {
-        return;
-    }
-    let unit = core.raw_read_32(SELECTED_UNIT, -1);
-    let Some(i) = slot_of(core, unit) else { return };
-    let sp = core.gba().cpu().gpr(13) as u32;
-    let lr = core.raw_read_32(sp + 4, -1);
-    if !BATTLE_ENDS.contains(&lr) {
-        // Any other end of the action (Wait, ...) finishes the unit for good.
-        set_moved_bit(core, i, false);
-        return;
-    }
-    let army = army_at(core, unit);
-    let (flags, hp) = (core.raw_read_8(unit + 1, -1), core.raw_read_8(unit + 4, -1) & 0x7F);
-    if !abilities_on(core)
-        || !(1..=5).contains(&army)
-        || crate::co_roster::army_co(core, army) != (CASSIUS, 2)
-        || !vehicle(core.raw_read_8(unit, -1))
-        || flags & 0x08 != 0
-        || hp == 0
-        || moved_bit(core, i)
-    {
-        return;
-    }
-    set_moved_bit(core, i, true);
-    // (r1 = 0: the `orrs` sets nothing; r0, the unit's flags, loses bit 0 too: the computer's action executor has set it while the unit moved, a person's flags have none yet)
-    let cpu = core.gba_mut().cpu_mut();
-    cpu.set_gpr(1, 0);
-    cpu.set_gpr(0, cpu.gpr(0) & !1);
-}
-
-/// The two Fire rows' show tests (`0x0802CA78` direct, `0x0802CB20` ranged; r0 = 1 hides): the selected unit has had its extra move, it may not fire again.
-const FIRE_SHOWN: [u32; 2] = [0x0802_CA78, 0x0802_CB20];
-fn fire_shown(core: &mut Core) {
-    if !is_on(core) {
-        return;
-    }
-    let Some(i) = slot_of(core, core.raw_read_32(SELECTED_UNIT, -1)) else {
-        return;
-    };
-    if !moved_bit(core, i) {
-        return;
-    }
-    let cpu = core.gba_mut().cpu_mut();
-    cpu.set_gpr(0, 1);
-    let lr = cpu.gpr(14) as u32;
-    cpu.set_thumb_pc(lr & !1);
-}
-
-/// The computer's action executor `sub_0805FD64` (driver state 3) takes the action the unit queue's step has set up at `AI_ACTION` (byte 0 the kind: 4 a move that ends in
-/// an attack in the direction of byte 6, 2 a move that ends in Wait; byte 1 the unit's slot, bytes 2 and 3 where it goes). A unit with its extra move left has fired already:
-/// its attack becomes a Wait where it goes (a later pass of the queue moves it; the Wait ends it as for a person).
-const AI_EXECUTOR: u32 = 0x0805_FD64;
-const AI_ACTION: u32 = 0x0300_46C0;
-const AI_ATTACK: u8 = 4;
-const AI_WAIT: u8 = 2;
-
-fn ai_executor(core: &mut Core) {
-    if !is_on(core) || core.raw_read_8(AI_ACTION, -1) != AI_ATTACK {
-        return;
-    }
-    let slot = core.raw_read_8(AI_ACTION + 1, -1) as u32;
-    if slot == 0 || slot >= SLOTS || !moved_bit(core, slot) {
-        return;
-    }
-    core.raw_write_8(AI_ACTION, -1, AI_WAIT);
-    core.raw_write_8(AI_ACTION + 6, -1, 0);
-    core.raw_write_8(AI_ACTION + 7, -1, 0);
-}
-
-/// Every frame: the extra moves are forgotten when the turn passes to another army and when the army's active CO is no longer Cassius in his Super Power (a Tag Power's
-/// Change swaps in the partner: his units, free to move again, may fire).
-fn forget_moves(core: &mut Core) {
+/// Every frame: when the turn passes to Lili's army, one of the two days is over; after the second the sandstorm stops.
+fn lili_tick(core: &mut Core) {
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u8;
-    if core.raw_read_8(MOVED_TURN, -1) == army
-        && (!(1..=5).contains(&(army as u32)) || crate::co_roster::army_co(core, army as u32) == (CASSIUS, 2))
-    {
+    if core.raw_read_8(LILI_TURN, -1) == army {
         return;
     }
-    for k in 0..MOVED_BYTES {
-        if core.raw_read_8(MOVED_AFTER_ATTACK + k, -1) != 0 {
-            core.raw_write_8(MOVED_AFTER_ATTACK + k, -1, 0);
-        }
+    core.raw_write_8(LILI_TURN, -1, army);
+    let left = core.raw_read_8(LILI_STATE, -1);
+    if left == 0 || army != core.raw_read_8(LILI_STATE + 1, -1) {
+        return;
     }
-    core.raw_write_8(MOVED_TURN, -1, army);
+    if left <= 1 {
+        end_enigma(core);
+    } else {
+        core.raw_write_8(LILI_STATE, -1, left - 1);
+    }
 }
 
-/// The extra-move bits and the army whose turn they belong to, for a suspended game ([`crate::suspend`]): [`MOVED_LEN`] bytes.
-pub fn moved_state(core: &Core) -> Vec<u8> {
-    let mut b = vec![0u8; MOVED_LEN as usize];
-    core.raw_read_range(MOVED_AFTER_ATTACK, -1, &mut b);
+/// The state and the army whose turn it was, for a suspended game ([`crate::suspend`]): [`LILI_LEN`] bytes.
+pub fn lili_state(core: &Core) -> Vec<u8> {
+    let mut b = vec![0u8; LILI_LEN as usize];
+    core.raw_read_range(LILI_STATE, -1, &mut b);
     b
 }
 
-/// Whether any unit has its extra move left (a suspended game then carries the bits).
-pub fn moved_any(core: &Core) -> bool {
-    moved_state(core)[..MOVED_BYTES as usize].iter().any(|&b| b != 0)
+/// Whether an Enigma is running (a suspended game then carries the state).
+pub fn lili_any(core: &Core) -> bool {
+    core.raw_read_8(LILI_STATE, -1) != 0
 }
 
-/// The bits of a suspended game, put back after Continue (the same army's turn: the units are in the same slots).
-pub fn set_moved_state(core: &mut Core, b: &[u8]) {
-    if b.len() == MOVED_LEN as usize {
-        core.raw_write_range(MOVED_AFTER_ATTACK, -1, b);
+/// The state of a suspended game, put back after Continue.
+pub fn set_lili_state(core: &mut Core, b: &[u8]) {
+    if b.len() == LILI_LEN as usize {
+        core.raw_write_range(LILI_STATE, -1, b);
+        // Snow and rain run on the game's own weather days, whose second-day flag ([`crate::ds_weather`]'s power snow) is not in the save: it follows from the turn starts left
+        // (2: the first day is not over yet, 1: it is and the second runs). Without it a continued game lost the weather a day early.
+        if b[0] != 0 && (b[2] == SNOW || b[2] == RAIN) {
+            core.raw_write_8(crate::ram_map::POWER_SNOW.0, -1, (b[0] >= 2) as u8);
+        }
+    }
+}
+
+/// gPlaySt's default weather: what a fixed-weather game (the Rules screen's, mode 3) has when no power weather is on.
+const DEFAULT_WEATHER: u32 = 0x0300_3FEF;
+/// `sub_08035170`'s return (the weather of the next turn in r4, drawn at each turn's end), as [`crate::sandstorm`] knows it.
+const NEXT_WEATHER_DONE: u32 = 0x0803_51E8;
+
+/// The army whose turn follows `army`'s (the next one in the game).
+fn next_army(core: &Core, army: u32) -> u32 {
+    (1..=5u32).map(|k| (army + k - 1) % 5 + 1).find(|&a| a != army && crate::co_roster::in_game(core, a)).unwrap_or(army)
+}
+
+/// The turn end that comes just before her last turn start of Enigma, in a game whose Rules weather is fixed to snow or rain: a sandstorm is clear weather to the game, and AW2 brings the
+/// Rules' weather back only from snow or rain (its draw of a clear day in a fixed game is clear again), so the end of Enigma's sand puts it back here: the next turn's weather is the
+/// Rules' own, which AW2 then starts as any weather change (the fade, the colours).
+fn next_weather(core: &mut Core) {
+    if !crate::ds_weather::is_on(core) {
+        return;
+    }
+    if core.raw_read_8(LILI_STATE, -1) != 1 || core.raw_read_8(LILI_STATE + 2, -1) != SAND || core.raw_read_8(WEATHER_MODE, -1) != 3 {
+        return;
+    }
+    let default = core.raw_read_8(DEFAULT_WEATHER, -1);
+    if default == 0 || core.gba().cpu().gpr(4) != 0 {
+        return;
+    }
+    let (now, hers) = (core.raw_read_16(CURRENT_ARMY, -1) as u32, core.raw_read_8(LILI_STATE + 1, -1) as u32);
+    if now != hers && next_army(core, now) == hers {
+        core.gba_mut().cpu_mut().set_gpr(4, default as i32);
     }
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = vec![
-        (STRIKE_APPLIED, Box::new(strike_applied)),
-        (ACTION_DONE, Box::new(action_done)),
-        (AI_EXECUTOR, Box::new(ai_executor)),
-    ];
-    for at in FIRE_SHOWN {
-        t.push((at, Box::new(fire_shown)));
-    }
-    t
+    vec![(NEXT_WEATHER_DONE, Box::new(next_weather))]
 }
 
 /// Every frame with the pack: the code is in ROM.
 pub fn tick(core: &mut Core, on: bool) {
     if on {
         install(core);
-        forget_moves(core);
+        lili_tick(core);
     }
 }
 
@@ -640,133 +481,62 @@ mod tests {
     }
 
     #[test]
-    fn klaus_is_the_strongest_on_foot() {
-        for t in [1u8, 2] {
-            assert_eq!((bonus(KLAUS, 0, t, FIREPOWER), bonus(KLAUS, 0, t, DEFENCE)), (20, 20));
-            assert_eq!(bonus(KLAUS, 1, t, DEFENCE), 40);
-            assert_eq!(bonus(KLAUS, 1, t, MOVE), 1);
-            assert_eq!(
-                (
-                    bonus(KLAUS, 2, t, FIREPOWER),
-                    bonus(KLAUS, 2, t, DEFENCE),
-                    bonus(KLAUS, 2, t, MOVE)
-                ),
-                (80, 60, 1)
-            );
-        }
-        assert_eq!((bonus(KLAUS, 0, 5, FIREPOWER), bonus(KLAUS, 0, 5, DEFENCE)), (10, 10));
-        assert_eq!(bonus(KLAUS, 1, 5, MOVE), 0);
-        assert_eq!(bonus(KLAUS, 2, 5, MOVE), 1);
-    }
-
-    #[test]
-    fn aurelia_reaches_further_and_cassius_runs_faster() {
-        assert_eq!(bonus(AURELIA, 0, 10, RANGE), 1);
-        assert_eq!(bonus(AURELIA, 1, 10, RANGE), 2);
-        assert_eq!(bonus(AURELIA, 1, 15, RANGE), 1, "Missiles gain the power's range only");
-        assert_eq!(bonus(AURELIA, 0, 5, FIREPOWER), -10);
-        assert_eq!(bonus(AURELIA, 2, 10, FIREPOWER), 40);
-        assert_eq!(
-            (
-                bonus(CASSIUS, 0, 5, MOVE),
-                bonus(CASSIUS, 1, 5, MOVE),
-                bonus(CASSIUS, 0, 5, DEFENCE)
-            ),
-            (1, 2, -10)
-        );
-        assert_eq!(bonus(CASSIUS, 2, 5, FIREPOWER), 50);
-        assert_eq!(bonus(CASSIUS, 2, 1, FIREPOWER), 0, "foot soldiers are not vehicles");
-        assert_eq!(bonus(CASSIUS, 2, 10, MOVE), 0, "nor is Artillery");
-    }
-
-    #[test]
-    fn livia_is_a_treasurer_and_an_admiral() {
+    fn tabitha_and_caulder_are_flat_and_stay_under_kanbei() {
         for t in all_types() {
-            assert_eq!(bonus(LIVIA, 0, t, FIREPOWER), 0);
-            assert_eq!(bonus(LIVIA, 1, t, MOVE), 0);
+            for m in 0..3u8 {
+                assert_eq!(bonus(TABITHA, m, t, FIREPOWER), 18);
+                assert_eq!(bonus(TABITHA, m, t, DEFENCE), 18);
+                assert_eq!(bonus(TABITHA, m, t, MOVE), 0);
+            }
+            assert_eq!([0u8, 2].map(|m| bonus(CAULDER, m, t, FIREPOWER)), [18, 33]);
+            assert_eq!([0u8, 2].map(|m| bonus(CAULDER, m, t, DEFENCE)), [18, 33]);
+            assert_eq!(bonus(CAULDER, 2, t, MOVE), 0);
         }
-        assert_eq!(
-            (
-                bonus(LIVIA, 2, 22, MOVE),
-                bonus(LIVIA, 2, 22, FIREPOWER),
-                bonus(LIVIA, 2, 5, MOVE)
-            ),
-            (2, 30, 0)
-        );
-        assert_eq!(income_bonus(LIVIA, 12, 1000), 3000);
-        assert_eq!(
-            income_bonus(LIVIA, 12, 2000),
-            6000,
-            "25% of what a property pays under the Funds rule"
-        );
-        assert_eq!(income_bonus(LIVIA, 12, 0), 0, "no income, no bonus");
-        assert_eq!(income_bonus(KLAUS, 12, 1000), 0);
-        assert_eq!((tribute(LIVIA, 1), tribute(LIVIA, 2), tribute(LIVIA, 0)), (200, 100, 0));
+        // aw2dev co check: day to day <= 40, Super Power <= 120 points of firepower plus defence (the power's own 10 + 10 included)
+        assert!(2 * 18 <= 40 && 2 * (33 + 10) <= 120);
     }
 
     #[test]
-    fn unit_cost_is_a_change_added_to_100() {
-        // (the CO table's field: AW2's Kanbei is +20 and Colin -20; 100 once doubled every Emerald Sun price)
-        for co in ALL {
-            let i = info(co).unwrap();
-            let want = if co == LIVIA { 10 } else { 0 };
-            assert_eq!(i.cost, [want; 3], "{}", i.name);
+    fn lili_is_a_small_edge_and_one_more_move_in_enigma() {
+        for t in all_types() {
+            assert_eq!([0u8, 1, 2].map(|m| bonus(LILI, m, t, FIREPOWER)), [10; 3]);
+            assert_eq!([0u8, 1].map(|m| bonus(LILI, m, t, MOVE)), [0, 1]);
         }
     }
 
     #[test]
-    fn pairs_belong_to_the_four() {
-        assert!(has_pairs(KLAUS) && has_pairs(LIVIA) && !has_pairs(VARRO) && !has_pairs(crate::co_new::CRUMB));
+    fn the_retired_slots_copy_lili_and_caulder() {
+        assert_eq!((canon(89), canon(90), canon(86)), (LILI, CAULDER, TABITHA));
+        assert_eq!(bonus(RETIRED_B, 2, 5, FIREPOWER), bonus(CAULDER, 2, 5, FIREPOWER));
+        assert!(info(RETIRED_A).unwrap().name == "Lili" && !ALL.contains(&RETIRED_A));
+        assert!(is_es(RETIRED_B) && !is_es(LEGIONARY_FACE) && !has_pairs(RETIRED_A));
+    }
+
+    #[test]
+    fn enigma_draws_three_weathers_or_two_without_sand() {
+        let w: Vec<u8> = (0..6).map(|r| roll(r, true)).collect();
+        assert_eq!(w, [1, 2, 3, 1, 2, 3]);
+        assert!((0..12).all(|r| roll(r, false) <= 2));
+    }
+
+    #[test]
+    fn pairs_belong_to_the_three() {
+        assert!(has_pairs(TABITHA) && has_pairs(CAULDER) && !has_pairs(crate::co_new::CRUMB));
         assert_eq!(UNLISTED_PAIR, 95);
     }
 
     #[test]
-    fn varro_stays_under_kanbei() {
-        // aw2dev co check: day to day <= 40, CO Power <= 90, Super Power <= 120 points of firepower plus defence (the power's own 10 included).
-        for (mode, cap) in [(0u8, 40), (1, 90), (2, 120)] {
-            let fp = bonus(VARRO, mode, 5, FIREPOWER) + if mode > 0 { 10 } else { 0 };
-            assert!(fp + bonus(VARRO, mode, 5, DEFENCE) <= cap, "mode {mode}");
-        }
-    }
-
-    #[test]
-    fn onager_takes_one_hp_and_never_the_last() {
-        assert_eq!((splash_hp(100), splash_hp(55), splash_hp(11)), (90, 45, 1));
-        assert_eq!(
-            (splash_hp(10), splash_hp(7), splash_hp(1)),
-            (10, 7, 1),
-            "a unit on its last HP keeps it"
-        );
-    }
-
-    #[test]
-    fn triumph_keeps_a_bit_for_every_unit_slot() {
-        assert!(MOVED_BYTES * 8 >= SLOTS);
-        assert_eq!(MOVED_LEN, MOVED_BYTES + 1);
-        // The traps sit at distinct game addresses (the factory's test checks them against every module's).
-        let at: Vec<u32> = traps().iter().map(|t| t.0).collect();
-        let mut sorted = at.clone();
-        sorted.sort();
-        sorted.dedup();
-        assert_eq!(sorted.len(), at.len());
-        assert!(BATTLE_ENDS.iter().all(|a| a & 1 == 1), "return addresses are Thumb");
+    fn stars_match_the_design() {
+        assert_eq!(INFO[0].stars, (0, 9));
+        assert_eq!(INFO[1].stars, (3, 0));
+        assert_eq!(INFO[2].stars, (0, 4));
     }
 
     #[test]
     fn texts_exist_and_the_code_fits() {
         use crate::co_new::*;
         for co in ALL {
-            for w in [
-                T_NAME,
-                T_BIO,
-                T_D2D,
-                T_COP,
-                T_SCOP,
-                T_COP_NAME,
-                T_SCOP_NAME,
-                T_VICTORY,
-                T_DEFEAT,
-            ] {
+            for w in [T_NAME, T_BIO, T_D2D, T_COP, T_SCOP, T_COP_NAME, T_SCOP_NAME, T_VICTORY, T_DEFEAT] {
                 assert!(text(co, w).is_some(), "{co} {w}");
             }
             for q in 0..6 {
@@ -775,17 +545,14 @@ mod tests {
             let i = info(co).unwrap();
             assert!(i.name.len() <= 7);
             for q in i.quotes {
-                assert!(
-                    q.split('\r').count() <= 2 && q.split('\r').all(|l| l.len() <= 28),
-                    "{q:?}"
-                );
+                assert!(q.split('\r').count() <= 2 && q.split('\r').all(|l| l.len() <= 28), "{q:?}");
             }
         }
-        assert!(text(KLAUS, 15).is_none());
-        let c = heal3();
+        assert!(text(TABITHA, 15).is_none());
+        let c = heal(3);
         assert!(c.len() <= 0x100 && c.len() % 4 == 0);
-        assert_eq!(heal(4).len(), c.len());
-        assert_eq!(heal(4)[2], 4, "movs r1, #4");
-        assert!(!is_es(crate::co_new::CRUMB) && is_es(KLAUS) && is_es(VARRO) && !is_es(LEGIONARY_FACE));
+        assert_eq!(heal(5)[2], 5, "movs r1, #5");
+        assert!(enigma().len() <= 0x100);
+        assert!(!is_es(crate::co_new::CRUMB) && is_es(TABITHA) && is_es(RETIRED_B) && !is_es(LEGIONARY_FACE));
     }
 }

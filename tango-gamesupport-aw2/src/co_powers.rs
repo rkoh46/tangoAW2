@@ -53,6 +53,8 @@ const COVERING_FIRE_FN: u32 = DATA + 0x240;
 const URBAN_BLIGHT_FN: u32 = DATA + 0x280;
 const ASUKA_COP_FN: u32 = DATA + 0x2D0;
 const ASUKA_SCOP_FN: u32 = DATA + 0x320;
+/// Tabitha's Firestorm: the meteor strike at 8 HP, AW2's own pick of the site (no stun).
+const FIRESTORM_FN: u32 = DATA + 0x370;
 const SENTINEL: u32 = DATA + 0x3FC;
 const MAGIC: u32 = 0x3843_5344; // "DSC8"
 
@@ -74,6 +76,7 @@ const CO_ABILITIES: u32 = 0x0300_3FC8;
 /// Hit points of damage a strike or Urban Blight does, in the game's
 /// tenths.
 const THREE_HP: u16 = 30;
+const EIGHT_HP: u16 = 80;
 
 fn halfwords(h: &[u16]) -> Vec<u8> {
     h.iter().flat_map(|v| v.to_le_bytes()).collect()
@@ -216,6 +219,8 @@ pub fn power_assembly(co: u8, mode: u8) -> Option<u32> {
         (VON_BOLT, SCOP) => Some(EX_MACHINA_FN | 1),
         (RACHEL, SCOP) => Some(COVERING_FIRE_FN | 1),
         (KINDLE, COP) => Some(URBAN_BLIGHT_FN | 1),
+        (crate::es_co::TABITHA, SCOP) => Some(FIRESTORM_FN | 1),
+        (crate::es_co::LILI, COP) => Some(crate::es_co::ENIGMA | 1),
         (crate::co_new::ASUKA, COP) => Some(ASUKA_COP_FN | 1),
         (crate::co_new::ASUKA, SCOP) => Some(ASUKA_SCOP_FN | 1),
         _ => None,
@@ -241,6 +246,8 @@ pub fn install(core: &mut Core) {
     };
     core.raw_write_range(EX_MACHINA_FN, -1, &strike_fn(exm, THREE_HP));
     core.raw_write_range(COVERING_FIRE_FN, -1, &strike_fn(cf, THREE_HP));
+    // (Firestorm: Von Bolt's animation script with the pack's pictures, AW2's own meteor script without; AW2's pick of the site, 8 HP)
+    core.raw_write_range(FIRESTORM_FN, -1, &strike_fn(exm, EIGHT_HP));
     core.raw_write_range(URBAN_BLIGHT_FN, -1, &urban_blight_fn(gfx, pal));
     core.raw_write_range(ASUKA_COP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[1].max(1), crate::asuka::HP_OWN[1], 0x0811_3BA0));
     core.raw_write_range(ASUKA_SCOP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[2], crate::asuka::HP_OWN[2], 0x0811_3BC0));
@@ -428,7 +435,8 @@ fn strike_square(core: &mut Core) {
         return;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    if activating(core, army) != (VON_BOLT, SCOP) {
+    let firestorm = activating(core, army) == (crate::es_co::TABITHA, SCOP);
+    if !firestorm && activating(core, army) != (VON_BOLT, SCOP) {
         return;
     }
     let cpu = core.gba().cpu();
@@ -440,6 +448,13 @@ fn strike_square(core: &mut Core) {
     }
     let i = unit_index_at(core, x as u32, y as u32);
     if i == 0 {
+        return;
+    }
+    if firestorm {
+        // Tabitha's Firestorm spares her own team (AW2's meteor hits every unit on the square, Von Bolt's own too): no damage there. It never stuns.
+        if player_team(core, army_of_index(core, i)) == player_team(core, army) {
+            core.gba_mut().cpu_mut().set_gpr(2, 0);
+        }
         return;
     }
     let u = core.raw_read_32(UNITS_POINTER, -1) + UNIT * i;
@@ -549,7 +564,10 @@ const STRIKE: u32 = crate::ram_map::STRIKE_SITE.0;
 /// set, +4 its x, +5 its y.
 const STRIKE_EX_MACHINA: u8 = 1;
 const STRIKE_COVERING_FIRE: u8 = 2;
+/// Tabitha's Firestorm: one strike at 8 HP, by funds, her own team not counted (it is spared).
+const STRIKE_FIRESTORM: u8 = 3;
 const STRIKE_DAMAGE: i32 = 30;
+const FIRESTORM_DAMAGE: i32 = 80;
 const STRIKE_RADIUS: i32 = 2;
 const NO_SITE: i32 = i32::MIN + 1;
 /// Units with no weapon (`UnitType_GetAttackKind` 2): APC, Black Boat, T
@@ -566,7 +584,7 @@ enum StrikeScore {
     Infantry,
 }
 
-fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32 {
+fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool, damage: i32) -> i32 {
     let t = core.raw_read_8(u, -1);
     if t == crate::roster::OOZIUM {
         return 0;
@@ -577,7 +595,7 @@ fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32
     if hp <= 10 || (no_weapon && enemy) {
         return small;
     }
-    let lost = if hp > STRIKE_DAMAGE { STRIKE_DAMAGE } else { hp - 1 };
+    let lost = if hp > damage { damage } else { hp - 1 };
     let mut v = match kind {
         StrikeScore::Hp => lost,
         StrikeScore::Funds => core.raw_read_16(crate::roster::table(core) + 0x5C * t as u32 + 6, -1) as i32 * lost,
@@ -598,7 +616,7 @@ fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32
     v
 }
 
-fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, own_weight: i32) -> i32 {
+fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, own_weight: i32, damage: i32) -> i32 {
     let m = map(core);
     let (w, h) = (core.raw_read_16(m, -1) as i32, core.raw_read_16(m + 2, -1) as i32);
     let units = core.raw_read_32(UNITS_POINTER, -1);
@@ -616,9 +634,9 @@ fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, 
                 continue;
             }
             if team(army_of_index(core, i)) == mine {
-                own += strike_unit_score(core, u, kind, false);
+                own += strike_unit_score(core, u, kind, false, damage);
             } else {
-                enemy += strike_unit_score(core, u, kind, true);
+                enemy += strike_unit_score(core, u, kind, true, damage);
             }
         }
     }
@@ -634,13 +652,13 @@ fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, 
 }
 
 /// `Strike_FindBestSite` for `army`.
-fn strike_best_site(core: &Core, army: u32, kind: StrikeScore, own_weight: i32) -> Option<(u8, u8)> {
+fn strike_best_site(core: &Core, army: u32, kind: StrikeScore, own_weight: i32, damage: i32) -> Option<(u8, u8)> {
     let m = map(core);
     let (w, h) = (core.raw_read_16(m, -1) as i32, core.raw_read_16(m + 2, -1) as i32);
     let mut best = (NO_SITE, None);
     for y in 0..h.min(64) {
         for x in 0..w.min(64) {
-            let v = strike_site_score(core, army, x, y, kind, own_weight);
+            let v = strike_site_score(core, army, x, y, kind, own_weight, damage);
             if v > best.0 {
                 best = (v, Some((x as u8, y as u8)));
             }
@@ -674,7 +692,11 @@ fn strike_pick(core: &mut Core) {
         } else {
             StrikeScore::Hp
         };
-        strike_best_site(core, army, kind, 2)
+        strike_best_site(core, army, kind, 2, STRIKE_DAMAGE)
+    } else if power == STRIKE_FIRESTORM {
+        // Firestorm: the richest cluster (Dual Strike's funds score, 8 HP), her own units spared by the strike and so not counted against a site
+        core.raw_write_8(STRIKE, -1, 0);
+        strike_best_site(core, army, StrikeScore::Funds, 0, FIRESTORM_DAMAGE)
     } else {
         let k = core.raw_read_8(STRIKE + 2, -1);
         core.raw_write_8(STRIKE + 2, -1, k + 1);
@@ -682,7 +704,7 @@ fn strike_pick(core: &mut Core) {
             core.raw_write_8(STRIKE, -1, 0);
         }
         let kind = [StrikeScore::Hp, StrikeScore::Funds, StrikeScore::Infantry][k.min(2) as usize];
-        strike_best_site(core, army, kind, 4)
+        strike_best_site(core, army, kind, 4, STRIKE_DAMAGE)
     };
     let p = core.gba().cpu().gpr(4) as u32;
     match site {
@@ -823,6 +845,7 @@ fn activate(core: &mut Core) {
         let power = match (army_co(core, army).0, mode) {
             (VON_BOLT, SCOP) => STRIKE_EX_MACHINA,
             (RACHEL, SCOP) => STRIKE_COVERING_FIRE,
+            (crate::es_co::TABITHA, SCOP) => STRIKE_FIRESTORM,
             _ => 0,
         };
         core.raw_write_range(STRIKE, -1, &[power, army as u8, 0, 0]);
@@ -884,11 +907,6 @@ fn income(core: &mut Core) {
     if army_co(core, army).0 == SASHA {
         add += 100 * earners;
     }
-    add += crate::es_co::income_bonus(
-        army_co(core, army).0,
-        earners,
-        core.raw_read_32(FUNDS_PER_PROPERTY, -1) as i32,
-    );
     if add == 0 {
         return;
     }
@@ -1009,8 +1027,6 @@ fn attacker_charged(core: &mut Core) {
     if !is_on(core) {
         return;
     }
-    // (Aurelia's Onager: the units beside the target lose 1 HP, crate::es_co)
-    crate::es_co::onager(core, core.raw_read_8(BATTLE_DEFENDER_INDEX, -1) as u32);
     if let Some((a, _)) = battle_charges(core) {
         core.gba_mut().cpu_mut().set_gpr(1, (a * METER_SCALE) as i32);
     }
@@ -1068,8 +1084,22 @@ fn war_bonds(core: &mut Core) {
     }
 }
 
+/// `sub_08044280(army)`, the map menu's "is the Super Power paid for": its `cmp r4, r0` (r4 the meter, r0 the cost) just before the `bge`. AW2's Power entry has a
+/// "no cost, no entry" test (Sturm has no CO Power), the Super entry has none: a CO with no Super Power (Lili: 0 stars) was offered one at any meter. A free Super is none:
+/// the meter is made smaller than the cost.
+const SUPER_PAID: u32 = 0x0804_429C;
+fn super_paid(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    if core.gba().cpu().gpr(0) == 0 {
+        core.gba_mut().cpu_mut().set_gpr(4, -1);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
+        (SUPER_PAID, Box::new(super_paid)),
         (STRIKE_SQUARE, Box::new(strike_square)),
         (MASS_UNIT, Box::new(mass_unit)),
         (ACTIVATE, Box::new(activate)),

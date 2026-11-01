@@ -1,0 +1,13 @@
+# Caulder, imported directly from caulder_v1.jpg (the owner's pixel art, 1152 x 1728: native cells of about 6.6 px, 172 x 267). Coordinates are native cells of the picture as supplied (he faces left: kept).
+pixelart = true
+large_scale = 1
+frame = [21, 8]
+mug_scale = 1
+mug = [66, 6]
+eyes = [70, 25, 86, 33]
+bg_tolerance = 30
+# the white background is cut by a flood fill from the border and from every pocket it fills (between the arm and the coat); no `fringe` (it would eat the white hair and coat, which touch the empty side)
+hole_min = 20
+hole_tolerance = 8
+max_specks = 2400
+max_face_specks = 520

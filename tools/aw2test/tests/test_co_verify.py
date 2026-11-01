@@ -1,11 +1,12 @@
-"""`aw2dev co verify`: every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Varro, Crumb, Clone Andy) in real battles, compared with the specification (aw2test.cospec).
+"""`aw2dev co verify`: every ability of the custom COs (Tabitha, Lili, Caulder, Crumb, Clone Andy, Aria; Asuka through her own suite) in real battles, compared with the specification (aw2test.cospec).
 Test names: `co_verify_<facet>_<co>[_<mode>]`; every check is tagged `[<co> <ability>]` (aw2test.coverify). Run: `aw2dev co verify [CO ...]`."""
 
 from aw2test import coverify as cv
 from aw2test.harness import test
 
-NAMES = ("klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy", "aria")
-NO_COP = ("aria",)      # Aria has only a Super Power: no CO Power level is played for her
+NAMES = ("tabitha", "lili", "caulder", "crumb", "cloneandy", "aria")
+NO_COP = ("aria", "tabitha", "caulder")      # only a Super Power (like Sturm): no CO Power level is played for them
+NO_SCOP = ("lili",)                          # only a CO Power (0 stars for the Super Power): no Super Power level is played, and the map menu offers none
 
 
 def stats(name, mode):
@@ -15,11 +16,15 @@ def stats(name, mode):
     test(modes=("ds",))(fn)
 
 
+def played(name, mode):
+    """Whether power level `mode` (0 day to day, 1 CO Power, 2 Super Power) exists for the CO."""
+    return not ((name in NO_COP and mode == 1) or (name in NO_SCOP and mode == 2))
+
+
 for _n in NAMES:
     for _m in (0, 1, 2):
-        if _n in NO_COP and _m == 1:
-            continue
-        stats(_n, _m)
+        if played(_n, _m):
+            stats(_n, _m)
 
 
 def moves(name, mode):
@@ -38,13 +43,14 @@ def ranges(name, mode, beyond):
 
 for _n in NAMES + ("andy",):
     for _m in (0, 1, 2):
-        if (_n == "andy" and _m) or (_n in NO_COP and _m == 1):
+        if (_n == "andy" and _m) or not played(_n, _m):
             continue
         moves(_n, _m)
-for _n in ("aurelia", "klaus"):
+for _n in ("tabitha", "lili", "caulder"):
     for _m in (0, 1, 2):
         for _b in (0, 1):
-            ranges(_n, _m, _b)
+            if played(_n, _m):
+                ranges(_n, _m, _b)
 
 
 def economy(name, fpp=1000):
@@ -57,7 +63,7 @@ def economy(name, fpp=1000):
 for _n in NAMES + ("andy",):
     economy(_n)
 economy("andy", 2000)
-economy("livia", 2000)
+economy("lili", 2000)
 
 
 def meter(name):
@@ -100,18 +106,54 @@ unlisted_tags()
 
 
 @test(modes=("ds",))
-def co_verify_hooks_klaus(ctx):
-    cv.hook_testudo(ctx)
+def co_verify_hooks_tabitha(ctx):
+    cv.hook_firestorm(ctx)
 
 
 @test(modes=("ds",))
-def co_verify_hooks_aurelia(ctx):
-    cv.hook_onager(ctx)
+def co_verify_hooks_lili(ctx):
+    cv.hook_enigma_roll(ctx)
 
 
 @test(modes=("ds",))
-def co_verify_hooks_cassius(ctx):
-    cv.hook_triumph(ctx)
+def co_verify_hooks_lili_permanent(ctx):
+    cv.hook_enigma_permanent(ctx)
+
+
+@test(modes=("ds",))
+def co_verify_hooks_lili_immunity(ctx):
+    cv.hook_enigma_immunity(ctx)
+
+
+@test(modes=("ds",))
+def co_verify_hooks_lili_move(ctx):
+    cv.hook_enigma_move(ctx)
+
+
+@test(modes=("ds",))
+def co_verify_hooks_lili_suspend(ctx):
+    cv.hook_enigma_suspend(ctx)
+
+
+def days(rules):
+    def fn(ctx):
+        cv.hook_enigma_days(ctx, rules)
+    fn.__name__ = f"co_verify_hooks_lili_days_{rules}"
+    test(modes=("ds",))(fn)
+
+
+for _r in ("clear", "snow", "random"):
+    days(_r)
+
+
+@test(modes=("ds",))
+def co_verify_hooks_caulder(ctx):
+    cv.hook_cataclysm(ctx)
+
+
+@test(modes=("ds",))
+def co_verify_hooks_caulder_move(ctx):
+    cv.hook_sturm_move(ctx)
 
 
 def cpu(name, which):
@@ -122,17 +164,23 @@ def cpu(name, which):
 
 
 for _n in NAMES:
-    if _n not in NO_COP:
+    if played(_n, 1):
         cpu(_n, "power")
-    cpu(_n, "super")
+    if played(_n, 2):
+        cpu(_n, "super")
+
+
+@test(modes=("ds",))
+def co_verify_cpu_tabitha_firestorm(ctx):
+    cv.cpu_firestorm(ctx)
 
 
 def cpu_tags():
     from aw2test import cospec
     for p in cospec.tags():
         for act, par in ((p["a"], p["b"]), (p["b"], p["a"])):
-            if act.startswith("aw2:"):
-                continue
+            if act.startswith("aw2:") or act in NO_SCOP:
+                continue          # (a CO with no Super Power, Lili, never starts the computer's Tag Power: its AI wants a Super paid for; she is the partner of the others' pairs)
             def fn(ctx, act=act, par=par):
                 cv.cpu_tag(ctx, act, par)
             fn.__name__ = "co_verify_cpu_tag_" + act.split(":")[-1] + "_with_" + par.split(":")[-1]
@@ -153,11 +201,6 @@ for _m in (0, 1, 2):
     clone(_m)
 
 
-@test(modes=("ds",))
-def co_verify_limits_cassius(ctx):
-    cv.triumph_limits(ctx)
-
-
 def pin(name):
     def fn(ctx):
         cv.pin_vehicles(ctx, name)
@@ -165,7 +208,7 @@ def pin(name):
     test(modes=("ds",))(fn)
 
 
-for _n in ("cassius", "aurelia"):
+for _n in ("tabitha", "lili", "caulder"):
     pin(_n)
 
 

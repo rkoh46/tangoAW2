@@ -1,4 +1,4 @@
-"""M11 The Treasure Train (Act III, desert, sandstorm): bring Livia's four APCs from the harbour to the Senate's relay camp in 14 days.
+"""M11 The Treasure Train (Act III, desert, sandstorm): bring Lili's four APCs from the harbour to the Senate's relay camp in 14 days.
 
 Design (docs/dev/map-design.md). The situation: the convoy (apc1..apc4) and its escort start at the harbour town on the west coast (an HQ, a factory,
 two airfields where the ports were); the relay camp (35..38, 9..11) lies at the east end; Lash's marauders camp in the north-east, Flak's in the

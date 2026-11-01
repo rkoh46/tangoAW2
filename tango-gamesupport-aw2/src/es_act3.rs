@@ -5,7 +5,7 @@
 
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_campaign::{after, deployment, leads, on_day, region, roster, wave};
-use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA};
+use crate::es_co::{LILI, TABITHA};
 use crate::es_text::{chain, scene};
 
 fn owns(x: u8, y: u8) -> Cond {
@@ -116,7 +116,7 @@ fn es11() -> MissionDef {
     ];
     m.pool = leads();
     m.units = deployment("es11");
-    // The relay camp's city is the Senate's: the player's from the start.
+    // The relay camp's city is the Directorate's: the player's from the start.
     m.props = vec![Prop {
         kind: PropKind::City,
         owner: 1,
@@ -150,13 +150,13 @@ fn es11() -> MissionDef {
 // --- M12 Siege of Iron -----------------------------------------------------------------------
 
 fn es12() -> MissionDef {
-    let mut m = MissionDef::new("es12", "Siege of Iron");
-    m.objective = "Take the Iron Bastion's HQ. Klaus and Aurelia fight as a pair.";
+    let mut m = MissionDef::new("es12", "The Iron Bastion");
+    m.objective = "Take the Iron Bastion's HQ. Tabitha and Lili fight as a pair.";
     m.map = MapSrc::Built("es12");
     m.look = 1; // snow
     m.weather = Weather::Snow;
     m.armies = vec![
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(KLAUS, AURELIA)).funds(5000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(TABITHA, LILI)).funds(5000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF))
             .team(2)
             .funds(7000),

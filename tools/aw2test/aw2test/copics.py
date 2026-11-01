@@ -310,25 +310,33 @@ def tag_pictures(ctx, cap, act, par):
     g.e.close()
 
 
-def effect_klaus(ctx, cap):
-    """Testudo: the same Tank fight with and without the power; the counter's damage is cut by a quarter."""
-    out = {}
-    for power in (None, "power"):
-        m = showcase(ctx, [(1, "tank", 10, 10), (2, "tank", 11, 10), (1, "infantry", 9, 10), (2, "infantry", 14, 12)])
-        g = ctx.start(m, [86, "andy"], env=ENV)
-        if power:
-            ctx.power(g, 1, "power")
-        look(g)
-        r = ctx.attack(g, (10, 10), (10, 10), (11, 10), counter_keep=75 if power else 100)
-        a0, d0 = r["before"]
-        a1, d1 = r["after"]
-        out[power] = (d0["hp"] - d1["hp"], a0["hp"] - a1["hp"], r["counter"].base if r["counter"] else 0)
-        key = "effect_testudo" if power else "effect_plain"
-        look(g)
-        cap.shot(g, key, f"{'Testudo' if power else 'No power'}: Klaus's Tank hit the enemy Tank for {d0['hp'] - d1['hp']} HP and took {a0['hp'] - a1['hp']} HP back "
-                         f"(the counter's base damage {r['counter'].base if r['counter'] else 0}{', cut to 75% by Testudo' if power else ''})")
+def effect_tabitha(ctx, cap):
+    """Firestorm: a field of Tanks, the diamond round the richest cluster loses 8 HP (never the last), her own are untouched."""
+    from . import coverify as cv
+    g = cv.firestorm_game(ctx)
+    cells = sorted(cv.diamond(cv.FIRE_CENTRE)) + [cv.FIRE_OWN[2]]
+    look(g, *cv.FIRE_CENTRE)
+    before = hp_digits(g, cells)
+    cap.shot(g, "effect_firestorm_before", "Firestorm: before the strike: a Tank in each cell of the diamond round (20, 10), two of her own among them")
+    ctx.power(g, 1, "super")
+    g.e.wait(40)
+    look(g, *cv.FIRE_CENTRE)
+    after = hp_digits(g, cells)
+    cap.shot(g, "effect_firestorm", f"Firestorm: the diamond lost 8 HP ({', '.join(f'{c}: {before[c]} -> {after[c]}' for c in ((20, 10), (21, 10), (19, 10), (20, 11)))}); her own Tank at {cv.FIRE_OWN[0]}: {before[cv.FIRE_OWN[0]]} -> {after[cv.FIRE_OWN[0]]}")
+    g.e.close()
+
+
+def effect_lili(ctx, cap):
+    """Enigma: the weather each of the three draws brings, a frame of the field after the power."""
+    from . import coverify as cv
+    for name, seed in cv.SEEDS.items():
+        g = cv.enigma_game(ctx)
+        look(g, 10, 10)
+        word, w = cv.use_enigma(ctx, g, seed)
+        g.e.wait(80)
+        look(g, 10, 10)
+        cap.shot(g, f"effect_enigma_{name}", f"Enigma: the draw (the game's random word {word}) brought {w}; her units ignore it and move 1 more for two days")
         g.e.close()
-    return out
 
 
 def effect_cloneandy(ctx, cap):
@@ -353,64 +361,6 @@ def effect_cloneandy(ctx, cap):
     return out
 
 
-def effect_aurelia(ctx, cap):
-    """Onager: an Artillery hit; the enemy units beside the target lose 1 HP, never the last."""
-    TARGET = (13, 10)
-    m = showcase(ctx, [(1, "artillery", 10, 10), (2, "tank", 13, 10), (2, "infantry", 13, 9), (2, "mech", 14, 10), (2, "recon", 12, 10), (1, "infantry", 13, 11), (2, "infantry", 14, 9)])
-    g = ctx.start(m, [87, "andy"], env=ENV)
-    for c, hp in (((13, 9), 55), ((14, 10), 45), ((12, 10), 10), ((14, 9), 55)):
-        ctx.set_hp(g, *c, hp)
-    ctx.power(g, 1, "super")
-    look(g, 12, 10)
-    cells = [(13, 9), (14, 10), (12, 10), (13, 11), (14, 9), (13, 10)]
-    before = hp_digits(g, cells)
-    cap.shot(g, "effect_onager_before", f"Onager: before the Artillery fires: target Tank {before[(13, 10)]}, beside it Infantry {before[(13, 9)]}, Mech {before[(14, 10)]}, Recon {before[(12, 10)]}")
-    ctx.attack(g, (10, 10), (10, 10), TARGET)
-    look(g, 12, 10)
-    after = hp_digits(g, cells)
-    cap.shot(g, "effect_onager", f"Onager: the shell hit the Tank ({before[(13, 10)]} -> {after[(13, 10)]}); Infantry {before[(13, 9)]} -> {after[(13, 9)]}, Mech {before[(14, 10)]} -> {after[(14, 10)]}, "
-                                 f"Recon on its last HP stays {after[(12, 10)]}, her own Infantry {before[(13, 11)]} -> {after[(13, 11)]}, the diagonal Infantry {before[(14, 9)]} -> {after[(14, 9)]}")
-    g.e.close()
-
-
-def effect_cassius(ctx, cap):
-    """Triumph: a Tank that attacked is still ready and drives on, without a second shot."""
-    from tests.test_es_powers import moved_bit
-    m = showcase(ctx, [(1, "tank", 10, 10), (2, "infantry", 12, 10), (2, "infantry", 11, 14), (1, "infantry", 9, 10)])
-    g = ctx.start(m, [88, "andy"], env=ENV)
-    ctx.power(g, 1, "super")
-    uid = g.unit_at(10, 10)["id"]
-    look(g)
-    cap.shot(g, "effect_triumph_before", "Triumph: Cassius's Tank beside an enemy Infantry")
-    g.attack((10, 10), (11, 10), (12, 10))
-    u = g.unit(uid)
-    look(g, 11, 11)
-    cap.shot(g, "effect_triumph_attacked", f"Triumph: the Tank attacked and is not greyed out (done flag {u['flags'] & 1}, extra move waiting: {moved_bit(g, uid)})")
-    g.select(11, 10)
-    names = g.move_to(11, 13)["names"]
-    cap.shot(g, "effect_triumph_menu", f"Triumph: its second move to (11, 13); the menu offers {', '.join(names)} (no Fire)")
-    g.choose("Wait", g.ACTION_MENU)
-    g.wait_idle()
-    look(g, 11, 12)
-    u = g.unit(uid)
-    cap.shot(g, "effect_triumph_moved", f"Triumph: the Tank drove on to ({u['x']}, {u['y']}) and is done for the turn")
-    g.e.close()
-
-
-def effect_livia(ctx, cap, which="power"):
-    """Tribute / Mare Nostrum: the funds jump by 200 / 100 for each property."""
-    m = showcase(ctx, [(1, "infantry", 9, 10), (1, "tank", 10, 10), (2, "tank", 14, 10)], props=5)
-    g = ctx.start(m, [89, "andy"], env=ENV)
-    props = ctx.properties(g, 1)
-    look(g, 8, 8)
-    f0 = funds(g)
-    cap.shot(g, f"effect_{which}_before", f"{'Tribute' if which == 'power' else 'Mare Nostrum'}: funds {f0} with {props} properties")
-    ctx.power(g, 1, which)
-    look(g, 8, 8)
-    cap.shot(g, f"effect_{which}", f"{'Tribute' if which == 'power' else 'Mare Nostrum'}: funds {f0} -> {funds(g)} ({'200' if which == 'power' else '100'} for each of {props} properties)")
-    g.e.close()
-
-
 def effect_heal(ctx, cap, spec, which, key, label):
     m = showcase(ctx, [(1, "tank", 10, 10), (1, "infantry", 9, 10), (1, "mech", 10, 12), (2, "tank", 14, 10)])
     g = ctx.start(m, [spec.id, "andy"], env=ENV)
@@ -428,7 +378,7 @@ def effect_heal(ctx, cap, spec, which, key, label):
     g.e.close()
 
 
-NAMES = {"andy": "Andy", "klaus": "Klaus", "aurelia": "Aurelia", "cassius": "Cassius", "livia": "Livia", "crumb": "Crumb", "varro": "Varro", "cloneandy": "Clone Andy"}
+NAMES = {"andy": "Andy", "tabitha": "Tabitha", "lili": "Lili", "caulder": "Caulder", "crumb": "Crumb", "cloneandy": "Clone Andy"}
 
 
 def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
@@ -443,27 +393,21 @@ def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
         g = ctx.start(showcase(ctx, units_row()), [spec.id, "andy"], env=ENV)
         hud(ctx, cap, g, spec.id, disp)
         g.e.close()
-    props = 5 if name == "livia" else 0
-    if "cop" in parts:
+    props = 0
+    if "cop" in parts and spec.has_cop:
         power_pictures(ctx, cap, spec, "power", "cop", f"{disp}: CO Power {spec.power_names[0]}", props)
-    if "scop" in parts:
+    if "scop" in parts and spec.has_scop:
         power_pictures(ctx, cap, spec, "super", "scop", f"{disp}: Super Power {spec.power_names[1]}", props)
     if "effect" in parts:
-        if name == "klaus":
-            effect_klaus(ctx, cap)
-            effect_heal(ctx, cap, spec, "super", "legio", "Legio Aeterna heals 3 HP")
-        elif name == "aurelia":
-            effect_aurelia(ctx, cap)
-        elif name == "cassius":
-            effect_cassius(ctx, cap)
-        elif name == "livia":
-            effect_livia(ctx, cap, "power")
-            effect_livia(ctx, cap, "super")
+        if name == "tabitha":
+            effect_tabitha(ctx, cap)
+        elif name == "lili":
+            effect_lili(ctx, cap)
+        elif name == "caulder":
+            effect_heal(ctx, cap, spec, "super", "cataclysm", "Cataclysm heals 5 HP")
         elif name == "crumb":
             effect_heal(ctx, cap, spec, "power", "ration", "Ration Run heals 1 HP")
             effect_heal(ctx, cap, spec, "super", "blessing", "Gerald's Blessing heals 2 HP")
-        elif name == "varro":
-            effect_heal(ctx, cap, spec, "super", "sol", "Sol Invictus heals 2 HP")
         elif name == "cloneandy":
             effect_heal(ctx, cap, spec, "power", "repair", "Hyper Repair heals 2 HP")
             effect_heal(ctx, cap, spec, "super", "upgrade", "Hyper Upgrade heals 4 HP")
@@ -480,7 +424,7 @@ def capture(name, out, parts=("page", "hud", "cop", "scop", "effect", "tag")):
     return cap
 
 
-# --- the HQ of the Roman COs (`aw2dev co sheet hq`) --------------------------------------------------------------------------------------
+# --- the HQ of the Silver Nova COs (`aw2dev co sheet hq`) --------------------------------------------------------------------------------------
 
 def hq_cell(g, army):
     from . import ram
@@ -508,13 +452,13 @@ def hq_frame(g, out, key, army):
 
 
 def capture_hq(out):
-    """Frames of the HQ on the map: each Roman CO's in Versus (its own army, beside Andy's plain one) and in the missions M1, M7, M8, M11, M14, M16 (every army led by a CO with an Emerald Sun HQ
+    """Frames of the HQ on the map: each Silver Nova CO's in Versus (its own army, beside Andy's plain one) and in the missions M1, M7, M8, M11, M14, M16 (every army led by a CO with an Emerald Sun HQ
     and the player's). Returns {key: caption}."""
     from . import escampaign as es
     os.makedirs(out, exist_ok=True)
     ctx = new_ctx("copics_hq", os.path.join(out, "_work"))
     caps = {}
-    for name in ("klaus", "aurelia", "cassius", "livia", "varro", "andy"):
+    for name in ("tabitha", "lili", "caulder", "andy"):
         spec = cospec.get(name)
         m = ctx.map(hq=((1, 5, 5), (2, 24, 12)), spare=False)
         m.unit(1, "infantry", 3, 3).unit(2, "infantry", 20, 12)

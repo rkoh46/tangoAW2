@@ -1,12 +1,12 @@
 """M10 The Quiet Pass (Act III, snow, fog): climb the Comet Pass and take Kanbei's summit HQ.
 
-Design (docs/dev/map-design.md). The situation: the legion lands on the south plain below a massif; Kanbei holds the summit plateau (HQ, factory,
+Design (docs/dev/map-design.md). The situation: the corps lands on the south plain below a massif; Kanbei holds the summit plateau (HQ, factory,
 cities) at the top of three pass roads, Sami watches from a pocket of the east ridge. Snow falls; fog hides the passes.
 - Lanes: the Quiet river crosses the south of the map (three bridges, one on each pass road); the west, centre and east pass roads climb the massif
   (x7, x16, x25) and meet on the summit road (y3); a goat track (x1..3, woods and meadow) lets foot soldiers climb the far west unseen.
 - Where the fight happens: the bridges and the north bank's foothill hamlets, then the alpine hamlets on the three passes (meadows at y6, y9, y12),
   with the contested middle at the centre pass's foot: a neutral base (15,13) and hamlets round it.
-- Properties: villages three cells apart on the south plain (the legion's income), hamlets beside every pass road (cover where the road is the only way
+- Properties: villages three cells apart on the south plain (the corps's income), hamlets beside every pass road (cover where the road is the only way
   for vehicles), the summit's town; Sami's pocket has its HQ and a city.
 - Threats and answers: ambushes at the pass hamlets in the fog -> recons and copters ahead, infantry in the hamlets; tanks at the pass tops -> mechs on the
   goat track and over the rock, Md tanks and artillery on the road below; the guns on the summit -> recon sight, the B Copter, infantry over the rock;
@@ -56,7 +56,7 @@ def build():
         "The Quiet river (0,15)..(33,17) bridged at (7,15), (16,16), (25,17). Sami's HQ 3 (31,3) in the east ridge pocket. Neutral base (15,13) at the centre pass's foot. "
         "Player: INF4 MECH3 TANK2 MDT2 RECON3 ART2 BCO1 TCO1 AA1 APC1, base (13,22), funds 4000. Kanbei: INF4 MECH2 TANK3 MDT2 ART2 ROCK1 AA1; Sami: INF2 RECON2 TANK2 BCO1."))
     m.ascii(MAP)
-    # --- the legion on the south plain
+    # --- the corps on the south plain
     m.unit(1, APC, 16, 21)
     m.spread(1, {INF: 4, MECH: 3}, (3, 18, 28, 24), seed=1, gap=1)
     m.spread(1, {TANK: 2, MDT: 2, ART: 2, AA: 1}, (6, 19, 26, 25), seed=2, gap=1)

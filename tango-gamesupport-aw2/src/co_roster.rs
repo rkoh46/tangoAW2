@@ -252,6 +252,11 @@ fn abilities_on(core: &Core) -> bool {
     core.raw_read_8(CO_ABILITIES, -1) != 0
 }
 
+/// Whether the Rules' CO abilities are on (the CO powers' numbers count).
+pub fn abilities_enabled(core: &Core) -> bool {
+    abilities_on(core)
+}
+
 /// A block's i16 for an army's CO, or `default` (Sturm, no pack).
 fn army_field(core: &Core, army: u32, o: usize, default: i32) -> i32 {
     let (co, mode) = army_co(core, army);
@@ -456,8 +461,8 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     // The CPU's power settings: AW2's usual (a CO Power once the meter is
     // within 25% of it, 95% of the time), or none for a CO without one
     // (Von Bolt, as Sturm).
-    if co == crate::co_new::ARIA {
-        // (Aria has no CO Power: Sturm's settings, who has none either)
+    if co == crate::co_new::ARIA || crate::es_co::info(co).is_some_and(|i| i.stars.0 == 0) {
+        // (Aria, Tabitha and Caulder have no CO Power: Sturm's settings, who has none either)
         let sturm = &rows[crate::aria::NO_COP_LIKE as usize];
         row[0x17..0x19].copy_from_slice(&sturm[0x17..0x19]);
     } else if r[0x1C] == 0 {
@@ -479,7 +484,13 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
     let andy_charts = andy[0x38 + 0x18..0x38 + 0x24].to_vec();
     for mode in 0..3u8 {
         // (Asuka no longer has Sturm's movement: her charts are Andy's like everyone's)
-        let charts = andy_charts.clone();
+        // (Caulder's day to day: Sturm's movement, his row's three charts of each level as the pack has them: every terrain costs 1 for ground units)
+        let charts = if crate::es_co::canon(co) == crate::es_co::CAULDER {
+            let at = 0x38 + 0x44 * mode as usize + 0x18;
+            rows[crate::aria::NO_COP_LIKE as usize][at..at + 12].to_vec()
+        } else {
+            andy_charts.clone()
+        };
         let b = block(ds, mode)?;
         let at = 0x38 + 0x44 * mode as usize;
         let name = match mode {
@@ -492,10 +503,13 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
         // Upgrade, the row Dual Strike's record names for them)
         let power = if co == crate::co_new::CLONE_ANDY {
             u32::from_le_bytes(andy[at + 4..at + 8].try_into().unwrap())
-        } else if co == crate::co_new::CRUMB || crate::es_co::is_es(co) || co == crate::co_new::ARIA {
+        } else if co == crate::co_new::CRUMB || co == crate::co_new::ARIA {
             // (AW2's usual power procedure: the sparkle; the effect on the
             // units is the presentation row's, crate::crumb, crate::es_co)
             DEFAULT_POWER
+        } else if crate::es_co::is_es(co) {
+            // (Silver Nova: Tabitha's Firestorm and Lili's Enigma are functions of their own; Caulder's heal is the presentation row's)
+            crate::co_powers::power_assembly(crate::es_co::canon(co), mode).unwrap_or(DEFAULT_POWER)
         } else {
             crate::co_powers::power_assembly(co, mode).unwrap_or(DEFAULT_POWER)
         };
@@ -535,7 +549,7 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             row[at + 0x10..at + 0x12].copy_from_slice(&crate::crumb::BAD_LUCK[mode as usize].to_le_bytes());
         }
         if let Some(i) = crate::es_co::info(co) {
-            // Luck, no bad luck, and the unit cost (Livia's +10%).
+            // Luck, no bad luck, and the unit cost.
             row[at + 0x0E..at + 0x10].copy_from_slice(&i.luck[mode as usize].to_le_bytes());
             row[at + 0x10..at + 0x12].copy_from_slice(&0i16.to_le_bytes());
             row[at + 0x14..at + 0x16].copy_from_slice(&i.cost[mode as usize].to_le_bytes());
@@ -613,7 +627,10 @@ fn stat_function(core: &mut Core, field: usize) {
     }
     let cpu = core.gba().cpu();
     let (co, mode, t, lr) = (cpu.gpr(0) as u8, cpu.gpr(1) as u8, cpu.gpr(2) as u8, cpu.gpr(14) as u32);
-    if let Some(v) = stat(co, mode, t, field) {
+    if let Some(mut v) = stat(co, mode, t, field) {
+        if field == MOVE && mode == 0 && co == crate::es_co::LILI && t != crate::roster::OOZIUM {
+            v += crate::es_co::second_day_move(core); // (Lili's Enigma, second day: the CO Power is over, the +1 move is not)
+        }
         let cpu = core.gba_mut().cpu_mut();
         cpu.set_gpr(0, v);
         cpu.set_thumb_pc(lr & !1);

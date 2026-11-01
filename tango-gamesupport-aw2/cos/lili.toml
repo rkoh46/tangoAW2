@@ -1,0 +1,38 @@
+# Lili, engineer-quartermaster of the Silver Nova (docs/dev/silver-nova.md). Dr. Caulder's youngest child, her mind shattered by his experiments. Her numbers are her own (src/es_co.rs): Lullaby, +10% attack and defence;
+# Enigma, a CO Power of 3 stars: for two days the weather is sand, snow or rain at random; her units ignore weather and move 1 more. No Super CO Power.
+id = "lili"
+name = "Lili"
+army = "silver_nova"
+role = "engineer and quartermaster of the Silver Nova, Dr. Caulder's youngest daughter"
+hq = "emerald_sun"
+
+full_name = "Lili"
+theme = "own:lili"
+bio = "The youngest child of Dr. Caulder. Numerous experiments have left her mind permanently shattered. Hit: Mr. Bear Miss: Broken \"toys\""
+luck = [10, 10, 10]
+# Only a CO Power: no Super Power (0 stars: the CO page says so).
+stars = { cop = 3, scop = 0 }
+
+[d2d]
+name = "Lullaby"
+text = "All units fight with 10% more firepower and defense."
+mods = [ { units = "all", attack = 10, defence = 10 } ]
+
+[cop]
+name = "Enigma"
+text = "For two days the weather turns to sand, snow or rain at random. Her units ignore weather and move 1 more space."
+# +1 move for every unit while she is in the power; the weather draw (the game's RNG), the two days and the immunity are engine rules (src/es_co.rs)
+mods = [ { units = "all", move = 1 } ]
+quote = ["Tee hee! Let's go,", "Mr. Bear!"]
+
+[scop]
+name = ""
+text = "Lili has no Super CO Power. Her one trick is the Enigma."
+
+[lines]
+tag_in = ["Tee hee! Let's go,", "Mr. Bear!"]
+victory = "Mr. Bear says we won. Yay!"
+defeat = "Oh no. Mr. Bear, they broke all the toys."
+
+[portrait]
+source = "art-src/cos/lili_v1.jpg"

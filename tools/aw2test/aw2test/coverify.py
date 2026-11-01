@@ -9,7 +9,7 @@ from . import cospec, damage
 from . import rom as romlib
 from .game import NavError
 
-ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
+ENV = {}   # (Tabitha, Lili and Caulder are in Versus always; the retired slots 89 and 90 are in no list)
 LEVEL = {0: "d2d", 1: "cop", 2: "scop"}
 POWER = {1: "power", 2: "super"}
 
@@ -154,7 +154,7 @@ def stat_fights(ctx, name, mode, defence_leg=True):
     if mode:
         ctx.power(g, 1, POWER[mode])
         chk(ctx, label, g.player(1)["co_mode"] == mode, f"the {LEVEL[mode].upper()} is on (power mode {g.player(1)['co_mode']})")
-    keep = 75 if (name == "klaus" and mode == 1) else 100
+    keep = 100
     for p in plan:
         a, (x, y), dist, d = p["type"], p["at"], p["dist"], p["target"]
         if d is None:
@@ -294,7 +294,7 @@ def economy(ctx, name, fpp=1000):
         set_unit(g, u["x"], u["y"], hp=45)
     for u in g.units(2):
         set_unit(g, u["x"], u["y"], hp=45)
-    for mode in ((1, 2) if spec.has_cop else (2,)):
+    for mode in spec.levels_played[1:]:
         label = tag(name, mode)
         before = {u["id"]: u for u in g.units()}
         f0 = funds(g)
@@ -305,8 +305,8 @@ def economy(ctx, name, fpp=1000):
         want = spec.funds(mode, props, fpp)
         chk(ctx, label, got == want, f"funds collected {got} (specification {spec.tribute[mode]} x {props} properties" + (f" + one day's income {fpp} x {props}" if spec.income_grant and mode == 2 else "") + f" = {want})", "power funds")
         ctx.expect_hp_change(before, after, {1: spec.heal[mode] * 10}, f"{label}: heal {spec.heal[mode]} HP", repair=True)
-        mine_ok = all(after[i]["hp"] == before[i]["hp"] for i in before if before[i]["army"] == 2)
-        chk(ctx, label, mine_ok, "the enemy's units are not healed", "heal")
+        mine_ok = all(after[i]["hp"] <= before[i]["hp"] and (after[i]["hp"] == before[i]["hp"] or cospec.strike(name)) for i in before if before[i]["army"] == 2)
+        chk(ctx, label, mine_ok, "the enemy's units are not healed (a strike's damage is the Firestorm's, not a heal)", "heal")
         chk(ctx, label, g.player(1)["co_mode"] == mode, "power on")
         # The day's income when the turn passes (the power ends at the army's next turn).
         for u in g.units(1):
@@ -350,14 +350,17 @@ def meter(ctx, name):
 
     for uses in (0, 1):
         pc, sc = power_star_cost(uses) * spec.stars[0], power_star_cost(uses) * spec.stars[1]
-        if spec.has_cop:
+        if spec.has_cop and spec.has_scop:
             steps = ((pc - 1, (False, False)), (pc, (True, False)), (sc - 1, (True, False)), (sc, (True, True)))
+        elif spec.has_cop:
+            # only a CO Power (Lili): "Power" at exactly its cost, and "Super" at no meter at all (a Super Power of 0 stars is none, not a free one)
+            steps = ((0, (False, False)), (pc - 1, (False, False)), (pc, (True, False)), (pc * 4, (True, False)))
         else:
-            # no CO Power (Aria, as Sturm): the menu never offers "Power", whatever the meter; "Super" at exactly the Super Power's cost
+            # no CO Power (Aria, Tabitha, Caulder, as Sturm): the menu never offers "Power", whatever the meter; "Super" at exactly the Super Power's cost
             steps = ((0, (False, False)), (sc // 2, (False, False)), (sc - 1, (False, False)), (sc, (False, True)))
         for charge, want in steps:
             got = offered(charge)
-            lab = f"{name} {'cop' if spec.has_cop and (charge < sc - 1 or charge == pc) else 'scop'}"
+            lab = f"{name} {'cop' if spec.has_cop and (not spec.has_scop or charge < sc - 1 or charge == pc) else 'scop'}"
             chk(ctx, lab, got == want, f"after {uses} power(s): meter {charge} of {pc} / {sc} -> Power {got[0]}, Super {got[1]} (want {want[0]}, {want[1]})", "meter threshold")
         if uses == 0:
             ctx.power(g, 1, "power" if spec.has_cop else "super")
@@ -378,7 +381,7 @@ def install_tag_spec():
     if _TAG_PATCHED:
         return
     table = {frozenset((cospec.co_id(p["a"]), cospec.co_id(p["b"]))): p["compat"] for p in cospec.tags()}
-    custom = {s.id for s in cospec.all_specs().values() if s.name not in ("crumb", "varro", "cloneandy")}
+    custom = {s.id for s in cospec.all_specs().values() if s.name not in ("crumb", "cloneandy")}
     unlisted = cospec.UNLISTED_COMPAT
     orig = tag.compatibility
 
@@ -448,9 +451,8 @@ def tag_pair(ctx, act, par):
     label = f"{a_name} tag"
     compat = pair["compat"]
     units = [(1, "tank", 10, 10), (2, "tank", 11, 10), (1, "tank", 10, 12), (2, "infantry", 11, 12)]
-    if "aurelia" in (a_name, b_name):      # two Artillery with Andy's units round the target (one for each half)
-        units += [(1, "artillery", 6, 14), (2, "tank", 9, 14), (2, "infantry", 9, 13), (2, "mech", 10, 14),
-                  (1, "artillery", 6, 18), (2, "tank", 9, 18), (2, "infantry", 9, 17), (2, "mech", 10, 18)]
+    own_units = [(10, 10), (10, 12)]
+    enemy_units = [(11, 10), (11, 12)]
     g = tag_battle(ctx, [a_id, "andy"], [b_id, None], units=units, props=True)
     e = g.e
     props = ctx.properties(g, 1)
@@ -494,11 +496,12 @@ def tag_pair(ctx, act, par):
         chk(ctx, label, hp == want_hp, f"first half: {a_name}'s Super Power healed 45 -> {hp} (specification: {s1.heal[2]} HP -> {want_hp})", "heal")
         got = funds(g) - f0
         chk(ctx, label, got == s1.funds(2, props), f"first half: funds collected {got} (specification {s1.funds(2, props)}: {s1.tribute[2]} x {props} a property" + (", one day's income" if s1.income_grant else "") + ")", "funds")
+    special_hook(ctx, g, a_name, label, "first half", own_units, enemy_units, {c: 100 for c in own_units + enemy_units})
     fight(ctx, label, f"first half {a_name}", g, (10, 10), (10, 10), (11, 10))
-    special_hook(ctx, g, a_name, label, "first half", (10, 10), (6, 14), (9, 14), [(9, 13), (10, 14)])
     # the second half: Change, the partner's Super Power
     f1 = funds(g)
     set_unit(g, 3, 3, hp=45)
+    before2 = {c: (g.unit_at(*c) or {"hp": 0})["hp"] for c in own_units + enemy_units}
     g.open_map_menu()
     g.choose("Change", g.MAP_MENU)
     ctx.require(e.wait_until(lambda: g.player(1)["co"] == b_id and g.player(1)["co_mode"] == 2, 3000, step=10), "the second half: the partner's Super Power")
@@ -513,23 +516,21 @@ def tag_pair(ctx, act, par):
         chk(ctx, label, hp == want_hp, f"second half: {b_name}'s Super Power healed 45 -> {hp} (specification: {s2.heal[2]} HP -> {want_hp})", "heal")
         got = funds(g) - f1
         chk(ctx, label, got == s2.funds(2, props), f"second half: funds collected {got} (specification {s2.funds(2, props)}: {s2.tribute[2]} x {props} a property" + (", one day's income" if s2.income_grant else "") + ")", "funds")
+    special_hook(ctx, g, b_name, label, "second half", own_units, enemy_units, before2)
     fight(ctx, label, f"second half {b_name}", g, (10, 12), (10, 12), (11, 12))
-    special_hook(ctx, g, b_name, label, "second half", (10, 12), (6, 18), (9, 18), [(9, 17), (10, 18)])
     return g
 
 
-def special_hook(ctx, g, co, label, half, tank_at, art_at, art_target, around):
-    """The Super Power's special rule of the CO whose half this is: Aurelia's Onager splash (1 HP to the enemy units beside an Artillery's target), Cassius's Triumph (the Tank that
-    attacked is not done and has its extra-move bit)."""
-    from tests.test_es_powers import moved_bit
-    if co == "aurelia":
-        before = {c: g.unit_at(*c)["hp"] for c in around}
-        fight(ctx, label, f"{half} Onager", g, art_at, art_at, art_target)
-        after = {c: (g.unit_at(*c) or {"hp": 0})["hp"] for c in around}
-        chk(ctx, label, all(after[c] == before[c] - 10 for c in around), f"{half}: Onager splash cost the units beside the target 1 HP each: {before} -> {after}", "onager")
-    if co == "cassius":
-        u = g.unit_at(*tank_at)
-        chk(ctx, label, u["flags"] & 1 == 0 and moved_bit(g, u["id"]), f"{half}: Triumph left the Tank that attacked free to move once more (flags {u['flags']:#04x}, extra-move bit {moved_bit(g, u['id'])})", "triumph")
+def special_hook(ctx, g, co, label, half, own, enemy, before):
+    """The Super Power's special rule of the CO whose half this is: Tabitha's Firestorm (the enemy units on the struck square took 8 HP or were left on 1 HP, her own team's units
+    were not hurt) -- read from the hit points the Tag Power left against `before`. (Caulder's heal is checked with every half's heal; Lili has no Super Power: her half is the
+    plain +10% of any power.)"""
+    if co != "tabitha":
+        return
+    now = {c: (g.unit_at(*c) or {"hp": 0})["hp"] for c in own + enemy}
+    hurt = [c for c in enemy if before[c] and now[c] < before[c]]
+    chk(ctx, label, bool(hurt), f"{half}: Firestorm hurt the enemy units beside the site (hit {hurt}: {[(before[c], now[c]) for c in hurt]}; all {[(c, before[c], now[c]) for c in enemy]})", "firestorm")
+    chk(ctx, label, all(now[c] == before[c] for c in own if before[c]), f"{half}: and none of her own ({[(before[c], now[c]) for c in own]})", "firestorm")
 
 
 def _heal(hp, bars_up):
@@ -542,101 +543,501 @@ def _heal(hp, bars_up):
     return ((hp - 1) // 10 + 1) * 10
 
 
-# --- the special rules: Testudo, Onager, Triumph -------------------------------------------------------------------------------------------
+# --- the special rules: Firestorm, Enigma, Hypothesis's movement -------------------------------------------------------------------------------
 
-def hook_testudo(ctx):
-    """Klaus: in his CO Power the enemy's counterattack against one of his attacks does 25% less (the damage number and the forecast cut to 75%, whole numbers rounded down); with no
-    power and in the Super Power the counter is whole; a counter against his Tank when Andy attacks him is not cut."""
-    from tests.test_es_powers import klaus_fight, counter_forecast
-    use_spec(ctx)
-    for mode in (0, 1, 2):
-        for kind in ("tank", "infantry", "mech"):
-            m = ctx.map()
-            m.unit(1, kind, 10, 10).unit(2, kind, 11, 10)
-            g = ctx.start(m, [86, "andy"], env=ENV)
-            if mode:
-                ctx.power(g, 1, POWER[mode])
-            keep = 75 if mode == 1 else 100
-            r = fight(ctx, f"klaus {LEVEL[mode]}", f"testudo {kind}", g, (10, 10), (10, 10), (11, 10), keep)
-            ra, rd = r["records"]
-            c = r["counter"]
-            if r["after"][1]["hp"] <= 0:
-                chk(ctx, f"klaus {LEVEL[mode]}", c is None, f"the enemy {kind} is destroyed and cannot counterattack", f"testudo {kind}")
-                g.e.close()
-                continue
-            chk(ctx, f"klaus {LEVEL[mode]}", c is not None, f"the enemy {kind} counterattacks", f"testudo {kind}")
-            if c is None:
-                continue
-            bars = damage.hp_bars(rd["remaining"])
-            rolled = {damage.div(c.acc * c.base, 100) + roll for roll in range(c.luck[0])}
-            plain = {damage.div(v * bars, 10) for v in rolled}
-            cut = {damage.div(v * 75, 100) for v in plain}
-            want = cut if mode == 1 else plain
-            chk(ctx, f"klaus {LEVEL[mode]}", rd["damage"] in want and (mode != 1 or rd["damage"] not in plain),
-                f"the counter's damage number {rd['damage']} is {'one of the 75% numbers ' + str(sorted(cut)) if mode == 1 else 'whole: one of ' + str(sorted(plain))}", f"testudo {kind}")
-            chk(ctx, f"klaus {LEVEL[mode]}", rd["display"] == counter_forecast(r, keep), f"the counter's forecast {rd['display']} is worked on the {'cut' if mode == 1 else 'whole'} number", f"testudo {kind}")
-            g.e.close()
+RNG = 0x03001FD4                # the game's random word (crate::co_powers::RNG)
+WEATHER = 0x03003FEC            # gPlaySt's weather (0 clear, 1 snow, 2 rain)
+WEATHER_MODE = 0x03003FED       # 0 fixed clear, 1 random, 2 permanent, 3 fixed (the Rules screen's weather)
+SAND_STATE = 0x03004493         # crate::sandstorm::STATE: low nibble 2 is a one-day sandstorm
+LILI_STATE = 0x0203C980         # crate::es_co::LILI_STATE: +0 turn starts left, +1 her army, +2 the weather rolled (1 snow, 2 rain, 3 sand)
+STUN_PENDING, STUN_ACTIVE = 0x0203FE00, 0x0203FE28      # crate::co_powers: Ex Machina's stun bits (40 bytes each)
+ROLLED = {1: "snow", 2: "rain", 3: "sand"}
+# RNG words that make the roll each weather (the game's word goes through `next_random` twice between the poke and the roll: 1 + word % 3 of the second result)
+SEEDS = {"snow": 64, "rain": 1, "sand": 76}
 
 
-def hook_onager(ctx):
-    """Aurelia: an indirect hit in her Super Power costs each enemy unit orthogonally beside the target 1 HP (a unit on its last HP stays on it; her own units, the diagonal and
-    units two cells away are untouched); no splash with no power or in Ballista, or from a direct unit."""
-    from tests.test_es_powers import onager_map, NORTH, EAST, SOUTH, WEST, DIAGONAL, TWO_AWAY, TARGET
-    use_spec(ctx)
-    for power in (None, "power", "super"):
-        mode = {None: 0, "power": 1, "super": 2}[power]
-        g = ctx.start(onager_map(ctx), [87, "andy"], env=ENV)
-        ctx.set_hp(g, *EAST, 15)
-        ctx.set_hp(g, *WEST, 10)
-        if power:
-            ctx.power(g, 1, power)
-        cells = (NORTH, EAST, SOUTH, WEST, DIAGONAL, TWO_AWAY, TARGET)
-        before = {c: g.unit_at(*c)["hp"] for c in cells}
-        fight(ctx, f"aurelia {LEVEL[mode]}", "onager Artillery hit", g, (10, 10), (10, 10), TARGET)
-        after = {c: (g.unit_at(*c) or {"hp": 0})["hp"] for c in cells}
-        want = dict(before)
-        if power == "super":
-            want[NORTH], want[EAST] = before[NORTH] - 10, before[EAST] - 10          # (WEST is on 1 HP: stays; SOUTH is her own)
-        label = f"aurelia {LEVEL[mode]}"
-        for name, c in (("north (enemy Infantry)", NORTH), ("east (enemy Mech on 2 HP)", EAST), ("west (enemy Recon on 1 HP)", WEST), ("south (her own Infantry)", SOUTH),
-                        ("diagonal", DIAGONAL), ("two cells away", TWO_AWAY)):
-            chk(ctx, label, after[c] == want[c], f"{name}: {before[c]} -> {after[c]} (specification {want[c]})", "splash")
-        g.e.close()
-    # a direct unit under Onager: no splash
+def rng_next(r):
+    """crate::sandstorm::next_random on a word: the game's own generator."""
+    s = (r * 4) & 0xFFFFFFFF
+    return ((((s + 2) & 0xFFFFFFFF) * ((s + 3) & 0xFFFFFFFF)) & 0xFFFFFFFF) >> 2
+
+
+def weather_of(g):
+    """"clear", "snow", "rain" or "sand" (a one-day sandstorm of the pack) as the game has it now."""
+    w = g.e.u8(WEATHER)
+    if w:
+        return {1: "snow", 2: "rain"}.get(w, f"weather {w}")
+    return "sand" if g.e.u8(SAND_STATE) & 0xF == 2 else "clear"
+
+
+def lili_state(g):
+    """(turn starts left, her army, the weather rolled) of the running Enigma."""
+    b = g.e.read(LILI_STATE, 3)
+    return b[0], b[1], b[2]
+
+
+def pass_turn(g, to):
+    """End the turn from the map menu and wait for army `to` (two human armies; a fog game shows 'Next turn: press A' between them)."""
+    g.open_map_menu()
+    g.choose("End", g.MAP_MENU)
+    for _ in range(80):
+        if g.current_army() == to:
+            break
+        g.e.press("A", 4)
+        g.e.wait(25)
+    g.wait_for_input()
+
+
+def diamond(c, r=2):
+    return {(c[0] + dx, c[1] + dy) for dx in range(-r, r + 1) for dy in range(-r, r + 1) if abs(dx) + abs(dy) <= r}
+
+
+def after_firestorm(hp, damage=80):
+    """A strike never kills (sub_08044854): a unit with more than the damage loses it, any other is left on 1 (internal) HP, which the game shows as 1."""
+    return hp - damage if hp > damage else 1
+
+
+# --- Tabitha: Firestorm ----------------------------------------------------------------------------------------------------------------------
+
+FIRE_CENTRE = (20, 10)
+FIRE_OWN = [(21, 9), (19, 11), (24, 10)]          # her own Tanks: two inside the diamond, one beyond it
+FIRE_HP = {(20, 10): 100, (21, 10): 90, (19, 10): 50, (20, 11): 80, (20, 9): 10, (22, 10): 30}      # internal HP: 9 HP, 5 HP, 8 HP, 1 HP and 3 HP units among the Tanks (the rest 100)
+
+
+def firestorm_map(ctx):
+    """A rich cluster (a Tank in every cell of the 13-cell diamond round (20, 10), three of her own among them) and a poor one far off (three Infantry), one Infantry
+    on three of the cells of ring 3 that the diamond does not take."""
     m = ctx.map()
-    m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10).unit(2, "infantry", 11, 9).unit(2, "infantry", 12, 10)
-    g = ctx.start(m, [87, "andy"], env=ENV)
+    for c in sorted(diamond(FIRE_CENTRE)):
+        m.unit(1 if c in FIRE_OWN else 2, "tank", *c)
+    m.unit(1, "tank", FIRE_OWN[2][0], FIRE_OWN[2][1])
+    for c in ((23, 10), (17, 10), (20, 13), (20, 7)):
+        m.unit(2, "infantry", *c)
+    for c in ((6, 15), (7, 15), (6, 16)):
+        m.unit(2, "infantry", *c)
+    return m
+
+
+def hp_map(g):
+    return {(u["x"], u["y"]): u["hp"] for u in g.units() if u["type"]}
+
+
+def army_map(g):
+    return {(u["x"], u["y"]): u["army"] for u in g.units() if u["type"]}
+
+
+def firestorm_game(ctx, co=86, power="super"):
+    g = ctx.start(firestorm_map(ctx), [co, "andy"], humans=(1, 2), env=ENV)
+    for c, hp in FIRE_HP.items():
+        ctx.set_hp(g, *c, hp)
+    return g
+
+
+def hook_firestorm(ctx):
+    """Tabitha's Super Power: 8 HP to every enemy unit within 2 of the site AW2 picks (the richest cluster), a unit never dropping below 1 HP (a 9 HP unit is left on 1 HP and is not
+    destroyed), her own team's units untouched, nobody stunned; the damaged units move normally on their turn. Control: Von Bolt's Ex Machina on the same field still stuns."""
+    spec = cospec.strike("tabitha")
+    chk(ctx, "tabitha scop", spec == {"hp": 8, "radius": 2, "pick": "value", "stun": False, "can_kill": False}, f"the data file's Firestorm is {spec}", "firestorm")
+    g = firestorm_game(ctx)
+    before, armies = hp_map(g), army_map(g)
     ctx.power(g, 1, "super")
-    fight(ctx, "aurelia scop", "direct Tank hit", g, (10, 10), (10, 10), (11, 10))
-    chk(ctx, "aurelia scop", g.unit_at(11, 9)["hp"] == 100 and g.unit_at(12, 10)["hp"] == 100, "a direct unit's hit splashes nobody", "splash")
+    after = hp_map(g)
+    inside = diamond(FIRE_CENTRE, spec["radius"])
+    enemy = {c for c in before if armies[c] == 2}
+    own = {c for c in before if c not in enemy}
+    ok = True
+    for c in sorted(before):
+        want = after_firestorm(before[c]) if (c in inside and c in enemy) else before[c]
+        got = after.get(c, 0)
+        if got != want:
+            ok = False
+            ctx.log(f"firestorm cell {c}: {before[c]} -> {got}, specification {want}")
+    chk(ctx, "tabitha scop", ok, f"every enemy unit within 2 of the richest cluster's centre {FIRE_CENTRE} lost 8 HP or was left on 1 HP; every other unit kept its HP ({len(before)} units)", "firestorm")
+    chk(ctx, "tabitha scop", all(c in after for c in before), "no unit was destroyed", "firestorm")
+    for c, label in (((21, 10), "9 HP"), ((19, 10), "5 HP"), ((20, 11), "8 HP"), ((20, 9), "1 HP"), ((20, 10), "10 HP")):
+        shown = damage.hp_bars(after[c])
+        want = {"9 HP": 1, "5 HP": 1, "8 HP": 1, "1 HP": 1, "10 HP": 2}[label]
+        chk(ctx, "tabitha scop", shown == want, f"the {label} Tank at {c} ends on {shown} HP shown (specification {want}), still on the map", "firestorm")
+    ring = [c for c in ((23, 10), (17, 10), (20, 13), (20, 7)) if c in before]
+    chk(ctx, "tabitha scop", all(after[c] == 100 for c in ring), "the Infantry on ring 3 (three cells from the centre) were not hit", "firestorm")
+    chk(ctx, "tabitha scop", all(after[c] == 100 for c in ((6, 15), (7, 15), (6, 16))), "the poorer cluster far off was not the site", "firestorm")
+    chk(ctx, "tabitha scop", all(after[c] == before[c] for c in own), f"her own Tanks, inside the diamond and beyond it, are untouched ({[(c, before[c], after[c]) for c in sorted(own)]})", "firestorm")
+    # no stun: no mark, nobody done, and the enemy moves normally on its turn
+    marks = bytes(g.e.read(STUN_PENDING, 40)) + bytes(g.e.read(STUN_ACTIVE, 40))
+    chk(ctx, "tabitha scop", not any(marks), "no unit is marked as stunned", "no stun")
+    chk(ctx, "tabitha scop", not any(u["flags"] & 1 for u in g.units() if u["type"]), "no unit of either army is done for the turn", "no stun")
+    pass_turn(g, 2)
+    hit = [c for c in sorted(inside & enemy) if c in after]
+    done = [c for c in hit if g.unit_at(*c)["flags"] & 1]
+    chk(ctx, "tabitha scop", not done, f"on their turn the damaged enemy units are free to move ({len(hit)} units, {len(done)} held)", "no stun")
+    t = g.unit_at(20, 10)
+    g.select(20, 10)
+    g.move_to(20, 14)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    moved = g.unit(t["id"])
+    chk(ctx, "tabitha scop", (moved["x"], moved["y"]) == (20, 14), f"a damaged Tank (HP {t['hp']}) moved four cells on its turn: now at {(moved['x'], moved['y'])}", "no stun")
+    g.e.close()
+    # the control: Von Bolt's Ex Machina on the same field stuns the units it hits
+    g = firestorm_game(ctx, co=cospec.DS_IDS["vonbolt"])
+    ctx.power(g, 1, "super")
+    pass_turn(g, 2)
+    held = [c for c in sorted(inside) if g.unit_at(*c) and g.unit_at(*c)["army"] == 2 and g.unit_at(*c)["flags"] & 1]
+    chk(ctx, "tabitha scop", len(held) >= 3, f"control: Von Bolt's Ex Machina holds the enemy units it hits on their turn ({len(held)} held)", "no stun")
+    g.e.close()
+    # her own units beside the enemy do not pull the strike away (they are spared, so they cost a site nothing): two enemy Tanks by her own Tanks against a lone Infantry far off
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(1, "tank", 10, 12).unit(2, "tank", 11, 10).unit(2, "tank", 11, 12).unit(2, "infantry", 24, 12)
+    g = ctx.start(m, [86, "andy"], env=ENV)
+    ctx.power(g, 1, "super")
+    hp = {c: g.unit_at(*c)["hp"] for c in ((11, 10), (11, 12), (24, 12), (10, 10), (10, 12))}
+    chk(ctx, "tabitha scop", hp[(11, 10)] == 20 and hp[(11, 12)] == 20 and hp[(24, 12)] == 100 and hp[(10, 10)] == 100 and hp[(10, 12)] == 100,
+        f"the site is the enemy Tanks beside her own, not the lone Infantry: {hp}", "firestorm site")
+    g.e.close()
 
 
-def hook_triumph(ctx):
-    """Cassius: in his Super Power a Tank that attacked is not done, can move once more (not attack) and is done after; an Infantry is done as ever; with no power or in Charge the
-    attacker is done."""
-    from tests.test_es_powers import triumph_game, moved_bit, can_select, CASSIUS_AT, TARGET_AT, CONTROL_TANK
-    use_spec(ctx)
-    for mode in (0, 1, 2):
-        label = f"cassius {LEVEL[mode]}"
-        m = ctx.map()
-        m.unit(1, "tank", *CASSIUS_AT).unit(2, "infantry", *TARGET_AT)
-        g = ctx.start(m, [88, "andy"], env=ENV)
-        if mode:
-            ctx.power(g, 1, POWER[mode])
-        uid = g.unit_at(*CASSIUS_AT)["id"]
-        fight(ctx, label, "triumph Tank attack", g, CASSIUS_AT, (11, 10), TARGET_AT)
-        u = g.unit(uid)
-        done = bool(u["flags"] & 1)
-        chk(ctx, label, done == (mode != 2), f"after attacking the Tank is {'done' if done else 'not done'} (specification: {'not done' if mode == 2 else 'done'})", "triumph")
-        chk(ctx, label, moved_bit(g, uid) == (mode == 2), f"extra-move bit {moved_bit(g, uid)}", "triumph")
-        if mode == 2:
-            g.select(11, 10)
-            names = g.move_to(11, 12)["names"]
-            chk(ctx, label, not any(n.lower().startswith("fire") for n in names) and any(n.lower().startswith("wait") for n in names), f"the second move offers {names}: Wait, no Fire", "triumph")
-            g.choose("Wait", g.ACTION_MENU)
-            g.wait_idle()
-            chk(ctx, label, bool(g.unit(uid)["flags"] & 1) and not can_select(g, 11, 12), "and then it is done", "triumph")
+def cpu_firestorm(ctx):
+    """The computer plays Tabitha (army 2) with the meter paid for: it uses Firestorm within three turns, on the player's richest cluster: every unit of the player's within 2 of one centre
+    took 8 HP (or was left on 1 HP), nothing outside that diamond and none of its own was touched."""
+    m = ctx.map()
+    for c in sorted(diamond((10, 8))):
+        m.unit(1, "tank", *c)
+    m.unit(1, "infantry", 3, 15)
+    m.unit(2, "tank", 25, 15).unit(2, "infantry", 26, 15).unit(2, "mech", 25, 16).unit(2, "artillery", 26, 16)
+    g = ctx.start(m, ["andy", 86], env=ENV)
+    pos = {u["id"]: (u["x"], u["y"], u["army"], u["hp"]) for u in g.units() if u["type"]}
+    for turn in range(3):
+        g.charge_power(2, "super")
+        g.end_turn()
+        if g.player(2)["powers_used"]:
+            break
+    p = g.player(2)
+    chk(ctx, "tabitha scop", p["powers_used"] == 1, f"the computer fired Firestorm on turn {turn + 1} (powers used {p['powers_used']})", "cpu")
+    now = {u["id"]: u["hp"] for u in g.units() if u["type"]}
+    mine = {i: v for i, v in pos.items() if v[2] == 1}
+    hurt = {i for i in mine if now.get(i, 0) < mine[i][3]}
+    cells = {i: (mine[i][0], mine[i][1]) for i in mine}
+    centres = [c for c in ((x, y) for x in range(30) for y in range(20)) if {i for i in mine if cells[i] in diamond(c)} == hurt]
+    chk(ctx, "tabitha scop", bool(hurt) and bool(centres), f"the computer's Firestorm hit {len(hurt)} of the player's units, all within 2 of one site ({centres[:3]})", "cpu")
+    chk(ctx, "tabitha scop", all(now[i] == after_firestorm(mine[i][3]) for i in hurt), "each of them lost 8 HP (or was left on 1 HP)", "cpu")
+    ours = [i for i, v in pos.items() if v[2] == 2]
+    chk(ctx, "tabitha scop", all(now.get(i, 0) == pos[i][3] for i in ours), "its own units were not hurt", "cpu")
+    return g
+
+
+# --- Lili: Enigma ----------------------------------------------------------------------------------------------------------------------------
+
+def enigma_game(ctx, weather="clear", extra=(), humans=(1, 2)):
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(1, "artillery", 5, 5).unit(1, "recon", 10, 14).unit(1, "infantry", 10, 16)
+    m.unit(2, "infantry", 8, 5).unit(2, "tank", 20, 10).unit(2, "artillery", 25, 5).unit(2, "infantry", 25, 7)
+    for u in extra:
+        m.unit(*u)
+    return ctx.start(m, [87, "andy"], humans=humans, weather=weather, env=ENV)
+
+
+def use_enigma(ctx, g, seed):
+    """Lili's CO Power with the game's random word set to `seed` first: returns (the word after the roll, the weather the game shows)."""
+    g.charge_power(1, "power")
+    g.e.w32(RNG, seed)
+    g.power("power")
+    return g.e.u32(RNG), weather_of(g)
+
+
+def hook_enigma_roll(ctx):
+    """Enigma's weather is drawn from the game's random number generator: the word the roll leaves is the weather's (1 + word % 3: snow, rain, sand), the same word gives the same
+    weather on every console (twice), and all three weathers are reachable."""
+    seen = {}
+    for name, seed in SEEDS.items():
+        g = enigma_game(ctx)
+        word, w = use_enigma(ctx, g, seed)
+        want = ROLLED[1 + word % 3]
+        chk(ctx, "lili cop", w == name and want == name, f"random word {seed}: Enigma drew {w} (the game's word {word} says {want}; expected {name})", "roll")
+        chk(ctx, "lili cop", word == rng_next(rng_next(seed)), f"the word after the roll is the generator's second step from {seed} ({word})", "roll")
+        left, army, rolled = lili_state(g)
+        chk(ctx, "lili cop", (left, army, ROLLED.get(rolled)) == (2, 1, name), f"Enigma's state: {left} turn starts left, army {army}, weather {ROLLED.get(rolled)}", "roll")
+        seen[name] = (w, bytes(g.e.read(LILI_STATE, 3)))
         g.e.close()
+    chk(ctx, "lili cop", {v[0] for v in seen.values()} == {"snow", "rain", "sand"}, f"snow, rain and sand are all reachable ({sorted(v[0] for v in seen.values())})", "roll")
+    g = enigma_game(ctx)
+    word, w = use_enigma(ctx, g, SEEDS["sand"])
+    chk(ctx, "lili cop", (w, bytes(g.e.read(LILI_STATE, 3))) == seen["sand"], "the same word on another console: the same weather and the same state (deterministic)", "roll")
+    g.e.close()
+    # no Enigma without the power: the weather stays what the game has
+    g = enigma_game(ctx)
+    chk(ctx, "lili cop", weather_of(g) == "clear" and lili_state(g) == (0, 0, 0), "before the power: clear weather and no Enigma state", "roll")
+    g.e.close()
+
+
+def hook_enigma_days(ctx, rules="clear"):
+    """Enigma lasts two days: through the opponent's turn, her next turn and the opponent's turn, and ends when her turn after next begins -- with the Rules screen's weather clear or fixed
+    (it goes back to the rule's weather), or random; in all three weathers. With permanent weather (a map's) it changes nothing."""
+    from_rules = {"clear": "clear", "snow": "snow", "random": None}[rules]
+    for name, seed in SEEDS.items():
+        g = enigma_game(ctx, weather=rules)
+        rule_weather = weather_of(g)
+        word, w = use_enigma(ctx, g, seed)
+        line = [(1, w, lili_state(g)[0])]
+        for k in range(4):
+            pass_turn(g, 2 if k % 2 == 0 else 1)
+            line.append((g.current_army(), weather_of(g), lili_state(g)[0]))
+        want = [(1, name, 2), (2, name, 2), (1, name, 1), (2, name, 1)]
+        chk(ctx, "lili cop", line[:4] == want, f"{name} under Rules weather {rules}: armies, weather and turn starts left {line[:4]} (specification {want})", "days")
+        ended = line[4]
+        chk(ctx, "lili cop", ended[0] == 1 and ended[2] == 0 and (ended[1] != name or rule_weather == name), f"and it ends when her turn after next begins: {ended}", "days")
+        if from_rules:
+            chk(ctx, "lili cop", ended[1] == from_rules, f"the Rules weather ({rules}) is back: {ended[1]}", "days")
+        sandbit = g.e.u8(SAND_STATE) & 0xF
+        chk(ctx, "lili cop", sandbit != 2, f"no sandstorm is left over (state {sandbit:#x})", "days")
+        g.e.close()
+
+
+def hook_enigma_permanent(ctx):
+    """A map whose weather is permanent keeps it: Enigma changes nothing but her units' immunity and move (the state never starts)."""
+    g = enigma_game(ctx)
+    g.e.w8(WEATHER_MODE, 2)
+    g.e.w8(WEATHER, 1)
+    word, w = use_enigma(ctx, g, SEEDS["sand"])
+    chk(ctx, "lili cop", w == "snow" and lili_state(g) == (0, 0, 0), f"permanent snow stays snow and no Enigma state starts ({w}, {lili_state(g)})", "permanent")
+    chk(ctx, "lili cop", g.player(1)["co_mode"] == 1, "her CO Power is on all the same", "permanent")
+    t = g.unit_at(10, 10)
+    g.select(10, 10)
+    g.move_to(13, 10)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    for k in range(3):
+        pass_turn(g, 2 if k % 2 == 0 else 1)
+    chk(ctx, "lili cop", weather_of(g) == "snow" and g.e.u8(WEATHER_MODE) == 2, "after three turn changes the permanent snow is still there", "permanent")
+    g.e.close()
+
+
+def unit_fuel(g, uid):
+    return g.unit(uid)["fuel"]
+
+
+def hook_enigma_immunity(ctx):
+    """While Lili is in Enigma her units ignore the weather: in snow a Tank's move costs its plain fuel (3 for 3 cells, an enemy's costs 6), in a sandstorm her Artillery fires at
+    distance 3 (an enemy Artillery's range is cut to 2) -- the immunity lasts the weather's two days (through her next turn) and the weather cuts into her army again when her turn after next begins."""
+    # snow
+    g = enigma_game(ctx)
+    word, w = use_enigma(ctx, g, SEEDS["snow"])
+    chk(ctx, "lili cop", w == "snow", "Enigma brought snow", "immunity")
+    t = g.unit_at(10, 10)
+    f0 = unit_fuel(g, t["id"])
+    g.select(10, 10)
+    g.move_to(13, 10)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    used = f0 - unit_fuel(g, t["id"])
+    chk(ctx, "lili cop", used == 3, f"in snow her Tank used {used} fuel for 3 cells (no doubling in the power; the plain price is 3)", "immunity")
+    pass_turn(g, 2)
+    e = g.unit_at(20, 10)
+    f1 = unit_fuel(g, e["id"])
+    g.select(20, 10)
+    g.move_to(17, 10)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    used = f1 - unit_fuel(g, e["id"])
+    chk(ctx, "lili cop", used == 6, f"control: the enemy Tank used {used} fuel for 3 cells in the same snow (doubled: 6)", "immunity")
+    pass_turn(g, 1)
+    chk(ctx, "lili cop", g.player(1)["co_mode"] == 0 and weather_of(g) == "snow", "her CO Power is over on her next turn and the snow is still on (day 2)", "immunity")
+    t = g.unit_at(13, 10)
+    f2 = unit_fuel(g, t["id"])
+    g.select(13, 10)
+    g.move_to(16, 10)
+    g.choose("Wait", g.ACTION_MENU)
+    g.wait_idle()
+    used = f2 - unit_fuel(g, t["id"])
+    chk(ctx, "lili cop", used == 3, f"on the second day her Tank still pays {used} for 3 cells in the snow (Enigma's immunity lasts both days; the plain price is 3)", "immunity")
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    chk(ctx, "lili cop", weather_of(g) != "snow" and lili_state(g)[0] == 0, f"when her turn after next begins the snow and Enigma are over (weather {weather_of(g)}, state {lili_state(g)})", "immunity")
+    g.e.close()
+    # sandstorm: Artillery range 2..3 -> an enemy's is 2..2
+    g = enigma_game(ctx, extra=[(2, "artillery", 5, 14), (1, "infantry", 8, 14), (2, "artillery", 15, 14), (1, "infantry", 15, 12)])
+    word, w = use_enigma(ctx, g, SEEDS["sand"])
+    chk(ctx, "lili cop", w == "sand", "Enigma brought a sandstorm", "immunity")
+    names = g.action_menu_at(5, 5)
+    fire = any(n.lower().startswith("fire") and "(greyed)" not in n for n in names)
+    chk(ctx, "lili cop", fire, f"her Artillery fires at an enemy 3 cells away in the sandstorm (menu {names})", "immunity")
+    g.e.press("B", 4)
+    g.e.wait(20)
+    pass_turn(g, 2)
+    near = g.action_menu_at(15, 14)          # Andy's Artillery with Lili's Infantry 2 cells away
+    fire2 = any(n.lower().startswith("fire") and "(greyed)" not in n for n in near)
+    chk(ctx, "lili cop", fire2, f"control: an enemy Artillery fires at 2 cells in the sandstorm (menu {near})", "immunity")
+    g.e.press("B", 4)
+    g.e.wait(20)
+    g.wait_for_input()
+    far = g.action_menu_at(5, 14)            # Andy's other Artillery with Lili's Infantry 3 cells away
+    fire3 = any(n.lower().startswith("fire") and "(greyed)" not in n for n in far)
+    chk(ctx, "lili cop", not fire3, f"control: with a target 3 cells away only, an enemy Artillery cannot fire in the sandstorm (menu {far})", "immunity")
+    g.e.press("B", 4)
+    g.e.wait(20)
+    g.wait_for_input()
+    pass_turn(g, 1)
+    chk(ctx, "lili cop", g.player(1)["co_mode"] == 0 and weather_of(g) == "sand", "her CO Power is over on her next turn, the sandstorm blows on (day 2)", "immunity")
+    names = g.action_menu_at(5, 5)
+    fire = any(n.lower().startswith("fire") and "(greyed)" not in n for n in names)
+    chk(ctx, "lili cop", fire, f"and on the second day her Artillery still fires at 3 cells (Enigma's immunity lasts both days; menu {names})", "immunity")
+    g.e.press("B", 4)
+    g.e.wait(20)
+    g.wait_for_input()
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    chk(ctx, "lili cop", weather_of(g) != "sand" and lili_state(g)[0] == 0, "when her turn after next begins the sandstorm and Enigma are over", "immunity")
+    g.e.close()
+
+
+def hook_enigma_move(ctx):
+    """In Enigma every unit of hers moves 1 more (Tank 6 -> 7, Recon 8 -> 9, Infantry 3 -> 4 on a road lane) on both days, and not one more once the weather is over."""
+    rules = use_spec(ctx)
+    types = [5, 6, 1]
+    m = ctx.map()
+    lanes = {}
+    for k, t in enumerate(types):
+        y = 3 + 2 * k
+        lanes[t] = y
+        for x in range(3, 28):
+            m.terrain(x, y, "road")
+        m.unit(1, t, 3, y)
+    m.unit(2, "infantry", 25, 18)
+    g = ctx.start(m, [87, "andy"], humans=(1, 2), env=ENV)
+    word, w = use_enigma(ctx, g, SEEDS["sand"])
+    for t in types:
+        base = rules.unit(t)["move"]
+        ok1, ok2 = probe_move(g, (3, lanes[t]), (3 + base + 1, lanes[t])), probe_move(g, (3, lanes[t]), (3 + base + 2, lanes[t]))
+        chk(ctx, "lili cop", ok1 and not ok2, f"in Enigma the {name_of(t)} moves {base + 1} (base {base} +1): reaches +{base + 1} {ok1}, +{base + 2} {ok2}", "move")
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    for t in types:
+        base = rules.unit(t)["move"]
+        ok1, ok2 = probe_move(g, (3, lanes[t]), (3 + base + 1, lanes[t])), probe_move(g, (3, lanes[t]), (3 + base + 2, lanes[t]))
+        chk(ctx, "lili cop", ok1 and not ok2, f"on Enigma's second day (her CO Power over) the {name_of(t)} still moves {base + 1}: reaches +{base + 1} {ok1}, +{base + 2} {ok2}", "move")
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    for t in types:
+        base = rules.unit(t)["move"]
+        ok1, ok2 = probe_move(g, (3, lanes[t]), (3 + base, lanes[t])), probe_move(g, (3, lanes[t]), (3 + base + 1, lanes[t]))
+        chk(ctx, "lili cop", ok1 and not ok2, f"when her turn after next begins the {name_of(t)} moves {base} again: reaches +{base} {ok1}, +{base + 1} {ok2}", "move")
+    g.e.close()
+
+
+def hook_enigma_suspend(ctx):
+    """A game saved in the middle of Enigma (from her turn, and again from the opponent's) and continued keeps the state: the weather, the turn starts left and the day count; it ends
+    when her turn after next begins as if nothing had happened (snow, rain and sand)."""
+    import os
+    from . import saves
+    from .emu import Emu
+    from .game import Game
+    for name, seed in SEEDS.items():
+        g = enigma_game(ctx)
+        word, w = use_enigma(ctx, g, seed)
+        before = (weather_of(g), lili_state(g), g.e.u8(SAND_STATE) & 0xF)
+        saves.suspend(g)
+        path = g.e.save(os.path.join(ctx.out, f"enigma_{name}"))
+        g.e.close()
+        e2 = Emu(save=path, ds=True, env=ENV)
+        g2 = Game(e2)
+        ctx.games.append(g2)
+        saves.to_select_mode(e2)
+        saves.versus_continue(g2)
+        after = (weather_of(g2), lili_state(g2), g2.e.u8(SAND_STATE) & 0xF)
+        chk(ctx, "lili cop", after == before, f"{name}: saved in her turn and continued: weather, state and day bits {before} -> {after}", "suspend")
+        pass_turn(g2, 2)
+        saves.suspend(g2)
+        path = g2.e.save(os.path.join(ctx.out, f"enigma_{name}_2"))
+        mid = (weather_of(g2), lili_state(g2))
+        g2.e.close()
+        e3 = Emu(save=path, ds=True, env=ENV)
+        g3 = Game(e3)
+        ctx.games.append(g3)
+        saves.to_select_mode(e3)
+        saves.versus_continue(g3)
+        chk(ctx, "lili cop", (weather_of(g3), lili_state(g3)) == mid, f"{name}: saved again in the opponent's turn and continued: {mid} -> {(weather_of(g3), lili_state(g3))}", "suspend")
+        line = []
+        for k, to in enumerate((1, 2, 1)):
+            pass_turn(g3, to)
+            line.append((g3.current_army(), weather_of(g3), lili_state(g3)[0]))
+        want = [(1, name, 1), (2, name, 1), (1, "clear", 0)]
+        chk(ctx, "lili cop", line == want, f"{name}: after the two continues the Enigma still ends when her turn after next begins: {line} (specification {want})", "suspend")
+        g3.e.close()
+
+
+# --- Caulder: Hypothesis (Sturm's movement) and Cataclysm ----------------------------------------------------------------------------------
+
+STURM_TYPES = [1, 2, 5, 6, 10]            # Infantry, Mech, Tank, Recon, Artillery
+STURM_TERRAINS = ["wood", "mountain", "river"]
+
+
+def sturm_reach(ctx, co, mode):
+    """Every unit class on a lane of one terrain: the farthest cell it reaches. Returns {(type, terrain): cells}."""
+    rules = use_spec(ctx)
+    m = ctx.map()
+    lanes = {}
+    y = 1
+    for terrain in STURM_TERRAINS:
+        for t in STURM_TYPES:
+            lanes[(t, terrain)] = y
+            for x in range(3, 28):
+                m.terrain(x, y, terrain)
+            m.unit(1, t, 3, y)
+            y += 1
+    g = ctx.start(m, [co, "andy"], env=ENV)
+    if mode:
+        ctx.power(g, 1, "super")
+    out = {}
+    for (t, terrain), y in lanes.items():
+        base = rules.unit(t)["move"]
+        reach = 0
+        for d in range(1, base + 3):
+            if probe_move(g, (3, y), (3 + d, y)):
+                reach = d
+            else:
+                break
+        out[(t, terrain)] = reach
+    g.e.close()
+    return out
+
+
+def hook_sturm_move(ctx):
+    """Caulder's Hypothesis is Sturm's movement: on a lane of woods, mountains or river every ground unit that can enter the terrain pays 1 a cell, so it reaches exactly its base move
+    (Infantry and Mech included on mountains and river, where they pay 2 otherwise; a Tank still cannot enter river or mountains: Sturm's chart keeps the terrain closed to it); every lane
+    is Sturm's own (the control), Andy's units on the same lanes fall short. Day to day and in Cataclysm."""
+    rules = use_spec(ctx)
+    chk(ctx, "caulder d2d", cospec.movement("caulder") == "sturm", f"the data file's movement chart is {cospec.movement('caulder')!r}", "movement")
+    sturm = sturm_reach(ctx, cospec.AW2_IDS["sturm"], 0)
+    control = sturm_reach(ctx, cospec.IDS["andy"], 0)
+    for mode in (0, 2):
+        got = sturm_reach(ctx, cospec.IDS["caulder"], mode)
+        label = tag("caulder", mode)
+        bad = [(name_of(t), terrain, got[(t, terrain)], sturm[(t, terrain)]) for (t, terrain) in got if got[(t, terrain)] != sturm[(t, terrain)]]
+        chk(ctx, label, not bad, f"on woods, mountains and river every unit reaches exactly what Sturm's does ({len(got)} lanes; different: {bad})", "movement")
+        slow = [(name_of(t), terrain, v, rules.unit(t)["move"]) for (t, terrain), v in got.items() if v and v != rules.unit(t)["move"]]
+        chk(ctx, label, not slow, f"and every lane a unit can enter costs 1 a cell: it reaches its base move (not: {slow})", "movement")
+        chk(ctx, label, sum(1 for v in got.values() if v) >= 9, f"{sum(1 for v in got.values() if v)} of {len(got)} lanes are passable", "movement")
+    shorter = [(name_of(t), terrain) for (t, terrain), v in control.items() if v and v < rules.unit(t)["move"]]
+    chk(ctx, "caulder d2d", len(shorter) >= 4, f"control: Andy's units fall short of their base move on {len(shorter)} lanes (Mech and Infantry on mountains and river, wheels and treads in woods)", "movement")
+
+
+def hook_cataclysm(ctx):
+    """Cataclysm: +15% attack and defence over the day to day and the power's own +10%: a unit totals 18 + 15 + 10 = +43% attack (and +43% defence), against +18% day to day; with the +5 HP
+    heal (the `economy` facet) and no funds. The fights themselves are the `stats` facet's."""
+    spec = cospec.get("caulder")
+    use_spec(ctx)
+    for t in (1, 5, 10):
+        chk(ctx, "caulder scop", spec.bonus(2, t, 0) == 43 and spec.bonus(2, t, 1) == 33 and spec.bonus(0, t, 0) == 18 and spec.bonus(0, t, 1) == 18,
+            f"{name_of(t)}: attack {spec.bonus(0, t, 0)} -> {spec.bonus(2, t, 0)} (18 + 15 + the power's own 10), defence {spec.bonus(0, t, 1)} -> {spec.bonus(2, t, 1)} (+10 in the player's block)", "total")
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 11, 10).unit(1, "infantry", 10, 14).unit(2, "infantry", 11, 14)
+    g = ctx.start(m, [88, "andy"], env=ENV)
+    ctx.power(g, 1, "super")
+    p = g.player(1)
+    chk(ctx, "caulder scop", p["temp_defence"] == 10, f"the game's own +10% defence of any power is in the player's block ({p['temp_defence']}; the +10% firepower is added by the engine's bonus)", "total")
+    fight(ctx, "caulder scop", "Tank attacks Tank in Cataclysm", g, (10, 10), (10, 10), (11, 10))
+    fight(ctx, "caulder scop", "Infantry attacks Infantry in Cataclysm", g, (10, 14), (10, 14), (11, 14))
+    g.e.close()
+
 
 
 # --- the computer ---------------------------------------------------------------------------------------------------------------------------
@@ -676,6 +1077,9 @@ def cpu_fires(ctx, name, which):
     log = [l for l in g.e.decisions() if l.startswith("dsai power")]
     chk(ctx, label, p["powers_used"] == 1, f"the computer fired {name}'s {which} on turn {turn + 1} (powers used {p['powers_used']}, modes seen {sorted(modes)}) {log[-1] if log else ''}", "cpu")
     chk(ctx, label, mode in modes, f"power mode {mode} was seen during its turn", "cpu")
+    if name == "lili":
+        left, army, rolled = lili_state(g)
+        chk(ctx, label, left > 0 and army == 2 and rolled in ROLLED and weather_of(g) == ROLLED[rolled], f"the computer's Enigma is running: {left} turn starts left, weather {weather_of(g)}", "cpu")
     if healed and spec.heal[mode]:
         got = sorted(h[1] for h in healed.values() if h[0] == 45)
         want = [_heal(45, spec.heal[mode])] * len(got)
@@ -795,75 +1199,6 @@ def _type_of(detail):
     return best
 
 
-# --- Cassius's Triumph: where its rule stops (reported as LIMIT lines, not failures: docs/dev/co-verify.md) ---------------------------------------
-
-def triumph_limits(ctx):
-    """What Triumph does not cover on this branch: the computer's Cassius never gets the extra move (es_co: its unit loop would fire the unit again), and a game suspended after a Tank
-    attacked and continued has lost the extra-move bit (EWRAM state is not in the save). Each is measured and logged as `LIMIT [cassius scop] ...`."""
-    import os
-    from tests.test_es_powers import moved_bit, triumph_game, CASSIUS_AT, TARGET_AT
-    from . import saves
-    from .emu import Emu
-    from .game import Game
-    use_spec(ctx)
-    # 1. the computer plays Cassius's Super Power with Tanks next to the player's Infantry
-    m = ctx.map()
-    m.unit(1, "infantry", 12, 10).unit(1, "infantry", 12, 12)
-    m.unit(2, "tank", 13, 10).unit(2, "tank", 13, 12).unit(2, "tank", 16, 10)
-    g = ctx.start(m, ["andy", 88], env=ENV)
-    seen = {"bit": False, "attacks": 0}
-    ids = [u["id"] for u in g.units(2) if u["type"] == 5]
-
-    def watch(gg):
-        for _ in range(300):
-            gg.e.wait(10)
-            if any(moved_bit(gg, i) for i in ids):
-                seen["bit"] = True
-            if gg.current_army() != 2:
-                break
-    g.charge_power(2, "super")
-    hp0 = sum(u["hp"] for u in g.units(1))
-    g.end_turn(observe=watch)
-    seen["attacks"] = hp0 - sum(u["hp"] for u in g.units(1) if u["type"])
-    ctx.log(f"LIMIT [cassius scop] the computer's Cassius: power mode used {g.player(2)['powers_used']}, his Tanks dealt {seen['attacks']} HP of damage, extra-move bit ever set: {seen['bit']}")
-    ctx.log("LIMIT [cassius scop] " + ("the computer's Cassius got an extra move (no limit any more)" if seen["bit"] else "the computer's Cassius never gets the extra move after attacking (es_co::action_done skips computer armies)"))
-    g.e.close()
-    # 2. suspend after the attack and continue
-    m = ctx.map()
-    m.unit(1, "tank", *CASSIUS_AT).unit(2, "infantry", *TARGET_AT).unit(2, "infantry", 11, 9)       # (a second enemy beside the cell the Tank attacks from)
-    g = ctx.start(m, [88, "andy"], env=ENV)
-    ctx.power(g, 1, "super")
-    uid = g.unit_at(*CASSIUS_AT)["id"]
-    g.attack(CASSIUS_AT, (11, 10), TARGET_AT)
-    g.select(11, 10)
-    first = g.move_to(11, 10)["names"]
-    g.e.press("B", 4)
-    g.e.wait(20)
-    g.e.press("B", 4)
-    g.wait_for_input()
-    ctx.log(f"LIMIT [cassius scop] before suspending the Tank's menu beside an enemy offers {first} (Fire hidden by the extra-move bit)")
-    before = (bool(g.unit(uid)["flags"] & 1), moved_bit(g, uid))
-    saves.suspend(g)
-    path = g.e.save(os.path.join(ctx.out, "triumph_saved"))
-    e2 = Emu(save=path, ds=True, env=ENV)
-    g2 = Game(e2)
-    ctx.games.append(g2)
-    saves.to_select_mode(e2)
-    saves.versus_continue(g2)
-    after = (bool(g2.unit(uid)["flags"] & 1), moved_bit(g2, uid))
-    ctx.log(f"LIMIT [cassius scop] suspend and continue after a Tank attacked: (done flag, extra-move bit) {before} -> {after}")
-    if after[1] and not after[0]:
-        ctx.log("LIMIT [cassius scop] the extra-move bit survives suspend and continue (no limit any more)")
-    elif not after[1] and not after[0]:
-        g2.select(11, 10)
-        names = g2.move_to(11, 10)["names"]
-        fire = any(n.lower().startswith("fire") and "(greyed)" not in n for n in names)
-        ctx.log(f"LIMIT [cassius scop] after continue the Tank is free but the bit is gone: its menu offers {names}" + (" -- Fire is offered: a second attack" if fire else ""))
-    else:
-        ctx.log("LIMIT [cassius scop] after continue the Tank is done: its extra move is lost")
-    return before, after
-
-
 # --- the Megatank and the Piperunner are vehicles (the user's answer): pinned by comparison with Andy, whose numbers on them are the game's own --------------------------------------
 
 def vehicle_probe(ctx, name, mode):
@@ -902,11 +1237,12 @@ def vehicle_probe(ctx, name, mode):
 
 
 def pin_vehicles(ctx, name):
-    """Cassius's vehicle move and attack bonuses apply to the Megatank and the Piperunner as to a Tank; Aurelia's vehicle penalty applies to both, and neither gets her indirect bonus or her range."""
+    """A CO's flat bonuses (Tabitha's and Caulder's +18%, Lili's +10% and her Enigma move) apply to the Megatank and the Piperunner as to a Tank: the same move, base damage and the Piperunner's range
+    as Andy's units plus the specification's bonus (the `stats` facet cannot play them: they are not in the unit table the calculator reads)."""
     spec = cospec.get(name)
     base = vehicle_probe(ctx, "andy", 0)
     chk(ctx, f"{name} d2d", base["range"] == {5: True, 6: False}, f"Andy's Piperunner reaches 5 and not 6 (control): {base['range']}", "vehicles")
-    for mode in (0, 1, 2):
+    for mode in spec.levels_played:
         got = vehicle_probe(ctx, name, mode)
         label = tag(name, mode)
         for t in (4, 9):
@@ -965,8 +1301,8 @@ def hq_versus(ctx, name):
 
 
 def hq_tag(ctx):
-    """Tag pairs: the lead CO decides (Klaus leading with Andy, Andy leading with Klaus)."""
-    for lead, par, want in (("klaus", 1, 1), ("andy", 86, 0)):
+    """Tag pairs: the lead CO decides (Tabitha leading with Andy, Andy leading with Tabitha)."""
+    for lead, par, want in (("tabitha", 1, 1), ("andy", 86, 0)):
         g = tag_battle(ctx, [cospec.IDS[lead], "andy"], [par, None], units=[(1, "tank", 10, 10), (2, "tank", 11, 10)])
         vram = hq_tiles(g)
         found = find_art(vram, g.e.read(SKIN_HQ["emerald_sun"], 0x100))
@@ -975,10 +1311,10 @@ def hq_tag(ctx):
 
 
 def hq_mission(ctx, n):
-    """Emerald Sun Campaign mission n: the player's army (it wears the skin) and every army led by a CO with hq = emerald_sun show the Emerald Sun HQ."""
+    """Silver Nova Campaign mission n: the player's army (it wears the skin) and every army led by a CO with hq = emerald_sun show the Emerald Sun HQ."""
     from . import escampaign as es
     e, g, d = es.enter(ctx, n)
     g.e.wait(60)
-    shown = hq_check(ctx, g, "klaus d2d", skin_armies=(1,))
-    chk(ctx, "klaus d2d", shown >= 1, f"M{n}: {shown} army/armies show the Emerald Sun HQ", "hq")
+    shown = hq_check(ctx, g, "tabitha d2d", skin_armies=(1,))
+    chk(ctx, "tabitha d2d", shown >= 1, f"M{n}: {shown} army/armies show the Emerald Sun HQ", "hq")
     e.close()

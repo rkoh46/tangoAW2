@@ -16,7 +16,7 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick one CO (an
      picture, **the enemies you will face** in the order they come (each line's face, army emblem, number and name) and the best result (`gauntlet::best`: score, CO, days). UP/DOWN browse, A takes the
      map (`ds_campaign::choose_gauntlet_map`: the session's mission and its header in the battle's map-table entry), B goes back to Select Mode (`gauntlet::returning`: the wheel stays on GAUNTLET).
      The start proc waits on a flow function (`FLOW_PICK_UP`) that answers 1 while a step is up; `gauntlet_ui::tick` takes the pad meanwhile and says how the step ended (`ANSWER`).
-   - **the CO pick:** the CO screen's lists (`FLOW_CO_SETUP`: **all 36 COs**, the roster's unlock bits are not used: `unlocked_cos`), AW2's CO screen (`0x086165C0`). B comes back to the selector
+   - **the CO pick:** the CO screen's lists (`FLOW_CO_SETUP`: **all 35 COs**, the roster's unlock bits are not used: `unlocked_cos`), AW2's CO screen (`0x086165C0`). B comes back to the selector
      (`FLOW_PICK_AGAIN` starts the proc again).
    - **the army colour pick** (step 2): the colours the map's enemies do not wear as emblems in a row (`Entry::free`), the chosen one framed, its name under them; the player's CO and the enemies
      are shown. LEFT/RIGHT, A takes it, B goes back to the CO screen (`BACK_TO_CO`: the proc comes round again and skips the selector). A map with one free colour has nothing to pick; the cursor starts

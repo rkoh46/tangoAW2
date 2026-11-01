@@ -1222,26 +1222,26 @@ const M32_CAV: [(u8, u8); 4] = [(12, 4), (15, 6), (18, 8), (20, 11)];
 const M32_SIEGE: [(u8, u8); 4] = [(37, 24), (35, 25), (38, 22), (33, 26)];
 const M32_FLEET: [(u8, u8); 5] = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)];
 
-/// M32 Through the Door (secret): a free pair against Klaus + Aurelia, the Emerald Sun legion, on Black Hole's own island; Cassius's cavalry on day 3, Aurelia's siege on day 5, Livia's fleet on day 7. (The Emerald Sun skin on the enemy army is a hook: see docs/dev/bh2-maps.md.)
+/// M32 Through the Door (secret): a free pair against Caulder + Tabitha, the Silver Nova corps, on Black Hole's own island; the vanguard on day 3, Lili's siege on day 5, Lili's fleet on day 7. (The Emerald Sun skin on the enemy army is a hook: see docs/dev/bh2-maps.md.)
 fn bh2_32() -> MissionDef {
     let mut m = MissionDef::new("bh2_32", "Through the Door");
-    m.objective = "Hold the island against the legion's three waves and take Klaus's HQ.";
+    m.objective = "Hold the island against the corps' three waves and take Caulder's HQ.";
     m.map = MapSrc::Built("bh2_32");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::PickPair).funds(14000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(crate::es_co::KLAUS, crate::es_co::AURELIA)).funds(22000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(crate::es_co::CAULDER, crate::es_co::TABITHA)).funds(22000),
     ];
     m.units = deployment("bh2_32");
-    m.skin = Some((2, 0)); // the legion wears the Emerald Sun skin (skin 0), on the colour the mission gives army 2
+    m.skin = Some((2, 0)); // the corps wears the Silver Nova (skin 0) skin; same skin (skin 0), on the colour the mission gives army 2
     m.look = 2; // the Desert look: Black Hole's own sunburnt island (its sea stays water; and M32 is no look twin of M30)
     m.rank_days = 20;
     let at = |kind: u8, c: (u8, u8)| UnitDef::new(2, kind, c.0, c.1).attack();
     m.triggers = vec![
-        // Cassius's cavalry
+        // the vanguard
         day_wave(3, vec![at(unit::RECON, M32_CAV[0]), at(unit::TANK, M32_CAV[1]), at(unit::RECON, M32_CAV[2]), at(unit::TANK, M32_CAV[3])]),
-        // Aurelia's siege engines
+        // Lili's siege engines
         day_wave(5, vec![at(unit::ARTILLERY, M32_SIEGE[0]), at(unit::ROCKETS, M32_SIEGE[1]), at(unit::MD_TANK, M32_SIEGE[2]), at(unit::ARTILLERY, M32_SIEGE[3])]),
-        // Livia's fleet
+        // Lili's fleet
         day_wave(7, vec![at(unit::BATTLESHIP, M32_FLEET[0]), at(unit::CRUISER, M32_FLEET[1]), at(unit::CRUISER, M32_FLEET[2]), at(unit::SUB, M32_FLEET[3]), at(unit::LANDER, M32_FLEET[4])]),
     ];
     m.intro = txt("m32_pre");

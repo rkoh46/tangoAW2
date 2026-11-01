@@ -1,6 +1,6 @@
-"""M1 Landfall (Act I): Klaus's legion lands on Cape Astra.
+"""M1 Landfall (Act I): Tabitha's corps lands on Cape Astra.
 
-Design (docs/dev/map-design.md). The situation: the legion sits on the fleet's sandbar in the south with its Landers, no funds and no factory; Jess's
+Design (docs/dev/map-design.md). The situation: the corps sits on the fleet's sandbar in the south with its Landers, no funds and no factory; Jess's
 coast wardens hold the cape, the fort and its HQ on the northern ridge. The player must cross the strait, take a beachhead and climb to the fort.
 - Lanes: three beaches (the west cove, the central strand below Astra town, the east cove at the river mouth), each with a road inland; on the cape
   the west road, the town road and the river road climb to the fort, with lateral farm tracks between them (2 to 4 roads cross the middle).
@@ -58,10 +58,10 @@ def build():
     m.header(armies=2, colours=(OS, GE), objective=[1], comment=(
         "M1 Landfall (Cape Astra): land from the fleet's sandbar (south) and take Fort Astra's HQ 2 (14,4) on the ridge. Beaches: west cove x1..6, Astra strand x9..19 (the town), "
         "east cove x24..29 at the Astra river's mouth. Forward neutral bases: (4,12) above the west cove and (14,12) in Astra town. The Astra river runs from the north edge to the sea, "
-        "bridged on the fort road (24,4) and the coast road (23,11). Player: Klaus, LAN4 CR1 INF4 MECH2 APC2 RECON1 ART1, day-3 AA+TANK2. Enemy (Jess): INF4 MECH2 TANK3 ART2 RECON1 CR2."))
+        "bridged on the fort road (24,4) and the coast road (23,11). Player: Tabitha, LAN4 CR1 INF4 MECH2 APC2 RECON1 ART1, day-3 AA+TANK2. Enemy (Jess): INF4 MECH2 TANK3 ART2 RECON1 CR2."))
     m.ascii(MAP)
     m.tidy()
-    # --- Klaus's legion on the sandbar: Landers along its north shore, the rest ashore in a loose order
+    # --- Tabitha's corps on the sandbar: Landers along its north shore, the rest ashore in a loose order
     m.units(1, LAN, [(8, 21), (12, 21), (17, 21), (22, 21)])
     m.unit(1, CR, 15, 19)
     m.units(1, INF, [(8, 25), (11, 23), (16, 24), (20, 24)])
@@ -76,7 +76,7 @@ def build():
     m.units(2, TANK, [(6, 11), (15, 10), (25, 9)])
     m.unit(2, RECON, 27, 7)
     m.unit(2, CR, 4, 19).unit(2, CR, 26, 19)
-    m.note("hq", 13, 25, "the legion's HQ on the fleet's sandbar")
+    m.note("hq", 13, 25, "the corps's HQ on the fleet's sandbar")
     m.note("enemy_hq", 14, 4, "Fort Astra's HQ on the ridge (objective)")
     m.note("cove_w", 3, 15, "west cove"); m.note("strand", 14, 15, "Astra strand below the town"); m.note("cove_e", 26, 15, "east cove at the river mouth")
     m.note("town", 14, 13, "Astra town: the contested middle, a neutral base (14,12)")

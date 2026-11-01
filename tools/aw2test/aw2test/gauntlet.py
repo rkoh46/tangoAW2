@@ -52,8 +52,8 @@ SKIN_STATE = 0x0203C500             # crate::army_skin::STATE: +0 the colour (1.
 STAGE_AT = 0x0203DCA0               # crate::ram_map::STAGE: +0 the stage the battle is on
 
 # AW2 CO ids (crate::co_new, crate::es_co): the pick any CO can be
-ANDY, MAX, SAMI, KANBEI, JAVIER, CLONE_ANDY, CRUMB, KLAUS, AURELIA, CASSIUS, LIVIA, ASUKA, ARIA = 1, 2, 4, 6, 77, 81, 82, 86, 87, 88, 89, 92, 93
-EVERY_CO = 36                      # crate::gauntlet_mode::ROSTER
+ANDY, MAX, SAMI, KANBEI, JAVIER, CLONE_ANDY, CRUMB, TABITHA, LILI, CAULDER, ASUKA, ARIA = 1, 2, 4, 6, 77, 81, 82, 86, 87, 88, 92, 93
+EVERY_CO = 35                      # crate::gauntlet_mode::ROSTER
 
 
 class Gauntlet(BhCampaign):

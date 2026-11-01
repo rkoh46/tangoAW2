@@ -99,9 +99,9 @@ def gauntlet_mode_pick_reaches_the_co_pick_with_every_co_and_b_goes_back(ctx):
     c = d.co_cursor()
     ctx.check(c is not None, "the CO screen's cursor is found")
     cos = c["cos"]
-    ctx.eq(len(cos), ga.EVERY_CO, "the pick offers all 36 COs")
+    ctx.eq(len(cos), ga.EVERY_CO, "the pick offers all 35 COs")
     ctx.eq(len(set(cos)), len(cos), "each once")
-    for must in (ga.ANDY, ga.ARIA, ga.ASUKA, ga.KLAUS, ga.CLONE_ANDY, ga.JAVIER):
+    for must in (ga.ANDY, ga.ARIA, ga.ASUKA, ga.TABITHA, ga.CLONE_ANDY, ga.JAVIER):
         ctx.check(must in cos, f"CO {must} is offered")
     ctx.eq(d.session()["source"], ga.GAUNTLET, "the Gauntlet's source is the session's")
     ctx.eq(e.u8(dc.MAP_ID), 0xF0, "the campaign engine's map id")
@@ -148,8 +148,8 @@ def gauntlet_mode_free_pick_aw2_cos(ctx):
 
 @test(modes=("ds",))
 def gauntlet_mode_free_pick_tangoaw2_cos(ctx):
-    """tangoAW2's own COs too: Aria (93), Asuka (92), Klaus (86) and Javier (77) lead the player's army."""
-    for co in (ga.ARIA, ga.ASUKA, ga.KLAUS, ga.JAVIER):
+    """tangoAW2's own COs too: Aria (93), Asuka (92), Tabitha (86) and Javier (77) lead the player's army."""
+    for co in (ga.ARIA, ga.ASUKA, ga.TABITHA, ga.JAVIER):
         e, g, d = pick_battle(ctx, co, f"CO {co}")
         png(pic(ctx, e, f"first_turn_co{co}"))
         e.close()

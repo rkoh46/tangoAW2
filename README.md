@@ -10,7 +10,7 @@ No game is included: you need your own dump of the USA cartridge.
 <table>
 <tr>
 <td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 version badge (v0.8.9)"></td>
-<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="Klaus briefing the legion on the beach in the Emerald Sun Campaign"></td>
+<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="a briefing on the beach in the Emerald Sun Campaign"></td>
 <td><img src="docs/screenshots/es-versus.png" width="240" alt="A Versus battle: Emerald Sun's plumed legionaries and domed HQ against Black Hole"></td>
 </tr>
 <tr>
@@ -69,8 +69,8 @@ your army and kept in your settings).
 - **Emerald Sun**, a sixth army (a pale emerald-grey one with
   masked, red-plumed legionaries and a domed HQ), is a sixth choice next to the five armies'
   colours on SELECT YOUR ARMY, online and offline: any seat on any map can be
-  Emerald Sun, with any combination of the others. Its four Roman COs
-  (Klaus, Aurelia, Cassius, Livia) are in Versus, and its 16-mission Campaign is
+  Emerald Sun, with any combination of the others. Its three COs
+  (Tabitha, Lili, Caulder) are in Versus, and its 16-mission Campaign is
   on Select Mode's Campaign list (Dual Strike pack).
 - Maps that need the Dual Strike pack (its units or art, such as the 5-army
   **Pentagon Atoll**) are offered only when every player has the pack.
@@ -147,7 +147,7 @@ GPL-3.0-or-later, like Tango. See [LICENSE](LICENSE) and
 [CREDITS.md](CREDITS.md). Advance Wars is a trademark of Nintendo.
 tangoAW2 is not affiliated with Nintendo or Intelligent Systems.
 
-The new COs' portraits (Crumb, Asuka, Klaus, Aurelia, Cassius, Livia), the
+The new COs' portraits (Crumb, Asuka, Tabitha, Lili, Caulder), the
 Emerald Sun army's art and tangoAW2's own songs are original work of this
 project; see [CREDITS.md](CREDITS.md). Everything else you see and hear comes
 from the player's own ROMs at run time; nothing from the games is in the

@@ -1,8 +1,8 @@
-"""M12 Siege of Iron (Act III, snow, tag): Klaus and Aurelia take the Iron Bastion's HQ.
+"""M12 Siege of Iron (Act III, snow, tag): Tabitha and Lili take the Iron Bastion's HQ.
 
 Design (docs/dev/map-design.md). The situation: Olaf's bastion stands on the snowfield: a keep of rock with four gates round his HQ, the bastion town
 round the keep, and round the town the Iron Wall, a ring of pipeline with five gates and one seam; Andy's guns sit in the corridors and on the east
-spur, his HQ in a rock pocket there. The legion comes from the south with a factory, an airfield and Aurelia's long guns.
+spur, his HQ in a rock pocket there. The corps comes from the south with a factory, an airfield and Lili's long guns.
 - Lanes: outside the wall the snowfield is open, with a lateral road (y24); the wall's gates are north, west, east, south-west and south-east; the seam
   (17,20) on the straight south road is the shortcut a siege opens (breaking it saves the walk round to a side gate); inside, the town's ring streets
   lead to the keep's four gates.
@@ -10,7 +10,7 @@ spur, his HQ in a rock pocket there. The legion comes from the south with a fact
   villages round them), then the town between the wall and the keep, then the keep.
 - Properties: snowfield villages three cells apart; the bastion town's houses (cover for the infantry in the streets, income to whoever holds them);
   Olaf's two factories in the keep, Andy's on the spur; the silo (28,14) on the east approach.
-- Threats and answers: Andy's guns in the corridors -> Aurelia's longer range and Onager, recons and the bomber to find them, the Tag Power; Olaf's
+- Threats and answers: Andy's guns in the corridors -> Lili's longer range and Onager, recons and the bomber to find them, the Tag Power; Olaf's
   Md tanks sallying from the gates -> Md tanks, mechs in the villages; the wall -> two side gates and the seam.
 """
 import math, sys, pathlib
@@ -79,7 +79,7 @@ def build():
         (2, 1), (8, 1), (14, 2), (20, 2), (26, 1), (33, 1), (38, 4), (4, 6), (1, 10), (5, 12), (2, 16), (5, 19), (1, 22), (6, 25), (3, 28), (8, 23),
         (13, 29), (21, 29), (28, 29), (28, 23), (31, 21), (35, 25), (40, 23), (41, 18), (30, 17), (29, 11), (30, 6), (34, 3), (41, 6), (36, 18), (26, 25), (39, 29)])
     m.ragged("^", 8, seed=1)
-    # --- the legion in the south
+    # --- the corps in the south
     m.spread(1, {BMB: 1}, (18, 26, 22, 28), seed=1, gap=0)
     m.spread(1, {ART: 3, ROCK: 2, MDT: 2, AA: 1}, (6, 25, 28, 29), seed=2, gap=1)
     m.spread(1, {RECON: 3, TANK: 3}, (4, 22, 30, 26), seed=3, gap=1)

@@ -16,34 +16,33 @@ CHOOSER_ROW = 4                   # AW2 CAMPAIGN, DS CAMPAIGN, BH CAMPAIGN, BH2 
 P_UNLOCKED = dc.PROGRESS + 0x0D
 ENV = {"TANGOAW2_ES_CAMPAIGN": "1"}
 
-# AW2 CO ids: Klaus, Aurelia, Cassius, Livia, Varro (crate::es_co), Colin, Kanbei.
-KLAUS, AURELIA, CASSIUS, LIVIA, VARRO = 86, 87, 88, 89, 90
+# AW2 CO ids: Tabitha, Lili, Caulder (crate::es_co), Colin, Kanbei. (Slots 89 and 90 are retired.)
+TABITHA, LILI, CAULDER = 86, 87, 88
 COLIN, KANBEI = 16, 6
-ROSTER = [KLAUS, AURELIA, CASSIUS, LIVIA, COLIN, KANBEI]     # crate::es_campaign::ROSTER, the unlock order
+ROSTER = [TABITHA, LILI, COLIN, KANBEI]     # crate::es_campaign::ROSTER, the unlock order (roster indexes 0..3)
 
 # Per mission: (title, CO picks the CO screens ask for, fog). The picks a test makes are in PICKS.
 TITLES = {
-    1: "Landfall", 2: "Testudo", 3: "The Wall", 4: "The Second Legion", 5: "Dust and Wheels", 6: "Tribute", 7: "Mare Nostrum",
-    8: "Hammer and Anvil", 9: "Grain Ships", 10: "The Quiet Pass", 11: "The Treasure Train", 12: "Siege of Iron", 13: "The Free Port",
-    14: "Varro's Gambit", 15: "Pax Romana", 16: "Sol Invictus",
+    1: "Landfall", 2: "The Ridge", 3: "The Wall", 4: "The Second Corps", 5: "Dust and Wheels", 6: "The Ledger", 7: "The Silver Sea",
+    8: "Two Hands", 9: "Grain Ships", 10: "The Quiet Pass", 11: "The Treasure Train", 12: "The Iron Bastion", 13: "The Free Port",
+    14: "Caulder's Gambit", 15: "The Strait", 16: "Silver Nova",
 }
 FOG = {4, 10}
 RAIN = {3, 8}                     # (rain brings fog: their review pictures are taken fogged and with the fog off, as a fog mission's)
 ARMIES = {1: (1, 2), 2: (1, 2), 3: (1, 2), 4: (1, 2), 5: (1, 2), 6: (1, 2, 3), 7: (1, 2, 3), 8: (1, 2, 3), 9: (1, 2), 10: (1, 2, 3), 11: (1, 2, 3), 12: (1, 2, 3),
           13: (1, 2, 3, 4), 14: (1, 2, 3), 15: (1, 2, 3), 16: (1, 2, 3)}      # the armies of each mission (the player is army 1)
-# The COs a test player picks (none: a fixed army), in the order the CO screens ask: a lead, then a tag partner where the mission has one.
-PICKS = {4: [KLAUS], 7: [LIVIA], 9: [KLAUS], 10: [KLAUS], 11: [CASSIUS], 13: [KLAUS, LIVIA], 14: [AURELIA], 15: [KLAUS, AURELIA], 16: [AURELIA]}
-# The roster bits unlocked before each mission (Aurelia after M3, Cassius after M4, Livia and Colin after M6, Kanbei after M10).
+# The COs a test player picks (none: a fixed army), in the order the CO screens ask: a lead, then a tag partner where the mission has one. (M1, M2: Tabitha, M3, M5, M6: Lili and
+# M8, M12: the pair Tabitha + Lili are fixed; M4 picks from Tabitha / Lili; M14 and M16 pick a partner for Tabitha; M13 and M15 pick a pair.)
+PICKS = {4: [TABITHA], 7: [LILI], 9: [TABITHA], 10: [TABITHA], 11: [LILI], 13: [TABITHA, LILI], 14: [KANBEI], 15: [TABITHA, LILI], 16: [LILI]}
+# The roster bits unlocked before each mission (Lili after M3, Colin after M6, Kanbei after M10).
 def unlocked_before(n):
-    bits = 0b1                    # Klaus
+    bits = 0b1                    # Tabitha
     if n > 3:
-        bits |= 0b10              # Aurelia
-    if n > 4:
-        bits |= 0b100             # Cassius
+        bits |= 0b10              # Lili
     if n > 6:
-        bits |= 0b11000           # Livia, Colin
+        bits |= 0b100             # Colin
     if n > 10:
-        bits |= 0b100000          # Kanbei
+        bits |= 0b1000            # Kanbei
     return bits
 
 
@@ -52,7 +51,7 @@ class EsCampaign(BhCampaign):
     picks = {}
 
     def unlocked(self):
-        mask = self.mask() & 0x3F
+        mask = self.mask() & 0xF
         return [co for k, co in enumerate(ROSTER) if mask >> k & 1]
 
     def start_at(self, won_mask, unlocked_mask, from_title=True):

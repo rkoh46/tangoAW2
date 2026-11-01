@@ -3,7 +3,7 @@ import json, os, subprocess, sys
 from pathlib import Path
 from .. import cfg, util
 
-SONGS = ["klaus", "aurelia", "cassius", "livia", "varro"]
+SONGS = ["tabitha", "lili", "caulder"]
 REF = ["kanbei", "sensei", "hawke", "jess", "andy", "olaf", "drake", "colin", "eagle", "grit"]   # AW2's own CO themes, for the level comparison
 MUSIC_DIR = cfg.REPO / "tango-gamesupport-aw2" / "music" / "es"
 RULES = dict(loop_min=45.0, loop_max=90.0, peak_voices=6, tracks=8, bytes=48 * 1024)
@@ -165,7 +165,7 @@ def register(ss):
     a = ss.add_parser("study", help="style statistics of AW2's own songs (tempo, loop, voices, density, rhythm, ranges, mix, phrases, chord roots): numbers only, read from the ROM")
     a.add_argument("ids", type=int, nargs="+", help="AW2 song ids (CO themes: 209 Andy, 210 Max, 217 Sami, 219 Sturm, ...)")
     a.add_argument("--summary", action="store_true", help="also print the averages over the songs")
-    a.add_argument("--ours", nargs="*", metavar="DIR:NAME:KITS", help="also study songs of ours: DIR:NAME:KITS[:LEAD:BASS] (track numbers 0-based, KITS a comma list), e.g. work/dirA:varro:4,5:0:3")
+    a.add_argument("--ours", nargs="*", metavar="DIR:NAME:KITS", help="also study songs of ours: DIR:NAME:KITS[:LEAD:BASS] (track numbers 0-based, KITS a comma list), e.g. work/dirA:caulder:4,5:0:3")
     a.set_defaults(fn=study_cmd)
     a = ss.add_parser("dump", help="AW2's own song as text")
     a.add_argument("song", type=int)
@@ -464,7 +464,7 @@ def pitchcheck(a):
     names = [f"i{g}{p}" for (g, p) in insts]
     notes = ["C3", "G3", "C4", "G4", "C5"]
     expect = [48, 55, 60, 67, 72]
-    lines = ["song klaus", "tempo 120", "meter 4/4"]
+    lines = ["song tabitha", "tempo 120", "meter 4/4"]
     for (g, p), sh in insts.items():
         lines.append(f"inst i{g}{p} = {g}.{p} shift={sh}")
     lines.append("track 1 inst=" + names[0] + " vol=100 vel=110 gate=100")
@@ -478,12 +478,12 @@ def pitchcheck(a):
     d = work_dir("pitch")
     for f in d.glob("*.m4t"):
         f.unlink()
-    (d / "klaus.m4t").write_text("\n".join(lines) + "\n")
+    (d / "tabitha.m4t").write_text("\n".join(lines) + "\n")
     total = len(names) * len(notes) * 96 * 150 / (59.7275 * 120)
-    env = {"AW2TEST_MUSIC_SONGS": "klaus", "AW2TEST_MUSIC_OUT": str(d), "AW2TEST_MUSIC_SECONDS": str(total + 1), "AW2TEST_OUT": str(work_dir("run")), "TANGOAW2_ES_MUSIC": str(d)}
+    env = {"AW2TEST_MUSIC_SONGS": "tabitha", "AW2TEST_MUSIC_OUT": str(d), "AW2TEST_MUSIC_SECONDS": str(total + 1), "AW2TEST_OUT": str(work_dir("run")), "TANGOAW2_ES_MUSIC": str(d)}
     if _runpy(env, ["es_music_render"]):
         return 1
-    rate, x, _ = audio.load(d / "klaus.wav")
+    rate, x, _ = audio.load(d / "tabitha.wav")
     note_s = 96 * 150 / (59.7275 * 120)
     bad = 0
     print(f"{'inst':8} " + " ".join(f"{k:>8}" for k in notes) + "   loudness (first 0.4 s, RMS dBFS at vol 100, vel 110)")

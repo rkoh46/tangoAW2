@@ -11,7 +11,7 @@ NAMES = {1: "Inf", 2: "Mech", 3: "MdTank", 4: "Mega", 5: "Tank", 6: "Recon", 7: 
          26: "Carrier", 27: "Ooz"}
 EARNERS = set("HBCAPQ12345")
 BASES = set("B")
-CO_NAMES = {86: "Klaus", 87: "Aurelia", 88: "Cassius", 89: "Livia", 90: "Varro", 17: "Jess", 8: "Eagle", 77: "Javier", 76: "Grimm", 18: "Sensei", 78: "Sasha",
+CO_NAMES = {86: "Tabitha", 87: "Lili", 88: "Caulder", 89: "Lili", 90: "Caulder", 17: "Jess", 8: "Eagle", 77: "Javier", 76: "Grimm", 18: "Sensei", 78: "Sasha",
             16: "Colin", 9: "Drake", 2: "Max", 79: "Jake", 13: "Adder", 11: "Flak", 6: "Kanbei", 7: "Sonja", 3: "Olaf", 5: "Grit", 74: "Kindle", 12: "Lash", 0: "Nell"}
 
 

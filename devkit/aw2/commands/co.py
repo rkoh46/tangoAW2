@@ -11,7 +11,7 @@
   co balance [CO ...] [--vs Kanbei Hawke ...]   the CO's day-to-day, CO Power and Super Power averaged over a typical army, next to Dual Strike's own COs read from the .nds
   co verify sonja [--build-baseline]       Sonja's rows, pictures, texts, numbers, Tag page and screens against the v0.8.7 build: any difference fails
   co check [CO ...]                        the CO data files: fields, stars and numbers inside AW2's design space, name plates, tag pairs
-  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Klaus, Aurelia, Cassius, Livia, Crumb, Varro, Clone Andy, Asuka, Aria) in real battles against the specification: day to day,
+  co verify [CO ...] [--quick] [--list] [-j N]   every ability of the custom COs (Tabitha, Lili, Caulder, Crumb, Clone Andy, Asuka, Aria) in real battles against the specification: day to day,
                                            CO Power, Super Power (attack, defence, move, range, cost, income, funds, heal, the special rules), meters and star costs, Tag Powers, CPU use;
                                            prints the pass / fail table (docs/dev/co-verify.md); with `--net` also plays each power through `net repeat`
   co sheet hq                              the HQ of the Roman COs on the map: Versus, the tilted map (the real app), the missions (`hq_check.png`)
@@ -62,7 +62,7 @@ def register(sub):
     c.add_argument("co", nargs="*")
     c.set_defaults(fn=datacheck)
     v = ps.add_parser("verify", help="every ability of the custom COs in real battles against the specification (pass / fail table)")
-    v.add_argument("co", nargs="*", help="klaus aurelia cassius livia crumb varro cloneandy asuka aria (default: all); `verify sonja` compares Sonja with the v0.8.7 build instead")
+    v.add_argument("co", nargs="*", help="tabitha lili caulder crumb cloneandy asuka aria (default: all); `verify sonja` compares Sonja with the v0.8.7 build instead")
     v.add_argument("--build-baseline", action="store_true", help="(verify sonja) build the reference (v0.8.7) examples into devkit/work/baseline first (once)")
     v.add_argument("--quick", action="store_true", help="one scenario per facet (the suite's smoke run)")
     v.add_argument("--list", action="store_true", help="only list the scenarios")
@@ -108,7 +108,7 @@ def pimport(a):
             bad += bool(probs)
     for co, d in cos.items():
         if d.get("portrait", {}).get("name_plate") and (not a.co or co in a.co):
-            # a placeholder face with a name plate of its own (Varro): only name.png
+            # a placeholder face with a name plate of its own (none today): only name.png
             if a.check:
                 same = I.name_plate_same(co, d["name"])
                 util.say(f"{co}: {'the committed name plate is what the letters give' if same else 'DIFFERENT from the committed name plate'}")
@@ -251,7 +251,7 @@ def sheet_vengeance(a):
 def sheet_powers(a):
     from ..colib import powersheet
     import subprocess
-    cos = a.co or ["klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy"]
+    cos = a.co or ["tabitha", "lili", "caulder", "crumb", "cloneandy"]
     out = Path(a.out) if a.out else cfg.work("co_sheets")
     raw = out / "raw"
     raw.mkdir(parents=True, exist_ok=True)
@@ -290,7 +290,7 @@ def sheet_hq(a):
     raw.mkdir(parents=True, exist_ok=True)
     code = "import sys; sys.path.insert(0, %r); from aw2test import copics; copics.capture_hq(%r)" % (str(cfg.REPO / "tools" / "aw2test"), str(raw))
     subprocess.run([sys.executable, "-c", code], cwd=cfg.REPO, check=True)
-    for co in ("klaus", "aurelia", "cassius", "livia", "varro", "andy"):
+    for co in ("tabitha", "lili", "caulder", "andy"):
         ingame.photograph_hq(co, raw)
     powersheet.hq_sheet(raw, out / "hq_check.png")
     util.say("wrote", out / "hq_check.png")

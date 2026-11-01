@@ -9,7 +9,7 @@
 //! ## The file format
 //! Line based; `;` starts a comment. Names of notes are scientific (`C4` is middle C, key 60; `F#3`, `Bb2`).
 //! ```text
-//! song klaus                      ; the name (also the file's)
+//! song tabitha                    ; the name (also the file's)
 //! tempo 108                       ; beats a minute (the engine stores half)
 //! meter 4/4                       ; a bar is 96 ticks of 24 a beat (3/4: 72, 6/8: 72)
 //! reverb 173                      ; AW2's CO themes: 173; priority 0
@@ -88,31 +88,21 @@ pub struct Source {
 pub const DOOR: u8 = 200;
 pub const CREDITS: u8 = 201;
 
-pub const SOURCES: [Source; 11] = [
+pub const SOURCES: [Source; 9] = [
     Source {
         co: 86,
-        name: "klaus",
-        text: include_str!("../music/es/klaus.m4t"),
+        name: "tabitha",
+        text: include_str!("../music/es/tabitha.m4t"),
     },
     Source {
         co: 87,
-        name: "aurelia",
-        text: include_str!("../music/es/aurelia.m4t"),
+        name: "lili",
+        text: include_str!("../music/es/lili.m4t"),
     },
     Source {
         co: 88,
-        name: "cassius",
-        text: include_str!("../music/es/cassius.m4t"),
-    },
-    Source {
-        co: 89,
-        name: "livia",
-        text: include_str!("../music/es/livia.m4t"),
-    },
-    Source {
-        co: 90,
-        name: "varro",
-        text: include_str!("../music/es/varro.m4t"),
+        name: "caulder",
+        text: include_str!("../music/es/caulder.m4t"),
     },
     // Asuka (CO 92, crate::asuka): her theme is in Versus for everyone, like her.
     Source {
@@ -1639,7 +1629,7 @@ form A loop A A
     #[test]
     fn songs_are_the_new_cos_and_distinct() {
         let cos: Vec<u8> = SOURCES.iter().map(|s| s.co).collect();
-        assert_eq!(cos, vec![86, 87, 88, 89, 90, 92, 82, 81, 93, DOOR, CREDITS], "the five Emerald Sun COs, Asuka, Crumb, Clone Andy, Aria and BH2's two scene songs");
+        assert_eq!(cos, vec![86, 87, 88, 92, 82, 81, 93, DOOR, CREDITS], "the three Silver Nova COs, Asuka, Crumb, Clone Andy, Aria and BH2's two scene songs");
         let all: Vec<Vec<u8>> = SOURCES
             .iter()
             .map(|s| {
