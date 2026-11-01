@@ -1,0 +1,68 @@
+; Lili, the full theme from sketch B "Carousel": F# minor, 6/8, 104 bpm, a 2-bar intro and a 32-bar loop (about 56 s). A koto rocks a music-box hook with a chromatic F natural against the minor chord (A), takes it through B minor and C#7 (B); a clarinet sings a contrasting tune in A major over koto arpeggios (C); the hook returns with everything: the koto doubled an octave down, a busier clarinet and a fuller kit (A2).
+; Koto A.117, clarinet A.71, pick bass A.36, strings A.48, kit A.120. Original notes, AW2 voices, no rom lines.
+song lili
+tempo 104
+meter 6/8
+reverb 173
+priority 0
+
+inst koto = A.117
+inst clar = A.71 shift=-12
+inst bass = A.36 shift=24
+inst str = A.48 shift=0
+inst kit = A.120
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=koto vol=100 pan=4 vel=110 gate=90 gain=1.925
+track 2 inst=clar vol=84 pan=-10 vel=100 gate=92 gain=1.575
+track 3 inst=bass vol=100 pan=0 vel=112 gate=75 gain=2.625
+track 4 inst=str vol=70 pan=-16 vel=94 gate=98 gain=0.787
+track 5 inst=kit vol=70 pan=0 vel=100 gate=100 gain=0.700
+track 6 inst=koto vol=84 pan=-6 vel=100 gate=90 gain=1.400
+
+section I bars=2
+  1: | C#5/#12 F#5/#12 A5/#18 G#5/#6 F#5/#12 F5/#12 | | F#5/#36 C#5/#18 G#4/#18 |
+  2: | r/#72 | | r/#72 |
+  3: | F#2/#12' r/#12 F#2/#12' C#3/#12' r/#12 C#3/#12' | | F#2/#12' r/#12 F#2/#12' C#3/#12' r/#12 C#3/#12' |
+  4: | A4/#72 | | A4/#72 |
+  5: | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 snare/#6 snare/#6 r/#6 snare/#6 tom1/#6 tom2/#6 tom3/#6 |
+  6: | r/#72 | | r/#72 |
+end
+
+section A bars=8
+  1: | C#5/#12 F#5/#12 A5/#18 G#5/#6 F#5/#12 F5/#12 | | F#5/#36 C#5/#18 G#4/#18 | | D5/#12 F#5/#12 A5/#12 F#5/#24 D5/#12 | | C#5/#12 F5/#12 G#5/#24 F5/#24 | | A5/#18 G#5/#6 F#5/#12 E5/#12 C#5/#12 A4/#12 | | B4/#12 D5/#12 F#5/#12 E5/#12 D5/#12 F#5/#12 | | A4/#12 D5/#12 F#5/#12 E5/#12 A5/#24 | | G#5/#36 F5/#12 C#5/#24 |
+  2: | r/#36 A4/#36 | | r/#36 E4/#36 | | r/#36 D4/#36 | | r/#36 G#4/#36 | | r/#36 C#5/#36 | | r/#36 D5/#36 | | r/#36 F#4/#36 | | G#4/#36 C#4/#36 |
+  3: | F#2/#12' r/#24 C#3/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | D2/#12' r/#24 A2/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | B1/#12' r/#24 F#2/#12' r/#24 | | D2/#12' r/#24 A2/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 |
+  4: | A4/#72 | | A4/#72 | | F#4/#72 | | G#4/#72 | | A4/#72 | | B4/#72 | | A4/#72 | | G#4/#72 |
+  5: | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 tom1/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 tom2/#6 |
+  6: | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 |
+end
+
+section B bars=8
+  1: | B4/#12 D5/#12 F#5/#18 E5/#6 D5/#12 C#5/#12 | | E5/#36 B4/#18 F#4/#18 | | A4/#12 C#5/#12 F#5/#18 E5/#6 C#5/#12 B4/#12 | | C#5/#36 A4/#18 F#4/#18 | | D5/#12 F#5/#12 A5/#18 G5/#6 F#5/#12 E5/#12 | | C#5/#12 F5/#12 G#5/#18 F5/#6 G#4/#12 C#5/#12 | | A5/#18 F#5/#6 E5/#12 C#5/#12 A4/#12 F#4/#12 | | G#5/#36 F5/#18 C#5/#18 |
+  2: | r/#36 F#4/#36 | | r/#36 D4/#36 | | r/#36 A4/#36 | | r/#36 F#4/#36 | | r/#36 A4/#36 | | r/#36 G#4/#36 | | r/#36 C#5/#36 | | F4/#36 G#4/#36 |
+  3: | B1/#12' r/#24 F#2/#12' r/#24 | | B1/#12' r/#24 F#2/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | D2/#12' r/#24 A2/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 |
+  4: | D4/#72 | | D4/#72 | | A4/#72 | | A4/#72 | | A4/#72 | | G#4/#72 | | A4/#72 | | G#4/#72 |
+  5: | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 hat/#6 snare/#6 tom1/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 tom1/#6 tom2/#6 |
+  6: | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 |
+end
+
+section C bars=8
+  1: | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 | | r/#72 |
+  2: | E5/#36 C#5/#18 A4/#18 | | B4/#24 C#5/#24 E5/#24 | | G#5/#36 E5/#18 B4/#18 | | B4/#24 G#4/#24 E4/#24 | | F#5/#36 D5/#18 A4/#18 | | G#4/#24 B4/#24 E5/#24 | | A4/#36 C#5/#18 E5/#18 | | F5/#24 G#4/#24 C#5/#24 |
+  3: | A1/#12' r/#24 E2/#12' r/#24 | | A1/#12' r/#24 E2/#12' r/#24 | | E2/#12' r/#24 B2/#12' r/#24 | | E2/#12' r/#24 B2/#12' r/#24 | | D2/#12' r/#24 A2/#12' r/#24 | | E2/#12' r/#24 B2/#12' r/#24 | | A1/#12' r/#24 E2/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 |
+  4: | C#5/#72 | | E5/#72 | | B4/#72 | | G#4/#72 | | A4/#72 | | B4/#72 | | E5/#72 | | C5/#72 |
+  5: | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 tom1/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 tom1/#6 tom2/#6 |
+  6: | A3/#12 E4/#12 A4/#12 C#5/#12 A4/#12 E4/#12 | | A3/#12 E4/#12 A4/#12 C#5/#12 A4/#12 E4/#12 | | E3/#12 B3/#12 E4/#12 G#4/#12 E4/#12 B3/#12 | | E3/#12 B3/#12 E4/#12 G#4/#12 E4/#12 B3/#12 | | D3/#12 A3/#12 D4/#12 F#4/#12 D4/#12 A3/#12 | | E3/#12 B3/#12 E4/#12 G#4/#12 E4/#12 B3/#12 | | A3/#12 E4/#12 A4/#12 C#5/#12 A4/#12 E4/#12 | | C#3/#12 F3/#12 G#3/#12 B3/#12 G#3/#12 F3/#12 |
+end
+
+section R bars=8
+  1: | C#5/#12 F#5/#12 A5/#18 G#5/#6 F#5/#12 F5/#12 | | F#5/#36 C#5/#18 G#4/#18 | | D5/#12 F#5/#12 A5/#12 F#5/#24 D5/#12 | | C#5/#12 F5/#12 G#5/#24 F5/#24 | | A5/#18 G#5/#6 F#5/#12 E5/#12 C#5/#12 A4/#12 | | B4/#12 D5/#12 F#5/#12 E5/#12 D5/#12 F#5/#12 | | A4/#12 D5/#12 F#5/#12 E5/#12 A5/#24 | | G#5/#36 F5/#12 C#5/#24 |
+  2: | r/#36 A4/#12 C#5/#12 E5/#12 | | r/#36 E4/#12 G#4/#12 B4/#12 | | r/#36 D4/#12 F#4/#12 A4/#12 | | r/#36 G#4/#12 B4/#12 D5/#12 | | r/#36 C#5/#12 E5/#12 A5/#12 | | r/#36 D5/#12 F#5/#12 A5/#12 | | r/#36 F#4/#12 A4/#12 C#5/#12 | | G#4/#18 B4/#6 C#5/#12 F5/#12 G#4/#12 C#4/#12 |
+  3: | F#2/#12' r/#12 F#2/#12' C#3/#12' r/#12 C#3/#12' | | F#2/#12' r/#12 F#2/#12' C#3/#12' r/#12 C#3/#12' | | D2/#12' r/#12 D2/#12' A2/#12' r/#12 A2/#12' | | C#2/#12' r/#12 C#2/#12' G#2/#12' r/#12 G#2/#12' | | F#2/#12' r/#12 F#2/#12' C#3/#12' r/#12 C#3/#12' | | B1/#12' r/#12 B1/#12' F#2/#12' r/#12 F#2/#12' | | D2/#12' r/#12 D2/#12' A2/#12' r/#12 A2/#12' | | C#2/#12' r/#12 C#2/#12' G#2/#12' r/#12 G#2/#12' |
+  4: | A4/#72 | | A4/#72 | | F#4/#72 | | G#4/#72 | | A4/#72 | | B4/#72 | | A4/#72 | | G#4/#72 |
+  5: | crash/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 tom1/#6 snare/#6 tom1/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 kick/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 kick/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 kick/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 kick/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 kick/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 kick/#6 | | kick/#6 kick/#6 hat/#6 r/#6 snare/#6 kick/#6 snare/#6 snare/#6 tom1/#6 tom1/#6 tom2/#6 tom3/#6 |
+  6: | C#4/#12 F#4/#12 A4/#18 G#4/#6 F#4/#12 F4/#12 | | F#4/#36 C#4/#18 G#3/#18 | | D4/#12 F#4/#12 A4/#12 F#4/#24 D4/#12 | | C#4/#12 F4/#12 G#4/#24 F4/#24 | | A4/#18 G#4/#6 F#4/#12 E4/#12 C#4/#12 A3/#12 | | B3/#12 D4/#12 F#4/#12 E4/#12 D4/#12 F#4/#12 | | A3/#12 D4/#12 F#4/#12 E4/#12 A4/#24 | | G#4/#36 F4/#12 C#4/#24 |
+end
+
+form I loop A B C R

@@ -96,8 +96,8 @@ pub const SOURCES: [Source; 11] = [
     },
     Source {
         co: 87,
-        name: "aurelia",
-        text: include_str!("../music/es/aurelia.m4t"),
+        name: "lili",
+        text: include_str!("../music/sn/lili.m4t"),
     },
     Source {
         co: 88,
