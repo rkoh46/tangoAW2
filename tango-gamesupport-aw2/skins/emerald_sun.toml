@@ -9,7 +9,7 @@ short = "SN"
 
 # Colours are RRGGBB. The body ramp of every unit and building, light to dark: silver metal (chrome pulled down from the first pick, which read white on the grass): one white highlight, then neutral to faintly cool greys, hard contrast. Tuned to stay clear of Black Hole's light greys, the done greys and the fog (`aw2dev armyskin check`).
 [colours]
-ramp = ["FFFFFF", "C5C5CD", "ACACB4", "9497A0", "363A44", "16181E"]
+ramp = ["F2F2FA", "BDBDC5", "A4A4AC", "8C8F98", "363A44", "16181E"]
 # The buildings (cities, bases, ...): white panels, a mid and a dark chrome grey (light to dark), so an owned city is far from an unowned one.
 building = ["FFFFFF", "BCC1C9", "6C717C", "444852"]
 # The trim greys of AW2's unit palette (tracks, barrels, metal, the cheek plate): steel.
