@@ -1,5 +1,8 @@
 # The Emerald Sun Campaign: design (phase 1, for approval)
 
+> **Recast (branch sn-cos):** the five Roman COs below are replaced by Tabitha, Lili and Caulder and the campaign is the Silver Nova Campaign; who plays which role now is in `docs/dev/silver-nova.md`. The text below is the original Emerald Sun design, kept for the mission outline.
+
+
 Sixteen missions played as **Emerald Sun**, tangoAW2's sixth army (Roman-themed, inspired by AWBW's Jade Sun; every picture of it is original or composed from AW2 / Dual Strike parts at run time,
 `docs/dev/army-packs.md`), with four new Roman COs. It is the second custom campaign on the BH Campaign's data-driven engine (`docs/AW2.md` "BH Campaign", `docs/dev/campaign-scenes.md`) and the
 Campaign sub-menu already has its entry (opens "Coming soon" until phase 2) and the BH2 placeholder above it.

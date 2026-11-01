@@ -1,5 +1,8 @@
 # BH2 Campaign — design draft 1 (for review)
 
+> **Recast (branch sn-cos):** the secret mission's Emerald Sun officers are now Caulder + Tabitha (and Lili's waves); see `docs/dev/silver-nova.md`.
+
+
 Lead designer's draft built on the owner's founding notes (2026-10-28). Nothing is built yet: story, cast and map plans are for review first.
 
 ## Founding notes (the owner's, fixed)
