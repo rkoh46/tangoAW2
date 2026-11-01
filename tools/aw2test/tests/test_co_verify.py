@@ -179,8 +179,8 @@ def cpu_tags():
     from aw2test import cospec
     for p in cospec.tags():
         for act, par in ((p["a"], p["b"]), (p["b"], p["a"])):
-            if act.startswith("aw2:"):
-                continue
+            if act.startswith("aw2:") or act in NO_SCOP:
+                continue          # (a CO with no Super Power, Lili, never starts the computer's Tag Power: its AI wants a Super paid for; she is the partner of the others' pairs)
             def fn(ctx, act=act, par=par):
                 cv.cpu_tag(ctx, act, par)
             fn.__name__ = "co_verify_cpu_tag_" + act.split(":")[-1] + "_with_" + par.split(":")[-1]
