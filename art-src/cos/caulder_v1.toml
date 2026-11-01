@@ -4,7 +4,7 @@ large_scale = 1
 frame = [21, 8]
 mug_scale = 1
 mug = [66, 6]
-eyes = [70, 25, 86, 33]
+eyes = [74, 25, 90, 33]
 bg_tolerance = 30
 # the white background is cut by a flood fill from the border and from every pocket it fills (between the arm and the coat); no `fringe` (it would eat the white hair and coat, which touch the empty side)
 hole_min = 20
