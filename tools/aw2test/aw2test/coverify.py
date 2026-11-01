@@ -305,8 +305,8 @@ def economy(ctx, name, fpp=1000):
         want = spec.funds(mode, props, fpp)
         chk(ctx, label, got == want, f"funds collected {got} (specification {spec.tribute[mode]} x {props} properties" + (f" + one day's income {fpp} x {props}" if spec.income_grant and mode == 2 else "") + f" = {want})", "power funds")
         ctx.expect_hp_change(before, after, {1: spec.heal[mode] * 10}, f"{label}: heal {spec.heal[mode]} HP", repair=True)
-        mine_ok = all(after[i]["hp"] == before[i]["hp"] for i in before if before[i]["army"] == 2)
-        chk(ctx, label, mine_ok, "the enemy's units are not healed", "heal")
+        mine_ok = all(after[i]["hp"] <= before[i]["hp"] and (after[i]["hp"] == before[i]["hp"] or cospec.strike(name)) for i in before if before[i]["army"] == 2)
+        chk(ctx, label, mine_ok, "the enemy's units are not healed (a strike's damage is the Firestorm's, not a heal)", "heal")
         chk(ctx, label, g.player(1)["co_mode"] == mode, "power on")
         # The day's income when the turn passes (the power ends at the army's next turn).
         for u in g.units(1):

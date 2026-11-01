@@ -203,7 +203,8 @@ pub(crate) fn decide(
         (prof.power[0], prof.power[1])
     };
     let threshold = m.cop as i64 + (m.scop as i64 - m.cop as i64) * gap as i64 / 100;
-    if (m.charge as i64) > threshold {
+    // (a CO with no Super Power, Lili, has nothing to save for: the threshold would lie below the CO Power's own cost and the Power would never be used)
+    if m.scop > 0 && (m.charge as i64) > threshold {
         return (Choice::Nothing, "power: saving for the Super");
     }
     if roll >= chance as u32 {
