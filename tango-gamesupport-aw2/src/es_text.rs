@@ -133,11 +133,9 @@ fn all_cos() -> Vec<u8> {
 fn co_by_name(n: &str) -> Option<u8> {
     use crate::es_co;
     Some(match n {
-        "KLAUS" => es_co::KLAUS,
-        "AURELIA" => es_co::AURELIA,
-        "CASSIUS" => es_co::CASSIUS,
-        "LIVIA" => es_co::LIVIA,
-        "VARRO" => es_co::VARRO,
+        "TABITHA" => es_co::TABITHA,
+        "LILI" => es_co::LILI,
+        "CAULDER" => es_co::CAULDER,
         "ANDY" => co::ANDY,
         "NELL" => co::NELL,
         "MAX" => co::MAX,
@@ -506,21 +504,21 @@ mod tests {
         parse_into(
             &mut b,
             "t",
-            "== a\n@SONG sturm\nKLAUS: x\n== b\n@SONG co:klaus\nKLAUS: y\n== c\nKLAUS: z\n",
+            "== a\n@SONG sturm\nTABITHA: x\n== b\n@SONG co:tabitha\nTABITHA: y\n== c\nTABITHA: z\n",
         )
         .unwrap();
         assert_eq!(b.songs["a"], Track::Aw2(220));
-        assert_eq!(b.songs["b"], Track::Co(crate::es_co::KLAUS));
+        assert_eq!(b.songs["b"], Track::Co(crate::es_co::TABITHA));
         assert!(!b.songs.contains_key("c"));
-        assert!(parse_into(&mut b, "t", "== d\n@SONG sturm\n@SONG enemy1\nKLAUS: x\n").is_err());
-        assert!(parse_into(&mut b, "t", "== e\n@SONG nonsense\nKLAUS: x\n").is_err());
+        assert!(parse_into(&mut b, "t", "== d\n@SONG sturm\n@SONG enemy1\nTABITHA: x\n").is_err());
+        assert!(parse_into(&mut b, "t", "== e\n@SONG nonsense\nTABITHA: x\n").is_err());
     }
 
     #[test]
     fn groups_expand_to_the_pool() {
         use crate::es_co::*;
         let src =
-            "== t | KLAUS, AURELIA, CASSIUS\nAURELIA: a / b\n@IF KLAUS\n[CO]: x\n@OTHER\n[CO]: y\n@END\nNARRATION: z\n";
+            "== t | TABITHA, LILI, CAULDER\nLILI: a / b\n@IF TABITHA\n[CO]: x\n@OTHER\n[CO]: y\n@END\nNARRATION: z\n";
         let mut b = Book {
             scenes: HashMap::new(),
             songs: HashMap::new(),
@@ -530,9 +528,9 @@ mod tests {
         let l = &b.scenes["t"];
         assert_eq!(l.len(), 5);
         assert_eq!(l[0].text, "a\rb");
-        assert_eq!((l[1].only, l[1].who), (Some(KLAUS), Speaker::Co(KLAUS, Mood::Normal)));
-        assert_eq!(l[2].only, Some(AURELIA));
-        assert_eq!(l[3].only, Some(CASSIUS));
+        assert_eq!((l[1].only, l[1].who), (Some(TABITHA), Speaker::Co(TABITHA, Mood::Normal)));
+        assert_eq!(l[2].only, Some(LILI));
+        assert_eq!(l[3].only, Some(CAULDER));
         assert_eq!(l[4].who, Speaker::Narrator);
     }
 
@@ -544,7 +542,7 @@ mod tests {
             pages: HashMap::new(),
         };
         assert!(parse_into(&mut b, "t", "== t\nNOBODY: hi\n").is_err());
-        assert!(parse_into(&mut b, "t", "== u\nKLAUS(x): hi\n").is_err());
-        assert!(parse_into(&mut b, "t", "KLAUS: hi\n").is_err());
+        assert!(parse_into(&mut b, "t", "== u\nTABITHA(x): hi\n").is_err());
+        assert!(parse_into(&mut b, "t", "TABITHA: hi\n").is_err());
     }
 }

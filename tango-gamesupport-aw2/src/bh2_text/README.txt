@@ -6,7 +6,7 @@ A row (box):  SPEAKER: first line / second line
               SPEAKER(h): ...   happy face     SPEAKER(s): ...   sad face
               Box = up to two lines of at most 176 pixels (about 26 to 33 characters) in AW2's font.
               {p} is a pause inside a line.
-Speakers:     ASUKA (Black Hole's lead commander, Sonja after the prologue), ARIA (Nell's twin sister), KLAUS, AURELIA, CASSIUS, LIVIA (Emerald Sun, the secret mission), LEGIONARY,
+Speakers:     ASUKA (Black Hole's lead commander, Sonja after the prologue), ARIA (Nell's twin sister), CAULDER, TABITHA, LILI (Silver Nova, the secret mission), LEGIONARY,
               STURM, VON BOLT, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, CLONE (Clone Andy), SONJA, CRUMB CO (Crumb as a CO),
               ANDY, NELL, MAX, OLAF, SAMI, GRIT, KANBEI, EAGLE, DRAKE, HACHI, COLIN, JESS, SENSEI, GRIMM, JAVIER, SASHA, JAKE, RACHEL,
               NARRATION (a box with no speaker), CRUMB / MORTAR / WICK / SOLDIER (the Black Hole trooper's face; the lines say who talks),

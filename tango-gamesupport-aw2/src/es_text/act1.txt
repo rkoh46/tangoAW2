@@ -1,424 +1,424 @@
-# Emerald Sun dialogue, act1: Prologue, M1 Landfall, M2 Testudo, M3 The Wall, M4 The Second Legion (format: README.txt)
+# Silver Nova dialogue, act1: Prologue, M1 Landfall, M2 The Ridge, M3 The Wall, M4 The Second Corps (format: README.txt)
 
 # ---------------------------------------------------------------- Prologue
 
 == prologue
 @SONG opening
-NARRATION: Aurea, beyond the Mare / Nostrum. Unseen for two centuries.
+NARRATION: Novaria, beyond the Silver / Sea. Unseen for two centuries.
 NARRATION: Then the first harvest came up / grey.
 NARRATION: Ash on the wind, from the north. / Fields dusted like hearths.
 NARRATION: The second harvest was greyer. / The third did not come.
 NARRATION: Then the relief grain arrived. / Cheap. On time.
 NARRATION: Crates from HOBB Grain and / Freight. No office, no owner.
 NARRATION: A stencil on every crate, a / stamp on every bill.
-NARRATION: Consul Varro found the money, / and did not ask where from.
-NARRATION: The Senate was in debt to a / name. It sent two letters.
-NARRATION: To Legate Klaus, in writing: / find who feeds us.
-NARRATION: To Prefect Cassius, sealed: if / there is nobody,
+NARRATION: Dr. Caulder found the money, / and did not ask where from.
+NARRATION: The Directorate was in debt to a / name. It sent two orders.
+NARRATION: To his daughter Tabitha, in / writing: find who feeds us.
+NARRATION: To Dr. Caulder himself, sealed: / if there is nobody,
 NARRATION: take the north's granaries. Do / not wait for permission.
-NARRATION: The legions sailed north under a / green sun on white.
+NARRATION: The Silver Nova sailed north / under a green star on white.
 NARRATION: They marched because the bread / stopped.
 
-# ---------------------------------------------------------------- M1 Landfall (Klaus; enemy Jess)
+# ---------------------------------------------------------------- M1 Landfall (Tabitha; enemy Jess)
 
 == m01_pre
-@SONG co:klaus
-NARRATION: Cape Astra, Green Earth. Forty / days out of Aurelium.
-LIVIA: The sea is flat, Legate. That is / the only good news.
-KLAUS: Then take it. We will have little / enough of the other kind.
-AURELIA: The beach shelves at two fathoms. / Barges ground at forty paces.
-KLAUS: Then forty paces it is. Is / Cassius not complaining yet?
-CASSIUS: Not yet! My horses are still / being sick in the third hold.
-LIVIA: He is on the radio. Pretend not / to hear him.
-CASSIUS(h): I heard that. Klaus, one day / you'll say "well done, Cassius."
-KLAUS: When I do, I will mean it. / Aurelia, show me the shore.
-AURELIA: The fleet's sitting on a sandbar / a mile out. Past it, shoals.
-AURELIA: Ports at both ends of the bar. / Then forty paces of surf.
-AURELIA: Behind the sand, a coast road. It / climbs, with junctions, to the fort.
-KLAUS: Cape Astra. Two coves, a headland, / and the only deep harbour for miles.
-KLAUS: Whoever owns it owns the coast. / A landing is a claim. Make it.
-LIVIA: It is also the last port of call / on every bill I own.
-KLAUS: Explain, Quaestor.
-LIVIA: The grain ships that fed us all / sailed past this cape.
-LIVIA: Their pilots' logs are blank. The / harbour master's will not be.
-KLAUS: Then we will ask him.
-CASSIUS: Politely, I suppose. With a / basket of figs.
-LIVIA: The figs are in the budget, / Prefect. They are the only line
-LIVIA: that has not complained.
-KLAUS: I sent a white flag at dawn. The / cape answered with a cruiser.
-AURELIA: Two cruisers. Green Earth paint, / and they keep the lane well shut.
-AURELIA: So the barges zigzag. Nobody / goes in a straight line today.
-KLAUS: Hear me, all of you. This coast is / the first province.
-KLAUS: We take the cape, then the road / behind it. Province by province.
-KLAUS: These people have never seen our / flag. They see a fleet.
-KLAUS: They will fight as any man fights / for his own front door.
-KLAUS: I do not blame them. I will still / go through that door.
-CASSIUS: Then let me ride ashore! One / charge and the fort is ours!
-KLAUS: Your horses are sick. You land / with the second wave.
-CASSIUS: The second wave! I was born for / the first wave, old man!
-AURELIA: A horse in forty paces of surf is / an expensive way to drown.
-CASSIUS: Don't make that face at me, / Aurelia. I can hear it.
-AURELIA: I didn't say it. I was thinking / it very loudly.
-KLAUS: Infantry and Mech first, with the / Recon beside them.
-KLAUS: APCs carry the wounded. The / Anti-Air follows. Planes may come.
-LEGIONARY: Legate! Banners on the ridge / fort. Green, with a sun on them.
-AURELIA: Two suns on one coast. Somebody / is going to get confused.
-CASSIUS: Me. I'm going to get confused. / Which one do I hit?
-KLAUS: The one shooting.
-LIVIA: Legate. When this is over, the / Senate will ask what it cost.
-KLAUS: Tell them it cost less than / hunger. Aurelia, signal the ramps.
-AURELIA: Ramps down. May the sun be kind / to the first man ashore.
-KLAUS: The sun is not what worries me. / That is a fort. Move.
+@SONG co:tabitha
+NARRATION: Cape Astra, Green Earth. Forty / days out of Port Argent.
+LILI: The sea is flat, Sister. Mr. Bear / says it is a nice day to break things.
+TABITHA: It is a day to take a harbour. I / do not need Mr. Bear's opinion.
+LILI: The beach shelves at two fathoms. / Barges ground at forty paces. Tee hee.
+TABITHA: Then forty paces it is. Is Father / complaining yet?
+CAULDER: Not yet, my darling. My / instruments are seasick in the hold.
+CAULDER: I have never seen a barometer / apologise. It was quite moving.
+LILI: He is on the radio from the other / ship. The green one is not listening.
+CAULDER: I heard that, my little one. Do / give the green one my regards.
+CAULDER: One day, Tabitha, you will say / "well done, Father".
+TABITHA: One day you will earn it. Lili, / show me the shore.
+LILI: The fleet sits on a sandbar a mile / out. Past it, shoals.
+LILI: Ports at both ends of the bar. / Then forty paces of surf.
+LILI: Behind the sand, a coast road. It / climbs, with junctions, to the fort.
+TABITHA: Cape Astra. Two coves, a headland, / and the only deep harbour for miles.
+TABITHA: Whoever owns it owns the coast. / A landing is a claim. Make it.
+LILI: It is also the last port of call on / every bill I own. Mr. Bear checked.
+TABITHA: Explain.
+LILI: The grain ships that fed us all / sailed past this cape.
+LILI: Their pilots' logs are blank. The / harbour master's will not be.
+TABITHA: Then we will ask him. Hard.
+CAULDER: Politely, I hope. With a basket / of questions. Do be thorough.
+LILI: I packed a basket of figs. It is the / only line in the budget
+LILI: that has not complained. Mr. Bear / ate one. I added a line for that.
+TABITHA: I sent a white flag at dawn. The / cape answered with a cruiser.
+LILI: Two cruisers. Green Earth paint, / and they keep the lane well shut.
+LILI: So the barges zigzag. Nobody goes / in a straight line today.
+TABITHA: Listen, all of you. This coast / is the first province.
+TABITHA: We take the cape, then the road / behind it. Province by province.
+TABITHA: These people have never seen our / flag. They see a fleet.
+TABITHA: They will fight for their front / doors. Stupid weak people!
+TABITHA: A door is only wood. I will go / through it, and through them.
+CAULDER: The Second Corps could land beside / you, my darling. In a week.
+TABITHA: Stay a week behind, Father. I do / not share a beach.
+CAULDER: How well you were raised. I / dislike being late to an experiment.
+LILI: A barge in forty paces of surf is / an expensive way to drown.
+LILI: The toys float for a while. Then / they do not. Tee hee.
+TABITHA: Infantry and Mech first, with the / Recon beside them. Spend them well.
+TABITHA: APCs carry the wounded, if they / are worth the fuel. Anti-Air follows.
+LEGIONARY: Commander! Banners on the ridge / fort. Green, with a star on them.
+LILI: Two stars on one coast. Somebody / is going to get confused.
+CAULDER: Everybody, I suspect. How / delightful. Do write it down.
+TABITHA: Fire at the one shooting.
+LILI: Sister. When this is over, the / Directorate will ask what it cost.
+TABITHA: Tell them it cost less than / hunger. Signal the ramps.
+LILI: Ramps down. Tee hee! Let's go, / Mr. Bear!
+TABITHA: The beach is not a playground. / That is a fort. Move.
 
 == m01_day2
 JESS: You, on my beach! Green Earth / Coastal Watch. Identify yourselves!
-JESS: Your flag has a sun on it. So / does ours. Ours is greener.
-KLAUS: We are Aurea. We have come for / answers. We will take the coast.
+JESS: Your flag has a star on it. So / does ours. Ours is greener.
+TABITHA: We are Novaria. We came for / answers. We will take the coast.
 JESS: Answers don't come off a barge / with tanks on it.
 JESS: You want to talk, send an envoy. / Unarmed.
-KLAUS: I tried the white flag. Your / cruiser read it as a target.
+TABITHA: I tried a white flag. Your cruiser / read it as a target. Good eyes.
 JESS: ...That one's on Drake. You still / aren't getting past me.
 
 == m01_post
 @SONG ally2
 JESS(s): That's the road, the gate and / the fort. All right.
 JESS: My crews are out the back. I'm the / last one here.
-KLAUS: Lay down your arms. You will be / treated as a soldier.
+TABITHA: Lay down your arms. A prisoner is / at least useful.
 JESS: No. I'm leaving too. We'll reload / and come back.
-KLAUS: I will not stop you. I do not / hunt a retreating warden.
+TABITHA: Then run. I will find you when it / is convenient.
 JESS: Huh. Invaders usually chase.
-KLAUS: I am an invader, Warden. I will / not pretend otherwise.
-KLAUS: I am also looking for a cargo. / Your coast is the first place I look.
+TABITHA: I am an invader, Warden. I do not / need to pretend otherwise.
+TABITHA: I am also looking for a cargo. / Your coast is the first place I look.
 JESS: You came from the sea. So did the / last invasion.
-KLAUS: I am not the last one.
-JESS: Everybody says that, Legate. / Everybody. See you in the dunes.
-AURELIA: She walked out like she was / leaving a shop.
-KLAUS: She did not leave. She withdrew. / There is a difference.
-LIVIA: Legate. The harbour master's / book. Look at the entries.
-LIVIA: Every grain barge in two years / paid its dock fees in advance.
-LIVIA: In full. Never a captain's name. / Never a flag.
-KLAUS: And the wardens let them dock / without a name?
-LIVIA: A fee paid early is a welcome / guest anywhere.
-KLAUS: Then somebody paid to be unseen. / Keep the book.
-CASSIUS(h): The fort fell and I missed / it! I'm furious. And delighted.
-KLAUS: The fort has fallen, Prefect. You / may land your horses now.
-AURELIA: The sun's on the tower. Cape / Astra is ours, and the coast with it.
-CASSIUS: About time! Third hold, bring / them up! Gently!
+TABITHA: I am not the last one.
+JESS: Everybody says that, Commander. / Everybody. See you in the dunes.
+LILI: She walked out as if she were / leaving a shop. Mr. Bear waved.
+TABITHA: She did not leave. She was let / go. There is a difference.
+LILI: Sister. The harbour master's book. / Look at the entries.
+LILI: Every grain barge in two years / paid its dock fees in advance.
+LILI: In full. Never a captain's name. / Never a flag.
+TABITHA: And the wardens let them dock / without a name?
+LILI: A fee paid early is a welcome / guest anywhere. The green one says so.
+TABITHA: Then somebody paid to be unseen. / Keep the book.
+CAULDER: My dears, my radio reports that / the fort has fallen. Fascinating...
+CAULDER: I missed it. I shall write that / my instruments were indisposed.
+TABITHA: The fort has fallen, Father. Your / ship may come in behind us.
+LILI: The nova flies on the tower. Cape / Astra is ours, and the coast with it.
+CAULDER: Splendid. I shall bring the / instruments up. Gently.
 
 == m01_map
 @SONG ally2
-NARRATION: Cape Astra in the evening. The / pier is Aurea's.
-AURELIA: Both sandbar ports are sound. The / fort gate wants a month of mortar.
-KLAUS: You have two weeks. Take the / engineers and the stone.
-CASSIUS: Look at this beast! Four days in / a hold, and he bites me.
-LIVIA: He bit the quartermaster. I have / added a line for it.
-KLAUS: Quaestor, take a letter. To the / Senate, and to the Consul.
-KLAUS: Cape Astra is taken. A harbour of / our own, and a coast behind it.
-KLAUS: No granary seen. No captain / found. The trail runs north.
-LIVIA: "Taken" is a short word for a / fort that was shelled twice.
-LIVIA: And Consul Varro?
-KLAUS: He will want it before the Senate / does.
-LIVIA: He will have it before the Senate / does, either way.
-KLAUS: ...Write it anyway.
-LIVIA: One more thing, Legate. The line / that fed us has no harbour.
-LIVIA: No registered captain, no / office. I find that curious.
-KLAUS: I find it a crime scene. Put that / in the second paragraph.
+NARRATION: Cape Astra in the evening. The / pier is Novaria's.
+LILI: Both sandbar ports are sound. The / fort gate wants a month of mortar.
+TABITHA: You have two weeks. Take the / engineers and the stone.
+LILI: Yes, Sister. The harbour cat / scratched Mr. Bear. A line was added.
+LILI: The cat knows. It has been told / what the line costs. Tee hee.
+TABITHA: Lili, take a letter. To the / Directorate, and to Father.
+TABITHA: Cape Astra is taken. A harbour of / our own, and a coast behind it.
+TABITHA: No granary seen. No captain / found. The trail runs north.
+LILI: "Taken" is a short word for a fort / that was shelled twice.
+LILI: And Father?
+TABITHA: He will want it before the / Directorate does.
+LILI: He will have it before the / Directorate does, either way.
+TABITHA: ...Write it anyway.
+LILI: One more thing, Sister. The line / that fed us has no harbour.
+LILI: No registered captain, no office. / I find that curious.
+TABITHA: I find it an insult. Somebody is / feeding us on purpose. I want a name.
 
-# ---------------------------------------------------------------- M2 Testudo (Klaus; enemy Eagle and Jess)
+# ---------------------------------------------------------------- M2 The Ridge (Tabitha; enemy Eagle and Jess)
 
 == m02_pre
-@SONG co:klaus
+@SONG co:tabitha
 NARRATION: The Dune Road ridge. Eight days / to hold.
-AURELIA: Radio check. Can you hear the / saw? That's the causeway.
-KLAUS: I can hear it. Barely.
-AURELIA: The marsh swallowed the road. I / need eight days for the piles.
-AURELIA: Down at the south edge, where the / dune hills meet the marsh.
-AURELIA: Eight if nobody sneezes. Ten if / somebody sneezes twice.
-KLAUS: Then nobody sneezes. We hold the / ridge until you finish.
-LIVIA: We have one HQ, Legate, in the / south-west. If it falls, we lose.
-LIVIA: The Senate has a word for a hill / held eight days. "Expensive."
-CASSIUS: You want me to stand still, on a / dune, for eight days?
-KLAUS: I want the Prefect to ride where / he is told, when he is told.
-CASSIUS: So, the reserve. The back row of / the theatre. The horses will mutiny.
-KLAUS: Then the horses may mutiny / quietly. Come and watch the drill.
-KLAUS: Behind this ridge lies the / causeway into the province.
-KLAUS: The wardens' relief army comes / from the north and the east.
-KLAUS: A landing is not a conquest until / it is held. So hold.
-LEGIONARY: Legate, the line is formed on / the crest. Waiting.
-KLAUS: Shields to the front. Rear rank, / lift. Roof them over.
-LEGIONARY: Tortoise formation! Lock / shields, sir!
-CASSIUS: A turtle. You've built a turtle. / On a dune.
-KLAUS: A dune that does not run. Shells / come off it like rain.
-KLAUS: Three ridges, three passes. Eagle's / wings and Jess's tanks break on them.
-AURELIA: I'm only an engineer, but a / turtle is a load-bearing animal.
-KLAUS: Then we are in good hands. Each / man holds his square of sand.
-KLAUS: No one leaves his square. Not one / pace, not for glory.
-CASSIUS: Not even for a very good charge?
-KLAUS: There is no such thing, Prefect. / Only a funeral.
-CASSIUS: ...Fine. A very quiet charge, / then, when you ask.
-LIVIA: Eight days. I will allow three / denarii for each man's dignity.
-LIVIA: It will not be enough.
+LILI: Radio check. Can you hear the saw, / Sister? That is the causeway.
+TABITHA: I can hear it. Barely.
+LILI: The marsh swallowed the road. I / need eight days for the piles.
+LILI: Down at the south edge, where the / dune hills meet the marsh.
+LILI: Eight if nobody sneezes. Ten if / somebody sneezes twice.
+TABITHA: Then nobody sneezes. We hold the / ridge until you finish.
+LILI: We have one HQ, Sister, in the / south-west. If it falls, we lose.
+LILI: The Directorate has a word for a / hill held eight days. "Expensive."
+LEGIONARY: Commander, the lancer captain / asks to charge. That is the fourth time.
+TABITHA: Tell him a charge uphill is a / funeral. He holds the reserve.
+TABITHA: If he asks again, he may lead / it. Behind the crest. In the dirt.
+LILI: Mr. Bear says reserves are the / best toys. They never get broken.
+TABITHA: Behind this ridge lies the / causeway into the province.
+TABITHA: The wardens' relief army comes / from the north and the east.
+TABITHA: A landing is not a conquest until / it is held. So we hold.
+LEGIONARY: Commander, the line is formed on / the crest. Waiting.
+TABITHA: Shields to the front. Rear rank, / lift. Roof them over.
+LEGIONARY: Tortoise formation! Lock / shields, ma'am!
+LILI: A tortoise. We have built a tortoise / on a dune. The green one approves.
+TABITHA: A dune that does not run. Shells / come off it like rain.
+TABITHA: Three ridges, three passes. Eagle's / wings and Jess's tanks break on them.
+LILI: I am only an engineer, but a / tortoise is a load-bearing animal.
+TABITHA: Then it will bear. Each soldier / holds her square of sand.
+TABITHA: Anyone who leaves her square / will wish the enemy had found her first.
+LILI: Eight days. I will allow three / credits for each soldier's dignity.
+LILI: It will not be enough. Mr. Bear / has checked.
 
 == m02_day4
-JESS: Tanks coming up the road! Same / place, Legate. Same turtle!
+JESS: Tanks coming up the road! Same / place, Commander. Same tortoise!
 EAGLE: Death from above! Oh, a / tortoise! Never seen one with guns.
-AURELIA: Legate, planes. Four, maybe five. / Low and fast.
-KLAUS: Anti-air, form up.
+LILI: Sister, planes. Four, maybe five. / Low and fast. Tee hee.
+TABITHA: Anti-air, form up.
 LEGIONARY: Anti-air, form up! Missiles to / the crest! Roof high!
-EAGLE: Huh. That's a really good turtle. / Bombs away anyway!
+EAGLE: Huh. That's a really good tortoise. / Bombs away anyway!
 
 == m02_post
 @SONG ally2
 EAGLE: Retreat! Not defeat, just / surprise... backwards!
-JESS: Pull back! The dunes are yours, / Legate. Don't get comfortable.
-AURELIA: Radio, Legate. The causeway is / open. Eight days to the hour.
-KLAUS: To the hour. Good.
-CASSIUS: Now? May I ride, at last?
-KLAUS: Over the causeway, in good order. / Then you may ride inland.
-KLAUS: Aurelia, hear me. By the / authority the Senate gave me,
-KLAUS: I name you Chief Engineer of the / Legion. Effective now.
-AURELIA: Right now? Standing in the mud? / No parade?
-KLAUS: There is no time for a parade. / You have earned the stone.
-AURELIA: Does it come with a raise?
-LIVIA: It comes with a line in the / ledger. I shall open it today.
-AURELIA: A line. I'll frame it.
-CASSIUS(h): Chief! Say it again! Chief / Aurelia! The Prefect salutes.
-AURELIA: Don't salute me, Prefect. Salute / the causeway.
-LIVIA: Legate. The wardens left a / dispatch case on the ridge.
-LIVIA: It says, quote, "Unknown green / fleet. Assume Black Hole."
-KLAUS: Black Hole. I do not know the / name. They fear it.
-CASSIUS: We're blamed for a stranger's / crimes! How flattering.
-KLAUS: It means they will not listen / until we prove otherwise.
-KLAUS: The coast is ours to the ridge. / Now we march into the province.
-KLAUS: The road is long. And they think / we are someone else.
+JESS: Pull back! The dunes are yours, / Commander. Don't get comfortable.
+LILI: Radio, Sister. The causeway is / open. Eight days to the hour.
+TABITHA: To the hour. Adequate.
+LEGIONARY: Commander, may the lancers ride / now? The captain is asking again.
+TABITHA: Over the causeway, in good order. / Then they may ride inland. Far.
+TABITHA: Lili. By the authority the / Directorate gave me,
+TABITHA: you are Chief Engineer and / Quartermaster of the Corps.
+LILI: Now, Sister? In the mud? Without a / parade? Mr. Bear will be so sad.
+TABITHA: There is no time for a parade. / You built the road. Take the title.
+LILI: Does the rank come with a raise? I / only ask for the ledger.
+TABITHA: It comes with a line in the / ledger. Open it yourself.
+LILI: A line. The green one says I should / frame it.
+CAULDER: My congratulations, Chief / Engineer. I shall tell the Directorate.
+CAULDER: They will pretend they chose the / rank themselves. They always do.
+LILI: Thank you, Father. Mr. Bear does not / like it when you congratulate me.
+CAULDER: Then I shall congratulate you / quietly, my little one. Good night.
+LILI: Sister. The wardens left a / dispatch case on the ridge.
+LILI: It says, quote, "Unknown green / fleet. Assume Black Hole."
+TABITHA: Black Hole. I do not know the / name. They fear it.
+LILI: We are blamed for a stranger's / crimes. The green one finds it funny.
+TABITHA: It means they will not listen / until they are broken. Fine.
+TABITHA: The coast is ours to the ridge. / Now we march into the province.
+TABITHA: The road is long. And they think / we are someone else.
 
 == m02_map
 @SONG ally2
 NARRATION: The causeway camp. A prisoner / is brought in.
-SOLDIER GE: Please. Please don't eat me, / sir.
-KLAUS: We do not eat prisoners. We feed / them. Sit.
+SOLDIER GE: Please. Please don't eat me, / ma'am.
+TABITHA: A starving prisoner is no use to / me. Eat. Sit.
 SOLDIER GE: ...Sit? Really? They told us / you were all cannibals.
-LIVIA: Four denarii for one bowl of / mercy. Charged to the Senate.
-KLAUS: Charged to me. Eat, Corporal.
-KLAUS: You said you were told we eat our / captives.
-SOLDIER GE: That's the story in the / barracks, sir. Raiders. Green fleet.
-KLAUS: We take forts, not farms. Our own / fields have gone grey.
-SOLDIER GE: Grey? Ours too, sir. At the / cape. Two summers now.
+LILI: Four credits for one bowl of / mercy. Charged to the Directorate.
+TABITHA: Charged to the prisoner's / interrogation. Eat, Corporal.
+TABITHA: You said you were told we eat our / captives.
+SOLDIER GE: That's the story in the / barracks, ma'am. Raiders. Green fleet.
+TABITHA: We take forts, not farms. Our own / fields have gone grey.
+SOLDIER GE: Grey? Ours too, ma'am. At the / cape. Two summers now.
 SOLDIER GE: Ash on the wind. The old folks / say it comes from the north.
-KLAUS: Two summers. Ours was three. / ...It reached you after us.
-KLAUS: Corporal. Take a letter to your / commander. Jess.
-SOLDIER GE: She'll shoot it out of my / hand, sir.
-KLAUS: Then wave it and be shot / politely. It says we wish to talk.
-SOLDIER GE: ...I'll try, sir. Thank you for / the bread.
+TABITHA: Two summers. Ours was three. / ...It reached you after us.
+LILI: The ash is a letter, Sister. Mr. / Bear says nobody found the sender.
+TABITHA: Corporal. Take a letter to your / commander. Jess.
+SOLDIER GE: She'll shoot it out of my / hand, ma'am.
+TABITHA: Then wave it and be shot. It / says we wish to talk. For now.
+SOLDIER GE: ...I'll try, ma'am. Thank you for / the bread.
 
-# ---------------------------------------------------------------- M3 The Wall (Aurelia; enemy Javier, Drake's coast guns)
+# ---------------------------------------------------------------- M3 The Wall (Lili; enemy Javier, Drake's coast guns)
 
 == m03_pre
-@SONG co:aurelia
+@SONG co:lili
 NARRATION: Muro Alto, a walled town. Rock, / towers and a keep.
-KLAUS: Muro Alto is the gate to the next / province. Take it and the road opens.
-KLAUS: Aurelia. The wall is yours. I take / the main body round
-KLAUS: and hold the coast road behind / you. You lead the siege.
-AURELIA: Me? Lead? I count loads. I don't / give orders.
-KLAUS: You give orders to stone. Stone / is harder than men.
-AURELIA: ...Stone doesn't talk back. All / right. What have I got?
-LIVIA: Artillery, Rockets, a Recon, / Infantry, and an airfield.
-LIVIA: The airfield costs more than the / rest. Use it sparingly.
-CASSIUS: You've got a Bomber? Take the / Tanks. A good charge cracks a wall!
-AURELIA: Horses against stone, Prefect? / Have you met stone?
-CASSIUS: Prefect again! That's the third / time today.
-AURELIA: I keep a list.
-AURELIA: The town is Javier's. A ragged / rock wall, towers, Com Towers.
-AURELIA: Every Com Tower he holds makes / his men sharper. His teeth first.
-AURELIA: Four gates in the wall. The keep / has one gate, to the south.
-AURELIA: One more thing. A missile silo / stands outside the wall, west road.
-AURELIA: Neutral. Whoever stands on it / fires it. One shot, three points
-AURELIA: to every unit around it. Javier's / men can use it too.
-KLAUS: Then whoever is first, fires.
-AURELIA: I want it for the west gate. / Where his wall guard is thickest.
-KLAUS: Drake's Battleship is offshore in / the north. Shells from the sea.
-AURELIA: Its range is eleven. My Rockets / reach nine and a half, with luck.
-AURELIA: So the Recon finds the guns, and / the Bomber kills them.
+TABITHA: Muro Alto is the gate to the next / province. Take it and the road opens.
+TABITHA: Lili. The wall is yours. I take / the main body round
+TABITHA: and hold the coast road behind / you. You lead the siege.
+LILI: Me? Lead? I count loads, Sister. I / do not give orders. Mr. Bear does.
+TABITHA: You give orders to stone. Stone / is harder than people.
+LILI: ...Stone does not talk back. Mr. / Bear says that is a good start.
+LILI: What have I got?
+LEGIONARY: Artillery, Rockets, a Recon, / Infantry, and an airfield, Commander.
+LILI: The airfield costs more than the / rest. I will play with it sparingly.
+LEGIONARY: The tank captain says a good / charge cracks a wall, Commander.
+LILI: Tanks against stone? Has the captain / met stone? Please ask him.
+LEGIONARY: He says... he will wait and see, / ma'am.
+LILI: Thank you. I keep a list of the / toys that wait and see.
+LILI: The town is Javier's. A ragged / rock wall, towers, Com Towers.
+LILI: Every Com Tower he holds makes / his men sharper. His teeth first.
+LILI: Four gates in the wall. The keep / has one gate, to the south.
+LILI: One more thing. A missile silo / stands outside the wall, west road.
+LILI: Neutral. Whoever stands on it / fires it. One shot, three points
+LILI: to every unit around it. Javier's / men can use it too.
+TABITHA: Then whoever is first, fires.
+LILI: I want it for the west gate. / Where his wall guard is thickest.
+TABITHA: Drake's Battleship is offshore in / the north. Shells from the sea.
+LILI: Its range is eleven. My Rockets / reach nine and a half, with luck.
+LILI: So the Recon finds the guns, and / the Bomber kills them.
 NARRATION: Rain since before dawn. The sky / is slate. The wall is a smudge.
-AURELIA: Rain is fog. Their gunners can / see me, and I can't spot one gun.
-LIVIA: Wet roads, wet powder, wet boots. / I shall add a line for umbrellas.
-KLAUS: Then the Recon goes first, and / slowly. We find the guns by hand.
-KLAUS: That is a plan.
-AURELIA: It's a start. A siege needs more / steps. Ladders, mostly.
-KLAUS: This is not a promotion. It is a / ladder. Climb.
-AURELIA: Climbing. Gates, the Muro river, / the towers, the keep.
-LIVIA: A wall costs more to build than to / knock down. That is true
-LIVIA: of most things the Senate loves. / Proceed, Chief.
-AURELIA: Thank you, Quaestor. That was / almost kind.
+LILI: Rain is fog. Their gunners can / see me, and I cannot spot one gun.
+LILI: Wet roads, wet powder, wet boots. / I shall add a line for umbrellas.
+TABITHA: Then the Recon goes first, and / slowly. We find the guns by hand.
+TABITHA: That is a plan.
+LILI: It is a start. A siege needs more / steps. Ladders, mostly.
+TABITHA: This is not a promotion. It is a / test. Climb, or be left.
+LILI: Climbing. Gates, the Muro river, / the towers, the keep.
+LILI: A wall costs more to build than to / knock down. That is true of most
+LILI: things the Directorate loves. The / green one says so. Mr. Bear is sweeter.
+TABITHA: Do not break all your toys before / the keep. Go.
+LILI: Tee hee! Let's go, Mr. Bear!
+LILI: Thank you, Sister. Almost kind.
 
 == m03_day3
 JAVIER: The gate is broken. Yet I swear by / the oath of the towers:
 JAVIER: no tower falls while a knight / stands in its door.
-AURELIA: The gate's gone, Lord Javier. What / does the oath say about that?
+LILI: The gate is gone, Lord Javier. It is / a broken toy. What does the oath say?
 JAVIER: It says to stand in the doorway. / Which I am doing.
-AURELIA: Behind that door is the whole / province, my lord. I need the door.
-AURELIA: Fair enough. I'll hit the doorway, / then. Politely.
-JAVIER: Courtesy is the soul of a siege. / Come, Chief. Come.
+LILI: Behind that door is the whole / province, my lord. I need the door.
+LILI: Mr. Bear says doorways are not / load-bearing. I shall hit it politely.
+JAVIER: Courtesy is the soul of a siege. / Come, Commander. Come. ...Child?
 
 == m03_post
 @SONG aw2:421
 JAVIER: The keep is yours. I yield, not to / numbers, but to craft.
 JAVIER: You read my wall as a master reads / a page. I salute you.
-AURELIA: Thank you, my lord. It was a good / wall. I'm sorry about it.
+LILI: Thank you, my lord. It was a good / wall. Mr. Bear and I are sorry about it.
 JAVIER: A wall is only stone. A man's / word is the keep. Mine is kept.
-KLAUS: Lord Javier. I came to ask you a / question, not to take a sword.
-JAVIER: Ask, Legate. I will answer as an / honest man, in an honest hall.
-KLAUS: The ash. Have you seen it? Grey on / the wind, grey on the fields.
+TABITHA: Lord Javier. I came to ask you a / question. You may keep your sword.
+JAVIER: Ask, Commander. I will answer as an / honest man, in an honest hall.
+TABITHA: The ash. Grey on the wind, grey / on the fields. Have you seen it?
 JAVIER: ...I have. For three years, in my / family's orchards.
 JAVIER: The trees blossom grey. The / scholars say the wind brings it.
 JAVIER: They cannot say from where. It / troubles me more than any siege.
-KLAUS: It troubles me too. In my country / it has eaten the harvest.
-JAVIER: Then we are not enemies in this, / Legate. Only neighbours.
-KLAUS: And conquerors, my lord. I will not / burn your orchards, or your villages.
-KLAUS: I would like you to believe that. / Will you tell your Accord?
-JAVIER: I shall tell them a legion took a / wall and spared a garrison.
+TABITHA: I do not care about your trees. I / care where the wind comes from.
+JAVIER: Then we are not enemies in this, / Commander. Only neighbours.
+TABITHA: We are enemies in everything. You / are simply useful. For now.
+TABITHA: Your garrison lives because the / dead tell me nothing. Remember that.
+JAVIER: I shall tell the Accord a corps / took a wall and spared a garrison.
 JAVIER: It is not much. It is a beginning.
-KLAUS: A beginning will do.
+TABITHA: Tell them what you like. They will / not listen. Weak people never do.
+LILI: Lord Javier. May I count the / orchards, for the record? Gently.
+JAVIER: Count them, child. You will find / them all standing. Keep them so.
 JAVIER: The province is yours to keep. / Keep it better than I did.
 
 == m03_map
 @SONG ally2
 NARRATION: Muro Alto. A tent full of / crates and paper.
-AURELIA: Quaestor, I found something in / the fort's store. Look.
-LIVIA: ...Grain crates. Stencilled.
-AURELIA: Same stencil as the relief crates / at home. I checked the nails.
-AURELIA: Forty yards, forty smiths, one / carpenter's pattern. Odd.
-LIVIA: How odd?
-AURELIA: A crate is a box. Nobody builds / the same box in forty yards.
-LIVIA: Every bill in my ledger has the / same stamp. Paid in advance.
-LIVIA: The debts are sold on before the / ink is dry. To whom, no one says.
-LIVIA: None is registered. I have eleven / hundred bills. Not one name.
-AURELIA: And the stencil? You looked at it / for a long time.
-LIVIA: ...I have seen that mark before. / Not on grain. Not here.
-AURELIA: Where?
-LIVIA: I would rather be certain before / I say.
-AURELIA: That's the most frightening thing / you've ever said.
-LIVIA: I know. I have been practising.
+LILI: Sister, I found something in the / fort's store. Look.
+TABITHA: ...Grain crates. Stencilled.
+LILI: Same stencil as the relief crates / at home. I checked the nails.
+LILI: Forty yards, forty smiths, one / carpenter's pattern. Odd.
+TABITHA: How odd?
+LILI: A crate is a box. Nobody builds / the same box in forty yards.
+LILI: Every bill in my ledger has the / same stamp. Paid in advance.
+LILI: The debts are sold on before the / ink is dry. To whom, no one says.
+LILI: None is registered. I have eleven / hundred bills. Not one name.
+TABITHA: And the stencil? You looked at it / for a long time.
+LILI: ...I have seen that mark before. / Not on grain. Not here.
+TABITHA: Where?
+LILI: Mr. Bear says it is a secret. The / green one says nothing. Tee hee.
+TABITHA: Lili. If it is a secret, I will / find it. Do not make me.
+LILI: I know. I would rather be certain / before I say. Please, Sister.
+TABITHA: ...Then be certain. Quickly.
 
-# ---------------------------------------------------------------- M4 The Second Legion (Klaus or Aurelia; enemy Cassius)
+# ---------------------------------------------------------------- M4 The Second Corps (Tabitha or Lili; enemy Caulder)
 
-== m04_pre | KLAUS, AURELIA
+== m04_pre | TABITHA, LILI
 @SONG enemy1
 NARRATION: The Mistvale, along the Verna. / A river under fog. Day one.
-LEGIONARY: Legate! Banners on the east / bank. A legion, in the fog.
-LEGIONARY: Red plumes, sir. Red cloaks. The / eagle of the Second.
-KLAUS: The Second Legion. I know it. It / sailed a week behind us.
-AURELIA: It was meant to join us at the / cape. Where has it been?
-LIVIA: At the Mistvale, Chief. It took / the old road north.
-KLAUS: Without a word. Why is the Second / at the head of my road?
-LIVIA: Because its commander wished to be / there first.
-KLAUS: First into the next province. / Glory, not grain. He wants to take it.
-KLAUS: Its commander is Cassius.
-AURELIA: Cassius? But he's... he was on / our radio at the cape.
-KLAUS: He left after the dunes. The / cavalry rode to meet his legion.
-KLAUS: I was told he went to scout.
-LIVIA: He did not. He went to take / command of the Second.
-AURELIA: Their red is wrong. Our colour is / green. Why red?
-KLAUS: Because here the Second Legion / wears Orange Star's colour.
-KLAUS: One army wears the green. Today / the other wears the red.
-AURELIA: That's going to be confusing in / the fog.
-KLAUS: It will. A man may take his friend / for his enemy.
-KLAUS: Fire only on what shoots. And keep / your Recons close.
-LEGIONARY: Legate. A rider with a flag of / truce. A letter, sir.
-KLAUS: Bring it.
-LEGIONARY: He says it's for "Old Man / Klaus". His words, sir.
-KLAUS: Of course they are. Read it.
-KLAUS: "To Legate Klaus, from Cassius, / Prefect of the Second."
-KLAUS: "The Mistvale road is mine, under / seal of the Senate."
-KLAUS: "Go round. Go home. Go anywhere / that is not here. Your friend, C."
-KLAUS: "Postscript: I told you my horses / were fast."
-AURELIA: He signs it "friend". That's a / threat.
-LIVIA: His seal is genuine. I have / checked the wax. It is the Senate's.
-KLAUS: The Senate gave Cassius a sealed / letter. I know that much.
-KLAUS: I do not know what is in it. I / know what it does to him.
-KLAUS: He has stopped asking permission.
-CASSIUS: Klaus! Did you read it? Did you / like the postscript?
-KLAUS: I read it. Cassius, you are / blocking my road.
-CASSIUS: It's my road, old man! By the / Senate's seal. Go round!
-KLAUS: What does the seal say?
-CASSIUS: ...That's none of your business.
-KLAUS: Then it says something you do not / wish to say aloud.
-CASSIUS: It says the Senate is hungry, and / you are slow!
-KLAUS: I did not ask what the Senate / says. I asked what it orders.
-CASSIUS: The fog's thick, Klaus. Hard to / see who wears which red.
-KLAUS: Then be careful where you aim, / Prefect.
-AURELIA: Legate, he's not going to move. / What are our orders?
-KLAUS: Three bridges, no ford. Rout the / Second or take its camp. Spare men.
-LIVIA: I have estimated the cost of / fighting our own colours.
-LIVIA: It is high, Legate. It is always / high.
+LEGIONARY: Commander! Banners on the east / bank. A corps, in the fog.
+LEGIONARY: Red plumes, ma'am. Red cloaks. / The star of the Second.
+TABITHA: The Second Corps. I know it. It / sailed a week behind us.
+LILI: It was meant to join us at the / cape. Where has it been?
+LEGIONARY: It took the old road north, / Chief. Fast. Faster than we did.
+TABITHA: Without a word. Why is the Second / at the head of my road?
+LILI: Because its commander wished to be / there first, Sister.
+TABITHA: First into the next province. / Glory, not grain. He wants to take it.
+TABITHA: Its commander is Father.
+LILI: But he was on our radio at the / cape. He said he was behind.
+TABITHA: He was behind. Then he took the / old road, and stopped being behind.
+TABITHA: Father never lies. He lets the / weather do it for him.
+LILI: Their red is wrong. Our colour is / green. Why red?
+TABITHA: Because here the Second Corps / wears Orange Star's colour.
+TABITHA: One army wears the green. Today / the other wears the red.
+LILI: That will be confusing in the fog. / The toys will pick the wrong box.
+TABITHA: They may pick the wrong enemy. / I will not forgive them for it.
+TABITHA: Fire only on what shoots. And keep / your Recons close.
+LEGIONARY: Commander. A rider with a flag / of truce. A letter, ma'am.
+TABITHA: Bring it.
+LEGIONARY: It is for "my darling Tabitha". / His words, ma'am.
+TABITHA: Of course they are. Read it.
+TABITHA: "To Tabitha, from Dr. Caulder, / commanding the Second Corps."
+TABITHA: "The Mistvale road is mine, under / seal of the Directorate."
+TABITHA: "Go round. Go home. Go anywhere / that is not here. Your loving father."
+TABITHA: "Postscript: do give my regards to / Lili and Mr. Bear."
+LILI: He signs it "loving". That is a / threat. The green one is hiding.
+LILI: His seal is genuine. I checked / the wax. It is the Directorate's.
+TABITHA: The Directorate gave him a sealed / order. I know that much.
+TABITHA: I do not know what is in it. I / know what it does to him.
+TABITHA: He has stopped asking permission. / Even from me.
+CAULDER: My darling. Did you read it? Did / you like the postscript?
+TABITHA: I read it. Father, you are / blocking my road.
+CAULDER: It is my road, by the seal of / the Directorate. I beg you, go round.
+TABITHA: What does the seal say?
+CAULDER: That, my dear, is none of your / concern. Yet.
+TABITHA: Then it says something you do not / wish to say aloud.
+CAULDER: It says the Directorate is hungry, / and that you are slow.
+TABITHA: I did not ask what the Directorate / says. I asked what it orders.
+CAULDER: The fog is lovely today. It makes / the data uncertain, and so honest.
+CAULDER: Hard to see who wears which red. / Do be careful where you aim, my girls.
+LILI: Sister, he is not going to move. / What are our orders?
+TABITHA: Three bridges, no ford. Rout the / Second or take its camp. Spare people.
+LILI: I have estimated the cost of / fighting our own colours.
+LILI: It is high, Sister. Mr. Bear says / it is always high.
 
-== m04_day5 | KLAUS, AURELIA
-LEGIONARY: Legate! A rider from the Senate! / He is waving a seal!
-KLAUS: Halt the line. All of it.
-CASSIUS: Halt! Halt! Who is it, Klaus? / Mine says the same.
-LEGIONARY: Letters for both of you. Under / the Consul's seal.
-KLAUS: "Command in the field stays with / each, as written."
-CASSIUS: "The Senate will not choose / between its sons."
-KLAUS: So the Senate wishes one of us to / lose. And so it waits.
-CASSIUS: ...Then we fight on. And we / remember who wrote this.
+== m04_day5 | TABITHA, LILI
+LEGIONARY: Commander! A rider from the / Directorate! He is waving a seal!
+TABITHA: Halt the line. All of it.
+CAULDER: Halt. Halt. Who is it, my dear? / Mine says the same.
+LEGIONARY: Orders for both of you, / sealed, under the Directorate's seal.
+TABITHA: "Command in the field stays with / each, as written."
+CAULDER: "The Directorate will not choose / between its servants."
+TABITHA: So the Directorate wishes one of / us to lose. And so it waits.
+CAULDER: Fascinating... It prefers an / experiment to a decision.
+CAULDER: I can hardly object. We fight on, / my darlings, and I shall remember this.
 
-== m04_post | KLAUS, AURELIA
-@SONG co:cassius
-CASSIUS(s): The fog's lifting. I can see / your face now.
-CASSIUS: You've beaten me, old man. My / legion is in your hands.
-KLAUS: Your legion is in your hands, / Cassius. I took only the camp.
-CASSIUS: Don't be kind. I hate it.
-KLAUS: I am not kind. I am practical. I / need cavalry.
-CASSIUS: You need a rival, I think. / Someone to lose to.
-KLAUS: I need a man who will tell me / what is in that letter.
-CASSIUS: ...The sealed one.
-AURELIA: The one you won't read aloud. / Cassius, please.
-CASSIUS: Aurelia. Don't use that voice. / You sound like my mother.
-LIVIA: Prefect. In the last three weeks I / have audited your legion.
-LIVIA: It has been paid on time and fed / on time. By whom, I wonder.
-CASSIUS: By me. I'm a very good commander. / Look at the books.
-LIVIA: I have. They are accurate. It is / the orders that are odd.
-CASSIUS: All right. All right!
-CASSIUS: Klaus. Here. Take it. Read it. I'm / tired of carrying it.
-KLAUS: "To Prefect Cassius. If, by the / first frost, no one
-KLAUS: is found who feeds Aurea, you will / take the granaries of the
-KLAUS: north by force. Tell no one, least / of all Legate Klaus."
-AURELIA: Granaries? By force? In someone / else's country?
-CASSIUS: In someone's country, yes. Don't / look at me like that.
-CASSIUS: I didn't write it. I read it. And / I carried it, here.
-KLAUS: And the seal? The Senate's?
-CASSIUS: It's a Senate seal. But the hand / is the Consul's.
-KLAUS: ...Varro. The hand is his.
-CASSIUS: You know it?
-KLAUS: I have seen it on every paper / that ever raised me.
-KLAUS: It is the hand of a man who found / money for the legions,
-KLAUS: and did not ask where it came / from.
-CASSIUS: So you don't trust him?
-KLAUS: I trust him. That is the / difficulty.
-LIVIA: A truce, then, gentlemen? Terms?
-KLAUS: One legion. One road. You will not / use that letter,
-KLAUS: and if it comes to the granaries, / you tell me first.
-CASSIUS: I'll tell you second. I always / tell my horse first.
-KLAUS: Then I will accept second.
-CASSIUS: ...Truce, Klaus. For now. And / then... I don't know.
-AURELIA: Welcome to the Legion, Prefect. / Mind the mud.
-CASSIUS(h): Mud! I love mud! Horses love / mud! Fetch the banners!
+== m04_post | TABITHA, LILI
+@SONG co:caulder
+NARRATION: The fog lifts. On the east bank, / a white coat. A raised red glove.
+CAULDER: The fog is gone, my dear Tabitha. / I can see your face now.
+CAULDER: You have beaten me, in the way / that soldiers count. How instructive.
+TABITHA: Lay down your arms, Father. I / will take the camp.
+CAULDER: I think not. I have cut the corps / in two, as a courtesy.
+CAULDER: Half stays with you. It is the / half that dislikes my instruments.
+TABITHA: You are giving me an army.
+CAULDER: I am leaving it. You always took / better care of soldiers than I.
+TABITHA: I took care of them because they / were mine. That is not kindness.
+LILI: Three thousand one hundred and four / toys. And one gift.
+LILI: Mr. Bear counted them twice. The / green one says a gift is expensive.
+CAULDER: My little one understands me. Do / keep them fed, Tabitha.
+TABITHA: Father. The sealed order. What / does it say?
+CAULDER: "If, by the first frost, no one / is found who feeds Novaria,
+CAULDER: take the granaries of the north / by force. Tell no one."
+LILI: Granaries? By force? In someone / else's country? Tee hee.
+CAULDER: In someone's country, yes. I did / not write it, my darling. I read it.
+CAULDER: And I intend to be useful, either / way. You find the hand. I will find
+CAULDER: the harvest. The first of us to / succeed, I think, is the one who is right.
+TABITHA: The hand is the Director's. It is / his seal, in his own writing.
+CAULDER: You know it?
+TABITHA: I have seen it on every paper / that ever raised me.
+TABITHA: It is the hand of a man who found / money for the corps,
+TABITHA: and did not ask where it came / from.
+LILI: That is a very expensive kind of / kindness, Sister.
+CAULDER: You do not trust me, my dear / Tabitha.
+TABITHA: I trust you to want the harvest. / That is the difficulty.
+CAULDER: How touching. We shall meet again, / my girls. I do hope so.
+NARRATION: He withdraws north through / the last of the mist. Smiling.
 
-== m04_map | KLAUS, AURELIA
+== m04_map | TABITHA, LILI
 @SONG ally2
-NARRATION: The Mistvale camp. Both legions / share a fire.
-KLAUS: The frontier is forty leagues / north of the cape. Both legions hold it.
-CASSIUS: I propose I ride at the head of / the column. Naturally.
-KLAUS: You will ride behind the vanguard. / In the second rank.
-CASSIUS: The second rank! You're keeping me / from the glory.
-KLAUS: I am keeping you alive. Most days / that is the same thing.
-CASSIUS: Old man, you're exactly the sort / who rides in front.
-KLAUS: Yes. I am older. I have buried / enough young men.
-CASSIUS: Then I'll ride in between. Second / and a half.
-LIVIA: Gentlemen. Your quarrel has cost / the Legion four hours.
-LIVIA: I bill it equally. Half to the / Legate, half to the Prefect.
-CASSIUS: You can't bill a quarrel!
-LIVIA: I have. I will do it again / tomorrow.
-KLAUS: Second rank, Cassius. That is an / order.
-CASSIUS: ...Fine. Old man.
-KLAUS: Prefect.
+NARRATION: The Mistvale camp. Two corps / share a fire.
+TABITHA: The frontier is forty leagues / north of the cape. Half the Second
+TABITHA: helps us hold it. The other half / walks with Father.
+LILI: The Second Corps wears red cloaks, / Sister. We wear green.
+LILI: Dyeing them costs forty-one credits. / Mr. Bear says they will miss the red.
+TABITHA: Let them keep it. They will die in / it just as well.
+LILI: The green one says that is the / nicest thing you have said all week.
+TABITHA: The green one is a fool.
+LILI: He is stuffed, Sister. Not stupid. / That is a different thing.
+TABITHA: I stand corrected. Father left / his instruments behind, I hear.
+LILI: Eleven crates. Barometers and / something that ticks. All labelled.
+TABITHA: Do not open the one that ticks.
+LILI: Mr. Bear opened it. It was empty. I / think that was the joke.
+TABITHA: Father does not joke. Not with / empty crates.
+TABITHA: His order stands: if nobody is / found, he takes the north's granaries.
+TABITHA: The north is full of granaries. / We have until the first frost.
+LILI: Then the road is a clock, Sister. / Mr. Bear likes clocks. He winds them.
+TABITHA: Then wind faster.

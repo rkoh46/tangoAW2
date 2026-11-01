@@ -22,14 +22,16 @@ FILES = ["act1", "act2", "act3", "act4"]
 LIMIT = 176
 
 CO_NAMES = {
-    "KLAUS", "AURELIA", "CASSIUS", "LIVIA", "VARRO",
+    "TABITHA", "LILI", "CAULDER",
     "JESS", "EAGLE", "DRAKE", "JAVIER", "GRIMM", "SENSEI", "KANBEI", "SONJA", "COLIN", "SASHA", "OLAF", "GRIT",
     "MAX", "JAKE", "SAMI", "NELL", "ANDY", "HACHI", "RACHEL", "ADDER", "FLAK", "KINDLE", "KOAL", "LASH",
 }
 OTHER_NAMES = {"NARRATION", "LEGIONARY", "SOLDIER", "SOLDIER OS", "SOLDIER BM", "SOLDIER GE", "SOLDIER YC", "SOLDIER BH", "[CO]", "[CO2]"}
-ROSTER = ["KLAUS", "AURELIA", "CASSIUS", "LIVIA", "KANBEI", "COLIN"]
-NO_CONTRACTIONS = {"KLAUS", "LIVIA", "KANBEI", "SASHA", "JAVIER"}
-NO_BANG = {"KLAUS", "LIVIA"}
+ROSTER = ["TABITHA", "LILI", "KANBEI", "COLIN"]
+NO_CONTRACTIONS = {"TABITHA", "LILI", "CAULDER", "KANBEI", "SASHA", "JAVIER"}
+NO_BANG = {"TABITHA", "LILI", "CAULDER"}
+# the user's own signature lines (the CO pages' quotes) keep their "!" and "Let's"
+SIGNATURE = ("Stupid weak people!", "Let's go, Mr. Bear!", "Tee hee! Let's go, Mr. Bear!", "Tee hee! Let's go,", "Mr. Bear!", "Fascinating...", "Tee hee!")
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)
 
 # the songs a scene may name (`@SONG`): the roles of src/campaign_music.rs NAMED, `aw2:<id>`, `co:<name>`
@@ -130,16 +132,15 @@ def lint_file(name, errors, warns, counts):
                 errors.append(f"{where}: {w}px > {LIMIT}: {ln!r}")
         # voice (warnings)
         plain = text.replace(" / ", " ")
-        if who in NO_BANG and "!" in plain:
+        voice_plain = plain
+        for sig in SIGNATURE:
+            voice_plain = voice_plain.replace(sig, "")
+        if who in NO_BANG and "!" in voice_plain:
             warns.append(f"{where}: {who.title()} shouts: {plain!r}")
-        if who == "CASSIUS" and len(plain) > 60 and "!" not in plain and "?" not in plain:
-            pass
-        if who in NO_CONTRACTIONS and CONTRACTION.search(plain):
+        if who in NO_CONTRACTIONS and CONTRACTION.search(voice_plain):
             warns.append(f"{where}: {who} uses a contraction: {plain!r}")
-        if who == "LIVIA" and re.search(r"[A-Z]{4,}", plain):
-            warns.append(f"{where}: Livia in capitals: {plain!r}")
-        if who == "VARRO" and "!" in plain:
-            warns.append(f"{where}: Varro shouts: {plain!r}")
+        if who in ("LILI", "CAULDER") and re.search(r"[A-Z]{4,}", plain):
+            warns.append(f"{where}: {who.title()} in capitals: {plain!r}")
         if re.search(r"\bHOBB\b.{0,40}\b(is|was) (really|actually)\b", plain):
             warns.append(f"{where}: do not say who HOBB is: {plain!r}")
         scenes[key] += 1

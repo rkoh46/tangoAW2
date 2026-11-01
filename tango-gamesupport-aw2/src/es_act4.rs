@@ -1,4 +1,4 @@
-//! Act IV, Pax: M13 The Free Port (against Black Hole among others), M14 Varro's Gambit, M15 Pax Romana, M16 Sol Invictus. Maps `five/es/spec/es13.py` ..
+//! Act IV, Pax: M13 The Free Port (against Black Hole among others), M14 Caulder's Gambit, M15 The Strait, M16 Silver Nova. Maps `five/es/spec/es13.py` ..
 //! `es16.py`, dialogue `es_text/act4.txt`.
 
 #![allow(unused_imports)]
@@ -8,7 +8,7 @@ use mgba::core::Core;
 use crate::campaign_model::VolcanoDef;
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_campaign::{after, deployment, leads, on_day, region, roster, wave, STATE};
-use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA, VARRO};
+use crate::es_co::{CAULDER, LILI, TABITHA};
 use crate::es_text::{chain, scene};
 
 fn owns(x: u8, y: u8) -> Cond {
@@ -87,30 +87,30 @@ fn es13() -> MissionDef {
     m
 }
 
-// --- M14 Varro's Gambit ------------------------------------------------------------------------
+// --- M14 Caulder's Gambit ------------------------------------------------------------------------
 
-/// The legion's own reserves come up the camp road beside the player's HQ on days 5 and 8.
+/// The corps' own reserves come up the camp road beside the player's HQ on days 5 and 8.
 const LEGION: [(u8, u8); 4] = [(7, 14), (8, 14), (6, 14), (9, 15)];
-/// Castra Maxima's reserve road, inside the camp's east side (`five/es/spec/es14.py`): the Consul's reserves reach the HQ from here on days 5 and 8.
+/// Fort Meridian's reserve road, inside the camp's east side (`five/es/spec/es14.py`): Caulder's reserves reach the HQ from here on days 5 and 8.
 const RESERVE: [(u8, u8); 4] = [(40, 12), (40, 13), (40, 15), (40, 16)];
 
-/// Day 4: Cassius's army (army 3) goes over to the player's side (AW2's team byte of its player block).
-fn cassius_changes_sides(core: &mut Core) {
+/// Day 4: Lili's detachment (army 3) goes over to the player's side (AW2's team byte of its player block).
+fn lili_changes_sides(core: &mut Core) {
     let players = crate::five::players(core);
     let team = core.raw_read_8(players + 0x3C + 0x2A, -1);
     core.raw_write_8(players + 0x3C * 3 + 0x2A, -1, team);
 }
 
 fn es14() -> MissionDef {
-    let mut m = MissionDef::new("es14", "Varro's Gambit");
-    m.objective = "Storm Castra Maxima: take the Consul's HQ or rout his army.";
+    let mut m = MissionDef::new("es14", "Caulder's Gambit");
+    m.objective = "Storm Fort Meridian: take Caulder's HQ or rout his army.";
     m.map = MapSrc::Built("es14");
     m.armies = vec![
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(6000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(VARRO)).funds(14000),
-        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(CASSIUS)).funds(5000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(TABITHA)).funds(6000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CAULDER)).funds(14000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(LILI)).funds(5000),
     ];
-    m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
+    m.pool = vec![co::KANBEI, co::COLIN];
     m.units = deployment("es14");
     m.rank_days = 12;
     m.intro = scene("m14_pre");
@@ -120,9 +120,9 @@ fn es14() -> MissionDef {
         on_day(
             4,
             None,
-            vec![Action::Scene(scene("m14_day4")), Action::Custom(cassius_changes_sides)],
+            vec![Action::Scene(scene("m14_day4")), Action::Custom(lili_changes_sides)],
         ),
-        // The legion's convoy reaches the camp road on days 5 and 8, and the Consul's reserves march in from the camp's east road.
+        // The corps' convoy reaches the camp road on days 5 and 8, and Caulder's reserves march in from the camp's east road.
         on_day(5, None, vec![Action::Spawn(wave(1, unit::MD_TANK, &LEGION[0..2]))]),
         on_day(
             8,
@@ -147,7 +147,7 @@ fn es14() -> MissionDef {
                 .concat(),
             )],
         ),
-        // The Consul's second line (the ramp towards Stormhold): Tanks on day 3, Md Tanks on day 6.
+        // Caulder's second line (the ramp towards Stormhold): Tanks on day 3, Md Tanks on day 6.
         on_day(3, None, vec![Action::Spawn(wave(2, unit::TANK, &RESERVE[0..2]))]),
         on_day(6, None, vec![Action::Spawn(wave(2, unit::MD_TANK, &RESERVE[2..4]))]),
     ];
@@ -157,7 +157,7 @@ fn es14() -> MissionDef {
     m
 }
 
-// --- M15 Pax Romana ----------------------------------------------------------------------------
+// --- M15 The Strait ----------------------------------------------------------------------------
 
 /// The Strait Fort's harbour, in the inlet of the east shore (`five/es/spec/es15.py`): the port to take once the flagship is sunk.
 const HARBOUR: (u8, u8) = (39, 13);
@@ -165,7 +165,7 @@ const HARBOUR: (u8, u8) = (39, 13);
 const STRAIT: [(u8, u8); 7] = [(33, 0), (35, 0), (30, 0), (31, 0), (34, 1), (32, 0), (37, 0)];
 
 fn es15() -> MissionDef {
-    let mut m = MissionDef::new("es15", "Pax Romana");
+    let mut m = MissionDef::new("es15", "The Strait");
     m.objective = "Break the blockade: sink the flagship and take the Strait Fort's harbour.";
     m.map = MapSrc::Built("es15");
     m.armies = vec![
@@ -256,15 +256,15 @@ const AIRFIELD: [(u8, u8); 10] = [
 /// Hachi's reserves come out of the south gate and the west gate.
 const SOUTH_GATE: [(u8, u8); 5] = [(33, 13), (34, 13), (36, 13), (36, 14), (35, 15)];
 const WEST_GATE: [(u8, u8); 6] = [(27, 9), (28, 9), (26, 10), (28, 10), (27, 11), (28, 11)];
-/// The legion's own reinforcements land at the beachhead.
+/// The corps' own reinforcements land at the beachhead.
 const CAMP: [(u8, u8); 6] = [(2, 19), (3, 19), (4, 19), (2, 20), (3, 20), (2, 21)];
 
 fn es16() -> MissionDef {
-    let mut m = MissionDef::new("es16", "Sol Invictus");
+    let mut m = MissionDef::new("es16", "Silver Nova");
     m.objective = "Break Stormhold: take Eagle's and Hachi's HQs or rout their armies.";
     m.map = MapSrc::Built("es16");
     m.armies = vec![
-        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(KLAUS)).funds(15000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::PickPartner(TABITHA)).funds(15000),
         // The Allied last stand: Eagle's air wing and Hachi's deep stores, allies with real production.
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE))
             .team(2)
@@ -273,7 +273,7 @@ fn es16() -> MissionDef {
             .team(2)
             .funds(13000),
     ];
-    m.pool = vec![AURELIA, CASSIUS, LIVIA, co::KANBEI, co::COLIN];
+    m.pool = vec![LILI, co::KANBEI, co::COLIN];
     m.units = crate::es_campaign::deployment("es16");
     m.rank_days = 20;
     m.intro = scene("m16_pre");
@@ -369,7 +369,7 @@ fn es16() -> MissionDef {
         ),
         on_day(8, None, vec![Action::Spawn(wave(2, unit::FIGHTER, &AIRFIELD[7..9]))]),
         on_day(10, None, vec![Action::Spawn(wave(3, unit::MD_TANK, &SOUTH_GATE[0..2]))]),
-        // The legion's own reinforcements: the Quaestor's second convoy, on days 4 and 8.
+        // The corps' own reinforcements: Lili's second convoy, on days 4 and 8.
         on_day(
             4,
             None,
@@ -396,7 +396,7 @@ fn es16() -> MissionDef {
         ),
     ];
     // Mount Sol below the west gate (`five/es/spec/es16.py`): from day 3 it erupts every day on 3 cells of the ring round its rock, 4 HP to any army's
-    // units there (Dual Strike's volcano, as the BH Campaign's M11 has it): a hazard for the legion's column and the city's sallies alike.
+    // units there (Dual Strike's volcano, as the BH Campaign's M11 has it): a hazard for the corps' column and the city's sallies alike.
     m.volcano = Some(VolcanoDef::new(3, 1, 4, &crate::campaign_model::ring(19, 10, 26, 17)).per_eruption(3));
     m.flag = region::ACT4[3];
     m.style = 8; // the last mission's marker

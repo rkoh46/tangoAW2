@@ -10,8 +10,8 @@ use crate::custom_campaign::{co, colour, unit, *};
 /// The Gauntlet's index in [`crate::campaign_model::SOURCES`].
 pub const SOURCE: usize = 4;
 
-/// Every CO the player may pick (all open from the start): AW2's, Dual Strike's, then tangoAW2's own (not Varro: a boss only).
-pub const ROSTER: [(u8, bool); 36] = [
+/// Every CO the player may pick (all open from the start): AW2's, Dual Strike's, then tangoAW2's own.
+pub const ROSTER: [(u8, bool); 35] = [
     (co::ANDY, true),
     (co::MAX, true),
     (co::SAMI, true),
@@ -42,10 +42,9 @@ pub const ROSTER: [(u8, bool); 36] = [
     (co::VON_BOLT, true),
     (co::CLONE_ANDY, true),
     (co::CRUMB, true),
-    (crate::es_co::KLAUS, true),
-    (crate::es_co::AURELIA, true),
-    (crate::es_co::CASSIUS, true),
-    (crate::es_co::LIVIA, true),
+    (crate::es_co::TABITHA, true),
+    (crate::es_co::LILI, true),
+    (crate::es_co::CAULDER, true),
     (crate::co_new::ASUKA, true),
     (crate::co_new::ARIA, true),
 ];

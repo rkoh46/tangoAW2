@@ -1,4 +1,4 @@
-//! Act I, The Landing: M1 Landfall, M2 Testudo, M3 The Wall, M4 The Second Legion. Maps `five/es/spec/es01.py` .. `es04.py`, dialogue `es_text/act1.txt`.
+//! Act I, The Landing: M1 Landfall, M2 The Ridge, M3 The Wall, M4 The Second Corps. Maps `five/es/spec/es01.py` .. `es04.py`, dialogue `es_text/act1.txt`.
 //! A mission names what it needs by key (`Needs::All(vec!["es01"])`).
 
 // (the acts' imports: each uses what it needs)
@@ -6,7 +6,7 @@
 
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_campaign::{after, deployment, leads, on_day, region, roster, wave};
-use crate::es_co::{AURELIA, CASSIUS, KLAUS};
+use crate::es_co::{CAULDER, LILI, TABITHA};
 use crate::es_text::{chain, scene};
 
 // --- M1 Landfall --------------------------------------------------------------------------
@@ -16,8 +16,8 @@ fn es01() -> MissionDef {
     m.objective = "Land from the sandbar and take the fort's HQ.";
     m.map = MapSrc::Built("es01");
     m.armies = vec![
-        // Klaus's legion is pre-deployed on the fleet's sandbar: no production, no funds.
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(KLAUS)).funds(0),
+        // Tabitha's corps is pre-deployed on the fleet's sandbar: no production, no funds.
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(TABITHA)).funds(0),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JESS)).funds(8000),
     ];
     m.units = deployment("es01");
@@ -47,11 +47,11 @@ fn es01() -> MissionDef {
 // --- M2 Testudo ------------------------------------------------------------------------------
 
 fn es02() -> MissionDef {
-    let mut m = MissionDef::new("es02", "Testudo");
+    let mut m = MissionDef::new("es02", "The Ridge");
     m.objective = "Hold the ridge until day 9. Do not lose the HQ.";
     m.map = MapSrc::Built("es02");
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(KLAUS)).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(TABITHA)).funds(3000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(co::JESS, co::EAGLE)).funds(14000),
     ];
     m.units = deployment("es02");
@@ -126,7 +126,7 @@ fn es03() -> MissionDef {
     m.look = 0; // normal
     m.weather = Weather::Rain; // rain: the fog of rain hides the gunners on the wall
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(AURELIA)).funds(2000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LILI)).funds(2000),
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).funds(6000),
     ];
     m.units = deployment("es03");
@@ -134,7 +134,7 @@ fn es03() -> MissionDef {
     m.intro = scene("m03_pre");
     m.victory = scene("m03_post");
     m.after = chain(&["m03_map"]);
-    m.recruits = vec![roster::AURELIA];
+    m.recruits = vec![roster::LILI];
     m.triggers = vec![
         // Day 2: the engineers' Bomber.
         on_day(2, None, vec![Action::Spawn(wave(1, unit::BOMBER, &[(11, 22)]))]),
@@ -146,24 +146,23 @@ fn es03() -> MissionDef {
     m
 }
 
-// --- M4 The Second Legion ----------------------------------------------------------------------
+// --- M4 The Second Corps ----------------------------------------------------------------------
 
 fn es04() -> MissionDef {
-    let mut m = MissionDef::new("es04", "The Second Legion");
-    m.objective = "Rout Cassius's legion or take its camp HQ.";
+    let mut m = MissionDef::new("es04", "The Second Corps");
+    m.objective = "Rout Caulder's Second Corps or take its camp HQ.";
     m.map = MapSrc::Built("es04");
     m.fog = true;
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Pick).funds(4000),
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CASSIUS)).funds(4000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CAULDER)).funds(4000),
     ];
-    m.pool = vec![KLAUS, AURELIA];
+    m.pool = vec![TABITHA, LILI];
     m.units = deployment("es04");
     m.rank_days = 12;
     m.intro = scene("m04_pre");
     m.victory = scene("m04_post");
     m.after = chain(&["m04_map"]);
-    m.recruits = vec![roster::CASSIUS];
     m.triggers = vec![on_day(5, None, vec![Action::Scene(scene("m04_day5"))])];
     m.flag = region::ACT1[3];
     m.stars = 2;

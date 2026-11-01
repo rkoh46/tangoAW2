@@ -1,3 +1,39 @@
+# SILVER NOVA RECAST (newest rules: they override the rest of this file where they differ)
+
+The Emerald Sun army is being redesigned as **Silver Nova** and its five Roman COs (Klaus, Aurelia, Cassius, Livia, Varro) are deleted. Three new COs replace them. **Same plot beats**
+(the grain trail, HOBB's stamp, the conquest from Green Earth's coast to Stormhold, the black light, who joins when); only the people, their words and the Roman flavour change.
+Speaker names in the files: **TABITHA, LILI, CAULDER** (no KLAUS / AURELIA / CASSIUS / LIVIA / VARRO anywhere any more, not even as a name another character says).
+
+## The new cast and how the five old roles fold into them
+- **TABITHA** = Klaus: the commander, the player's chief commander, the road, the crime-scene reader. A young woman: stern, confident, an officer to her bones, short orders, dry, fair; gives credit last.
+  Pigtails, a white-and-lilac uniform dress, a glare. NEVER contractions, no exclamation marks. Calls herself "Commander Tabitha". (Her "Super Power" is a barrage called Firestorm.)
+- **LILI** = Aurelia + Livia + Cassius's player-side roles (the engineer and quartermaster who counts everything, and the loud rival who becomes a friend and leads M5): a small girl with two teddy
+  bears (the pink one is **Mabel**, the green one **Gus**), polite, exact, sing-song, creepy-cute: she says terrible things sweetly ("Mabel says that wall will fall at noon. Mabel is never wrong."),
+  counts paces, tons and debts, talks to her bears, never raises her voice, never shouts; the campaign's one joke a mission is hers and it is dry and unsettling. NO contractions, no exclamation marks.
+  Her weather power (Enigma) is the sky "turning its mind": snow, sand or rain at random. She is a quartermaster-engineer, so she found the ledger pattern (Livia's beat) and she builds the siege (Aurelia's).
+  In M5 she leads the dust-and-wheels race; in M6 the property audit; in M3 the siege of the wall (her first scene as a commander); in M8 and M12 she is Tabitha's forced Tag pair; she joins the roster after M3.
+- **CAULDER** = Varro + Cassius's antagonist roles: a tall white-haired scientist-commander in a long white coat with a red-gloved hand: sinister, courteous, clinical, calls people "subject" only when he is
+  sure he has won; says "my dear Commander" to Tabitha (he is her old patron: he found money for the corps and did not ask where it came from); reads every hunger as an experiment's opportunity. Never shouts,
+  never uses contractions, no exclamation marks. He is **never a player CO** and never in a player's pool. He is the Directorate's favourite and the Second Corps' commander (the old Cassius beat: M1's
+  radio banter, M4's enemy army and the letters' scene) and the Director whose camp falls in M14 (the old Varro beat, boss). The two old men merge: the rival in M1/M4 is the same man who is
+  unmasked as HOBB's paymaster in M14. Where the old text had Cassius change sides in M14, **Lili's detachment** (the Yellow Comet-coloured army, ordered to guard Caulder's camp) changes sides on day 4;
+  she is NOT in M14's player pool (the pool is Kanbei and Colin only). After M4 Caulder is in no player scene, only letters and radio (M5 on) until M14 where he appears in person, and he never appears after M14.
+- Old Cassius's player-side lines (M5, M8 Tag partner, M11 shortcut choice, M12, M14 ally) are Lili's now; his vanity and horses are gone (give the speed jokes to nobody, or to Lili's bears).
+  Where two of the old officers spoke to each other, find the natural 3-voice scene: merge, cut or move a line to LEGIONARY (the unnamed Silver Nova soldier face; rename his role in the lines as "a corps soldier"
+  or "the adjutant") or to NARRATION. **Never let a character talk to herself**. @IF / @WITH / @PARTNER groups only name TABITHA and LILI now (the player's pool: Tabitha and Lili, plus Kanbei and Colin as partners).
+
+## Vocabulary swap (Roman flavour belonged to the deleted COs and goes)
+Emerald Sun -> **Silver Nova** (the army; "the Nova"); the Imperium of Aurea -> **Novaria**, a southern sea-state; Aurea / Aurelium -> Novaria / Port Argent; Aurean -> Novarian; the Senate -> **the Directorate**;
+Consul -> **Director**; Legate -> **Commander**; legion -> **corps** (the Second Legion -> the **Second Corps**); legionary -> corps soldier; Quaestor -> quartermaster; Prefect -> (just the name);
+Praetorians -> the Directorate Guard; Castra Maxima -> **Fort Meridian**; Mare Nostrum -> the Silver Sea; denarii -> credits; sacred sun / Sol Invictus / "the sun does not set" -> **the nova**, a star that
+burns brightest at its end ("The nova does not set. It waits." style lines are fine); Latin phrases and Roman idioms ("Hail", "by the gods", "ave", paces of marching legions, "bread and circuses") go.
+Mission titles (use them if a scene names a mission): 1 Landfall, 2 The Ridge, 3 The Wall, 4 The Second Corps, 5 Dust and Wheels, 6 The Ledger, 7 The Silver Sea, 8 Two Hands, 9 Grain Ships,
+10 The Quiet Pass, 11 The Treasure Train, 12 The Iron Bastion, 13 The Free Port, 14 Caulder's Gambit, 15 The Strait, 16 Silver Nova.
+Power names (if a scene names one): Tabitha's Super CO Power is **Firestorm** (9 stars, 8 HP to the best site, a lightning-pink bolt); Lili's CO Power is **Enigma**; Caulder's Super CO Power is **Cataclysm**; their
+day to day: Tabitha **Mega Boost**, Caulder **Overdrive**... (no need to name them in dialogue). Tag Powers are named in `cos/tags.toml` (not for dialogue).
+Keep every box inside the lint's limits; keep the number and the length of scenes (same structure and `== key` names; a scene's pool header names only TABITHA / LILI / KANBEI / COLIN).
+
+---
 # Emerald Sun Campaign dialogue: writers' bible
 
 You are writing the Emerald Sun Campaign's dialogue (sixteen missions, a prologue and an epilogue) so that it reads like Advance Wars at its best:

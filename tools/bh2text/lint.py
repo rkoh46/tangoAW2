@@ -23,12 +23,14 @@ LIMIT = 176
 
 CO_NAMES = {
     "STURM", "VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE", "CLONE ANDY",
-    "SONJA", "ASUKA", "ARIA", "KLAUS", "AURELIA", "CASSIUS", "LIVIA", "CRUMB CO", "ANDY", "NELL", "MAX", "OLAF", "SAMI", "GRIT", "KANBEI", "EAGLE", "DRAKE", "HACHI",
+    "SONJA", "ASUKA", "ARIA", "TABITHA", "LILI", "CAULDER", "CRUMB CO", "ANDY", "NELL", "MAX", "OLAF", "SAMI", "GRIT", "KANBEI", "EAGLE", "DRAKE", "HACHI",
     "COLIN", "JESS", "SENSEI", "GRIMM", "JAVIER", "SASHA", "JAKE", "RACHEL",
 }
 OTHER_NAMES = {"LEGIONARY", "NARRATION", "CRUMB", "MORTAR", "WICK", "SOLDIER", "SOLDIER OS", "SOLDIER BM", "SOLDIER GE", "SOLDIER YC", "[CO]", "[CO2]"}
 ROSTER = ["STURM", "VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE ANDY", "SONJA", "CRUMB CO"]
-NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL", "ASUKA", "SONJA", "KLAUS", "LIVIA"}
+NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL", "ASUKA", "SONJA", "TABITHA", "LILI", "CAULDER"}
+# the user's own signature lines (the CO pages' quotes) keep their "!" and "Let's"
+SIGNATURE = ("Stupid weak people!", "Let's go, Mr. Bear!", "Tee hee! Let's go, Mr. Bear!", "Tee hee! Let's go,", "Mr. Bear!", "Fascinating...", "Tee hee!")
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)
 
 # the songs a scene may name (`@SONG`): the roles of src/campaign_music.rs NAMED, `aw2:<id>`, `co:<name>`
@@ -130,10 +132,13 @@ def lint_file(name, errors, warns, counts):
                 errors.append(f"{where}: {w}px > {LIMIT}: {ln!r}")
         # voice (warnings)
         plain = text.replace(" / ", " ")
-        if who in ("STURM", "KLAUS") or (who in ("[CO]", "[CO2]") and False):
-            if "!" in plain:
+        voice_plain = plain
+        for sig in SIGNATURE:
+            voice_plain = voice_plain.replace(sig, "")
+        if who in ("STURM", "TABITHA", "LILI", "CAULDER") or (who in ("[CO]", "[CO2]") and False):
+            if "!" in voice_plain:
                 warns.append(f"{where}: Sturm shouts: {plain!r}")
-        if who in NO_CONTRACTIONS and CONTRACTION.search(plain):
+        if who in NO_CONTRACTIONS and CONTRACTION.search(voice_plain):
             warns.append(f"{where}: {who} uses a contraction: {plain!r}")
         if who == "JUGGER" and re.search(r"[a-z]", plain):
             warns.append(f"{where}: Jugger in lower case: {plain!r}")

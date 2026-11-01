@@ -4,7 +4,7 @@
 
 use crate::custom_campaign::{co, colour, unit, *};
 use crate::es_campaign::{after, deployment, leads, on_day, region, roster, wave};
-use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA};
+use crate::es_co::{LILI, TABITHA};
 use crate::es_text::{chain, scene};
 
 /// The player's army (army 1) owns the cell.
@@ -28,7 +28,7 @@ fn es05() -> MissionDef {
     m.look = 2; // desert
     m.weather = Weather::Sandstorm; // the Comet Road in the desert, a sandstorm blowing (long guns lose a cell of range)
     m.armies = vec![
-        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(CASSIUS)).funds(3000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(LILI)).funds(3000),
         ArmyDef::new(colour::YELLOW_COMET, CoSpec::Pair(co::GRIMM, co::SENSEI)).funds(9000),
     ];
     m.units = deployment("es05");
@@ -52,11 +52,11 @@ fn es05() -> MissionDef {
 // --- M6 Tribute ----------------------------------------------------------------------------
 
 fn es06() -> MissionDef {
-    let mut m = MissionDef::new("es06", "Tribute");
+    let mut m = MissionDef::new("es06", "The Ledger");
     m.objective = "Own 22 properties at once by day 16.";
     m.map = MapSrc::Built("es06");
     m.armies = vec![
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(LIVIA)).funds(3000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(LILI)).funds(3000),
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN))
             .team(2)
             .funds(5000),
@@ -69,7 +69,7 @@ fn es06() -> MissionDef {
     m.intro = scene("m06_pre");
     m.victory = scene("m06_post");
     m.after = chain(&["m06_map"]);
-    m.recruits = vec![roster::LIVIA, roster::COLIN];
+    m.recruits = vec![roster::COLIN];
     m.triggers = vec![
         on_day(6, None, vec![Action::Scene(scene("m06_day6"))]),
         after(Cond::PropertiesAtLeast { army: 1, n: 22 }, vec![Action::Win]),
@@ -92,7 +92,7 @@ fn es06() -> MissionDef {
 const HARBOUR: (u8, u8) = (34, 12);
 
 fn es07() -> MissionDef {
-    let mut m = MissionDef::new("es07", "Mare Nostrum");
+    let mut m = MissionDef::new("es07", "The Silver Sea");
     m.objective = "Sink the Warden flagship and take Isle Verdant's harbour.";
     m.map = MapSrc::Built("es07");
     m.armies = vec![
@@ -126,13 +126,13 @@ fn es07() -> MissionDef {
 // --- M8 Hammer and Anvil -------------------------------------------------------------------
 
 fn es08() -> MissionDef {
-    let mut m = MissionDef::new("es08", "Hammer and Anvil");
-    m.objective = "Defeat the Orange Star border force at Ironhold. Klaus and Cassius fight as a pair.";
+    let mut m = MissionDef::new("es08", "Two Hands");
+    m.objective = "Defeat the Orange Star border force at Ironhold. Tabitha and Lili fight as a pair.";
     m.map = MapSrc::Built("es08");
     m.look = 0; // normal
     m.weather = Weather::Rain; // rain over Ironhold's crags (the fog of rain hides the flanking roads)
     m.armies = vec![
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(KLAUS, CASSIUS)).funds(4000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(TABITHA, LILI)).funds(4000),
         ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX))
             .team(2)
             .funds(9000),
