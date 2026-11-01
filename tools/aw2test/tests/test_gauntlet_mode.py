@@ -21,7 +21,7 @@ SURVIVAL_SMALL_TILES = (0x320, 32)
 GAUNTLET_PALETTE, SURVIVAL_PALETTE = 14, 13
 # Battle Maps points (C420 +0x00 spendable, +0x04 the most ever held): every won battle earns them (AW2's campaign, the War Room, Survival, a DS mission, the Gauntlet)
 POINTS = (saves.c420(0x00, 4), saves.c420(0x04, 4))
-CHOOSER_ENTRIES = 5                        # AW2 CAMPAIGN, DS, BH, BH2 and Emerald Sun's: the Gauntlet is not one of them
+CHOOSER_ENTRIES = 5                        # AW2 CAMPAIGN, DS, BH, BH2 and Silver Nova's: the Gauntlet is not one of them
 
 
 def png(path_bmp):
@@ -232,7 +232,7 @@ def gauntlet_mode_a_loss_returns_to_select_mode_and_writes_no_record(ctx):
 
 @test(modes=("ds",))
 def gauntlet_mode_is_not_in_the_campaign_menu(ctx):
-    """The Campaign sub-menu lists AW2 CAMPAIGN, DS, BH, BH2 and Emerald Sun's: five entries, no GAUNTLET, and the sources' indices are as before (DS 0, BH 1, ES 2, BH2 3, Gauntlet 4)."""
+    """The Campaign sub-menu lists AW2 CAMPAIGN, DS, BH, BH2 and Silver Nova's: five entries, no GAUNTLET, and the sources' indices are as before (DS 0, BH 1, ES 2, BH2 3, Gauntlet 4)."""
     e, g, d = boot(ctx)
     d.open_campaign_box()
     e.wait(30)
@@ -264,7 +264,7 @@ def gauntlet_mode_is_not_in_the_campaign_menu(ctx):
 
 
 def seed_campaigns(ctx):
-    """A save with the BH, BH2, Emerald Sun and DS campaigns' records (each one New), chained on the pinned base save. Returns its path."""
+    """A save with the BH, BH2, Silver Nova and DS campaigns' records (each one New), chained on the pinned base save. Returns its path."""
     path = paths.base_save()
     for name, driver, env, start in (
         ("bh", bh.BhCampaign, {}, lambda d: d.start_bh(new=True, pick=False)),
@@ -286,8 +286,8 @@ def seed_campaigns(ctx):
 
 @test(modes=("ds",))
 def gauntlet_mode_leaves_the_other_campaigns_saves_byte_identical(ctx):
-    """With the DS, BH, BH2 and Emerald Sun campaigns each started, a whole Gauntlet run (win) changes slot 13 only in the Gauntlet's region (+0x240..): the BH (0..0x120) and BH2 (0x120..0x240) records,
-    Emerald Sun's slot 11 and the DS Campaign's slot 15 are byte for byte what they were, and every sector passes AW2's own check."""
+    """With the DS, BH, BH2 and Silver Nova campaigns each started, a whole Gauntlet run (win) changes slot 13 only in the Gauntlet's region (+0x240..): the BH (0..0x120) and BH2 (0x120..0x240) records,
+    Silver Nova's slot 11 and the DS Campaign's slot 15 are byte for byte what they were, and every sector passes AW2's own check."""
     seeded = seed_campaigns(ctx)
     e, g, d = boot(ctx, save=seeded)
     before = flash_after(ctx, e, "before_run")
@@ -395,7 +395,7 @@ def gauntlet_mode_selector_lists_cinder_sea_and_the_enemies_in_order(ctx):
     e.wait(10)
     ctx.eq(e.u8(ga.UI_MAP_CURSOR), 1, "DOWN moves to the second map")
     ctx.eq(ga.shown(e)[1], [(5, ga.BLUE_MOON), (17, ga.GREEN_EARTH), (6, ga.YELLOW_COMET), (80, ga.ORANGE_STAR), (92, ga.BLACK_HOLE)], "Iron Crown lists all five enemies in order, Asuka of stage two last, each in its fixed colour")
-    ctx.eq(ga.shown(e)[2], [ga.EMERALD_SUN], "Iron Crown offers Emerald Sun only (every plain colour is an enemy's in some stage)")
+    ctx.eq(ga.shown(e)[2], [ga.EMERALD_SUN], "Iron Crown offers Silver Nova only (every plain colour is an enemy's in some stage)")
     png(pic(ctx, e, "selector_iron_crown"))
     e.press("UP", 6)
     e.wait(10)
@@ -409,7 +409,7 @@ def gauntlet_mode_selector_lists_cinder_sea_and_the_enemies_in_order(ctx):
 
 @test(modes=("ds",))
 def gauntlet_mode_colour_pick_offers_only_the_colours_the_enemies_do_not_wear(ctx):
-    """After the CO pick the colour pick offers exactly Orange Star, Blue Moon and Emerald Sun on Cinder Sea (AW2's five minus the enemies' Green Earth, Yellow Comet and Black Hole, plus the 6th
+    """After the CO pick the colour pick offers exactly Orange Star, Blue Moon and Silver Nova on Cinder Sea (AW2's five minus the enemies' Green Earth, Yellow Comet and Black Hole, plus the 6th
     army); LEFT and RIGHT move round them; B goes back to the CO screen."""
     e, g, d = boot(ctx)
     d.open()
@@ -417,7 +417,7 @@ def gauntlet_mode_colour_pick_offers_only_the_colours_the_enemies_do_not_wear(ct
     d.choose_cos(1, prefs=[ga.ANDY])
     d.wait_step(ga.COLOURS)
     _, enemies, free = ga.shown(e)
-    ctx.eq(free, ga.CINDER_FREE, "Orange Star, Blue Moon, Emerald Sun")
+    ctx.eq(free, ga.CINDER_FREE, "Orange Star, Blue Moon, Silver Nova")
     ctx.check(not set(free) & {c for _, c in enemies}, f"no enemy colour is offered ({free} against {enemies})")
     ctx.eq(e.u8(ga.UI_COLOUR_CURSOR), 0, "the cursor starts on the first")
     png(pic(ctx, e, "colour_pick_1"))
@@ -441,7 +441,7 @@ def gauntlet_mode_colour_pick_offers_only_the_colours_the_enemies_do_not_wear(ct
 
 @test(modes=("ds",))
 def gauntlet_mode_battle_uses_the_picked_army_colour(ctx):
-    """The battle's army colour is the pick: Orange Star, Blue Moon, and Emerald Sun (the skin sits on the lowest colour no enemy has, Orange Star's; its designs stay the CO's: an Orange Star CO's
+    """The battle's army colour is the pick: Orange Star, Blue Moon, and Silver Nova (the skin sits on the lowest colour no enemy has, Orange Star's; its designs stay the CO's: an Orange Star CO's
     soldiers). The player's colour byte, the skin's host, the enemies' fixed colours and the player's HQ on the map (a picture of it) are checked for each."""
     heads = {}
     for code, label, host, skin in ((ga.ORANGE_STAR, "orange_star", 1, 0), (ga.BLUE_MOON, "blue_moon", 2, 0), (ga.EMERALD_SUN, "emerald_sun", 1, 1)):
@@ -467,15 +467,15 @@ def gauntlet_mode_battle_uses_the_picked_army_colour(ctx):
     ctx.check(red_os > 0.01 and red_bm < red_os / 3, f"Orange Star's army is red, Blue Moon's is not ({red_os}, {red_bm})")
     ctx.check(blue_bm > 0.01, f"Blue Moon's army is blue ({blue_bm})")
     red_es = hue_share(heads["emerald_sun"], lambda r, g_, b: r > 200 and g_ < 110 and b < 90)
-    ctx.check(red_es < red_os / 3, f"Emerald Sun is not Orange Star's red ({red_es} against {red_os})")
+    ctx.check(red_es < red_os / 3, f"Silver Nova is not Orange Star's red ({red_es} against {red_os})")
 
 
 @test(modes=("ds",))
 def gauntlet_mode_emerald_sun_survives_save_and_continue(ctx):
-    """A run saved halfway in Emerald Sun continues in it (the pick is kept in the mode's progress record and the skin comes back with the battle)."""
+    """A run saved halfway in Silver Nova continues in it (the pick is kept in the mode's progress record and the skin comes back with the battle)."""
     e, g, d = boot(ctx)
     d.start(ga.ANDY, colour=ga.EMERALD_SUN)
-    ctx.eq(e.u8(ga.HOSTS), 1, "Emerald Sun is on colour 1")
+    ctx.eq(e.u8(ga.HOSTS), 1, "Silver Nova is on colour 1")
     saves.suspend(g)
     saved = flash_after(ctx, e, "saved")
     e.close()
@@ -489,7 +489,7 @@ def gauntlet_mode_emerald_sun_survives_save_and_continue(ctx):
     g2.wait_for_input()
     e2.wait(30)
     ctx.eq(g2.player(1)["colour"], 1, "the player's colour byte")
-    ctx.eq(e2.u8(ga.HOSTS), 1, "Emerald Sun is on again")
+    ctx.eq(e2.u8(ga.HOSTS), 1, "Silver Nova is on again")
     png(pic(ctx, e2, "continued_emerald_sun"))
     e2.close()
 

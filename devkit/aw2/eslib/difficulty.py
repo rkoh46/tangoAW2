@@ -1,4 +1,4 @@
-"""The difficulty score of an Emerald Sun mission: how hard it is to beat, from numbers a designer can read.
+"""The difficulty score of a Silver Nova mission: how hard it is to beat, from numbers a designer can read.
 
 Static (from the mission report and the map): the enemy's start force against the player's (unit prices, as the games' own damage-to-cost sense), the
 reinforcements by day 10, the production and income on each side (properties that earn, bases, the funds given), the share of the enemy's guns that hold
@@ -27,7 +27,7 @@ def side(d, team_of_player):
 
 def numbers(d):
     mine, foes = side(d, d["armies"][0]["team"])
-    # a five-army map's player is the fifth: not used by Emerald Sun (the player is army 1)
+    # a five-army map's player is the fifth: not used by Silver Nova (the player is army 1)
     pv = sum(report.value(d["units"][a]) for a in mine) + sum(report.spawn_value(d, a, 10) for a in mine)
     ev = sum(report.value(d["units"][a]) for a in foes) + sum(report.spawn_value(d, a, 10) for a in foes)
     funds = {a["n"]: max(a["funds"], 0) for a in d["armies"]}

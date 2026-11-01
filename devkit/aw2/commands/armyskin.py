@@ -4,6 +4,7 @@
   armyskin check [--live] [--skin FILE] [--scenario S ...]            the data file, the palette's margins, every unit's recolouring; --live also walks the
                                                                       catalogue of army-coloured screens and fails on any left in the base army's colours
   armyskin matrix [--quick] [--armies 2 3] [--colours 5] [--no-ds]    the skin on every colour in every army count (2..5): the skins' rooms in free ROM, the panel, the build menu, a battle
+  armyskin import-hq PICTURE [--write] [--sheet PNG]                  import the user's HQ picture on its pixel grid (grass removed, nothing redrawn); --write puts its rows in the skin file
   armyskin catalogue                                                  the screens (scenarios) and what each shows
   armyskin options --dir DIR [--letters ACF] [--awbw DIR]            a sheet of soldier options (candidate files A.toml ...) to choose from
   armyskin scenario NAME [--ids 6,2] [--ds] [--out DIR]              run one scenario's harness script and keep its shots (for sheets)
@@ -34,6 +35,17 @@ def register(sub):
     a.add_argument("--ds", action="store_true", help="with the Dual Strike pack (its units too)")
     a.add_argument("--keep", action="store_true")
     a.set_defaults(fn=run_check)
+    a = ps.add_parser("import-hq", help="import a user's HQ picture (an upscaled pixel-art screenshot) faithfully as the skin's HQ rows")
+    a.add_argument("picture")
+    a.add_argument("--skin", help="the skin file (default the first skin's)")
+    a.add_argument("--write", action="store_true", help="replace the skin file's [hq] rows")
+    a.add_argument("--sheet", help="write the picture beside the imported pixels (PNG)")
+    a.set_defaults(fn=run_import_hq)
+    a = ps.add_parser("palette-options", help="a comparison sheet of candidate palettes (DIR/A.toml ... fragments with a [colours] table) drawn by the real game")
+    a.add_argument("--dir", required=True)
+    a.add_argument("--letters", default="ABCDEF")
+    a.add_argument("--out", required=True)
+    a.set_defaults(fn=run_palette_options)
     a = ps.add_parser("sources", help="find ROM palettes an army's colours come from that the skin does not patch")
     a.add_argument("--scenario", nargs="*")
     a.add_argument("--ds", action="store_true")
@@ -89,6 +101,43 @@ def run_preview(a):
     out = a.out or str(cfg.work("armyskin", f"preview_{a.colour}.png"))
     preview(a.colour, out, a.skin, fast=a.fast)
     util.say("wrote", out)
+    return 0
+
+
+def run_import_hq(a):
+    import re
+    from ..armyskinlib import hqimport, SKIN_DIR
+    rows, rep = hqimport.import_hq(a.picture)
+    print("\n".join(rep))
+    path = Path(a.skin) if a.skin else SKIN_DIR / "emerald_sun.toml"
+    if a.sheet:
+        import tomllib
+        from ..armyskinlib.check import hex_rgb
+        c = tomllib.loads(path.read_text())["colours"]
+        pal = {"1": (255, 255, 255)}
+        for i, h in enumerate(c.get("building", c["ramp"])[:4]):
+            pal["2345"[i]] = hex_rgb(h)
+        pal["e"] = hex_rgb(c["gold"])
+        for ch, h in zip("cb8", c.get("orb", [])):
+            pal[ch] = hex_rgb(h)
+        util.say("wrote", hqimport.sheet(a.picture, rows, pal, a.sheet))
+    if a.write:
+        t = path.read_text()
+        t2, n = re.subn(r"(\[hq\]\n(?:#.*\n)*)rows = \[.*?\n\]\n", lambda m: m.group(1) + hqimport.toml_rows(rows), t, count=1, flags=re.S)
+        if n != 1:
+            util.die("no [hq] rows in " + str(path))
+        path.write_text(t2)
+        util.say("wrote the HQ rows to", path)
+    return 0
+
+
+def run_palette_options(a):
+    from ..armyskinlib import paletteopts
+    notes = paletteopts.run(a.dir, a.letters, a.out, say=util.say)
+    for L, (fails, rep, gap) in notes.items():
+        print(f"== {L}: city vs the unowned city {gap if gap is None else round(gap, 1)}; " + ("check: " + "; ".join(fails) if fails else "check ok"))
+        print("\n".join(l for l in rep if any(k in l for k in ("closest", "done greys", "fog", "chroma", "on colour"))))
+    util.say("wrote", a.out)
     return 0
 
 
@@ -207,8 +256,8 @@ def run_sheet(a):
     if a.ds:
         from ..armyskinlib import look as lk
         from PIL import Image as _Image
-        for scen, title in (("tilt", "2 armies: Emerald Sun (idle and done units, properties, the HQ at the left) against Blue Moon"),
-                            ("tilt5p", "5 armies: Emerald Sun beside Green Earth and Black Hole")):
+        for scen, title in (("tilt", "2 armies: Silver Nova (idle and done units, properties, the HQ at the left) against Blue Moon"),
+                            ("tilt5p", "5 armies: Silver Nova beside Green Earth and Black Hole")):
             rc, log = lk.checkpoint(f"sheet_{scen}", scen, None, True)
             png = work / f"{scen}.png"
             if rc == 0:
@@ -218,15 +267,15 @@ def run_sheet(a):
     sh.swatches(host).save(out / "04_palette.png")
     from ..armyskinlib import figures as fg
     fg.battle_sheet(host).save(out / "10_battle_portrait.png")
-    m5 = [("5 armies: Emerald Sun (stands in for Blue Moon's colour), Orange Star, Green Earth, Yellow Comet, Black Hole", sh.shot(dirs, "map5p", "map5")), ("same map, far side", sh.shot(dirs, "map5p", "map5_far"))]
+    m5 = [("5 armies: Silver Nova (stands in for Blue Moon's colour), Orange Star, Green Earth, Yellow Comet, Black Hole", sh.shot(dirs, "map5p", "map5")), ("same map, far side", sh.shot(dirs, "map5p", "map5_far"))]
     sh.grid(m5, 2, 3).save(out / "01_five_armies.png")
     screens = [("idle units", sh.shot(dirs, "units", "units")), ("done units", sh.shot(dirs, "units", "done")), ("HQ", sh.shot(dirs, "units", "hq")), ("build menu", sh.shot(dirs, "units", "build")),
                ("unit panel", sh.shot(dirs, "units", "panel")), ("build menu: Mech portrait", sh.shot(dirs, "units", "build_mech")), ("battle: Infantry", sh.shot(dirs, "battle", "scene2")), ("battle: Mech against a Tank", sh.shot(dirs, "battle_mech", "scene3")), ("power menu", sh.shot(dirs, "power", "power_menu")),
                ("power dialogue", sh.shot(dirs, "power", "power_say")), ("capturing", sh.shot(dirs, "capture", "capture2")), ("NEXT TURN", sh.shot(dirs, "turn", "nextturn")),
                ("DAY banner", sh.shot(dirs, "turn", "day")), ("end-turn menu", sh.shot(dirs, "turn", "endturn")), ("DEFEAT", sh.shot(dirs, "results", "defeat")),
-               ("VICTORY (other seat)", sh.shot(dirs, "results", "victory", 1)), ("The Emerald Sun Army has lost!", sh.shot(dirs, "lost3p", "lost_msg", 1)),
+               ("VICTORY (other seat)", sh.shot(dirs, "results", "victory", 1)), ("The Silver Nova Army has lost!", sh.shot(dirs, "lost3p", "lost_msg", 1)),
                ("next match, no trace", sh.shot(dirs, "rematch", "rematch"))]
-    sh.grid(screens, 4, 3, caption="Emerald Sun on Orange Star's colour against Blue Moon (2 armies; harness frames of the game, 240x160 at 3x)").save(out / "05_screens.png")
+    sh.grid(screens, 4, 3, caption="Silver Nova on Orange Star's colour against Blue Moon (2 armies; harness frames of the game, 240x160 at 3x)").save(out / "05_screens.png")
     if ds_dirs:
         ds = [("DS units on the map", sh.shot(ds_dirs, "dsunits", "ds_parade")), ("build menu: Megatank", sh.shot(ds_dirs, "dsunits", "ds_build")),
               ("battle scene: Megatank", sh.shot(ds_dirs, "dsunits", "ds_scene2")), ("Crumb leads: Black Hole's HQ", sh.shot(ds_dirs, "crumb", "crumb_hq"))]

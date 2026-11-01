@@ -12,7 +12,7 @@ use std::sync::OnceLock;
 use crate::crumb_art::{body_files, decode, Px};
 use crate::ds_co_art::CoArt;
 
-/// The six with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`); Aria (93), an Orange Star CO in every list (`crate::aria`).
+/// The six with the owner's portraits: (CO id, file name). Asuka (92) is not Silver Nova's: a Black Hole CO in every list (`crate::asuka`); Aria (93), an Orange Star CO in every list (`crate::aria`).
 const IDS: [(u8, &str); 5] = [
     (86, "tabitha"),
     (87, "lili"),

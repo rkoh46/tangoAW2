@@ -602,25 +602,25 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 25: the maps are picked at the same time and in private (two pad words a seat, crate::unranked::pick_word), and a seat under the yield
         // command is yielded at once, out of turn, with the last army left ending its own turn (crate::proxy_seat::force_yield).
         // 26: tangoAW2's maps' data moved to one run at 0x09D00000, their text slots to a table of 73 (crate::five_map), and the Versus map table grew to 0x100 ids.
-        // 27: Emerald Sun, a sixth army on one of AW2's colours: its colour in EWRAM, the Teams page's sixth choice, the ROM image's palettes and pictures (crate::army_skin).
-        // 28: custom COs checked against their specification (aw2dev co verify): Clone Andy's powers heal as Andy's do, the Emerald Sun COs' unit cost is 100% (Livia's 110%; it was doubled), Livia's income is 25% of what a property pays,
-        // an Emerald Sun CO's tag pair with a CO the file does not list is 95% (crate::es_co::UNLISTED_PAIR), and an army shows the HQ its CO's data file names (crate::army_skin::hq_style: the Roman COs' Emerald Sun HQ).
+        // 27: Silver Nova, a sixth army on one of AW2's colours: its colour in EWRAM, the Teams page's sixth choice, the ROM image's palettes and pictures (crate::army_skin).
+        // 28: custom COs checked against their specification (aw2dev co verify): Clone Andy's powers heal as Andy's do, the Silver Nova COs' unit cost is 100% (Livia's 110%; it was doubled), Livia's income is 25% of what a property pays,
+        // a Silver Nova CO's tag pair with a CO the file does not list is 95% (crate::es_co::UNLISTED_PAIR), and an army shows the HQ its CO's data file names (crate::army_skin::hq_style: the Roman COs' Silver Nova HQ).
         // 29: Clone Andy's own numbers (crate::co_new::clone_andy_bonus): day to day +2% firepower and defence on every unit, Hyper Upgrade +30% / +20% with no move bonus, healing 4 HP (crate::es_co::HEAL4).
         // 28 (asuka branch, merged as 30): Asuka (CO 92, crate::asuka) joins the roster in every Versus list: the CO table, the Teams order and the texts the pack writes are 92 rows long and her powers are Black Wave / Black Storm with Sonja's vision, hidden HP and strike-first (a merge with another bump must take the next free number).
         // 28 (bugfix branch, merged as 30): the Dual Strike picture palettes' backups moved below the skins' figures (a skin on colour 5 with the pack no longer corrupts the build menu), the skills screen's backup in free ROM moved above the fourth
         // look, Cassius's Triumph (the computer's too, ended by a Tag Power's Change, kept by a suspended game) and the offline map list's view in the console's memory.
         // 30: the cotest (29), asuka (28) and bugfix (28) branches merged: Clone Andy's numbers, the HQ that follows the CO, Asuka (CO 92) in every Versus list, the palette backups' new place, Triumph, the map-list view in console memory.
-        // 31: the Emerald Sun army choice is taken back when the map list is up (crate::army_skin::reset_choice: it used to stay after backing out of the Teams screen),
+        // 31: the Silver Nova army choice is taken back when the map list is up (crate::army_skin::reset_choice: it used to stay after backing out of the Teams screen),
         // the capture box's palette row follows the army's colour (the skin's too) and a Versus second front keeps the first front's colours, teams and skin.
         // 32: Crumb's and Clone Andy's own themes are songs in the ROM image (crate::es_music), and Crumb's HQ is Black Hole's again (no hq style in cos/crumb.toml).
         // 38: the computer defends its HQ in the custom campaigns (crate::cpu_defend): its units attack a foot soldier standing on it whatever their order, and close in when none can.
-        // 37: an Emerald Sun army's soldiers are kept in the CO page's chart tiles only on the unit chart (page 4), no longer over the big picture of the other pages.
-        // 36: the Emerald Sun COs' faces (Teams cards, HUD, battle header) frame the whole head (`mug_scale = 1`): their pictures in the ROM image changed.
+        // 37: a Silver Nova army's soldiers are kept in the CO page's chart tiles only on the unit chart (page 4), no longer over the big picture of the other pages.
+        // 36: the Silver Nova COs' faces (Teams cards, HUD, battle header) frame the whole head (`mug_scale = 1`): their pictures in the ROM image changed.
         // 35: a skin's palette refresh on the Teams screen reaches the sprite palettes only (the windows stay AW2's own).
         // 33: Aria (CO 93, crate::aria), an Orange Star CO in every Versus list with only a Super Power: the CO table, the Teams order, the texts and the pictures are 93 rows long, a hurt unit of hers attacks harder (Vengeance) and her Super Power heals 3 HP and adds 20% firepower. Asuka's kit is simplified in the same number: no movement trait, no +5%, no HP swing (Event Horizon takes 1 HP from every enemy unit), no strike-first, 4 / 8 stars, +5% attack and defence kept, and both her powers bring AW2's rain with fog of war until her next turn (the weather is set by the mass procedure, lasting as Drake's).
         // 40: the online army page's directions repeat as AW2's own menus' cursor does (first step on the press, the next ten frames later, then every four), Up and Down too (crate::online_teams REPEAT_DELAY).
-        // 41: Emerald Sun no longer patches the windows' palette row (BG 8: `0x080D4188`, `0x08183C28`, `0x085AC8BC`): every window, menu and dialogue box is AW2's own look for the colour (army_skin::TABLES).
-        // 42: Silver Nova's three COs (Tabitha, Lili, Caulder) replace the Roman five: new numbers, Firestorm (8 HP strike), Enigma (random weather for two days, the immunity), Cataclysm (heal 5), Sturm's movement for Caulder; Livia's funds, Testudo, Onager and Triumph are gone (slots 89 and 90 copy Lili and Caulder).
+        // 41: Silver Nova no longer patches the windows' palette row (BG 8: `0x080D4188`, `0x08183C28`, `0x085AC8BC`): every window, menu and dialogue box is AW2's own look for the colour (army_skin::TABLES).
+        // 43: Silver Nova, the army and its COs: the army's colours, chrome look and orb-topped HQ (army_skin, no plume), the HQ and emblem pictures, and the three COs Tabitha, Lili and Caulder in the Roman five's slots (new numbers; Firestorm 8 HP strike, Enigma random weather for two days with the immunity, Cataclysm heal 5, Sturm's movement for Caulder; slots 89 and 90 copy Lili and Caulder; Livia's funds, Testudo, Onager and Triumph gone).
         crate::inspect::SIM_VERSION
     }
 

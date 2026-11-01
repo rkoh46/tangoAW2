@@ -8,7 +8,7 @@ Read docs/dev/campaign-scenes.md and docs/AW2.md "BH Campaign".
 2. Every story scene (intro, victory, scenes on the map after a win, prologue) names a song: `@SONG role` (`aw2dev sound list`); chain scenes with `bh_text::chain`. A scene between missions is `mNN_sturm`-style: last in the `after` chain.
 3. `./aw2dev build --examples`, `./aw2dev campaign scenes` (every scene with its song), `./aw2dev campaign trace --mission N` (no silent dialogue; fades), `./aw2dev gfx check`.
 4. `aw2dev test`, `tools/aw2test` `-k bh_text_budget` (3,072 text ids), `./aw2dev suite`. Show the scene table and the new lines to the user before any release.
-5. A second campaign (the Emerald Sun, `src/es_*.rs`, `five/es/`, `src/es_text/`) is the worked example: skill aw2-es-campaign, docs/dev/es-campaign.md.
+5. A second campaign (the Silver Nova, `src/es_*.rs`, `five/es/`, `src/es_text/`) is the worked example: skill aw2-es-campaign, docs/dev/es-campaign.md.
 
 ## AW2's own world map (BH Campaign)
 A campaign on `WorldArt::Aw2` that should turn land dark as missions are won uses `bh_conquest.rs` (docs/dev/worldmap.md, "AW2's own map"): its flags (`m.flag`) decide which land darkens; keep each mission's flag inside its nation's land. `-k bh_conquest` photographs it.

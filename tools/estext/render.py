@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the Emerald Sun dialogue (src/es_text/act*.txt) as one readable Markdown file for review.
+"""Renders the Silver Nova dialogue (src/es_text/act*.txt) as one readable Markdown file for review.
 
     python3 tools/estext/render.py [out.md]      (default: devkit/work/campaign/es/ES_DIALOGUE.md)
 
@@ -61,7 +61,7 @@ def label(key):
 
 def main(out_path):
     sc, order = scenes()
-    lines = ["# The Emerald Sun Campaign: dialogue for review", "",
+    lines = ["# The Silver Nova Campaign: dialogue for review", "",
              f"{sum(len(v[1]) for v in sc.values())} boxes in {len(sc)} scenes. Each box is two lines of at most 176 pixels (the lint checks it); `(h)` and `(s)` are happy and sad faces.", ""]
     if "prologue" in sc:
         lines += ["## Prologue", "", f"*song: {sc['prologue'][0]}, {len(sc['prologue'][1])} pages*", ""]

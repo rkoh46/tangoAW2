@@ -355,7 +355,7 @@ pub static SOURCES: [Source; 5] = [
         has_hard: false,
     },
     Source {
-        label: "EMERALD SUN",
+        label: "SILVER NOVA",
         available: crate::es_campaign::available,
         load: crate::es_campaign::load,
         rules: crate::custom_campaign::rules,

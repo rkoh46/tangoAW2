@@ -131,7 +131,7 @@ pub fn best(core: &Core, mission: u8) -> Option<Best> {
 
 /// At the map's start: the player's army wears the colour it picked ([`crate::gauntlet_ui`]'s colour pick: one the map's enemies do not wear), or the colour the mission gives it when
 /// nothing was picked. AW2's CO screen gives an army the colour of its CO's country (Kanbei's army would be Yellow Comet's, Drake's Green Earth's: the colours of the enemy armies of a
-/// map the player picks any CO for), which the Gauntlet's free pick must not do. A skin (Emerald Sun) sits on the lowest colour no army has (`army_skin::assign`): [`player_skin`]
+/// map the player picks any CO for), which the Gauntlet's free pick must not do. A skin (Silver Nova) sits on the lowest colour no army has (`army_skin::assign`): [`player_skin`]
 /// puts it on while the battle lasts; its designs stay the CO's (the colour only recolours).
 pub fn keep_colour(core: &mut Core, m: &crate::campaign_model::MissionInfo) {
     if !session(core) {

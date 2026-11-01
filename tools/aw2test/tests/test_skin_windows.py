@@ -1,12 +1,12 @@
-"""Emerald Sun recolours the ARMY only; every window of the game stays AW2's own (`-k skin_windows`, docs/dev/army-packs.md "Windows stay AW2's").
+"""Silver Nova recolours the ARMY only; every window of the game stays AW2's own (`-k skin_windows`, docs/dev/army-packs.md "Windows stay AW2's").
 
 The skin used to patch the colours' window row too (BG palette bank 8, three ROM tables that hold the same row: `0x080D4188`, `0x08183C28`, `0x085AC8BC`), so with the skin on a colour the
 dialogue and chat boxes, the map menu, the CO page and the status pages were all drawn olive. A battle with the skin on a host colour is checked against the same battle with that colour and no skin:
 
   * the window palette (bank 8) is the same on every screen (the map, the map menu, the CO page, the Intel pages, a CO power's dialogue box, the unit menu, the damage forecast: there bank 8 is a rotating
     gradient, so the same set of colours at another phase), and the map menu, the dialogue box and the forecast with its unit box are the same pixels;
-  * the army's own palettes are Emerald Sun's: the units' rows, the buildings' (the HQ), the funds box's (OBJ bank 7 of the HUD).
-The Gauntlet's battle (Emerald Sun picked, on the colour its map leaves free) is held to the same: its intro dialogue boxes, the map menu, the CO page and a CO power's box."""
+  * the army's own palettes are Silver Nova's: the units' rows, the buildings' (the HQ), the funds box's (OBJ bank 7 of the HUD).
+The Gauntlet's battle (Silver Nova picked, on the colour its map leaves free) is held to the same: its intro dialogue boxes, the map menu, the CO page and a CO power's box."""
 
 import os
 
@@ -135,9 +135,9 @@ def compare(ctx, label, a, b, pictures):
             diff = sum(x != y for ra, rb in zip(pa, pb) for x, y in zip(ra, rb))
             ctx.eq(diff, 0, f"{label}: '{name}' shows the same pixels as the game without the skin ({diff} differ)")
     row = [int.from_bytes(a["unit_row"][2 * i:2 * i + 2], "little") for i in range(16)]
-    ctx.eq(row[2:8], ramp, f"{label}: the units' palette is Emerald Sun's ramp")
-    ctx.eq(int.from_bytes(a["building_row"][28:30], "little"), gold, f"{label}: the buildings' palette (the HQ) is Emerald Sun's")
-    ctx.check(a["hud"] != b["hud"], f"{label}: the funds box is the army's own (Emerald Sun's), not the colour's")
+    ctx.eq(row[2:8], ramp, f"{label}: the units' palette is Silver Nova's ramp")
+    ctx.eq(int.from_bytes(a["building_row"][28:30], "little"), gold, f"{label}: the buildings' palette (the HQ) is Silver Nova's")
+    ctx.check(a["hud"] != b["hud"], f"{label}: the funds box is the army's own (Silver Nova's), not the colour's")
     ctx.check(a["unit_row"] != b["unit_row"], f"{label}: the units are not the colour's own")
 
 

@@ -452,7 +452,7 @@ def hq_frame(g, out, key, army):
 
 
 def capture_hq(out):
-    """Frames of the HQ on the map: each Silver Nova CO's in Versus (its own army, beside Andy's plain one) and in the missions M1, M7, M8, M11, M14, M16 (every army led by a CO with an Emerald Sun HQ
+    """Frames of the HQ on the map: each Silver Nova CO's in Versus (its own army, beside Andy's plain one) and in the missions M1, M7, M8, M11, M14, M16 (every army led by a CO with an Silver Nova HQ
     and the player's). Returns {key: caption}."""
     from . import escampaign as es
     os.makedirs(out, exist_ok=True)

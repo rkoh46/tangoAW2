@@ -1,5 +1,5 @@
 """A Gauntlet run screen by screen, for people to look at (docs/dev/gauntlet-mode.md): Select Mode with the wheel turning to GAUNTLET, the map selector (the map, its enemies in order, the best
-result), the CO screen (a few COs, then Aria picked), the army colour pick (the colours the enemies leave, Emerald Sun taken), the mission card and the intro, day 1, each line's fall and the next CO's arrival, the last HQ, VICTORY, the results and Select Mode again. Frames are kept when the screen changes
+result), the CO screen (a few COs, then Aria picked), the army colour pick (the colours the enemies leave, Silver Nova taken), the mission card and the intro, day 1, each line's fall and the next CO's arrival, the last HQ, VICTORY, the results and Select Mode again. Frames are kept when the screen changes
 (walk_NN.png) and laid out with their step on `walkthrough_sheet_N.png`."""
 
 import hashlib

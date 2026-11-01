@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign: the mission sim (`aw2dev campaign sim`, docs/dev/es-campaign.md). Opt-in: AW2TEST_ES_SIM=<n>[,<n>..] names the missions;
+"""Silver Nova Campaign: the mission sim (`aw2dev campaign sim`, docs/dev/es-campaign.md). Opt-in: AW2TEST_ES_SIM=<n>[,<n>..] names the missions;
 AW2TEST_ES_PLAYER=bot|cpu (the test player of aw2test.bot, or the game's own computer playing both sides), AW2TEST_ES_SEED=<k> (another start for
 the computer and another style for the bot), AW2TEST_ES_DAYS=<max days>, AW2TEST_ES_OUT=<file> (one JSON line per run is appended)."""
 

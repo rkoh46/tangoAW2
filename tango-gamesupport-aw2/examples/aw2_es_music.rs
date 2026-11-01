@@ -1,4 +1,4 @@
-//! The Emerald Sun themes' compiler as a tool (`aw2dev sound compose`, docs/dev/music-kit.md): compiles the song files and prints one JSON object a song.
+//! The Silver Nova themes' compiler as a tool (`aw2dev sound compose`, docs/dev/music-kit.md): compiles the song files and prints one JSON object a song.
 //!
 //!   aw2_es_music                 every built-in song (or the files of $TANGOAW2_ES_MUSIC)
 //!   aw2_es_music FILE.m4t ..     those files

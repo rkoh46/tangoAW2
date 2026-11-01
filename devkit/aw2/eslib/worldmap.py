@@ -1,4 +1,4 @@
-"""The Emerald Sun Campaign's world map (docs/dev/es-campaign.md "The world map"): its sixteen flags on Dual Strike's Omega Land (480 x 240 map pixels, `es_campaign::region`), in story order,
+"""The Silver Nova Campaign's world map (docs/dev/es-campaign.md "The world map"): its sixteen flags on Dual Strike's Omega Land (480 x 240 map pixels, `es_campaign::region`), in story order,
 each on land, apart from the others, inside the cursor's limits, and every mission opened by the one before. Read from the Rust sources; the land test needs the player's Dual Strike .nds."""
 import re
 from .. import cfg
@@ -100,7 +100,7 @@ def sheet(review, runs, out):
              "Caulder's Gambit", "The Strait", "Silver Nova"]
     H = 70 + len(STAGES) * (240 * S + 50) + 330 + 60 + 2 * 230 + 40
     sh = Image.new("RGB", (cw, H), rd.BG)
-    rd.text(sh, (14, 10), "Emerald Sun Campaign: the world map is Dual Strike's Omega Land. 16 flags in story order (Aurea's home island is the south-west island, off the nodes).", size=17)
+    rd.text(sh, (14, 10), "Silver Nova Campaign: the world map is Dual Strike's Omega Land. 16 flags in story order (Aurea's home island is the south-west island, off the nodes).", size=17)
     rd.text(sh, (14, 36), "States: AW2's white pennant = open, starred flag = cleared, blue pennant = the last mission's marker; a locked mission has no flag (Dual Strike's map has no route lines and no region colours).", size=13)
     y = 70
     for k, label in STAGES:

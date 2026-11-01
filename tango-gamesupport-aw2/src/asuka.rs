@@ -27,7 +27,7 @@
 //! | Luck | 0..19% (Nell's) | same | same |
 //! | Firepower | 0 | +10% (every power) | +10% |
 //!
-//! Stars: 4 / 8, the normal cost (Sonja 3/5, Hawke 5/9, Kanbei 4/7). Not in the Emerald Sun Campaign (`aw2dev campaign check`) and reserved for the BH2 Campaign.
+//! Stars: 4 / 8, the normal cost (Sonja 3/5, Hawke 5/9, Kanbei 4/7). Not in the Silver Nova Campaign (`aw2dev campaign check`) and reserved for the BH2 Campaign.
 
 use crate::co_new::ASUKA;
 

@@ -153,9 +153,9 @@ Pass variables to a Simulator app as `SIMCTL_CHILD_<name>` (`ios/README.md`).
 |---|---|
 | `AW2_LZ_LOG=1` | logs every LZ77 decompression the game starts (`lz src ... dst ... lr ...`; `army_skin::traps`): where its sheets and pictures come from (the battle figures were found with it) |
 | `AW2_PAL_LOG=1` | logs every palette the game loads (`palload src ... off ... size ... lr ...`; `army_skin::traps`): where an army's colours come from (`aw2dev armyskin sources` automates it) |
-| `AW2DEV_SKIN=1` | `aw2dev live ...`: seat 0 picks Emerald Sun on the army page (docs/dev/army-packs.md) |
+| `AW2DEV_SKIN=1` | `aw2dev live ...`: seat 0 picks Silver Nova on the army page (docs/dev/army-packs.md) |
 | `aid done X Y` | test aid (`TANGOAW2_TEST_POKE` / harness `aid`): the unit at the cell has acted (greyed) |
 | harness `cos` | prints the Teams screen's CO list (index: id name), for poking a seat's CO |
 
-- `TANGOAW2_ES_MUSIC=<dir>`: reads the Emerald Sun themes from `<dir>/<name>.m4t` (tabitha, lili, caulder, asuka, crumb, cloneandy) instead of the text built into the app, so a song can be rewritten and heard without a rebuild (`aw2dev sound render --dir`, docs/dev/music-kit.md). A test aid: both peers of a match must agree (or not set it).
+- `TANGOAW2_ES_MUSIC=<dir>`: reads the Silver Nova themes from `<dir>/<name>.m4t` (tabitha, lili, caulder, asuka, crumb, cloneandy) instead of the text built into the app, so a song can be rewritten and heard without a rebuild (`aw2dev sound render --dir`, docs/dev/music-kit.md). A test aid: both peers of a match must agree (or not set it).
 - `TANGOAW2_ES_VERSUS=1`: a no-op now: Silver Nova's three COs (Tabitha, Lili, Caulder: ids 86..88, `es_cos.rs`) are always in Versus with the Dual Strike pack (the retired slots 89 and 90 are on no list); kept so older scripts still run. `TANGOAW2_ES_VARRO` is gone.

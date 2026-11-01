@@ -31,7 +31,7 @@ reuse scen kinds (`--kill`/`--stop` of `aw2dev live` also exist: `SEATS:WHEN`, `
 
 ## `net repeat` (a desync that shows on some runs only)
 ```
-aw2dev net repeat                         # 2P Unranked with the Emerald Sun seat, 8 runs (the default story)
+aw2dev net repeat                         # 2P Unranked with the Silver Nova seat, 8 runs (the default story)
 aw2dev net repeat unranked --runs 12 --no-skin
 aw2dev net repeat asuka --no-skin           # both armies are Asuka (CO byte poked, scenarios.py s_asuka), her CO Power day 1 and Super Power day 2 with units of every HP: 8 runs, equal hashes
 aw2dev net repeat moveview --runs 6 --level mild --fog off
@@ -41,8 +41,8 @@ aw2dev net repeat moveview --runs 6 --level mild --fog off
 passing ones deleted unless `--keep`. A race between peers (state that depends on cycle timing, what a waiting seat's picture does to its
 console) fails on a fraction of runs, so one passing run proves nothing: this is the regression for it. History: with the waiting picture made
 on the match's console, about half of the 2P Unranked runs diverged at frame 1684 in the IWRAM stack block (architecture-online.md 6.1);
-`net repeat` is what showed it reliably (v0.8.6 and the Emerald Sun branch alike) and what shows it fixed. `AW2DEV_SKIN=1` is what makes seat 0 pick
-Emerald Sun on the army page; `--no-skin` plays the plain army. Each run is about a minute.
+`net repeat` is what showed it reliably (v0.8.6 and the Silver Nova branch alike) and what shows it fixed. `AW2DEV_SKIN=1` is what makes seat 0 pick
+Silver Nova on the army page; `--no-skin` plays the plain army. Each run is about a minute.
 
 ## `net matrix`
 `aw2dev net matrix --players 2,3,4 --fog on,off --levels none,mild,bad` runs each cell as a live run (2P: the scenario, larger rooms: the

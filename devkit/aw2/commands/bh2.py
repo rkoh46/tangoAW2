@@ -3,7 +3,7 @@
   bh2 pictures [--out DIR]    m01.png .. (full map, fog off, units and labels, "MISSION N - Title" burned in), the fog views, act1_sheet.png, worldmap_flags.png
   bh2 sheets [--raw DIR] [--out DIR]  label the game's own pictures (`aw2dev maps boot --campaign bh2`): m0N.png, m01_fog.png, m04_front2.png, act1_game_sheet.png, act2_game_sheet.png
   bh2 scenes [--md]           the scene check: lint (keys used and resolvable) and every scene with its song; a story scene without music fails
-  bh2 saves [--no-harness]    the folded BH2 save record: unit tests and the harness round trip (BH + Emerald Sun + BH2)
+  bh2 saves [--no-harness]    the folded BH2 save record: unit tests and the harness round trip (BH + Silver Nova + BH2)
   bh2 prologue-sheet [--out PNG] [--no-run]  every page and box of the prologue, typed out, one frame each: a contact sheet and prologue_frames/NNN.png
   bh2 integration [--out PNG]  the proof sheet of the harness's frames (chooser, prologue, world map, a scene per act, Aria's CO select)
   bh2 silhouettes             the silhouette check (no two maps alike, no oval blobs; docs/dev/bh2-maps.md)
@@ -30,7 +30,7 @@ def register(sub):
     a = ps.add_parser("scenes", help="every BH2 scene: the dialogue lint (keys used and resolvable) and the scene -> song table; fails on a story scene without music")
     a.add_argument("--md", action="store_true")
     a.set_defaults(fn=scenes)
-    a = ps.add_parser("saves", help="the folded BH2 save record: the unit tests (merge/extract) and the harness round trip with BH, Emerald Sun and BH2 progress")
+    a = ps.add_parser("saves", help="the folded BH2 save record: the unit tests (merge/extract) and the harness round trip with BH, Silver Nova and BH2 progress")
     a.add_argument("--no-harness", action="store_true", help="only the unit tests")
     a.set_defaults(fn=saves)
     a = ps.add_parser("prologue-sheet", help="every page and dialogue box of the prologue, one typed-out frame each (harness), as a contact sheet and a folder of PNGs")
@@ -103,7 +103,7 @@ def scenes(a):
 
 
 def saves(a):
-    """`bh2 saves`: the BH2 record is folded into slot 13 after the BH Campaign's (`Source::save_offset`): `ds_campaign::save_tests` and, unless --no-harness, `-k bh2_saves` (BH, Emerald Sun and BH2 progress
+    """`bh2 saves`: the BH2 record is folded into slot 13 after the BH Campaign's (`Source::save_offset`): `ds_campaign::save_tests` and, unless --no-harness, `-k bh2_saves` (BH, Silver Nova and BH2 progress
     round-trip; an old BH save still loads; slot 10 unused)."""
     import subprocess
     import sys

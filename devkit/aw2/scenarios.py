@@ -32,7 +32,7 @@ def mash(n=30):
 
 
 def skin_steps(k, default):
-    """AW2DEV_SKIN=1: seat 0 picks Emerald Sun on the army page (its colour field: DOWN, then LEFT once from Orange Star, which wraps to the
+    """AW2DEV_SKIN=1: seat 0 picks Silver Nova on the army page (its colour field: DOWN, then LEFT once from Orange Star, which wraps to the
     sixth choice, the skin); the others do `default`."""
     if os.environ.get("AW2DEV_SKIN") == "1" and k == 0:
         return ["press DOWN 8", "wait 10", "press LEFT 8", "wait 10"]
@@ -522,7 +522,7 @@ class Pads:
         self.mashing = name == "mash"
         self.part_steps = ["press DOWN 8", "wait 10", "press DOWN 8", "wait 10", "press RIGHT 8", "wait 10"] if name in ("swap", "tagpower") else None
         self.wait_turn = 170 if killing else 90
-        # AW2DEV_SKIN=1: seat 0 picks Emerald Sun on the army page (the colour field, LEFT once from Orange Star wraps to the sixth choice)
+        # AW2DEV_SKIN=1: seat 0 picks Silver Nova on the army page (the colour field, LEFT once from Orange Star wraps to the sixth choice)
         self.skin = os.environ.get("AW2DEV_SKIN") == "1"
 
     def teams_steps(self, k, default):

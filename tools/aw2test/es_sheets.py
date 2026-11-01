@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Labels the Emerald Sun review pictures (tests/test_es_review.py) and makes one contact sheet per act.
+"""Labels the Silver Nova review pictures (tests/test_es_review.py) and makes one contact sheet per act.
 
     es_sheets.py <raw dir> <out dir>
 

@@ -4,7 +4,7 @@ How a good Advance Wars map is built, measured on the community's best maps and 
 **Advance Wars By Web's Hall of Fame** (the maps its players voted the best): 23 two-player Hall of Fame maps, and, because the Hall of Fame has no
 three- to five-player map, the 20 four-player maps ranked S or A. They are the creators' work under their copyright: we fetch them for study into a
 scratchpad, measure them, look at them, and **never copy a layout or a grid into the repo**. The same measures run on AW2's own maps (179), Dual
-Strike's (256), our Versus maps (20), the BH Campaign (35) and the Emerald Sun Campaign (16), so every number below has the games beside it.
+Strike's (256), our Versus maps (20), the BH Campaign (35) and the Silver Nova Campaign (16), so every number below has the games beside it.
 
 Code: `devkit/aw2/maplint/study.py` (the measures, AWBW's terrain ids, pictures), `devkit/aw2/maplint/principles.py` (the rules MD01..MD08),
 `devkit/aw2/commands/maps.py` (`maps study`). Tests: `devkit/aw2/maplint/test_study.py`. Skill: `.claude/skills/aw2-map-lint`.
@@ -25,7 +25,7 @@ from 149 the later armies in groups of seven (airport, base, city, com tower, HQ
 instead of HQs: the study seats an army at its lab then.
 
 ## The numbers (p10 / median / p90)
-| Measure | AWBW HoF 2P (23) | AWBW S/A 4P (20) | AW2 (179) | Dual Strike (256) | BH Campaign (35) | Emerald Sun before (16) | Emerald Sun after (16, with the 12% cut) |
+| Measure | AWBW HoF 2P (23) | AWBW S/A 4P (20) | AW2 (179) | Dual Strike (256) | BH Campaign (35) | Silver Nova before (16) | Silver Nova after (16, with the 12% cut) |
 |---|---|---|---|---|---|---|---|
 | properties per 100 cells | 9.5 / 11.5 / 13.7 | 10.4 / 13.2 / 15.2 | 4.0 / 8.4 / 13.3 | 2.4 / 8.5 / 13.5 | 2.4 / 4.6 / 5.9 | 1.7 / 2.2 / 3.0 | 4.1 / 5.2 / 7.2 |
 | properties per 100 land cells | 10.3 / 12.3 / 15.0 | 10.9 / 13.9 / 16.0 | 5.3 / 11.6 / 22.7 | 4.2 / 11.5 / 21.9 | 2.4 / 4.9 / 10.6 | 1.9 / 2.6 / 4.2 | 5.2 / 6.0 / 8.3 |
@@ -81,8 +81,8 @@ their distance and base-safety rows are rougher.)
 AW2's and Dual Strike's own maps (the campaign and versus maps together) agree with most of this but are sparser at the low end (a tenth of them under
 5.3 and 4.2 properties per 100 land cells) and leave more open plain (p90 .53): the campaign maps are asymmetric and often a fortress or a sea crossing.
 
-## For the Emerald Sun Campaign (asymmetric maps)
-A campaign map is the player against the mission's enemies, never mirrored, but the craft is the same. The targets for the Emerald Sun maps:
+## For the Silver Nova Campaign (asymmetric maps)
+A campaign map is the player against the mission's enemies, never mirrored, but the craft is the same. The targets for the Silver Nova maps:
 - **Properties:** 5 or more per 100 land cells (aim 6 to 9), no ground more than 6 cells from a property (aim 4 or 5), most of them neutral in the
   contested middle, the enemy's own in its zone, the player's at its landing or camp. Each property has a job (income, a forward base, cover on a road,
   an airport for the answer to an air threat, a port facing open sea).
@@ -95,7 +95,7 @@ A campaign map is the player against the mission's enemies, never mirrored, but 
 - **Safety:** an enemy infantry needs two or more days to reach the player's base or HQ (and no enemy foot soldier starts within a day of them).
 - **Room** (SP01): units per vehicle cell .12 or less.
 
-## The rules (warnings everywhere; failing for the Emerald Sun maps, like the DQ rules)
+## The rules (warnings everywhere; failing for the Silver Nova maps, like the DQ rules)
 | Rule | Measures | Limit | AWBW 2P / 4P | AW2 / DS | BH / Versus | ES before | ES after |
 |---|---|---|---|---|---|---|---|
 | MD01 | properties per 100 land cells (maps of 60+ land cells) | at least 5 | 0 / 0 | 17 / 34 | 19 / 1 | 15 | 0 |
@@ -108,9 +108,9 @@ A campaign map is the player against the mission's enemies, never mirrored, but 
 | MD08 | properties with a road within 2 cells (6+ properties) | at least 50% | 0 / 0 | 40 / 68 | 0 / 8 | 0 | 0 |
 
 \* team-mates' bases: the four-player grids do not say who is allied (see above). Every two-player Hall of Fame map passes every rule.
-The Emerald Sun maps must pass all eight (`aw2dev maps lint --source es` counts an MD finding as a failure); the BH Campaign, Versus and the games' maps only report them.
+The Silver Nova maps must pass all eight (`aw2dev maps lint --source es` counts an MD finding as a failure); the BH Campaign, Versus and the games' maps only report them.
 
-## Before the rework: the Emerald Sun maps (Oct 2026)
+## Before the rework: the Silver Nova maps (Oct 2026)
 | Map | Size | Props | per 100 land | farthest from a property | plain | wood | mountain | road | river run | road approaches | middle property |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | es01 | 30x27 | 14 | 2.4 | 10 | 51% | 12% | 13% | 10% | 12 | 1 | no |

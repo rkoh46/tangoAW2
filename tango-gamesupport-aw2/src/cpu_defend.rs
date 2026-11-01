@@ -1,4 +1,4 @@
-//! The computer defends its HQ in the custom campaigns (BH, BH2, Emerald Sun, the gauntlet): docs/AW2.md, "The CPU defends its HQ".
+//! The computer defends its HQ in the custom campaigns (BH, BH2, Silver Nova, the gauntlet): docs/AW2.md, "The CPU defends its HQ".
 //!
 //! A mission gives the enemy's units orders (docs/AW2.md "AI roles": hold, stand, freeze, go for the properties...). AW2's
 //! unit queue plays a unit by its order, and a soldier that holds (role 0) or is frozen is skipped altogether unless an

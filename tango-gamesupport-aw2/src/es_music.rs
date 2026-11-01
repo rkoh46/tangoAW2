@@ -1,4 +1,4 @@
-//! The Emerald Sun COs' own themes: songs written as text in this repository (`music/es/*.m4t`, our own compositions), compiled here to
+//! The Silver Nova COs' own themes: songs written as text in this repository (`music/es/*.m4t`, our own compositions), compiled here to
 //! song data for AW2's sound engine (MP2K, "Sappy") and played by it with AW2's own instruments (voice groups read from the ROM at run time).
 //!
 //! The pipeline (docs/dev/music-kit.md, `aw2dev sound compose`): [`compile`] reads a song file, checks it (every bar adds up, every track of a
@@ -76,7 +76,7 @@ pub const REF_VOICE_CAP: usize = 40;
 /// The default key range of a note.
 const LOW: i32 = 12;
 
-/// A song of the Emerald Sun CO `co` (its id from [`crate::co_new`]).
+/// A song of the Silver Nova CO `co` (its id from [`crate::co_new`]).
 #[derive(Clone, Copy)]
 pub struct Source {
     pub co: u8,
@@ -151,7 +151,7 @@ pub fn text(s: &Source) -> Cow<'static, str> {
     Cow::Borrowed(s.text)
 }
 
-/// The song of Emerald Sun CO `co`.
+/// The song of Silver Nova CO `co`.
 pub fn source(co: u8) -> Option<&'static Source> {
     SOURCES.iter().find(|s| s.co == co)
 }

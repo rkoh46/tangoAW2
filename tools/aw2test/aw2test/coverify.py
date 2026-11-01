@@ -375,7 +375,7 @@ _TAG_PATCHED = []
 
 
 def install_tag_spec():
-    """The harness's `tag.compatibility` (Dual Strike's table, Sturm's, Vault Breakers) learns the Emerald Sun pairs from the data file `cos/tags.toml`: a pair with one of the custom
+    """The harness's `tag.compatibility` (Dual Strike's table, Sturm's, Vault Breakers) learns the Silver Nova pairs from the data file `cos/tags.toml`: a pair with one of the custom
     COs is the file's number, every unlisted one 95 (the file's header: "Every unlisted pair is 95") -- or the neutral 100 for Crumb, whose documented rule it is, and Andy's own for Clone Andy (crate::tag)."""
     from . import tag
     if _TAG_PATCHED:
@@ -417,7 +417,7 @@ def pairs_of(name):
 
 
 def tag_battle(ctx, cos, partners, units=(), props=False):
-    """tests.test_tag.tag_battle with the Emerald Sun COs on (ENV) and optionally the economy map."""
+    """tests.test_tag.tag_battle with the Silver Nova COs on (ENV) and optionally the economy map."""
     from tests.test_tag import co_page_log
     from . import tag
     m = econ_map(ctx) if props else ctx.map()
@@ -1284,7 +1284,7 @@ def hq_check(ctx, g, label, skin_armies=()):
             shown += 1
     expected = g.e.read(SKIN_HQ["emerald_sun"], 0x100)
     found = find_art(vram, expected)
-    chk(ctx, label, len(found) == shown, f"the Emerald Sun HQ picture is in the OBJ tiles {len(found)} time(s) (tiles {[f // 32 for f in found]}); armies whose CO's data file says hq = emerald_sun"
+    chk(ctx, label, len(found) == shown, f"the Silver Nova HQ picture is in the OBJ tiles {len(found)} time(s) (tiles {[f // 32 for f in found]}); armies whose CO's data file says hq = emerald_sun"
         f"{' or that wear the skin' if skin_armies else ''}: {shown}", "hq")
     chk(ctx, label, len(set(expected)) > 3, "the skin's committed HQ picture is there to compare with (not empty)", "hq")
     return shown
@@ -1306,15 +1306,15 @@ def hq_tag(ctx):
         g = tag_battle(ctx, [cospec.IDS[lead], "andy"], [par, None], units=[(1, "tank", 10, 10), (2, "tank", 11, 10)])
         vram = hq_tiles(g)
         found = find_art(vram, g.e.read(SKIN_HQ["emerald_sun"], 0x100))
-        chk(ctx, f"{lead} d2d", len(found) == want, f"{lead} leading a pair: the Emerald Sun HQ is in the tiles {len(found)} time(s), expected {want} (the HQ follows the lead CO)", "hq")
+        chk(ctx, f"{lead} d2d", len(found) == want, f"{lead} leading a pair: the Silver Nova HQ is in the tiles {len(found)} time(s), expected {want} (the HQ follows the lead CO)", "hq")
         g.e.close()
 
 
 def hq_mission(ctx, n):
-    """Silver Nova Campaign mission n: the player's army (it wears the skin) and every army led by a CO with hq = emerald_sun show the Emerald Sun HQ."""
+    """Silver Nova Campaign mission n: the player's army (it wears the skin) and every army led by a CO with hq = emerald_sun show the Silver Nova HQ."""
     from . import escampaign as es
     e, g, d = es.enter(ctx, n)
     g.e.wait(60)
     shown = hq_check(ctx, g, "tabitha d2d", skin_armies=(1,))
-    chk(ctx, "tabitha d2d", shown >= 1, f"M{n}: {shown} army/armies show the Emerald Sun HQ", "hq")
+    chk(ctx, "tabitha d2d", shown >= 1, f"M{n}: {shown} army/armies show the Silver Nova HQ", "hq")
     e.close()

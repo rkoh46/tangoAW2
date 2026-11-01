@@ -1,6 +1,6 @@
 """The map-design principles as rules (MD01..MD08, docs/dev/map-design.md): what Advance Wars By Web's Hall of Fame maps all do, measured by
 `study.py` and calibrated so every one of the 43 studied community maps passes, then compared with AW2's and Dual Strike's own maps (campaign and
-versus: the games break them more often, so the rules are warnings everywhere and fail only the Emerald Sun maps, as the DQ rules do).
+versus: the games break them more often, so the rules are warnings everywhere and fail only the Silver Nova maps, as the DQ rules do).
 
 A campaign map is asymmetric: the rules look at the player's side (army 1 and its team) against each enemy side, never at fairness."""
 from . import study as st

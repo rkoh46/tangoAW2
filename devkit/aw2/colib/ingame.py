@@ -1,4 +1,4 @@
-"""The real app, offline, with the Dual Strike pack and the Emerald Sun COs on (always in Versus), driven through the AI debug channel: `aw2dev co portrait ingame` photographs a CO on the
+"""The real app, offline, with the Dual Strike pack and the Silver Nova COs on (always in Versus), driven through the AI debug channel: `aw2dev co portrait ingame` photographs a CO on the
 game's own screens (CO select, CO page, HUD, dialogue) for the review sheet."""
 import json, os, subprocess, sys, time
 from pathlib import Path

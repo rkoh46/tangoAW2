@@ -1222,7 +1222,7 @@ const M32_CAV: [(u8, u8); 4] = [(12, 4), (15, 6), (18, 8), (20, 11)];
 const M32_SIEGE: [(u8, u8); 4] = [(37, 24), (35, 25), (38, 22), (33, 26)];
 const M32_FLEET: [(u8, u8); 5] = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)];
 
-/// M32 Through the Door (secret): a free pair against Caulder + Tabitha, the Silver Nova corps, on Black Hole's own island; the vanguard on day 3, Lili's siege on day 5, Lili's fleet on day 7. (The Emerald Sun skin on the enemy army is a hook: see docs/dev/bh2-maps.md.)
+/// M32 Through the Door (secret): a free pair against Caulder + Tabitha, the Silver Nova corps, on Black Hole's own island; the vanguard on day 3, Lili's siege on day 5, Lili's fleet on day 7. (The Silver Nova skin on the enemy army is a hook: see docs/dev/bh2-maps.md.)
 fn bh2_32() -> MissionDef {
     let mut m = MissionDef::new("bh2_32", "Through the Door");
     m.objective = "Hold the island against the corps' three waves and take Caulder's HQ.";
@@ -1232,7 +1232,7 @@ fn bh2_32() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Pair(crate::es_co::CAULDER, crate::es_co::TABITHA)).funds(22000),
     ];
     m.units = deployment("bh2_32");
-    m.skin = Some((2, 0)); // the corps wears the Silver Nova (skin 0) skin; same skin (skin 0), on the colour the mission gives army 2
+    m.skin = Some((2, 0)); // the corps wears the Silver Nova skin (skin 0), on the colour the mission gives army 2
     m.look = 2; // the Desert look: Black Hole's own sunburnt island (its sea stays water; and M32 is no look twin of M30)
     m.rank_days = 20;
     let at = |kind: u8, c: (u8, u8)| UnitDef::new(2, kind, c.0, c.1).attack();

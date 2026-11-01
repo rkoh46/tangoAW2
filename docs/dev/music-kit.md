@@ -1,6 +1,6 @@
 # Music kit: our own songs for AW2's sound engine (`aw2dev sound compose | render | loopcheck | levels | stems | pitchcheck | similar | voices | dump`)
 
-How the Emerald Sun COs got **themes of their own**: songs written as text in this repository, compiled to song data for AW2's own sound engine (MP2K, "Sappy"), played with AW2's own
+How the Silver Nova COs got **themes of their own**: songs written as text in this repository, compiled to song data for AW2's own sound engine (MP2K, "Sappy"), played with AW2's own
 instruments. Nothing from the game is stored: the instruments (voice entries and their samples) are read from the player's ROM at run time. Skill: `aw2-add-music`.
 Code: `tango-gamesupport-aw2/src/es_music.rs` (parser + compiler), `src/ds_music.rs` (placement and the table), `music/es/*.m4t` (the songs), `devkit/aw2/musiclib/` (`tools.py` the commands; `m4a.py` the reader, `audio.py` / `pitch.py` / `viz.py` the analysis)
 (the tools), `examples/aw2_es_music.rs` (the compiler as a tool), `tools/aw2test/tests/test_es_music.py` (the game-side tests and the recorder).
@@ -27,7 +27,7 @@ Dual Strike story song as the stand-in without the room, `own_stand_in`). The st
 1. **Text song** (`music/es/<name>.m4t`) -> `es_music::compile` (parse, expand patterns, check every bar adds up and every track fills its section, write the loop) -> **MP2K track bytes** (one stream a track:
    state block, intro, label, the state again, loop body, `GOTO label`; a state block at the label makes every pass start alike) + a header (tracks, priority 0, reverb 173) + a **voice group**.
 2. `ds_music::build` (the same function that places the Dual Strike pack's converted music) puts each song in the music's free ROM, **after the power themes** in the story's range
-   (`0x09000000..0x09BFFFFF`, `STORY_BASE`), and gives it the **last rows of the song table** (so every earlier id keeps its number: the ten Dual Strike themes are 505..514, the Emerald Sun themes 545..549 with the pack).
+   (`0x09000000..0x09BFFFFF`, `STORY_BASE`), and gives it the **last rows of the song table** (so every earlier id keeps its number: the ten Dual Strike themes are 505..514, the Silver Nova themes 545..549 with the pack).
 3. `ds_music::install` (on the first tick, like everything else the pack writes) copies each song's voice group from the ROM: slot n of the song is entry `index` of AW2's group `A` (`0x08240FB0`, Kanbei's and Sensei's) or `B`
    (`0x082415C8`, Hawke's and Jess's). The 12-byte entries keep the ROM's sample, key-split and drum-kit pointers, so the samples are never copied.
 4. `co_roster::new_row` writes `ds_music::song(co)` into the CO's row (`+4`): the CO's turn plays it wherever AW2 plays a CO's theme (battle turns; the CO select screen has one song, 400, for every CO and the CO page none).
@@ -170,7 +170,7 @@ Edit a song and hear it **without a rebuild**: `TANGOAW2_ES_MUSIC=<dir>` (or `--
 ## Determinism
 The songs, their bytes and their addresses are a pure function of the text files and the pack (`music()` builds once; `the_same_text_gives_the_same_bytes`); the voice groups are copied from the ROM, which is the same on both peers; the
 song table is only changed with the pack on (like the rest of the Dual Strike music), so a room without the pack plays AW2's. The development variable `TANGOAW2_ES_MUSIC` must not differ between peers (like the other `TANGOAW2_ES_*` aids).
-Check: `aw2dev net repeat` (8 runs, equal hashes) with the build that carries the songs. The themes of unreleased COs change no shared state in a match without them; **the release that lists the Emerald Sun COs in Versus bumps `sim_version`** (their themes, powers and numbers all change the shared console).
+Check: `aw2dev net repeat` (8 runs, equal hashes) with the build that carries the songs. The themes of unreleased COs change no shared state in a match without them; **the release that lists the Silver Nova COs in Versus bumps `sim_version`** (their themes, powers and numbers all change the shared console).
 
 ## Adding or changing a song
 1. Write `music/es/<name>.m4t` (copy a neighbour). `aw2dev sound compose --dir tango-gamesupport-aw2/music/es` until it compiles and keeps the rules.

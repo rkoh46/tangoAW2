@@ -1,9 +1,9 @@
-# The Emerald Sun Campaign: design (phase 1, for approval)
+# The Silver Nova Campaign: design (phase 1, for approval)
 
-> **Recast (branch sn-cos):** the five Roman COs below are replaced by Tabitha, Lili and Caulder and the campaign is the Silver Nova Campaign; who plays which role now is in `docs/dev/silver-nova.md`. The text below is the original Emerald Sun design, kept for the mission outline.
+> **Recast (branch sn-cos):** the five Roman COs below are replaced by Tabitha, Lili and Caulder and the campaign is the Silver Nova Campaign; who plays which role now is in `docs/dev/silver-nova.md`. The text below is the original Silver Nova design, kept for the mission outline.
 
 
-Sixteen missions played as **Emerald Sun**, tangoAW2's sixth army (Roman-themed, inspired by AWBW's Jade Sun; every picture of it is original or composed from AW2 / Dual Strike parts at run time,
+Sixteen missions played as **Silver Nova**, tangoAW2's sixth army (Roman-themed, inspired by AWBW's Jade Sun; every picture of it is original or composed from AW2 / Dual Strike parts at run time,
 `docs/dev/army-packs.md`), with four new Roman COs. It is the second custom campaign on the BH Campaign's data-driven engine (`docs/AW2.md` "BH Campaign", `docs/dev/campaign-scenes.md`) and the
 Campaign sub-menu already has its entry (opens "Coming soon" until phase 2) and the BH2 placeholder above it.
 
@@ -232,7 +232,7 @@ Big beats (M1, M4, M10, M13, M14, M16, the epilogue): 30 to 50. A recruit's post
 | 10 | Kanbei's pass; Sonja watching from a ridge | day 4: the duel of words; the battle pauses | Kanbei's honour; Sonja signs "S." under a note for Klaus | Two Banners; Sonja's black book | honour |
 | 11 | the convoy; Livia in a truck | day 5: the ford; Cassius's choice (the shortcut or the road) | the camp; the convoy's chest: records of the grain contracts | Cassius reads his letter again | trust |
 | 12 | the bastion; Olaf boasts, Grit drawls | day 5: Grit's guns; Aurelia's plan | the iron comes down; Olaf accepts defeat as a kindness | the Accord's council hears Klaus (Nell) | the siege |
-| 13 | the Free Port; five flags; the Harbour Office | day 4: Kindle burns a dock; Sonja moves in | the ledger: the HOBB ledger, a hand that is not Varro's | the Allies decide: Emerald Sun is no invader | everyone at once |
+| 13 | the Free Port; five flags; the Harbour Office | day 4: Kindle burns a dock; Sonja moves in | the ledger: the HOBB ledger, a hand that is not Varro's | the Allies decide: Silver Nova is no invader | everyone at once |
 | 14 | Varro's marines on the quay; Cassius's decision | day 4: Cassius changes sides on the radio | the breakout; Klaus's speech | the Senate's ships on the horizon | the betrayal |
 | 15 | the straits; the Accord's fleet is on the radio | day 6: Nell's fleet arrives | the flagship burns; Varro's retreat to Port Aurelium | the last council before the citadel | Pax |
 | 16 | Port Aurelium: Varro in the keep; the confrontation (40 boxes) | phase scenes: the harbour, the walls, the keep | Varro's last words; the Senate re-reads the letters; the sun sets | the epilogue: grain, peace, and a black light in the north (HOBB's stencil on the last crate) | the end |
@@ -260,7 +260,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. Each CO has
 | Scene | Track role |
 |---|---|
 | prologue (Aurea's grey harvest, the Senate's two letters) | `opening` |
-| any Emerald Sun camp scene (Klaus and his officers) | `ally2` |
+| any Silver Nova camp scene (Klaus and his officers) | `ally2` |
 | the Senate and Varro's scenes | `enemy1` (cold), `enemy2` (when he gloats) |
 | a new CO's introduction (Aurelia M3, Cassius M4, Livia M6) | `entry` |
 | the Accord's council (M8 post, M12 map, M13 map, M15 map) | `ally1` |
@@ -282,11 +282,11 @@ fades into the next song with op 0x41, the way the BH Campaign does. Each CO has
 
 - Dialogue has soul: real back-and-forth, **10 to 25 boxes** per scene, no one-liners (`tools/bhtext/BIBLE.md`'s voice rules; one voice file per speaker; a Roman voice guide goes with phase 2).
 - Every enemy threat has an answer (section 6); deployed units start with full ammo and fuel; beaches are generous on naval maps.
-- Map integrity passes `aw2dev maps lint` (the Emerald Sun maps go in a new source `es`, like `bh`).
+- Map integrity passes `aw2dev maps lint` (the Silver Nova maps go in a new source `es`, like `bh`).
 - **Review pictures have "MISSION N - Title" burned in** (the `maps boot` photographs: the mission number and title in the picture's corner), like the BH review sheets.
 - **No two-front missions** (the user's rule): every mission is a single battlefield. No split front, front swap or unit transfer between fronts (`two_front` is never used); M8's "split line" and M14's two phases (defend, then attack) are one map. Tag missions (CO pairs) are fine.
 - **M16 (Sol Invictus) is the hardest mission by a clear margin** (the user's rule, as for every campaign): Varro's army is big with real production and funds (Neotanks or Megatanks, air and naval as the map allows, fortified positions), pressure comes from several attack lanes on one map and reinforcement waves, Varro's powers are boss-strong, and it stays winnable (an answer to every threat, no RNG-only wins). M14 and M15 ramp up towards it. The kit's mission check scores difficulty (`aw2dev campaign difficulty`: enemy/player value ratio, income ratio, CPU-vs-scripted win rate, days to win) and M16 must score highest.
-- **Black Hole inventions only in the two Black Hole missions** (the user's rule): Emerald Sun fights Black Hole itself in exactly two missions, **M9 Grain Ships** (Adder and Flak) and **M13 The Free Port** (Kindle's army is Black Hole's, a real army with its own COs and properties). Only there may the map carry inventions (Black Cannons, Minicannons, Lasers, a Deathray, a Black Factory, Crystals, an Obelisk), used sensibly under the BH Campaign's map rules (at most one Deathray, at the top edge, and so on). Every other mission has none, M16 included: Varro is not Black Hole, and his toughness comes from army size, production, funds, unit quality, fortified terrain, reinforcement waves and his CO powers. The kit tags the two missions (`black_hole_enemy`), allows at most two in the campaign, and fails an invention tile on any other map (`aw2dev maps lint --source es`, rule ES01).
+- **Black Hole inventions only in the two Black Hole missions** (the user's rule): Silver Nova fights Black Hole itself in exactly two missions, **M9 Grain Ships** (Adder and Flak) and **M13 The Free Port** (Kindle's army is Black Hole's, a real army with its own COs and properties). Only there may the map carry inventions (Black Cannons, Minicannons, Lasers, a Deathray, a Black Factory, Crystals, an Obelisk), used sensibly under the BH Campaign's map rules (at most one Deathray, at the top edge, and so on). Every other mission has none, M16 included: Varro is not Black Hole, and his toughness comes from army size, production, funds, unit quality, fortified terrain, reinforcement waves and his CO powers. The kit tags the two missions (`black_hole_enemy`), allows at most two in the campaign, and fails an invention tile on any other map (`aw2dev maps lint --source es`, rule ES01).
 - **Why the green fleet meets Black Hole (kept clear of the BH Campaign's events, and of BH2):** HOBB's grain moves through freight yards that Black Hole's quartermasters run for whoever pays in advance. Black Hole is not at war with Aurea; it defends its cargo, its depots and its docks against what it reads as raiders, with its own officers and production. The Aureans learn only that the stencil on the crates is a customer's, and that Black Hole's yards are where the trail runs through; they learn nothing of who the customer is (the BH2 hook). M9 is Black Hole's air depot and barge basin (Minicannons and a Black Cannon on the plateau, an airfield), M13 its north dock of the Free Port (a Black Factory and Crystals as the guard's own works).
 - Forced CO picks only where the story needs them; everything else is a free pick from the unlocked roster.
 - One art rule: nothing from the games or from AWBW is committed; the portraits and army art are composed at run time or original.
@@ -294,7 +294,7 @@ fades into the next song with op 0x41, the way the BH Campaign does. Each CO has
 
 ## 9. Building it (phase 2 plan, once this is approved)
 
-1. The Emerald Sun is already a skin: `army_skin.rs` + `skins/emerald_sun.toml`. A mission needs its army on one of the five colours: **only one army wears it** (no Emerald Sun vs. Emerald Sun), so Cassius's Second
+1. The Silver Nova is already a skin: `army_skin.rs` + `skins/emerald_sun.toml`. A mission needs its army on one of the five colours: **only one army wears it** (no Silver Nova vs. Silver Nova), so Cassius's Second
    Legion is red (Orange Star's colour). The campaign engine's `ArmyDef` needs an army-skin flag (a data field, not engine code, per `army-packs.md`).
 2. The four COs go in as `co_new` ids after Crumb and the face-only ids, each with a `crumb.rs`-style module (powers, texts, quotes, `bonus`), its CO table row, its presentation row from the chosen portrait recipe
    (`crumb_art.rs` shows how a composed 128x160 figure becomes the CO page picture), Tag data in `sturm_pairs.rs`'s format, and a regression row in `tools/aw2test/tests/test_all_cos.py`.
@@ -307,10 +307,10 @@ fades into the next song with op 0x41, the way the BH Campaign does. Each CO has
 1. **Portraits:** is the picture-to-CO mapping right (Klaus / Aurelia / Cassius / Livia as in section 2.4)? Can the owner supply happy, sad and angry variants of each picture (the slots show the neutral face for now)?
 2. **Klaus's stars:** 4 / 8 (the doc's recommendation) or 4 / 9 as in your proposal? (8 is Kanbei's price plus one; 9 is Hawke's.)
 3. **Livia's income:** +25% (the doc's change; +10% with +10% unit cost buys nothing) or your +10% income?
-4. **Varro:** the final boss needs a CO that is not one of the four. Options: (a) a fifth Emerald Sun CO, boss only, built with the same kit (portrait options like the others); (b) Varro as a story-only
+4. **Varro:** the final boss needs a CO that is not one of the four. Options: (a) a fifth Silver Nova CO, boss only, built with the same kit (portrait options like the others); (b) Varro as a story-only
    character fought with an existing CO's data (e.g. Javier's) wearing the Praetorian colours. The tables above write "Varro (boss)" and work with either.
 5. **Black Hole** (M9, M13): decided (the user): a real enemy army with its own COs, properties and inventions in those two missions only; no other mission has inventions.
-6. **Second skin colour for Cassius:** his Second Legion is red (Orange Star's colour). Fine, or would you rather have a second Emerald Sun variant (a crimson one) built as a second skin file?
+6. **Second skin colour for Cassius:** his Second Legion is red (Orange Star's colour). Fine, or would you rather have a second Silver Nova variant (a crimson one) built as a second skin file?
 7. **Tag missions:** three (M8, M12, M15); are the forced pairs right (Klaus + Cassius reluctantly, Klaus + Aurelia for the siege, a free pair at the end)?
 8. **Names:** keep the full names (Klaus, Aurelia, Cassius, Livia) wherever they fit; the short forms ("Aurel", "Cass", `short` in the CO file) only on a plate that clips. `aw2dev co check` measures them in AW2's font against the widest plate (28 px, Von Bolt): Klaus 19, Livia 17, Aurelia 24, Cassius 27 all fit, so no plate needs the short form by that measure; the in-game check at 1x happens when the COs are built in.
 
@@ -331,7 +331,7 @@ the skin on the player's army, a record in Flash slot 11. Differences from the o
   Black Hole's inventions. `es_campaign::sync_colours` now sets every army's colour to the mission's (test `es_colours_m1..16`, `campaign check`).
 - **Conquest**, not holdouts: see section 1. M6 is capture only; M14 is an assault; M16 is the siege of the Allied stronghold. Varro's arc ends in M14.
 - **Room to fight**: every map is rebuilt bigger with the design-quality lint (docs/dev/map-lint.md): density at most .17 units per walkable cell, frontage ratio at most 1.25, no straight rivers, no rectangle patches, no unit blocks.
-- **Finale**: M16 is Eagle (Green Earth) and Hachi (Orange Star) as allied enemy armies in their own colours, the player on Blue Moon's colour with the Emerald Sun skin.
+- **Finale**: M16 is Eagle (Green Earth) and Hachi (Orange Star) as allied enemy armies in their own colours, the player on Blue Moon's colour with the Silver Nova skin.
 
 ### Maps as rebuilt (sizes and what is where; the specs are `five/es/spec/esNN.py`, each with its design note; the principles: `docs/dev/map-design.md`)
 | # | Size | The land and its lanes |

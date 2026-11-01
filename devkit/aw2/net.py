@@ -7,7 +7,7 @@
   net relays   polite health report of the public endpoints (signalling, STUN, TURN info, Nostr)
   net soak     hours of random play across peers; logs every desync, stall or crash
   net roundtrip  does mgba's savestate load put the console back exactly? (it does not: architecture-online.md 6.1)
-  net repeat   one scenario N times (default: 2P Unranked with the Emerald Sun seat), every run's hashes must agree: the regression for state
+  net repeat   one scenario N times (default: 2P Unranked with the Silver Nova seat), every run's hashes must agree: the regression for state
                that differs between peers by timing (docs/dev/online-dev.md 'net repeat')
 
 Politeness: sim / matrix / soak use a LOCAL signalling mock (aw2.signal_mock) and block every public endpoint through
@@ -131,7 +131,7 @@ def cmd_repeat(a):
     """`net repeat`: the same story N times; the verdict is `N of N runs with equal hashes`. A desync that shows on only some runs (a timing
     race between peers) cannot be seen by one run; this is the check for it. Passing runs are deleted (their PNGs are large) unless --keep."""
     if a.skin:
-        os.environ["AW2DEV_SKIN"] = "1"      # seat 0 picks Emerald Sun on the army page (scenarios.py)
+        os.environ["AW2DEV_SKIN"] = "1"      # seat 0 picks Silver Nova on the army page (scenarios.py)
     else:
         os.environ.pop("AW2DEV_SKIN", None)
     rows = []
@@ -139,7 +139,7 @@ def cmd_repeat(a):
         ns = argparse.Namespace(scenario=a.scenario, players=a.players, fog=a.fog, rounds=a.rounds, tag=f"{a.tag or 'repeat_' + a.scenario}{i + 1}", hz=a.hz, max_s=a.max_s,
                                 event=a.event, level=a.level, latency=a.latency, jitter=a.jitter, loss=a.loss, impair=None, reorder=False, public=False, relay=False,
                                 dump_frame=a.dump_frame)
-        util.say(f"repeat {i + 1}/{a.runs}: {a.scenario}{' + Emerald Sun' if a.skin else ''}")
+        util.say(f"repeat {i + 1}/{a.runs}: {a.scenario}{' + Silver Nova' if a.skin else ''}")
         res = live.run(sim_spec(ns))
         run = Run(res["run"])
         ok, out = judge(run, res)
@@ -152,7 +152,7 @@ def cmd_repeat(a):
         print(f"  {'PASS' if ok else 'FAIL'}  {name}  hash={'equal' if hp else 'DIVERGED'}  scripts={'ran to the end' if sp else 'stalled'}" + ("" if ok else f"  -> aw2dev net desync {name}"))
     good = sum(1 for r in rows if r[1])
     equal = sum(1 for r in rows if r[2])
-    print(f"{equal} of {len(rows)} runs with equal hashes; {good} of {len(rows)} runs passed ({a.scenario}{', Emerald Sun' if a.skin else ''}, fog {a.fog})")
+    print(f"{equal} of {len(rows)} runs with equal hashes; {good} of {len(rows)} runs passed ({a.scenario}{', Silver Nova' if a.skin else ''}, fog {a.fog})")
     return 0 if good == len(rows) else 1
 
 

@@ -110,14 +110,14 @@ def story_trace_bh2_chooser(ctx):
     d.open_campaign_box()
     d.chooser_row(b2.CHOOSER_ROW)
     e.wait(30)
-    bmp = e.shot(os.path.join(out_dir(ctx), "bh2_chooser"))      # (row 3: BH2 right after BH, before Emerald Sun)
+    bmp = e.shot(os.path.join(out_dir(ctx), "bh2_chooser"))      # (row 3: BH2 right after BH, before Silver Nova)
     ctx.check(os.path.exists(bmp), "the chooser's picture")
     e.close()
 
 
 @test(modes=("ds",))
 def story_trace_bh2_chooser_order(ctx):
-    """The Campaign chooser reads AW2, DS, BH, BH2, Emerald Sun: rows 2, 3 and 4 open the BH (source 1), BH2 (source 3) and Emerald Sun (source 2) boxes; the source indices and so the saves are the same as
+    """The Campaign chooser reads AW2, DS, BH, BH2, Silver Nova: rows 2, 3 and 4 open the BH (source 1), BH2 (source 3) and Silver Nova (source 2) boxes; the source indices and so the saves are the same as
     before the reorder. A picture of each row (`bh2_chooser_<name>.bmp`)."""
     from aw2test import dscampaign as dc
     from aw2test import escampaign as es

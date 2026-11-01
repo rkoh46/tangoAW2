@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign: the computer's armies act (`-k es_cpu_m`): with the player passive for five days, every enemy army moves (at least a third of its
+"""Silver Nova Campaign: the computer's armies act (`-k es_cpu_m`): with the player passive for five days, every enemy army moves (at least a third of its
 units off their cells by day 3), and an army with production and funds builds (its funds fall or its units grow). The first check of every mission's AI orders
 (crate::es_campaign::deployment) and production (docs/dev/es-campaign.md)."""
 

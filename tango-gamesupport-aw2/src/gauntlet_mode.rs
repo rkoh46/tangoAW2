@@ -190,7 +190,7 @@ fn victory() -> Scene {
 
 // --- Gauntlet 02, Iron Crown and Asuka's Keep -------------------------------------------------------------------------------------------------------------
 
-/// The HQs of stage one (five/gauntlet/spec/gauntlet_02.py): Grit's (on the field), Jess's, Kanbei's and Rachel's (hidden). The player is the fifth army (Black Hole's colour wearing the Emerald Sun skin).
+/// The HQs of stage one (five/gauntlet/spec/gauntlet_02.py): Grit's (on the field), Jess's, Kanbei's and Rachel's (hidden). The player is the fifth army (Black Hole's colour wearing the Silver Nova skin).
 pub const IRON_GRIT: (u8, u8) = (8, 9);
 pub const IRON_JESS: (u8, u8) = (24, 5);
 pub const IRON_KANBEI: (u8, u8) = (34, 6);
@@ -273,7 +273,7 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
     Trigger::new(When::TurnStart, Cond::EveryDays { n: 1000, from: d }, then).repeating()
 }
 
-/// Iron Crown, stage one: the player (a free CO, the Emerald Sun army, the fifth) against Grit (Blue Moon), Jess (Green Earth), Kanbei (Yellow Comet) and Rachel (Orange Star), one after another on one land map; Rachel's fall moves
+/// Iron Crown, stage one: the player (a free CO, the Silver Nova army, the fifth) against Grit (Blue Moon), Jess (Green Earth), Kanbei (Yellow Comet) and Rachel (Orange Star), one after another on one land map; Rachel's fall moves
 /// the battle in place to Asuka's Keep (stage two). Every enemy colour is fixed in its army's data (a colour pick for the player offers the colour the enemies leave free: Black Hole's here, `player_colours`).
 fn iron_crown() -> MissionDef {
     let mut m = MissionDef::new("gauntlet_02", "Iron Crown");
@@ -428,14 +428,14 @@ impl Entry {
 }
 
 /// The army choices a player has against enemies who wear `enemy` (AW2's colours 1..5): the five colours in the Teams screen's order (Orange Star, Blue Moon, Yellow Comet,
-/// Green Earth, Black Hole) without the enemies', then the skins (Emerald Sun, code `army_skin::SKIN + i`) while one of the five is free to put it on
+/// Green Earth, Black Hole) without the enemies', then the skins (Silver Nova, code `army_skin::SKIN + i`) while one of the five is free to put it on
 /// (`army_skin::assign`: a skin sits on the lowest colour nobody has). Never an enemy's colour.
 pub fn free_colours(enemy: &[u8]) -> Vec<u8> {
     free_colours_staged(&[enemy.to_vec()])
 }
 
 /// [`free_colours`] for a map of several stages (a stage switch changes the enemies): a plain colour must be free in every stage (nobody wears it, ever); a skin needs a free colour to sit on
-/// in each stage (it moves at the switch: Iron Crown's Emerald Sun is on Black Hole's colour in stage one and on Orange Star's against Asuka).
+/// in each stage (it moves at the switch: Iron Crown's Silver Nova is on Black Hole's colour in stage one and on Orange Star's against Asuka).
 pub fn free_colours_staged(stages: &[Vec<u8>]) -> Vec<u8> {
     let all: Vec<u8> = stages.iter().flatten().copied().collect();
     let mut v: Vec<u8> = crate::army_skin::order().into_iter().filter(|c| *c < crate::army_skin::SKIN && !all.contains(c)).collect();
@@ -521,8 +521,8 @@ mod tests {
     #[test]
     fn the_free_colours_are_the_five_minus_the_enemies_plus_the_skins() {
         let skins: Vec<u8> = (0..crate::army_skin::skins().len() as u8).map(|i| crate::army_skin::SKIN + i).collect();
-        assert!(!skins.is_empty(), "Emerald Sun is a skin");
-        // Cinder Sea: Orange Star, Blue Moon and Emerald Sun
+        assert!(!skins.is_empty(), "Silver Nova is a skin");
+        // Cinder Sea: Orange Star, Blue Moon and Silver Nova
         let mut want = vec![colour::ORANGE_STAR, colour::BLUE_MOON];
         want.extend(&skins);
         assert_eq!(entries()[0].free(), want);
@@ -631,7 +631,7 @@ mod tests {
         let colours: Vec<u8> = e.enemies.iter().map(|x| x.1).collect();
         assert_eq!(colours, vec![colour::BLUE_MOON, colour::GREEN_EARTH, colour::YELLOW_COMET, colour::ORANGE_STAR, colour::BLACK_HOLE]);
         assert_eq!(e.stages.len(), 2);
-        assert_eq!(e.free(), vec![crate::army_skin::SKIN], "every plain colour is an enemy's in some stage: Emerald Sun is the only choice");
+        assert_eq!(e.free(), vec![crate::army_skin::SKIN], "every plain colour is an enemy's in some stage: Silver Nova is the only choice");
         // the skin's host: the colour stage one leaves free (Black Hole's), then the one stage two leaves (not Black Hole's: Asuka is)
         let host = |stage: usize| {
             let mut c = vec![crate::army_skin::SKIN];

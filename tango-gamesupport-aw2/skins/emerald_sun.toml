@@ -1,34 +1,36 @@
-# Emerald Sun: tangoAW2's own sixth army, inspired by the Jade Sun of Advance Wars By Web.
-# Everything in this file is original work of this repository (GPL-3.0-or-later): colours and
-# pixel art drawn here, applied at run time on top of Advance Wars 2's own graphics read from
-# the player's ROM. Nothing from AWBW or from any game is copied. Format: docs/dev/army-packs.md.
+# Silver Nova: tangoAW2's own sixth army (until 2026-11 Emerald Sun; the file keeps its id `emerald_sun`, which the CO data files name).
+# The HQ is the project owner's own pixel art, imported faithfully (art-src/silver-nova/hq.jpg, `aw2dev armyskin import-hq`); the yellow windows and the green orb come from the owner's
+# pictures (art-src/silver-nova/hq.jpg, city_ref.jpg); the palette is the owner's pick, bright chrome. The soldiers' helmets, the emblem and the rest are original work of this
+# repository (GPL-3.0-or-later), applied at run time on top of Advance Wars 2's own graphics read from the player's ROM. Format: docs/dev/army-packs.md.
 
 id = "emerald_sun"
-name = "Emerald Sun"
-short = "ES"
+name = "Silver Nova"
+short = "SN"
 
-# Colours are RRGGBB. The body ramp of every unit and building, light to dark: weathered jade,
-# a cool grey-green (verdigris stone), far from Green Earth's leaf green.
+# Colours are RRGGBB. The body ramp of every unit and building, light to dark: bright chrome (the owner's choice, option C of the palette sheet): near-white highlights, hard
+# contrast, neutral to faintly cool greys. Tuned to stay clear of Black Hole's light greys, the done greys and the fog (`aw2dev armyskin check`).
 [colours]
-# Pale emerald grey: a sage stone with a faint jade tint (greyer and lighter than leaf green or teal), its buildings pale green.
-ramp = ["DEE4C0", "BECB9E", "A0AB85", "7E8769", "464A3B", "292C23"]
-# The buildings (cities, bases, the HQ ...) are paler and greener than the units, light to dark.
-building = ["D6FFB8", "B7E396", "90AB78", "6C8555"]
+ramp = ["FFFFFF", "F0F2F8", "C0C4CC", "9497A0", "363A44", "16181E"]
+# The buildings (cities, bases, ...): white panels, a mid and a dark chrome grey (light to dark), so an owned city is far from an unowned one.
+building = ["FFFFFF", "BCC1C9", "6C717C", "444852"]
 # The trim greys of AW2's unit palette (tracks, barrels, metal, the cheek plate): steel.
-trim = ["BDBBA8", "8F8D7F", "665E53"]
-# Crests, plumes and sun rays: legion red.
-crest = "D02C3C"
-# The crest's dark, the plume's shade in the battle scenes.
-crest_dark = "8E1B28"
-# The sun itself on the emblem and the HQ (also entry 14 of every building palette).
-gold = "E8C25A"
-gold_dark = "A87C2C"
+trim = ["D0D3D8", "8A8E98", "4A4D55"]
+# The plume's colours: no picture draws a plume any more (entries 14 and 15 of the unit palettes stay installed for a Silver Nova CO in another colour, unused).
+crest = "FAFCFF"
+crest_dark = "A4B3CB"
+# The emblem's tones (the art's c, b, a: the sun's rays, its unused dark, its frame and disc): darker than the ramp's lights so the sun reads as shaded metal on the Teams card's white.
+emblem_tones = ["B4B8C0", "3E424C", "6B707C"]
+# The lit windows of the HQ (also entry 14 of every building palette): the yellow of the owner's pictures.
+gold = "F6F782"
+gold_dark = "B5B650"
+# The orb of the HQ, light to dark: the owner's greens (building palette entries 12, 11 and 8, which only the HQs' pictures use).
+orb = ["DBEB6E", "A5D86C", "72B073"]
 # A unit that has moved: its own dimmed ramp (how much of the ramp's hue the grey keeps, and how bright it stays).
-moved_tint = 0.4
-moved_dim = 0.64
+moved_tint = 0.5
+moved_dim = 0.5
 moved_lift = 0.3
 
-# ---- Infantry and Mech: AW2's soldiers in the stone ramp in a closed Roman galea: a steel face guard with an eye slit and a long red plume sweeping back ---------
+# ---- Infantry and Mech: AW2's soldiers in the stone ramp with a steel face guard with an eye slit (the mask; the Roman plume is gone) ---------
 # The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a unit palette index
 # (2..7 the stone ramp light to dark, b c d the steel trim light to dark, 1 white, e the crest red, f the outline). A patch
 # with `moving = [..]` is also laid on those frames of the moving sheet (0..2 facing sideways, 3..5 front, 6..8 back),
@@ -36,16 +38,16 @@ moved_lift = 0.3
 [infantry]
 base = 3
 
-# side view: the plume sweeps back in one diagonal blade over the helmet, the face guard covers the face down to the chin with a dark eye slit
+# side view: the face guard covers the face down to the chin with a dark eye slit
 [[infantry.patch]]
 x = 4
 y = 0
 moving = [0, 1, 2]
 anchor = [2, 1]
 rows = [
-  "......eee.",
-  "....eeee..",
-  "..eeee....",
+  "..........",
+  "..........",
+  "..........",
   "..........",
   "..........",
   ".bbbbbbbcd",
@@ -54,44 +56,44 @@ rows = [
   "..bbbbcd..",
 ]
 
-# front: the plume is a thin fin over the helmet, the face guard a steel plate with the eye slit
+# front: the face guard a steel plate with the eye slit
 [[infantry.patch]]
 frames = []
 moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
-  ".....ee.....",
-  ".....ee.....",
-  "...f2ee3f...",
-  "..f23ee34f..",
-  "..f33ee44f..",
+  "............",
+  "............",
+  "...f2..3f...",
+  "..f23..34f..",
+  "..f33..44f..",
   ".fcbbbbbbcf.",
   ".fcccccccdf.",
   ".fbffffffbf.",
   "..cbbbbbcd..",
 ]
 
-# back: the plume's fin and its tail over the neck guard
+# back: the neck guard
 [[infantry.patch]]
 frames = []
 moving = [6, 7, 8]
 anchor = [3, 2]
 rows = [
-  ".....ee.....",
-  ".....ee.....",
-  "...f2ee3f...",
-  "..f23ee34f..",
-  "..f33ee44f..",
+  "............",
+  "............",
+  "...f2..3f...",
+  "..f23..34f..",
+  "..f33..44f..",
   ".fbbbbbbbbf.",
-  ".fcccceccdf.",
-  ".....ee.....",
-  ".....e......",
+  ".fcccc.ccdf.",
+  "............",
+  "............",
 ]
 
 [mech]
 base = 3
 
-# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right: a shorter plume
+# the Mech's head sits a pixel left and up of the Infantry's, with the launcher on its right
 [[mech.patch]]
 frames = [0, 1]
 x = 3
@@ -99,8 +101,8 @@ y = 0
 moving = [0, 1, 2]
 anchor = [2, 0]
 rows = [
-  "....eeee.",
-  "..eeee...",
+  ".........",
+  ".........",
   ".........",
   ".........",
   "fbbbbbbbc",
@@ -114,8 +116,8 @@ frames = [2]
 x = 3
 y = 1
 rows = [
-  "....eeee.",
-  "..eeee...",
+  ".........",
+  ".........",
   ".........",
   ".........",
   "fbbbbbbbc",
@@ -129,11 +131,11 @@ frames = []
 moving = [3, 4, 5]
 anchor = [3, 2]
 rows = [
-  ".....ee.....",
-  ".....ee.....",
-  "...f2ee3f...",
-  "..f23ee34f..",
-  "..f33ee44f..",
+  "............",
+  "............",
+  "...f2..3f...",
+  "..f23..34f..",
+  "..f33..44f..",
   ".fcbbbbbbcf.",
   ".fcccccccdf.",
   ".fbffffffbf.",
@@ -146,9 +148,9 @@ frames = []
 moving = [6, 7, 8]
 anchor = [1, 1]
 rows = [
-  ".feef",
-  "f2eecf",
-  "f3eecf",
+  ".f..f",
+  "f2..cf",
+  "f3..cf",
   "fcbbdf",
 ]
 
@@ -157,19 +159,19 @@ rows = [
 # entries 8..10); `rows` (a hex digit is the figure palette's entry: 7 the outline, b c d the steel greys, e the skin's crest red, f its dark; `.` keeps the pixel)
 # are laid at (x, y) from that block's top-left corner on every frame that has one (a figure falling over has none and is left as it is).
 
-# Infantry in battle: the plume sweeps back from the crown, a steel face guard with a dark eye slit
+# Infantry in battle: a steel face guard with a dark eye slit
 [battle.infantry]
 dome = [12, 9]
 x = 2
 y = -3
 rows = [
-  ".....eeeef.....",
-  "..eeeeeeeeff...",
-  "eeeeeeeeeeeff..",
-  "..........eeff.",
-  "...........eeff",
-  "............eef",
-  "............eff",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
   "...............",
   "...............",
   "...............",
@@ -187,13 +189,13 @@ dome = [12, 9]
 x = 2
 y = -3
 rows = [
-  ".....eeeef.....",
-  "..eeeeeeeeff...",
-  "eeeeeeeeeeeff..",
-  "..........eeff.",
-  "...........eeff",
-  "............eef",
-  "............eff",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
+  "...............",
   "...............",
   "...............",
   "...............",
@@ -211,14 +213,14 @@ dome = [12, 9]
 x = 1
 y = -3
 rows = [
-  "......eeeef.....",
-  "...eefeeeeeff...",
-  ".eeefeefeeeeff..",
-  "...........efef.",
-  "............eeff",
-  ".............efe",
-  ".............eff",
-  "..............ef",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
   "................",
   "................",
   "................",
@@ -235,14 +237,14 @@ dome = [12, 9]
 x = 1
 y = -3
 rows = [
-  "......eeeef.....",
-  "...eefeeeeeff...",
-  ".eeefeefeeeeff..",
-  "...........efef.",
-  "............eeff",
-  ".............efe",
-  ".............eff",
-  "..............ef",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
+  "................",
   "................",
   "................",
   "................",
@@ -253,16 +255,16 @@ rows = [
   "..7ccdd7........",
 ]
 
-# ---- The capture box's soldier: the front view's plume (the Infantry's front patch above, its fin and the crest down the helmet) on the box's 16x32 figure, four frames ----
+# ---- The capture box's soldier: the front view's face mask on the box's 16x32 figure, four frames ----
 # Hex digits are the capture palette's entries: 2 the crest red, f the outline, b c 5 the helmet's light, mid and dark; the plume is anchored on the left outline of the helmet's top row.
 [capture]
 anchor = [3, 2]
 rows = [
-  ".....22.....",
-  ".....22.....",
-  "...fb22cf...",
-  "..fbc22c5f..",
-  "..fcc2255f..",
+  "............",
+  "............",
+  "...fb..cf...",
+  "..fbc..c5f..",
+  "..fcc..55f..",
 ]
 
 # ---- The HQ: a tall domed tower on a facade with gold windows and an arched door, a dark outline all round, light from the top left (a lit left, a shaded right).
@@ -270,37 +272,37 @@ rows = [
 # Built to AW2's HQ rules (`aw2dev armyskin check` measures them).
 [hq]
 rows = [
-  ".......ee.......",
-  ".......ed.......",
-  "......5335......",
-  "....55333455....",
-  "...5233334445...",
-  "..522333333335..",
-  "..522333344445..",
-  ".52223333444455.",
-  ".52223333333355.",
-  ".51223333444455.",
-  "5222233334444555",
-  "5222233333333555",
-  "5112233334444555",
-  "5222233334444555",
-  "5222233334444555",
-  "5222222222333335",
-  "544444eeee444555",
-  "5344444444444455",
-  "5344444444444455",
-  "534e43455444e455",
-  "534e43555544e455",
-  "5344435555444455",
-  "534e43555544e455",
-  "534e43555544e455",
-  "5344435555444455",
-  "5222222222222225",
-  "5344444444444445",
-  "5333333333333335",
-  "5444444444444445",
-  "5444444444444445",
-  "5555555555555555",
+  "............44..",
+  "............414.",
+  ".........44.414.",
+  "........414.424.",
+  ".....444424.444.",
+  "...441111114424.",
+  "..4114445241144.",
+  ".4114b4b8454114.",
+  ".414b118bbb4514.",
+  "4144111bcb8b4114",
+  "415811bcccc85514",
+  "41558b8bcb8b8514",
+  "4158b8c88b585514",
+  "4155b5b585858514",
+  "4411585858551144",
+  "4144111111114414",
+  "4214444444444144",
+  "4221144ee4411444",
+  "4222244444424444",
+  "4422244ee4424444",
+  "4244444444444444",
+  "4422241111424444",
+  "4244442222444424",
+  "4122442442412244",
+  "4214442442441444",
+  "4224422222242444",
+  "4224144444412444",
+  "4224122222212444",
+  ".42414444441244.",
+  "..441222222144..",
+  "....44444444....",
   "................",
 ]
 

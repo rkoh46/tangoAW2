@@ -1,4 +1,4 @@
-"""Versus: the Emerald Sun army choice (R on the Teams screen) and the menus around it; two fronts."""
+"""Versus: the Silver Nova army choice (R on the Teams screen) and the menus around it; two fronts."""
 
 from aw2test.harness import test
 from aw2test.game import Game, SELECT_MODE_CURSOR, MAP_TAB
@@ -42,7 +42,7 @@ def skin_state(e):
 
 @test(modes=("ds", "aw2"))
 def versus_menus_keep_no_skin(ctx):
-    """The Emerald Sun army is picked with R on the Teams screen; backing out to the map list takes the choice back (the skin used to stay on the
+    """The Silver Nova army is picked with R on the Teams screen; backing out to the map list takes the choice back (the skin used to stay on the
     list and on the next Teams screen, where the first army wore it with any CO)."""
     g = ctx.boot_teams(ctx.map())
     e = g.e
@@ -53,7 +53,7 @@ def versus_menus_keep_no_skin(ctx):
         if skin_state(e)["ident"][0]:
             break
     on = skin_state(e)
-    ctx.check(on["ident"][0] != 0 and any(on["applied"]), f"R reaches the Emerald Sun army and the skin is installed ({on})")
+    ctx.check(on["ident"][0] != 0 and any(on["applied"]), f"R reaches the Silver Nova army and the skin is installed ({on})")
     e.press("B", 8)
     e.wait(120)
     back = skin_state(e)
@@ -138,7 +138,7 @@ def fronts_keep_colours(label, presses, cos):
     test(modes=("ds",))(fn)
 
 
-# R presses from Orange Star: 1 Yellow Comet, 3 Black Hole, 4 the Emerald Sun army
+# R presses from Orange Star: 1 Yellow Comet, 3 Black Hole, 4 the Silver Nova army
 fronts_keep_colours("black_hole", 3, ("asuka", "andy"))
 fronts_keep_colours("yellow_comet", 1, ("max", "andy"))
 fronts_keep_colours("emerald_sun", 4, (86, "andy"))

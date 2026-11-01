@@ -1,6 +1,6 @@
 """aw2dev maps: map integrity (docs/dev/map-lint.md, skill aw2-map-lint).
 
-  maps gen [--map es01 ..] [--check]  the Emerald Sun Campaign's text maps from their specs (five/es/spec/esNN.py), then es_map_data.rs (bhmap.py --campaign es)
+  maps gen [--map es01 ..] [--check]  the Silver Nova Campaign's text maps from their specs (five/es/spec/esNN.py), then es_map_data.rs (bhmap.py --campaign es)
   maps lint [--source bh|es|versus|aw2|ds|all] [--map NAME ...] [--rule ID ...] [--png DIR] [--json]
                                    check maps for unfinished rivers, orphan sea/shoal, broken joins, bad bridges and roads, pipes, units on terrain
                                    they cannot enter, unreachable properties, HQs with no access, tiles drawn as garbage; exit 1 on an error in
@@ -28,7 +28,7 @@ def register(sub):
     a.add_argument("--json", action="store_true")
     a.add_argument("--warn", action="store_true", help="show warnings too (default: errors only for bh / versus)")
     a.set_defaults(fn=lint)
-    a = ms.add_parser("gen", help="write the Emerald Sun text maps (five/es/esNN.txt) from their specs (five/es/spec/esNN.py), then build es_map_data.rs")
+    a = ms.add_parser("gen", help="write the Silver Nova text maps (five/es/esNN.txt) from their specs (five/es/spec/esNN.py), then build es_map_data.rs")
     a.add_argument("--campaign", default="es", choices=["es", "bh2", "gauntlet"], help="the campaign whose specs to run (es: five/es/spec, bh2: five/bh2/spec, gauntlet: five/gauntlet/spec, the Gauntlet mode's maps)")
     a.add_argument("--map", nargs="*", help="only these (es01 es02 ... or bh2_01 ...)")
     a.add_argument("--no-build", action="store_true", help="only write the text maps")
@@ -38,7 +38,7 @@ def register(sub):
     a = ms.add_parser("rules", help="the rules and what the games' own maps do under each")
     a.add_argument("--md", action="store_true")
     a.set_defaults(fn=rules_table)
-    a = ms.add_parser("compare", help="BH (or Emerald Sun) maps at a git revision against the working tree")
+    a = ms.add_parser("compare", help="BH (or Silver Nova) maps at a git revision against the working tree")
     a.add_argument("--base", required=True)
     a.add_argument("--source", default="bh", choices=["bh", "es"])
     a.add_argument("--out", help="folder for the before/after pictures")
@@ -120,7 +120,7 @@ def lint(a):
                     continue
                 bad += 1
         if m.source in ("es", "bh2", "gauntlet"):
-            # (the Emerald Sun and BH2 maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
+            # (the Silver Nova and BH2 maps are held to the design-quality rules too: DQ.. and SP.. findings fail, `--rule` or the map's own comment cannot waive them)
             bad += sum(p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04") for p in probs)
         if out and (probs or m.source in ("bh", "es", "bh2", "gauntlet", "versus")):
             render.draw_map(m, probs).save(out / f"{m.name.replace(' ', '_')}.png")
@@ -185,7 +185,7 @@ def rules_table(a):
 
 
 def _bh_at(rev, source="bh"):
-    """The BH (or Emerald Sun) maps as they were at git REV (files read with `git show` into a temp folder)."""
+    """The BH (or Silver Nova) maps as they were at git REV (files read with `git show` into a temp folder)."""
     load, rules, render = _lib()
     d = Path(tempfile.mkdtemp(prefix="aw2maps_"))
     names = cfg.git("ls-tree", "--name-only", rev, f"tango-gamesupport-aw2/five/{source}/").split()

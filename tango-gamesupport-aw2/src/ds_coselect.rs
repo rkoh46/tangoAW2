@@ -1333,7 +1333,7 @@ fn grid(core: &Core) -> Option<Grid> {
     let k = core.raw_read_16(proc + 0x52, -1) as usize % size + core.raw_read_32(proc + 0x5C, -1) as usize;
     let cur = *offered.get(k)?;
     // Every CO of the roster, Dual Strike's way: by country, a CO the screen does not offer locked.
-    // (the Emerald Sun COs only where the roster lists them: Versus' grid has no black cells for COs it does not have; the campaign's screen offers them and adds them below)
+    // (the Silver Nova COs only where the roster lists them: Versus' grid has no black cells for COs it does not have; the campaign's screen offers them and adds them below)
     let mut all: Vec<u8> = (0..19u8)
         .chain(crate::co_new::all().map(|n| n.0).filter(|&c| crate::co_new::listed(c)))
         .collect();

@@ -159,7 +159,7 @@ pub fn entries(core: &Core) -> Vec<&'static str> {
             .into_iter()
             .map(|i| crate::campaign_model::SOURCES[i].label),
     );
-    // The campaigns still to come, shown but not playable: BH2 directly under the BH Campaign, Emerald Sun last.
+    // The campaigns still to come, shown but not playable: BH2 directly under the BH Campaign, Silver Nova last.
     if crate::ds_weather::is_on(core) {
         v.extend(coming(core).iter().map(|c| c.label));
     }
@@ -172,19 +172,19 @@ pub struct Coming {
     pub title: &'static str,
 }
 
-/// The placeholders, in the sub-menu's order after the sources (only Emerald Sun's remains, and it is a source now).
+/// The placeholders, in the sub-menu's order after the sources (only Silver Nova's remains, and it is a source now).
 pub const COMING: [Coming; 1] = [
     Coming {
-        label: "EMERALD SUN",
-        title: "Emerald Sun Campaign",
+        label: "SILVER NOVA",
+        title: "Silver Nova Campaign",
     },
 ];
 
-/// The placeholders still shown: Emerald Sun's goes once it is a source (the development flag, [`crate::es_campaign::dev_flag`]).
+/// The placeholders still shown: Silver Nova's goes once it is a source (the development flag, [`crate::es_campaign::dev_flag`]).
 pub fn coming(core: &Core) -> Vec<&'static Coming> {
     COMING
         .iter()
-        .filter(|c| !(c.label == "EMERALD SUN" && crate::es_campaign::available(core)))
+        .filter(|c| !(c.label == "SILVER NOVA" && crate::es_campaign::available(core)))
         .collect()
 }
 
@@ -253,8 +253,8 @@ pub fn draw_notice(core: &Core, rgba: &mut [u8]) {
     cv.text(core, x + (w - text_width(core, t)) / 2, by, t, BLUE, SHADE);
 }
 
-/// The order the chooser lists the sources in (indices of `SOURCES`): DS, BH, BH2, Emerald Sun. Only the display order: every source keeps its index, its save slot and its record
-/// (`SOURCES` is in the order they were added: Emerald Sun is 2 and BH2 is 3).
+/// The order the chooser lists the sources in (indices of `SOURCES`): DS, BH, BH2, Silver Nova. Only the display order: every source keeps its index, its save slot and its record
+/// (`SOURCES` is in the order they were added: Silver Nova is 2 and BH2 is 3).
 pub const DISPLAY_ORDER: [usize; 4] = [0, 1, 3, 2];
 
 /// The available sources' indices, in the chooser's order.
@@ -500,6 +500,9 @@ fn glyph(c: char) -> &'static [&'static str] {
         'U' => &[
             "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "#####", ".###.",
         ],
+        'V' => &[
+            "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##", ".###.", ".###.", "..#..",
+        ],
         'H' => &[
             "##.##", "##.##", "##.##", "##.##", "#####", "#####", "##.##", "##.##", "##.##", "##.##",
         ],
@@ -694,7 +697,7 @@ mod tests {
         assert_eq!(window(0, 3, 5), (0, 0));
     }
 
-    /// The chooser reads AW2, DS, BH, BH2, Emerald Sun; the display order is a permutation of `SOURCES` and leaves every source's index (and so its save slot) alone.
+    /// The chooser reads AW2, DS, BH, BH2, Silver Nova; the display order is a permutation of `SOURCES` and leaves every source's index (and so its save slot) alone.
     #[test]
     fn the_chooser_order_is_bh_then_bh2_then_emerald_sun() {
         let src = &crate::campaign_model::SOURCES;
@@ -702,9 +705,9 @@ mod tests {
         sorted.sort();
         assert_eq!(sorted, [0, 1, 2, 3], "a permutation");
         let labels: Vec<&str> = DISPLAY_ORDER.iter().map(|&i| src[i].label).collect();
-        assert_eq!(labels, ["DS CAMPAIGN", "BH CAMPAIGN", "BH2 CAMPAIGN", "EMERALD SUN"]);
+        assert_eq!(labels, ["DS CAMPAIGN", "BH CAMPAIGN", "BH2 CAMPAIGN", "SILVER NOVA"]);
         // the indices and slots the saves use did not move
-        assert_eq!((src[2].label, src[2].save_slot, src[3].label, src[3].save_slot), ("EMERALD SUN", 11, "BH2 CAMPAIGN", 13));
+        assert_eq!((src[2].label, src[2].save_slot, src[3].label, src[3].save_slot), ("SILVER NOVA", 11, "BH2 CAMPAIGN", 13));
         assert_eq!(crate::bh2_campaign::SOURCE, 3);
         assert_eq!(crate::es_campaign::SOURCE, 2);
     }
@@ -721,6 +724,12 @@ mod tests {
         {
             let w: usize = t.chars().map(|c| glyph(c)[0].len() + 1).sum::<usize>() - 1;
             assert!(w + 6 <= LABEL_W, "{t}");
+            // (every letter of a campaign's label has a glyph: 'SILVER NOVA' once drew as 'SIL ER NO A')
+            if (t != "GAUNTLET" && crate::campaign_model::SOURCES.iter().any(|s| s.label == t)) || COMING.iter().any(|c| c.label == t) {
+                for c in t.chars().filter(|c| *c != ' ') {
+                    assert!(glyph(c).iter().any(|r| r.contains('#')), "no glyph for {c:?} in the label {t}");
+                }
+            }
             assert_eq!(label_tiles(t).len(), LABEL_TILES as usize * 32);
         }
     }

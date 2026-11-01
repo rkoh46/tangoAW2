@@ -1,4 +1,4 @@
-"""BH2 M32 Through the Door (development build, crate::bh2_campaign): the enemy army wears the Emerald Sun skin and nothing of Green Earth (`-k bh2_m32_look`).
+"""BH2 M32 Through the Door (development build, crate::bh2_campaign): the enemy army wears the Silver Nova skin and nothing of Green Earth (`-k bh2_m32_look`).
 
 The mission gives Caulder + Tabitha's army the colour Green Earth as a host (`MissionDef::skin`: the skin sits on that colour, `army_skin`); the game then draws every Green Earth picture from the skin's. The test enters the mission, deploys,
 and photographs what the player sees of the enemy: the whole screen with the cursor on the enemy HQ, on an enemy base, on an enemy Infantry and on an enemy Tank (the terrain and unit panels), and the start of the enemy's own turn (its CO
@@ -39,7 +39,7 @@ def bh2_m32_look(ctx):
     colour = g.player(2)["colour"]
     host = e.u8(SKIN_STATE)
     ctx.log(f"army 2's colour byte {colour}; the skin sits on colour {host}")
-    ctx.check(host == colour, f"the Emerald Sun skin sits on army 2's colour (skin host {host}, army 2's colour {colour})")
+    ctx.check(host == colour, f"the Silver Nova skin sits on army 2's colour (skin host {host}, army 2's colour {colour})")
     enemy = g.units(army=2)
     inf = next(u for u in enemy if u["type"] == 1)
     tank = next(u for u in enemy if u["type"] == 5)

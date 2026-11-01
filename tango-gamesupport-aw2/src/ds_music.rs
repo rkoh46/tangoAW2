@@ -1323,11 +1323,11 @@ pub struct Music {
     /// The power themes ([`POWER_SONGS`]) the pack has: (sequence id, song
     /// id).
     pub power: Vec<(u16, u16)>,
-    /// The Emerald Sun COs' own themes ([`crate::es_music`]), last in the song table.
+    /// The Silver Nova COs' own themes ([`crate::es_music`]), last in the song table.
     pub es: Vec<EsSong>,
 }
 
-/// One of the Emerald Sun COs' themes in the music's ROM: its song id and the voice group to fill from AW2's own ([`install`]).
+/// One of the Silver Nova COs' themes in the music's ROM: its song id and the voice group to fill from AW2's own ([`install`]).
 pub struct EsSong {
     pub co: u8,
     pub song: u16,
@@ -1434,11 +1434,11 @@ fn build() -> Option<Music> {
     let table_at = TABLE;
     // The staff roll's stream, a song after the others.
     let roll = pack.file(STAFF_ROLL_STREAM).and_then(stream);
-    // The Emerald Sun COs' themes (crate::es_music), the table's last rows; a song that does not compile is left out (the CO plays its like CO's).
+    // The Silver Nova COs' themes (crate::es_music), the table's last rows; a song that does not compile is left out (the CO plays its like CO's).
     let es_list = match crate::es_music::compile_all() {
         Ok(l) => l,
         Err(e) => {
-            log::error!("the Emerald Sun themes: {e}");
+            log::error!("the Silver Nova themes: {e}");
             Vec::new()
         }
     };
@@ -1678,7 +1678,7 @@ fn build() -> Option<Music> {
         blob.bytes[e + 6..e + 8].copy_from_slice(&PLAYER.to_le_bytes());
         staff_roll = Some(FIRST_SONG + n as u16);
     }
-    // The Emerald Sun themes: a voice group (filled from the ROM's own at install), the tracks with their loops' addresses, the header and its row.
+    // The Silver Nova themes: a voice group (filled from the ROM's own at install), the tracks with their loops' addresses, the header and its row.
     let mut es = Vec::new();
     let es_row = distinct.len() + roll_n;
     for (k, (co, c)) in es_list.iter().enumerate() {
@@ -1822,7 +1822,7 @@ fn install(core: &mut Core) -> bool {
     if !m.story_blob.is_empty() {
         core.raw_write_range(STORY_BASE, -1, &m.story_blob);
     }
-    // The Emerald Sun themes' voice groups: AW2's own voices (their samples stay where the ROM has them), copied into slots.
+    // The Silver Nova themes' voice groups: AW2's own voices (their samples stay where the ROM has them), copied into slots.
     for e in &m.es {
         for (slot, v) in e.voices.iter().enumerate() {
             let mut b = [0u8; 12];
@@ -2128,7 +2128,7 @@ mod pack_tests {
         assert!(STORY_BASE as usize + m.story_blob.len() <= STORY_END as usize);
     }
 
-    /// The Emerald Sun themes' room (crate::es_music): the last rows of the song table, their data after the power themes in the story's ROM range, every
+    /// The Silver Nova themes' room (crate::es_music): the last rows of the song table, their data after the power themes in the story's ROM range, every
     /// piece (voice group, track, header) inside [`STORY_BASE`]..[`STORY_END`] and none over another, the voice groups filled at install from AW2's own
     /// (needs `TANGOAW2_DS_ROM`): `cargo test -p tango-gamesupport-aw2 ds_music -- --ignored`.
     #[test]

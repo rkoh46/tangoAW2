@@ -81,7 +81,7 @@ def run(jobs=3, only=None, keep=False):
         return [r.stdout.strip() or "FAIL aidebug rom_tests"] if r.returncode else []
 
     def armyskin(what):
-        # Emerald Sun: the data file and palette margins, every colour the skin can sit on, then the live walk of the army-coloured screens
+        # Silver Nova: the data file and palette margins, every colour the skin can sit on, then the live walk of the army-coloured screens
         # (docs/dev/army-packs.md); skipped without the AW2 ROM or the built dump example
         from .armyskinlib import check as chk
         if not cfg.aw2_rom().exists() or not util.example_bin("aw2_skin_dump").exists():
@@ -121,7 +121,7 @@ def run(jobs=3, only=None, keep=False):
         return ([f"FAIL campaign scenes\n{r.stderr[-400:]}"] if r.returncode else []) + ([f"FAIL bhtext lint\n{lint.stdout[-400:]}"] if lint.returncode else [])
 
     def es_music(_):
-        # the Emerald Sun themes (docs/dev/music-kit.md): the song files compile and keep the rules, and in the game each CO's song is registered, intact in ROM and
+        # the Silver Nova themes (docs/dev/music-kit.md): the song files compile and keep the rules, and in the game each CO's song is registered, intact in ROM and
         # plays through its loop (needs the AW2 ROM, the Dual Strike ROM and the built examples; skipped without)
         if not cfg.aw2_rom().exists() or not cfg.ds_rom().exists() or not util.example_bin("aw2_es_music").exists():
             return []

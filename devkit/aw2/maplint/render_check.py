@@ -3,7 +3,7 @@ and the coast tiles of the sea) every cell of the picture (16 x 16 pixels, no un
 4-neighbour class (`rules.trans_key`); a drawing the games never use there is flagged. Exact comparison, no tolerance: water is animated, so the reference must hold every phase
 (the BH Campaign's 35 pictures give hundreds of samples a tile; a key with fewer than MIN_SAMPLES samples has no verdict).
 
-Pictures: `m<N>_full.png` (or `_fogoff`, fog off) as `aw2dev maps boot` (BH) and `aw2dev campaign sheets` (Emerald Sun) keep them, 16 pixels a cell, the whole map, nothing from the games committed."""
+Pictures: `m<N>_full.png` (or `_fogoff`, fog off) as `aw2dev maps boot` (BH) and `aw2dev campaign sheets` (Silver Nova) keep them, 16 pixels a cell, the whole map, nothing from the games committed."""
 import re
 from pathlib import Path
 from PIL import Image

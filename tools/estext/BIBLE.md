@@ -51,7 +51,7 @@ Story, cast and mission list: `docs/ES_CAMPAIGN.md` (read sections 1, 3, 4, 5 an
 ## Format in one screen (full text: `es_text/README.txt`)
 ```
 == m01_pre                          a scene (key); optional pool: == m07_pre | KLAUS, LIVIA
-@SONG ally2                          every pre / post / map scene and the prologue and epilogue names ONE song (role names below, or co:klaus)
+@SONG ally2                          every pre / post / map scene and the prologue and epilogue names ONE song (role names below, or co:tabitha)
 NARRATION: Cape Astra, Green Earth. / Forty days out of Aurelium.
 LIVIA: The sea is flat, Legate. / That is the only good news.
 CASSIUS(h): Not yet! My horses are / still being sick in the third hold.     (h) happy face, (s) sad face

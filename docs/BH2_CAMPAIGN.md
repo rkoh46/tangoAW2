@@ -9,7 +9,7 @@ Lead designer's draft built on the owner's founding notes (2026-10-28). Nothing 
 
 - You play as **Asuka**. Sonja appears only in the prologue, before she becomes Asuka.
 - **Story:** it continues BH1's secret ending. A proper prologue covers the defection. Asuka leads Black Hole, gathers intel and invades every country. Every BH1 cliffhanger is wrapped up.
-- **Missions:** 25, plus **secret M32**, unlocked after M29. In M32 Black Hole fights **Emerald Sun** for the first time.
+- **Missions:** 25, plus **secret M32**, unlocked after M29. In M32 Black Hole fights **Silver Nova** for the first time.
 - **World map:** Advance Wars 1's.
 - **Final mission (M30):** the hardest yet. A very big map with no time limit.
 - **Content:**
@@ -90,7 +90,7 @@ Abbreviations: **BF** = Black Factory, **2F** = two-front, **Tag** = tag mission
 | 29 | The Gate of Colours | Orange Star's outer capital | Free pair | Andy + Sami + Max (3 armies) | The road to the last capital. Andy falls back to the Accord's citadel. **Unlocks M32.** |
 | 30 | The Orange Line | Orange Star's outer defences | Free pair | Rachel + Sami (one Orange Star army, a tag pair) | Between the Gate of Colours and the final battle: two rivers, a trench of woods and a ridge with a Com Tower in its heart, no pipes. Sami's infantry on the line, Rachel's reserve and real production behind it. Rain and fog. |
 | 31 | **The Last Accord** | The Accord's continent, then Aria's citadel on high ground | Free pair | Nell, then Olaf, Kanbei, Eagle (each their own army), then Aria | **The final mission, one battle in two stages** (docs/dev/stages.md): the gauntlet map, then Eagle's fall moves the battle in place to the Last Citadel with the player's survivors, and Aria's fresh army holds it (Aria starts with 100,000; the player brings at most 50,000 of the gauntlet's funds). **Economy (stage 1):** the player starts with 24,000 and the camp's nine properties (about 9,000 a day), and 16 neutral towns in the marsh and on the way are capturable; Nell starts with 8,000 and 12 properties (12,000 a day); Olaf, Kanbei and Eagle are not on the battlefield while Nell fights (the gauntlet engine, docs/dev/gauntlet.md: no HQ, no units, no turn); when a nation comes, its HQ is built and every property of its zone becomes its own, those the player raided first too (Olaf 11, Kanbei 13, Eagle 18 with five airports); a wave unit whose landing cell is taken lands on the nearest free cell; it saves while it sleeps (Olaf 1,000, Kanbei 1,500, Eagle 2,000 a day: the slower the player, the richer the next line); when the line before it falls (its HQ taken, or its whole army destroyed: a routed nation's HQ turns neutral and the next action wakes the next nation) it gets 25,000 and its savings, its wave and, from its next turn, its zone's income (towns the player raided before it woke are the player's); a sleeping nation cannot be defeated by killing its holding units (`MissionDef::sleepers`: AW2's `DefeatArmy` is skipped for it until its line has fallen); a nation whose HQ the player holds is cut off (no income) and fights on with what is on the field. |
-| **Secret 26** | **Through the Door** | Black Hole's island (south-west): Emerald Sun lands on Black Hole's home | Free pair | **Klaus + Aurelia, Emerald Sun** | Black Hole meets Emerald Sun for the first time: what came through the door when Sturm went out lands on Black Hole's own island. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
+| **Secret 26** | **Through the Door** | Black Hole's island (south-west): Silver Nova lands on Black Hole's home | Free pair | **Klaus + Aurelia, Silver Nova** | Black Hole meets Silver Nova for the first time: what came through the door when Sturm went out lands on Black Hole's own island. A big land war with Cassius's cavalry and Livia's navy on the flanks. |
 
 **Counts**
 - Two-front missions: 3 (M4, M13, M25).
@@ -110,7 +110,7 @@ Each uses the engine's existing triggers (Spawn, TakeOver with a held second HQ,
 | 6 | **Eagle takes command** | When Black Hole holds all four of Javier's Com Towers, **Eagle takes command of the same army** (no second HQ) and an air wing lands. (M5 is now a plain three-army battle: Javier + Eagle and Grit.) |
 | 12 | **The Table** | At half strength Kanbei calls Sensei's airlift (a Spawn of B Copters with Infantry). When Kanbei's last tank falls, the father-and-daughter scene plays and he **yields the field**. |
 | 23 | **The door is open** | You defend the depot until Crumb (a named unit) reaches the crate tile. The crate opens and Black Hole's reserve wakes: a Spawn of Neotanks. The tide turns. |
-| 32 | **The legion lands** | Emerald Sun invades Black Hole's home island in waves: Klaus's first landing, Cassius's cavalry on day 3, Aurelia's siege engines on day 5 and Livia's fleet on day 7. |
+| 32 | **The legion lands** | Silver Nova invades Black Hole's home island in waves: Klaus's first landing, Cassius's cavalry on day 3, Aurelia's siege engines on day 5 and Livia's fleet on day 7. |
 | 30 | **The Last Accord** (final) | The gauntlet: Nell, then Olaf, Kanbei and Eagle, then Aria take over in turn. |
 
 Every other mission is a straight battle.
@@ -173,7 +173,7 @@ These apply to all 32 missions, not just Act I:
 
 - **Epilogue after M30.** The new Orange Star CO is the last to fall. Nell surrenders the Accord's seal to Asuka, not to Sturm. Asuka leads Black Hole and the world, with Hawke as Marshal; "Succession" ends with Hawke kneeling to the army, not the person. Crumb keeps Gerald and the key, and the door hums, closed but not locked. Sturm is somewhere past it.
 - **Separate credits sequence.** A full staff roll with its own music, cast by army, and a last page.
-- **Secret epilogue after M32.** Emerald Sun's legion halts at the edge of the map. Klaus: "The sun does not set. It waits." This links to the Emerald Sun Campaign.
+- **Secret epilogue after M32.** Silver Nova's legion halts at the edge of the map. Klaus: "The sun does not set. It waits." This links to the Silver Nova Campaign.
 
 ## 6. Music
 

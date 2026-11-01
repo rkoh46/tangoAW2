@@ -21,7 +21,7 @@ COUNTS = (2, 3, 4, 5)
 COLOURS = (1, 2, 3, 4, 5)
 QUICK = ((2, 5), (3, 3), (4, 4), (5, 5))     # (armies, colour): the ones that stood on the Dual Strike backup of colour 5 and the lowest others
 # (the plume's red in a shot: the unit panel and the build menu's panel show it at 32 x 32, a battle scene's soldier at about 80 pixels)
-NEED = {"panel": 8, "build": 25, "build_mech": 25, "scene2": 80, "scene3": 80}
+NEED = {}   # (Silver Nova has no plume: nothing of the skin's crest red is drawn any more; the harness's skincheck still checks the rooms and the figure table)
 
 
 def others(n, colour):
@@ -123,7 +123,7 @@ def run(pairs=None, ds=True, out=None, keep=False, say=print):
             fails.append(f"{tag}: the harness script failed ({log}){' ' + '; '.join(problems[:2]) if problems else ''}")
             continue
         got = {}
-        for shot, need in (NEED.items() if ds else ()):   # (the plume is an Emerald Sun CO's design: the pack's list has them)
+        for shot, need in (NEED.items() if ds else ()):   # (the plume is a Silver Nova CO's design: the pack's list has them)
             f = d / f"{shot}_s{controller(n, colour)}.bmp"
             if not f.exists():
                 fails.append(f"{tag}: shot {shot} was not taken")

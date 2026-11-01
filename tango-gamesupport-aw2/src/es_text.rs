@@ -1,5 +1,5 @@
-//! The Emerald Sun Campaign's dialogue, as text files in the BH Campaign's box format ([`crate::bh_text`]; a copy with the
-//! Emerald Sun cast: `src/es_text/*.txt`, format `src/es_text/README.txt`, voices `tools/estext/BIBLE.md`).
+//! The Silver Nova Campaign's dialogue, as text files in the BH Campaign's box format ([`crate::bh_text`]; a copy with the
+//! Silver Nova cast: `src/es_text/*.txt`, format `src/es_text/README.txt`, voices `tools/estext/BIBLE.md`).
 //!
 //! A scene is a key (`m14_pre`) and rows; a row is one dialogue box: a speaker, an
 //! optional expression, a colon, then up to two lines of at most 176 pixels in AW2's font,
@@ -15,7 +15,7 @@ use std::sync::{Mutex, OnceLock};
 use crate::custom_campaign::Bond;
 use crate::es_campaign::ROSTER;
 
-/// (the Emerald Sun Campaign has no hidden bonds)
+/// (the Silver Nova Campaign has no hidden bonds)
 const BONDS: [Bond; 0] = [];
 use crate::campaign_music::Track;
 use crate::custom_campaign::{co, colour, Line, Mood, Page, Scene, Speaker};

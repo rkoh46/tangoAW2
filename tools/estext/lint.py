@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lint the Emerald Sun Campaign's dialogue files (tango-gamesupport-aw2/src/es_text/*.txt; voice rules: tools/estext/BIBLE.md).
+"""Lint the Silver Nova Campaign's dialogue files (tango-gamesupport-aw2/src/es_text/*.txt; voice rules: tools/estext/BIBLE.md).
 
     python3 tools/estext/lint.py                 # every file
     python3 tools/estext/lint.py act3            # one file (act1 act2 act3 act4)

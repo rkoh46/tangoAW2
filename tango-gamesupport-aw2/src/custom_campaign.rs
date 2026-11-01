@@ -394,7 +394,7 @@ pub struct BuiltUnit {
     pub name: &'static str,
 }
 
-/// A map built by `five/bhmap.py`, from the BH Campaign's or the Emerald Sun Campaign's table.
+/// A map built by `five/bhmap.py`, from the BH Campaign's or the Silver Nova Campaign's table.
 pub fn built_map(name: &str) -> Option<&'static BuiltMap> {
     crate::bh_map_data::MAPS
         .iter()
@@ -907,7 +907,7 @@ pub struct MissionDef {
     /// funds. [`Action::Reveal`] brings one in when the lines before it fall ([`Cond::LineFallen`]).
     pub hidden: Vec<Hidden>,
     /// A skin worn by an army of this mission: (army 1-based, skin index in [`crate::army_skin`]): the skin takes the colour the mission gives that army
-    /// (BH2's M26: the Emerald Sun legion, army 2). None: the army wears its colour.
+    /// (BH2's M26: the Silver Nova legion, army 2). None: the army wears its colour.
     pub skin: Option<(u8, usize)>,
     /// Later stages: the battle moves on in place when [`Action::NextStage`] fires, one stage after another ([`StageDef`], docs/dev/stages.md).
     pub stages: Vec<StageDef>,

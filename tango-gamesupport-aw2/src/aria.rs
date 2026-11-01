@@ -17,7 +17,7 @@
 //! | HP | | +3 to every unit |
 //! | Luck, movement | the game's own | |
 //!
-//! Stars: no CO Power, Super Power 7 (63000 meter points at 9000 a star). Not in the Emerald Sun Campaign and reserved for the BH2 Campaign (M25).
+//! Stars: no CO Power, Super Power 7 (63000 meter points at 9000 a star). Not in the Silver Nova Campaign and reserved for the BH2 Campaign (M25).
 
 use crate::co_new::ARIA;
 use crate::co_roster::FIREPOWER;

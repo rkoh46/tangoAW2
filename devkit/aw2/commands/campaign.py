@@ -3,8 +3,8 @@
   campaign scenes [--md] [--mission bh05]   every scene of the BH Campaign with its song (role, AW2 song id) and box count: prologue, intro, victory, the scenes on
                                             the world map after a win, mid-battle triggers; scenes with no song are marked `-` (story scenes without one fail)
   campaign menu [--out DIR]                 start the real app offline with the Dual Strike pack through the AI debug channel, open Select Mode > Campaign and
-                                            photograph the chooser at each entry (AW2, DS, BH, Emerald Sun and BH2)
-  campaign sheets | sim | difficulty | check | dialogue   the Emerald Sun Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
+                                            photograph the chooser at each entry (AW2, DS, BH, Silver Nova and BH2)
+  campaign sheets | sim | difficulty | check | dialogue   the Silver Nova Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
                                             the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
   campaign playthrough bh2 N [--player cpu|bot] [--days D]   a BH2 mission played to its end in the harness (the computer on every side, or the test player for the player's army), with a report (days, outcome,
                                             takeovers and stage switches, units and funds by day, stalls) and a contact sheet of the key moments (docs/dev/playthrough.md)
@@ -30,11 +30,11 @@ def register(sub):
     a = cs.add_parser("menu", help="photograph the Campaign sub-menu of the real app")
     a.add_argument("--out")
     a.set_defaults(fn=menu)
-    a = cs.add_parser("sheets", help="the Emerald Sun missions' review pictures with MISSION N - Title burned in, and a contact sheet per act")
+    a = cs.add_parser("sheets", help="the Silver Nova missions' review pictures with MISSION N - Title burned in, and a contact sheet per act")
     a.add_argument("--mission", nargs="*", type=int)
     a.add_argument("--out")
     a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).sheets(a))
-    a = cs.add_parser("sim", help="the mission sim: the test player or the computer plays an Emerald Sun mission in the harness")
+    a = cs.add_parser("sim", help="the mission sim: the test player or the computer plays a Silver Nova mission in the harness")
     a.add_argument("--mission", nargs="+", type=int, required=True)
     a.add_argument("--player", nargs="+", default=["bot"], choices=["bot", "cpu"])
     a.add_argument("--seeds", type=int, default=1)
@@ -53,16 +53,16 @@ def register(sub):
     a.add_argument("--waves", action="store_true", help="a whole-map picture at the start and each time an army lands a wave (on the player's next turn; needs --player bot), with every army's units by type and funds (waves.png)")
     a.add_argument("--out", help="the folder for report.md, report.json and contact.png (default devkit/work/campaign/playthrough/<campaign>-m<N>)")
     a.set_defaults(fn=playthrough)
-    a = cs.add_parser("difficulty", help="the Emerald Sun missions' difficulty scores (static numbers and the sims' results)")
+    a = cs.add_parser("difficulty", help="the Silver Nova missions' difficulty scores (static numbers and the sims' results)")
     a.add_argument("--require-final", action="store_true", help="exit 1 unless M16 is clearly the hardest")
     a.set_defaults(fn=lambda a: __import__("aw2.eslib.cli", fromlist=["x"]).difficulty_cmd(a))
-    a = cs.add_parser("dialogue", help="the Emerald Sun dialogue as one readable Markdown file")
+    a = cs.add_parser("dialogue", help="the Silver Nova dialogue as one readable Markdown file")
     a.add_argument("--out")
     a.set_defaults(fn=lambda a: subprocess.run([sys.executable, str(cfg.REPO / "tools" / "estext" / "render.py")] + ([a.out] if a.out else [])).returncode)
-    a = cs.add_parser("check", help="the Emerald Sun Campaign's static rules (inventions only in the Black Hole missions, unit caps, dialogue)")
-    a.add_argument("--hq", action="store_true", help="also boot every mission and compare the drawn HQ pictures with the Emerald Sun HQ art (the `co_verify_hq_m*` scenarios; needs the ROMs and the built examples)")
+    a = cs.add_parser("check", help="the Silver Nova Campaign's static rules (inventions only in the Black Hole missions, unit caps, dialogue)")
+    a.add_argument("--hq", action="store_true", help="also boot every mission and compare the drawn HQ pictures with the Silver Nova HQ art (the `co_verify_hq_m*` scenarios; needs the ROMs and the built examples)")
     a.set_defaults(fn=check_with_hq)
-    a = cs.add_parser("worldmap", help="the Emerald Sun world map on Omega Land: runs the map and progression tests with pictures and writes es_world_map.png (the map at three stages with the nodes labelled, the flag states, the unlock moments)")
+    a = cs.add_parser("worldmap", help="the Silver Nova world map on Omega Land: runs the map and progression tests with pictures and writes es_world_map.png (the map at three stages with the nodes labelled, the flag states, the unlock moments)")
     a.add_argument("--out")
     a.add_argument("--no-run", action="store_true", help="only compose the sheet from the last run's pictures")
     a.set_defaults(fn=worldmap)
@@ -121,7 +121,7 @@ def scenes(a):
 
 
 def menu(a):
-    """The Campaign chooser of the real app, entry by entry (AW2, DS, BH, BH2, Emerald Sun); exit 1 if an entry is missing."""
+    """The Campaign chooser of the real app, entry by entry (AW2, DS, BH, BH2, Silver Nova); exit 1 if an entry is missing."""
     import json, time, subprocess
     from .. import profiles
     out = Path(a.out) if a.out else cfg.work("campaign", "menu")
@@ -176,7 +176,7 @@ def menu(a):
             d.screenshot(str(out / f"chooser_{k}_{names[k]}.png"))
             util.say(f"entry {k} ({names[k]}): {'reached' if entry() == k else 'NOT reached'} in {presses} press(es)")
             bad += entry() != k
-        # (no "Coming soon" box is left: Emerald Sun and the BH2 Campaign are both campaigns of the chooser)
+        # (no "Coming soon" box is left: Silver Nova and the BH2 Campaign are both campaigns of the chooser)
         d.press("B")
         time.sleep(0.6)
         d.screenshot(str(out / "chooser_after_box.png"))
@@ -233,7 +233,7 @@ def trace(a):
 
 
 def check_with_hq(a):
-    """`campaign check`: the static rules; with `--hq` also the live HQ check of every mission (fails when an army that should show the Emerald Sun HQ does not)."""
+    """`campaign check`: the static rules; with `--hq` also the live HQ check of every mission (fails when an army that should show the Silver Nova HQ does not)."""
     rc = __import__("aw2.eslib.cli", fromlist=["x"]).check(a)
     if getattr(a, "hq", False):
         import subprocess
