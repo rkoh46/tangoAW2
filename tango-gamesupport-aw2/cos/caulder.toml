@@ -1,0 +1,41 @@
+# Caulder, director of the Silver Nova and the campaign's boss (docs/dev/silver-nova.md). Head of the Silver Nova, father of Tabitha and Lili. His numbers are his own (src/es_co.rs):
+# Hypothesis, +18% attack and defence for every unit and Sturm's movement (every terrain costs 1); no CO Power; Cataclysm, a Super Power of 4 stars: heals 5 HP and +25% attack and defence more
+# (the power's own +10% is inside the 25: a unit totals +43% in it).
+id = "caulder"
+name = "Caulder"
+army = "silver_nova"
+role = "director of the Silver Nova, the boss"
+hq = "emerald_sun"
+
+full_name = "Caulder"
+theme = "own:caulder"
+bio = "The head of Silver Nova. He seeks a world where he is free to carry out his terrible experiments. Hit: Unrestricted experiments Miss: Ethics"
+luck = [10, 10, 10]
+stars = { cop = 0, scop = 4 }
+
+[d2d]
+name = "Hypothesis"
+text = "All units fight with 18% more firepower and defense. Every terrain costs just 1 move."
+mods = [ { units = "all", attack = 18, defence = 18 } ]
+# Sturm's movement: his row's charts (every terrain costs 1 for ground units)
+movement = "sturm"
+
+[cop]
+name = ""
+text = "Caulder has no CO Power. He saves all his energy for his Super CO Power."
+
+[scop]
+name = "Cataclysm"
+text = "Restores 5 HP to all units. Firepower and defense rise by a further 25%."
+# on top of the day to day: +15 here and the power's own +10 the game adds make the 25 of the text (a unit totals 18 + 25 = +43%)
+mods = [ { units = "all", attack = 15, defence = 15 } ]
+heal = 5
+quote = ["Fascinating..."]
+
+[lines]
+tag_in = ["Fascinating..."]
+victory = "As predicted. Log the result."
+defeat = "An unexpected variable."
+
+[portrait]
+source = "art-src/cos/caulder_v1.jpg"

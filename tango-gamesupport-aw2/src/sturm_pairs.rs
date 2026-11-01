@@ -223,7 +223,7 @@ pub const SONJA: u8 = 7;
 pub const VON_BOLT: u8 = 75;
 use crate::co_new::{ARIA, ASUKA};
 
-pub const DUOS: [Duo; 15] = [
+pub const DUOS: [Duo; 12] = [
     Duo {
         a: VON_BOLT,
         b: SONJA,
@@ -307,112 +307,79 @@ pub const DUOS: [Duo; 15] = [
         a_first: [("Together, sis!", "Always."), ("Orange Star forever!", "The Accord holds.")],
         b_first: [("The Accord holds.", "Together, sis!"), ("Stand with me.", "Always, Aria.")],
     },
-    // The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
+    // The Silver Nova Campaign's pairs (cos/tags.toml; docs/dev/silver-nova.md).
     es_duo(
-        KLAUS,
-        AURELIA,
+        TABITHA,
+        LILI,
         120,
         2,
-        "Siege of Iron",
+        "Two Hands",
         [
-            ("The wall falls.", "On schedule."),
-            ("Hold, then breach.", "Stone, Legate."),
+            ("Stupid weak people!", "Tee hee! Toys!"),
+            ("Sister, aim.", "Bang, bang!"),
         ],
         [
-            ("Wall's down. Legate?", "Well built."),
-            ("Fetch the ladders.", "March."),
+            ("Mr. Bear is first!", "Then I am second."),
+            ("Break them all.", "Tee hee, yes!"),
         ],
     ),
     es_duo(
-        KLAUS,
-        CASSIUS,
+        TABITHA,
+        CAULDER,
         108,
         1,
-        "Hammer and Anvil",
+        "Family Ties",
         [
-            ("Order restored.", "Ha! Mine too!"),
-            ("Hold. Then strike.", "Fine. Fine!"),
+            ("Father. Watch.", "Fascinating..."),
+            ("Do not interfere.", "Never, my dear."),
         ],
-        [("Ha! Did you see?", "I saw."), ("Write it down!", "No.")],
-    ),
-    es_duo(
-        KLAUS,
-        LIVIA,
-        125,
-        3,
-        "Pax Romana",
-        [("Terms are mine.", "Paid in full."), ("The line holds.", "Audited.")],
         [
-            ("Books are closed.", "So is the war."),
-            ("The ledger balances.", "March at dawn."),
+            ("Observe, Tabitha.", "I always do."),
+            ("Fascinating...", "Stupid weak people."),
         ],
     ),
     es_duo(
-        AURELIA,
-        CASSIUS,
+        LILI,
+        CAULDER,
         115,
         2,
-        "Triumphal Road",
+        "Bedtime Story",
         [
-            ("Road is open.", "Faster than planned!"),
-            ("Span holds.", "I will not slow."),
+            ("Daddy, look!", "Fascinating..."),
+            ("Tee hee! Again!", "Once more, dear."),
         ],
         [
-            ("Ha! Ride, ride!", "Mind the bridge."),
-            ("Out of my way!", "Your road, Prefect."),
-        ],
-    ),
-    es_duo(
-        AURELIA,
-        LIVIA,
-        118,
-        2,
-        "Aqueduct",
-        [
-            ("Paid. In full.", "Built. On time."),
-            ("Stone and silver.", "Both hold."),
-        ],
-        [
-            ("Accounts settled.", "So are the foundations."),
-            ("Do not waste it.", "Never."),
+            ("Good girl, Lili.", "Mr. Bear helped!"),
+            ("Fascinating...", "Tee hee!"),
         ],
     ),
     es_duo(
-        CASSIUS,
-        LIVIA,
-        110,
-        1,
-        "Gilded Chariot",
-        [("Glory!", "Itemised."), ("Look at me go!", "I am counting.")],
-        [("Invoice sent.", "Ha! Worth it!"), ("Your horses cost.", "Priceless!")],
-    ),
-    es_duo(
-        KLAUS,
+        TABITHA,
         KANBEI,
         120,
         2,
-        "Two Banners",
+        "Iron Pact",
         [
-            ("Honour holds.", "Honour answers."),
-            ("Two lines, one wall.", "Well said."),
+            ("Keep up.", "My honour holds."),
+            ("Do not falter.", "I never falter."),
         ],
-        [("A worthy ally.", "As are you."), ("Banners high.", "Banners high.")],
+        [("Weak. But useful.", "Hmph."), ("Stay in line.", "As agreed.")],
     ),
     es_duo(
-        LIVIA,
+        LILI,
         COLIN,
         116,
         2,
-        "Merchant Princes",
+        "Toy Market",
         [
-            ("Settled. Exactly.", "Hey! Fine print!"),
-            ("A fair margin.", "Fair? Hah!"),
+            ("Tee hee! Shopping!", "Hey! Fine print!"),
+            ("Mr. Bear buys all.", "Fair? Hah!"),
         ],
-        [("I win! Cha-ching!", "Check the books."), ("Pay up!", "Already did.")],
+        [("I win! Cha-ching!", "Mr. Bear won."), ("Pay up!", "Already did.")],
     ),
 ];
 
-use crate::es_co::{AURELIA, CASSIUS, KLAUS, LIVIA};
+use crate::es_co::{CAULDER, LILI, TABITHA};
 /// AW2's Kanbei and Colin, the campaign's two cross-army partners.
 const KANBEI: u8 = 6;
 const COLIN: u8 = 16;
@@ -470,15 +437,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_emerald_sun_pairs_are_the_data_file() {
+    fn the_silver_nova_pairs_are_the_data_file() {
         // cos/tags.toml is the specification (aw2dev co check): every [[pair]] is a duo here with the same name, compatibility and stars, and no duo is missing.
         let text = include_str!("../cos/tags.toml");
         let id = |s: &str| -> u8 {
             match s.trim_matches('"') {
-                "klaus" => KLAUS,
-                "aurelia" => AURELIA,
-                "cassius" => CASSIUS,
-                "livia" => LIVIA,
+                "tabitha" => TABITHA,
+                "lili" => LILI,
+                "caulder" => CAULDER,
                 "aw2:kanbei" => KANBEI,
                 "aw2:colin" => COLIN,
                 "asuka" => ASUKA,
@@ -521,7 +487,7 @@ mod tests {
                 n += 1;
             }
         }
-        assert_eq!(n, 8);
+        assert_eq!(n, 5);
         assert_eq!(
             DUOS.iter()
                 .filter(|d| crate::es_co::has_pairs(d.a) || crate::es_co::has_pairs(d.b))

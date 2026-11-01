@@ -1,0 +1,11 @@
+# Caulder, imported directly from caulder_v1.jpg (the owner's pixel art, 1152 x 1728: native cells of about 6.6 px, 172 x 267). Coordinates are native cells of the picture as supplied (he faces left: kept).
+pixelart = true
+large_scale = 1
+frame = [21, 8]
+mug_scale = 1
+mug = [66, 6]
+eyes = [74, 24, 90, 32]
+bg_tolerance = 30
+# his white coat and white hair are the picture's own: the flood fill alone cuts the white background (no `fringe`, which would eat the hair); the coat's floral print and the glove's strands are single cells
+max_specks = 2400
+max_face_specks = 520

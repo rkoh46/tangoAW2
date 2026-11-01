@@ -53,6 +53,8 @@ const COVERING_FIRE_FN: u32 = DATA + 0x240;
 const URBAN_BLIGHT_FN: u32 = DATA + 0x280;
 const ASUKA_COP_FN: u32 = DATA + 0x2D0;
 const ASUKA_SCOP_FN: u32 = DATA + 0x320;
+/// Tabitha's Firestorm: the meteor strike at 8 HP, AW2's own pick of the site (no stun).
+const FIRESTORM_FN: u32 = DATA + 0x370;
 const SENTINEL: u32 = DATA + 0x3FC;
 const MAGIC: u32 = 0x3843_5344; // "DSC8"
 
@@ -74,6 +76,7 @@ const CO_ABILITIES: u32 = 0x0300_3FC8;
 /// Hit points of damage a strike or Urban Blight does, in the game's
 /// tenths.
 const THREE_HP: u16 = 30;
+const EIGHT_HP: u16 = 80;
 
 fn halfwords(h: &[u16]) -> Vec<u8> {
     h.iter().flat_map(|v| v.to_le_bytes()).collect()
@@ -216,6 +219,8 @@ pub fn power_assembly(co: u8, mode: u8) -> Option<u32> {
         (VON_BOLT, SCOP) => Some(EX_MACHINA_FN | 1),
         (RACHEL, SCOP) => Some(COVERING_FIRE_FN | 1),
         (KINDLE, COP) => Some(URBAN_BLIGHT_FN | 1),
+        (crate::es_co::TABITHA, SCOP) => Some(FIRESTORM_FN | 1),
+        (crate::es_co::LILI, COP) => Some(crate::es_co::ENIGMA | 1),
         (crate::co_new::ASUKA, COP) => Some(ASUKA_COP_FN | 1),
         (crate::co_new::ASUKA, SCOP) => Some(ASUKA_SCOP_FN | 1),
         _ => None,
@@ -241,6 +246,8 @@ pub fn install(core: &mut Core) {
     };
     core.raw_write_range(EX_MACHINA_FN, -1, &strike_fn(exm, THREE_HP));
     core.raw_write_range(COVERING_FIRE_FN, -1, &strike_fn(cf, THREE_HP));
+    // (Firestorm: Von Bolt's animation script with the pack's pictures, AW2's own meteor script without; AW2's pick of the site, 8 HP)
+    core.raw_write_range(FIRESTORM_FN, -1, &strike_fn(exm, EIGHT_HP));
     core.raw_write_range(URBAN_BLIGHT_FN, -1, &urban_blight_fn(gfx, pal));
     core.raw_write_range(ASUKA_COP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[1].max(1), crate::asuka::HP_OWN[1], 0x0811_3BA0));
     core.raw_write_range(ASUKA_SCOP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[2], crate::asuka::HP_OWN[2], 0x0811_3BC0));
@@ -884,11 +891,6 @@ fn income(core: &mut Core) {
     if army_co(core, army).0 == SASHA {
         add += 100 * earners;
     }
-    add += crate::es_co::income_bonus(
-        army_co(core, army).0,
-        earners,
-        core.raw_read_32(FUNDS_PER_PROPERTY, -1) as i32,
-    );
     if add == 0 {
         return;
     }
@@ -1009,8 +1011,6 @@ fn attacker_charged(core: &mut Core) {
     if !is_on(core) {
         return;
     }
-    // (Aurelia's Onager: the units beside the target lose 1 HP, crate::es_co)
-    crate::es_co::onager(core, core.raw_read_8(BATTLE_DEFENDER_INDEX, -1) as u32);
     if let Some((a, _)) = battle_charges(core) {
         core.gba_mut().cpu_mut().set_gpr(1, (a * METER_SCALE) as i32);
     }

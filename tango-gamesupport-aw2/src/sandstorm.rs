@@ -68,6 +68,10 @@ fn range(core: &mut Core) {
     }
     let cpu = core.gba().cpu();
     let (max, bonus) = (cpu.gpr(4), cpu.gpr(0));
+    // (Lili's Enigma: her units ignore weather)
+    if crate::es_co::weather_immune(core, cpu.gpr(5) as u32) {
+        return;
+    }
     let base = max - bonus;
     if base < 2 {
         return;
@@ -86,7 +90,7 @@ const DAY_CHECKED: u32 = 0x0803_51DC;
 /// Its return, with the weather in r4.
 const DONE: u32 = 0x0803_51E8;
 
-fn next_random(core: &mut Core) -> u32 {
+pub fn next_random(core: &mut Core) -> u32 {
     let s = core.raw_read_32(RNG, -1).wrapping_mul(4);
     let r = s.wrapping_add(2).wrapping_mul(s.wrapping_add(3)) >> 2;
     core.raw_write_32(RNG, -1, r);
@@ -119,6 +123,18 @@ fn draw(core: &mut Core) {
     }
 }
 
+/// A sandstorm by Lili's Enigma: the one-day state on, a new weather's day count from zero; [`end_power_sand`] switches it off after two days.
+pub fn start_power_sand(core: &mut Core) {
+    set_one_day(core, true);
+    for army in 1..=4 {
+        core.raw_write_8(WEATHER_BLOCK + 3 + army, -1, 0);
+    }
+}
+
+pub fn end_power_sand(core: &mut Core) {
+    set_one_day(core, false);
+}
+
 fn day_checked(core: &mut Core) {
     if is_on(core) && one_day(core) && core.raw_read_8(WEATHER, -1) == 0 && core.gba().cpu().gpr(0) & 0xFF != 0 {
         set_one_day(core, false);
@@ -130,6 +146,7 @@ fn day_checked(core: &mut Core) {
 /// [`crate::wasteland::map_start`]).
 const MAP_START: u32 = 0x0803_5490;
 fn map_start(core: &mut Core) {
+    crate::es_co::map_start(core);
     if one_day(core) {
         set_one_day(core, false);
     }

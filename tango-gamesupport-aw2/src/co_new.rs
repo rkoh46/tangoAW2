@@ -101,7 +101,7 @@ fn turn_hue(c: u16, to: f32) -> u16 {
     q(r2) | q(g2) << 5 | q(b2) << 10
 }
 
-/// Emerald Sun's COs start here (ids 86..=90: Klaus, Aurelia, Cassius, Livia, Varro; `crate::es_co`); the first four wear the project owner's portraits (`crate::es_cos`).
+/// Silver Nova's COs start here (ids 86..=88: Tabitha, Lili, Caulder, and two retired slots 89, 90; `crate::es_co`); all three wear the project owner's portraits (`crate::es_cos`).
 pub const ES_FIRST: u8 = FIRST + 14;
 pub const ES_COUNT: u8 = 5;
 /// Asuka: Sonja after she defects to Black Hole, tangoAW2's own (`crate::asuka`, `docs/dev/asuka.md`). Id 92, after the Emerald Sun five and their dialogue's
@@ -176,7 +176,7 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
         .map(|(k, &(ds, like))| (FIRST + k as u8, ds, like))
         .chain([(CRUMB, CRUMB_BASE, CRUMB_LIKE)])
         .chain(
-            crate::es_co::ALL
+            crate::es_co::ROWS
                 .iter()
                 .map(|&co| (co, CRUMB_BASE, crate::es_co::like(co))),
         )
@@ -184,12 +184,9 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
         .chain([(ARIA, CRUMB_BASE, crate::aria::LIKE)])
 }
 
-/// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Emerald Sun five are not, until the campaign is approved
-/// ([`crate::es_co::in_versus`]). Varro, the campaign's boss, is on no list, except for the harness: `TANGOAW2_ES_VARRO` (a test aid, both
-/// peers must agree) lists him so the CO checkers can pick him in Versus.
+/// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): Silver Nova's three are; the two retired slots (89, 90) are on no list.
 pub fn listed(co: u8) -> bool {
-    !crate::es_co::is_es(co)
-        || (crate::es_co::in_versus() && (co != crate::es_co::VARRO || std::env::var_os("TANGOAW2_ES_VARRO").is_some()))
+    !crate::es_co::is_es(co) || (crate::es_co::in_versus() && crate::es_co::ALL.contains(&co))
 }
 
 /// A CO of tangoAW2's own, with no Dual Strike record behind its pictures
@@ -833,9 +830,6 @@ fn build(core: &Core) -> Option<Built> {
         } else {
             crate::ds_co_art::co_art_for(co, ds)?
         };
-        if let Some(plate) = crate::es_cos::name_plate(co) {
-            art.name = plate; // Varro's own name plate (the donor's face stays)
-        }
         if co == CLONE_ANDY {
             // His name graphic reads "Clone", cut from AW2's own letters.
             if let Some(n) = clone_name(core) {
@@ -1193,19 +1187,19 @@ mod tests {
         let g = war_room_groups(&aw2).unwrap();
         assert_eq!(g.len(), 5);
         let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
-        // 19 of AW2's, 13 of Dual Strike's and tangoAW2's own, Asuka, Aria, and the four Emerald Sun COs (Varro, the boss, is not listed).
-        assert_eq!(all_ids.len(), 19 + 13 + 4);
-        let es = [crate::es_co::KLAUS, crate::es_co::AURELIA, crate::es_co::CASSIUS, crate::es_co::LIVIA];
+        // 19 of AW2's, 13 of Dual Strike's and tangoAW2's own, Asuka, Aria, and the three Silver Nova COs (the two retired slots are not listed).
+        assert_eq!(all_ids.len(), 19 + 13 + 3);
+        let es = [crate::es_co::TABITHA, crate::es_co::LILI, crate::es_co::CAULDER];
         for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA, ARIA]).chain(es) {
             assert_eq!(all_ids.iter().filter(|&&c| c == co).count(), 1, "CO {co}");
         }
-        assert!(!all_ids.contains(&crate::es_co::VARRO), "Varro is not in Versus");
+        assert!(!all_ids.contains(&crate::es_co::RETIRED_A) && !all_ids.contains(&crate::es_co::RETIRED_B), "the retired slots are in no list");
         assert_eq!(g[0].0, vec![1, 2, 4, 0, ARIA, 15, 79, 80], "Aria after Nell, in Orange Star's group");
         let bh = &g[4].0;
         let at = |c: u8| bh.iter().position(|&x| x == c).unwrap();
         assert_eq!(at(CRUMB), at(CLONE_ANDY) + 1);
         assert_eq!(at(75), at(10) + 1, "Von Bolt after Sturm");
-        assert_eq!(at(ASUKA), at(14) + 1, "Asuka after Hawke, in Black Hole's group");
+        assert_eq!(at(ASUKA), at(14) + 2, "Asuka after Hawke and Caulder (who takes after Hawke), in Black Hole's group");
         assert!(war_room_table(&aw2).unwrap().len() <= 0x40);
     }
 

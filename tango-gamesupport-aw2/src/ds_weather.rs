@@ -129,7 +129,7 @@ pub fn fuel_rate(core: &Core, army: u32) -> u32 {
         return 1;
     }
     let co = core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1D, -1);
-    if core.raw_read_8(CO_ABILITIES, -1) != 0 && co == OLAF {
+    if crate::es_co::weather_immune(core, army) || (core.raw_read_8(CO_ABILITIES, -1) != 0 && co == OLAF) {
         1
     } else {
         2
@@ -218,8 +218,10 @@ const POWER_WEATHER: u32 = 0x0803_5144;
 const POWER_SNOW: u32 = crate::ram_map::POWER_SNOW.0;
 fn power_weather(core: &mut Core) {
     if is_on(core) {
+        // (Lili's Enigma: the roll replaces the weather, snow or rain, and lasts two days either way)
+        let lili = crate::es_co::weather_pick(core).is_some();
         let snow = core.gba().cpu().gpr(0) as u8 == SNOW;
-        core.raw_write_8(POWER_SNOW, -1, snow as u8);
+        core.raw_write_8(POWER_SNOW, -1, (snow || lili) as u8);
     }
 }
 

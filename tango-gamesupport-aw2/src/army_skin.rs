@@ -2387,12 +2387,10 @@ pub fn sync_map_art(core: &mut Core) {
 }
 
 /// The CO data files' `hq` lines (`cos/<id>.toml`: the id of the army skin whose HQ the CO's army shows, "default" for the game's own): the HQ follows the CO.
-const HQ_FILES: [(u8, &str); 7] = [
-    (crate::es_co::KLAUS, include_str!("../cos/klaus.toml")),
-    (crate::es_co::AURELIA, include_str!("../cos/aurelia.toml")),
-    (crate::es_co::CASSIUS, include_str!("../cos/cassius.toml")),
-    (crate::es_co::LIVIA, include_str!("../cos/livia.toml")),
-    (crate::es_co::VARRO, include_str!("../cos/varro.toml")),
+const HQ_FILES: [(u8, &str); 5] = [
+    (crate::es_co::TABITHA, include_str!("../cos/tabitha.toml")),
+    (crate::es_co::LILI, include_str!("../cos/lili.toml")),
+    (crate::es_co::CAULDER, include_str!("../cos/caulder.toml")),
     (crate::co_new::CRUMB, include_str!("../cos/crumb.toml")),
     (crate::co_new::CLONE_ANDY, include_str!("../cos/cloneandy.toml")),
 ];
@@ -2416,11 +2414,11 @@ pub fn hq_style(co: u8) -> Option<&'static str> {
             .collect()
     })
     .iter()
-    .find(|(c, _)| *c == co)
+    .find(|(c, _)| *c == crate::es_co::canon(co))
     .and_then(|(_, h)| h.as_deref())
 }
 
-/// The skin whose HQ army `army` has: the one its CO's data file names (the HQ follows the CO's nation, not the colour: Black Hole's army in the Emerald Sun colour keeps Black Hole's tower; a campaign's forced skin keeps its own) (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro); the picture takes the army's own building colours.
+/// The skin whose HQ army `army` has: the one its CO's data file names (the HQ follows the CO's nation, not the colour: Black Hole's army in the Emerald Sun colour keeps Black Hole's tower; a campaign's forced skin keeps its own) (`hq = "emerald_sun"`: Tabitha, Lili, Caulder); the picture takes the army's own building colours.
 fn hq_skin(core: &Core, army: u32) -> Option<usize> {
     design_style(core, army)
 }
@@ -2539,7 +2537,7 @@ mod tests {
     #[test]
     fn the_cos_data_files_name_their_hq() {
         use crate::es_co::*;
-        for co in [KLAUS, AURELIA, CASSIUS, LIVIA, VARRO] {
+        for co in [TABITHA, LILI, CAULDER, RETIRED_A, RETIRED_B] {
             assert_eq!(super::hq_style(co), Some("emerald_sun"), "{co}");
         }
         assert_eq!(super::hq_style(crate::co_new::CLONE_ANDY), None);

@@ -1,0 +1,41 @@
+# Tabitha, commander of the Silver Nova (docs/dev/silver-nova.md, docs/dev/co-kit.md). Dr. Caulder's daughter and the campaign's lead: extremely cruel and vindictive. Her numbers are her own (src/es_co.rs):
+# Mega Boost, +18% attack and defence for every unit; no CO Power; Firestorm, a Super Power of 9 stars: 8 HP to every unit within 2 of the best site (AW2's meteor pick, Von Bolt's animation, no stun).
+id = "tabitha"
+name = "Tabitha"
+army = "silver_nova"
+role = "commander of the Silver Nova, Dr. Caulder's daughter"
+# The Silver Nova HQ (the army skin whose HQ the CO's army shows; the skin's id is the army branch's to rename).
+hq = "emerald_sun"
+
+full_name = "Tabitha"
+# Her theme: music/es/tabitha.m4t (our own composition, the old first commander's).
+theme = "own:tabitha"
+bio = "Belongs to Silver Nova. A daughter of Dr. Caulder, she is extremely cruel and vindictive. Hit: Breakfast in bed Miss: \"Stupid Weak People\""
+luck = [10, 10, 10]
+# No CO Power (like AW2's Sturm): the map menu has no Power entry. The Super Power costs 9 stars.
+stars = { cop = 0, scop = 9 }
+
+[d2d]
+name = "Mega Boost"
+text = "All units fight with 18% more firepower and defense."
+mods = [ { units = "all", attack = 18, defence = 18 } ]
+
+[cop]
+name = ""
+text = "Tabitha has no CO Power. She saves all her energy for her Super CO Power."
+
+[scop]
+name = "Firestorm"
+text = "Deals 8 damage automatically to the most expensive group of enemies in 13 tiles. Cannot kill."
+# 8 HP in a radius of 2 round the best site (AW2's own pick, by value, like Sturm's Meteor Strike); Von Bolt's targeting animation; no stun
+strike = { hp = 8, radius = 2, pick = "value", stun = false, can_kill = false }
+quote = ["Stupid weak people!"]
+
+[lines]
+tag_in = ["Stupid weak people!"]
+victory = "Mission complete. Dismissed."
+defeat = "I do not accept this result."
+
+[portrait]
+# The picture the project owner supplied (pixel art on a checkerboard "transparent" background baked into the JPEG), imported directly, facing as supplied.
+source = "art-src/cos/tabitha_v1.jpg"

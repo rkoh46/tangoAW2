@@ -1,0 +1,16 @@
+# Lili, imported directly from lili_v1.jpg (the owner's pixel art, 1360 x 1440: native cells of about 5.1 x 6.1 px, 263 x 233). Coordinates are native cells of the picture as supplied (she faces slightly left: kept).
+pixelart = true
+large_scale = 1
+frame = [56, 2]
+mug_scale = 1
+mug = [94, 0]
+eyes = [104, 24, 126, 32]
+bg_tolerance = 30
+max_specks = 1800
+max_face_specks = 400
+# Colours her palette must keep an entry for (native cells, the mean of each group): the yellow irises, the mint hair, the face's skin.
+protect = [
+  [[120, 28], [122, 28], [108, 29], [110, 30], [109, 31], [110, 31], [122, 29]],
+  [[106, 10], [107, 10], [108, 10], [109, 10], [110, 10], [111, 10], [112, 10], [113, 10]],
+  [[108, 23], [114, 23], [115, 23], [119, 23], [108, 24], [109, 24], [114, 24], [117, 24], [109, 25], [115, 25]],
+]
