@@ -23,9 +23,9 @@ class Scripts(unittest.TestCase):
 
     def test_the_skin_seat_plays_an_emerald_sun_co_with_the_pack(self):
         # (designs follow the CO: the skin's plume and domed HQ need Tabitha; without the pack no Emerald Sun CO is listed)
-        self.assertIn("poke 0203CB10 0f", scenarios.script("units", [6, 2], ds=True))
+        self.assertIn("poke 0203CB10 22", scenarios.script("units", [6, 2], ds=True))
         self.assertNotIn("poke 0203CB10", scenarios.script("units", [6, 2]))
-        self.assertIn("poke 0203CB10 0f", scenarios.script("units", [1, 2], ds=True, tabitha=[0]))
+        self.assertIn("poke 0203CB10 22", scenarios.script("units", [1, 2], ds=True, tabitha=[0]))
 
     def test_identities_become_pokes(self):
         text = scenarios.script("units", [6, 2])

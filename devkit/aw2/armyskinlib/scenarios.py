@@ -10,7 +10,7 @@ SEL = 0x0203CB10
 
 # The Teams list's index of Tabitha (an Emerald Sun CO, with the Dual Strike pack: `cos` prints the list). A CO's unit designs and HQ follow the CO's nation, an army colour only recolours
 # (docs/dev/army-packs.md), so the army that wears the skin has the skin's own designs (the plume, the domed HQ) only with an Emerald Sun CO: the skin's seat plays Tabitha.
-TABITHA_INDEX = 0x0F
+TABITHA_INDEX = 0x22
 
 
 def skin_cos(identities, ds, seats=None):
