@@ -48,8 +48,8 @@ def teams_cards_show_the_committed_faces(ctx):
         # a face framed to show the whole head leaves the picture's background around it (Aria's 231 pixels is the least of the six; the zoomed
         # Silver Nova faces had 0 to 404 and filled the square with eyes and nose)
         clear = sum(1 for y in range(48) for x in range(48) if face.getpixel((x, y))[3] == 0)
-        # (Tabitha's head is 58 cells tall with its twin tails 100 wide: the 48-cell square at 1x cannot hold it whole, so her face keeps the eyes, nose, mouth and most of the hair: 26 background pixels)
-        bad += not ctx.check(clear >= (20 if name == "tabitha" else 150), f"{name}: the face shows the whole head, not a zoomed crop ({clear} background pixels in the 48 x 48 square)")
+        # (Tabitha's head is 58 cells tall with its twin tails 100 wide: the 48-cell square at 1x cannot hold it whole, so her face keeps the eyes, nose, mouth and most of the hair: 26 background pixels; Lili's second picture has a head 75 cells tall: 4)
+        bad += not ctx.check(clear >= {"tabitha": 20, "lili": 3}.get(name, 150), f"{name}: the face shows the whole head, not a zoomed crop ({clear} background pixels in the 48 x 48 square)")
         for col in (0, 1):
             g = ctx.boot_teams(m)
             cos = ["andy", "andy"]
