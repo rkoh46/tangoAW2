@@ -5,7 +5,7 @@
 # gate_n: (16, 6) north gate (under the battleship)
 # gate_w: (7, 12) west gate over the Muro bridge (6,12)
 # gate_e: (25, 12) east gate from the vineyards
-# gate_s: (13, 17) south gate from the legion's farms
+# gate_s: (13, 17) south gate from the corps's farms
 # keep_gate: (16, 15) the keep's only gate
 # silo: (3, 13) neutral missile silo by the west road
 # airport: (10, 22) player airport

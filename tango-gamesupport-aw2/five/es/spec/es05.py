@@ -1,6 +1,6 @@
-"""M5 Dust and Wheels (Act II, desert, sandstorm): Cassius's cavalry races for the three Comet signal posts before the bridges are blown (day 10).
+"""M5 Dust and Wheels (Act II, desert, sandstorm): the vanguard races for the three Comet signal posts before the bridges are blown (day 10).
 
-Design (docs/dev/map-design.md). The situation: Cassius rides east out of Dunmere (west) with an all-vehicle column; the Sable river (four bridges) and
+Design (docs/dev/map-design.md). The situation: Lili rides east out of Dunmere (west) with an all-vehicle column; the Sable river (four bridges) and
 the Comet Pipe (a border fence with two road gates and a seam on the middle road) lie between him and the posts Highwatch (27,5), Crossways (27,12)
 and Lowmere (27,21); Grimm and Sensei hold Fort Amberlea in the east with two factories and an airfield.
 - Lanes: three canyon roads fan out from Dunmere, each to its bridge and its post, separated by mesas (rock) with passes between them; a farm track
@@ -65,7 +65,7 @@ def build():
     m.put("2", 38, 12).puts("B", [(35, 8), (35, 16)]).put("A", 34, 4).puts("C", [(39, 7), (33, 20), (40, 14), (37, 2), (36, 10)])
     m.puts("c", [(40, 1), (33, 10), (34, 23), (40, 18), (33, 7)])
     m.tidy()
-    # --- Cassius's column on the roads out of Dunmere
+    # --- Lili's column on the roads out of Dunmere
     m.spread(1, {MECH: 3}, (6, 7, 12, 17), seed=1, gap=1)
     m.spread(1, {RECON: 3, TANK: 3, MDT: 2, APC: 2, AA: 2}, (4, 7, 14, 17), seed=2, gap=1)
     # --- the Comet border guard: pickets at the posts, guns behind, copters at the field

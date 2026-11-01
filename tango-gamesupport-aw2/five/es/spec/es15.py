@@ -1,6 +1,6 @@
 """M15 Pax Romana (Act IV, tag): break the Accord's blockade of the Strait of Elms: sink the flagship and take the Strait Fort's harbour.
 
-Design (docs/dev/map-design.md). The situation: the legion holds the west shore (HQ, factories, an airport, two ports on the strait); Drake's fleet
+Design (docs/dev/map-design.md). The situation: the corps holds the west shore (HQ, factories, an airport, two ports on the strait); Drake's fleet
 bars the strait in front of the Strait Fort on the east shore (his HQ, the harbour (39,13), factories); Sensei's air wing sits on Elm Isle in the middle
 of the strait (her HQ and airfield). Salt Isle (south-west) and Reed Isle (north-east) each have a neutral port and a hamlet.
 - Lanes: the north and the south channels round Elm Isle (reefs narrow them) and the open water in front of the harbour; for the land army, landings on
@@ -8,8 +8,8 @@ of the strait (her HQ and airfield). Salt Isle (south-west) and Reed Isle (north
 - Where the fight happens: Elm Isle (the contested middle: Sensei's field and the hamlets round it), the two channels, then the harbour mouth.
 - Properties: villages three cells apart on both shores and the isles (each landing has something to take and cover), the two isles' neutral ports
   (a ship factory for whoever lands there), the fort's town on the east shore.
-- Threats and answers: Sensei's fighters, bombers and copters -> cruisers, the AA and missiles, fighters from the legion's airport; the flagship and the
-  subs -> the legion's battleship, sub and bombers, cruisers against the subs; the fort's garrison -> landers on the beaches with mechs and tanks.
+- Threats and answers: Sensei's fighters, bombers and copters -> cruisers, the AA and missiles, fighters from the corps's airport; the flagship and the
+  subs -> the corps's battleship, sub and bombers, cruisers against the subs; the fort's garrison -> landers on the beaches with mechs and tanks.
 """
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
@@ -19,7 +19,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 import map as fivemap          # (five/map.py: the tile joins the game draws)
 
 W, H = 46, 27
-# the west shore (the legion's landfall): land is x <= WEST[y]; the east shore (the Strait Fort): land is x >= EAST[y]
+# the west shore (the corps's landfall): land is x <= WEST[y]; the east shore (the Strait Fort): land is x >= EAST[y]
 WEST = [8, 8, 9, 9, 10, 10, 9, 9, 10, 11, 11, 10, 9, 9, 10, 11, 11, 10, 10, 9, 9, 10, 9, 8, 8, 8, 7]
 EAST = [39, 38, 38, 37, 37, 36, 37, 37, 36, 35, 35, 35, 35, 35, 35, 35, 36, 37, 36, 36, 37, 38, 38, 39, 39, 40, 40]
 AVOID = "~r=-^IZ#,12345BAPSNWELvnFDXO"
@@ -83,7 +83,7 @@ def build():
         assert best, ("no coast for a port", x, y)
         m.put(ch, best[1], best[2])
         return best[1], best[2]
-    # --- the west shore: the legion's camp ---
+    # --- the west shore: the corps's camp ---
     at("1", 3, 13); at("A", 4, 7); at("B", 4, 10); at("B", 4, 17)
     pw1 = coast_port("P", 8, 5); pw2 = coast_port("P", 8, 19)
     ats("c", [(2, 9), (2, 16), (8, 12), (3, 21)])
@@ -170,10 +170,10 @@ def build():
         if u["kind"] in (BS, CR, SUB, LAN) and m.get(u["x"], u["y"]) not in "~,":
             print("BAD ship", u)
     # places
-    m.note("hq1", 3, 13, "the legion's HQ"); m.note("hq2", 43, 13, "Drake's HQ in the Strait Fort"); m.note("hq3", 23, 13, "Sensei's HQ on Elm Isle")
+    m.note("hq1", 3, 13, "the corps's HQ"); m.note("hq2", 43, 13, "Drake's HQ in the Strait Fort"); m.note("hq3", 23, 13, "Sensei's HQ on Elm Isle")
     m.note("harbour", 39, 13, "the Strait Fort's harbour (port): take it")
     m.note("flagship", 34, 13, "Drake's flagship (Battleship named flagship) at the harbour mouth")
-    m.note("airfield", 21, 11, "Sensei's airport on Elm Isle"); m.note("airport1", 4, 7, "the legion's airport")
+    m.note("airfield", 21, 11, "Sensei's airport on Elm Isle"); m.note("airport1", 4, 7, "the corps's airport")
     m.note("beach_w", WEST[8] + 1, 8, "west beach: shoal on rows 8..17, ports at the ends"); m.note("beach_e", EAST[6] - 1, 6, "east beaches: shoal x 35..37 rows 6..9 and 16..20")
     m.note("salt_isle", 15, 20, "Salt Isle: neutral port (15,20), city (14,22)"); m.note("reed_isle", 29, 5, "Reed Isle: neutral port (29,5), city (31,6)")
     # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)

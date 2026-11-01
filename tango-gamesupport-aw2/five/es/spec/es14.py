@@ -1,16 +1,16 @@
-"""M14 Varro's Gambit (Act IV): the legion storms Castra Maxima, the Consul's fortified camp on the Aurean shore; Cassius changes sides on day 4.
+"""M14 Caulder's Gambit (Act IV): the corps storms Fort Meridian, Caulder's fortified camp on the Novarian shore; Lili changes sides on day 4.
 
-Design (docs/dev/map-design.md). The situation: the legion's camp in the west (HQ, two factories, a port on the open south coast); Castra Maxima in the
-east behind a moat river and a broken wall of rock, with its gates, two factories, an airfield and a harbour on the open east sea; Cassius's army
+Design (docs/dev/map-design.md). The situation: the corps's camp in the west (HQ, two factories, a port on the open south coast); Fort Meridian in the
+east behind a moat river and a broken wall of rock, with its gates, two factories, an airfield and a harbour on the open east sea; Lili's army
 on the ridge plateau in the north, hostile until day 4, then the player's.
-- Lanes: the ridge track (north, through Cassius's plateau to the north gate), the valley road (centre, along the river to the valley gate) and the
+- Lanes: the ridge track (north, through Lili's plateau to the north gate), the valley road (centre, along the river to the valley gate) and the
   coast road (south, to the coast gate), joined by the plateau's south pass and a farm road across the valley; the river is crossed every few cells.
 - Where the fight happens: the valley villages between the two camps (the contested middle, with the neutral base (24,19)), the moat's bridges and
-  the three gates; the plateau's passes while Cassius is still hostile.
-- Properties: villages three cells apart in the valley and on the coast plain, the plateau's hamlets (Cassius's), the camp's town (Varro's); a neutral
-  base in the middle and the legion's reinforcement road (6..9,14..15) beside its HQ, the Consul's reserve road (40,12..16) inside the camp.
-- Threats and answers: Varro's fighter -> AA and the missiles, woods; entrenched guns behind the wall -> recons, tanks through the gates, own artillery
-  behind the moat; Md tanks out of the gates -> tanks and Md tanks at the bridges; Cassius's early rush -> hold the plateau's south pass until day 4.
+  the three gates; the plateau's passes while Lili is still hostile.
+- Properties: villages three cells apart in the valley and on the coast plain, the plateau's hamlets (Lili's), the camp's town (Caulder's); a neutral
+  base in the middle and the corps's reinforcement road (6..9,14..15) beside its HQ, Caulder's reserve road (40,12..16) inside the camp.
+- Threats and answers: Caulder's fighter -> AA and the missiles, woods; entrenched guns behind the wall -> recons, tanks through the gates, own artillery
+  behind the moat; Md tanks out of the gates -> tanks and Md tanks at the bridges; Lili's early rush -> hold the plateau's south pass until day 4.
 """
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
@@ -28,13 +28,13 @@ EAST = [41, 41, 42, 43, 43, 43, 42, 42, 42, 43, 43, 43, 44, 44, 42, 41, 41, 41, 
 def build():
     m = Canvas("es14", W, H)
     m.header(armies=3, colours=(BM, OS, YC), team=[1, 2, 3], objective=[1],
-             comment="M14 Varro's Gambit (province: the Aurean shore, the Consul's camp Castra Maxima): storm the camp, take Varro's HQ 2 (38,12) or rout his army. "
-                     "Three lanes: the coast road (south, over the river's mouth bridge), the river valley (centre road beside the moat river, gate bridge), the ridge track (north, through Cassius's hill camp to the north gate). "
-                     "Army 3 (Cassius, Yellow Comet, HQ (21,4) on the ridge plateau) is hostile to both until day 4 (mission code), then fights for the player. "
-                     "Start forces: player INF4 MECH3 TANK3 MDT2 RECON1 ART2 AA1 (16), funds 6000; Varro INF5 MECH2 TANK4 MDT3 ART3 ROCK1 AA1 MIS1 FTR1 RECON1 (22, of which INF3 ART3 ROCK1 hold) + reserves on days 5 and 8 at the camp's east road; "
-                     "Cassius TANK3 RECON2 MDT1 INF2 (8). Threat/answer: Varro's Fighter -> AA and Missiles in the player's reinforcements and the player's AA on the road, woods cover; "
+             comment="M14 Caulder's Gambit (province: the Novarian shore, Caulder's camp Fort Meridian): storm the camp, take Caulder's HQ 2 (38,12) or rout his army. "
+                     "Three lanes: the coast road (south, over the river's mouth bridge), the river valley (centre road beside the moat river, gate bridge), the ridge track (north, through Lili's hill camp to the north gate). "
+                     "Army 3 (Lili, Yellow Comet, HQ (21,4) on the ridge plateau) is hostile to both until day 4 (mission code), then fights for the player. "
+                     "Start forces: player INF4 MECH3 TANK3 MDT2 RECON1 ART2 AA1 (16), funds 6000; Caulder INF5 MECH2 TANK4 MDT3 ART3 ROCK1 AA1 MIS1 FTR1 RECON1 (22, of which INF3 ART3 ROCK1 hold) + reserves on days 5 and 8 at the camp's east road; "
+                     "Lili TANK3 RECON2 MDT1 INF2 (8). Threat/answer: Caulder's Fighter -> AA and Missiles in the player's reinforcements and the player's AA on the road, woods cover; "
                      "entrenched Artillery and Rockets behind the wall (range 3..5) -> Recon to find them, Tanks close fast through the gates, own Artillery behind the moat; Md Tank counter-attacks from the gates -> "
-                     "own Tanks/MDT, bridges are the choke; Cassius's early tank rush on the ridge track -> hold the ridge pass with Tanks and ART until he changes sides.")
+                     "own Tanks/MDT, bridges are the choke; Lili's early tank rush on the ridge track -> hold the ridge pass with Tanks and ART until he changes sides.")
     # --- the sea ---
     for x in range(W):
         m.rect("~", x, COAST[x], x, H - 1)
@@ -44,7 +44,7 @@ def build():
     # --- the mountains: the ridge in the north, the camp's wall, the sea wall ---
     for i, (cx, cy, rx, ry) in enumerate([(14, 7, 4, 3), (22, 3, 7, 3), (27, 8, 3, 3), (18, 9, 3, 1), (12, 2, 3, 2), (6, 3, 3, 2), (40, 3, 3, 2), (36, 1, 2, 1)], 30):
         m.blob("^", cx, cy, rx, ry, seed=i, wobble=0.3)
-    # Cassius's plateau: open ground inside the ridge, a pass on each side
+    # Lili's plateau: open ground inside the ridge, a pass on each side
     for i, (cx, cy, rx, ry) in enumerate([(21, 4, 4, 1), (17, 5, 2, 1), (26, 5, 2, 1)]):
         m.blob(".", cx, cy, rx, ry, seed=40 + i, wobble=0.2, only="^")
     m.rect(".", 20, 6, 21, 9)                               # the plateau's south pass to the valley
@@ -104,7 +104,7 @@ def build():
     rd([(6, 14), (9, 15), (14, 15), (14, 17), (22, 17), (24, 16), (35, 16)], over=".f")                           # the valley road
     rd([(7, 11), (8, 8), (11, 5), (21, 4), (27, 5), (29, 6), (35, 7)], over=".f^")                                # the ridge track
     rd([(5, 14), (6, 14)], over=".f")
-    rd([(21, 5), (21, 9), (18, 10), (18, 15)], over=".f^")                                                         # down from Cassius's plateau
+    rd([(21, 5), (21, 9), (18, 10), (18, 15)], over=".f^")                                                         # down from Lili's plateau
     rd([(35, 7), (38, 7), (38, 21)], over=".f")
     rd([(35, 16), (38, 16)], over=".f")
     rd([(35, 21), (38, 21)], over=".f")
@@ -146,15 +146,15 @@ def build():
         stand(2, INF, x, y, hold=True)
     m.spread(2, {INF: 2, MECH: 2, TANK: 4, MDT: 3, AA: 1, MIS: 1, FTR: 1, RECON: 1}, (34, 4, 41, 22), seed=2, gap=1, avoid=AVOID)
     # named places
-    m.note("hq1", 5, 14, "the legion's camp HQ"); m.note("hq2", 38, 12, "Varro's HQ in Castra Maxima: the objective"); m.note("hq3", 21, 4, "Cassius's HQ on the ridge plateau")
-    m.note("gate_n", 33, 7, "Castra Maxima's north gate (end of the ridge track)"); m.note("gate_c", 33, 16, "the valley gate"); m.note("gate_s", 33, 21, "the coast gate")
+    m.note("hq1", 5, 14, "the corps's camp HQ"); m.note("hq2", 38, 12, "Caulder's HQ in Fort Meridian: the objective"); m.note("hq3", 21, 4, "Lili's HQ on the ridge plateau")
+    m.note("gate_n", 33, 7, "Fort Meridian's north gate (end of the ridge track)"); m.note("gate_c", 33, 16, "the valley gate"); m.note("gate_s", 33, 21, "the coast gate")
     m.note("moat_bridge_c", 30, 16, "valley road bridge over the moat"); m.note("moat_bridge_s", 31, 21, "coast road bridge near the river mouth")
-    m.note("pass_w", 12, 5, "the ridge track's west pass"); m.note("pass_s", 21, 8, "Cassius's plateau south pass to the valley")
-    m.note("harbour", 40, 17, "Varro's port in the camp harbour"); m.note("airfield", 40, 8, "Varro's airport")
-    m.note("reserve1", 40, 12, "Varro's reserve column road (day 5, 8)")
-    m.note("port1", 9, 24, "the legion's port on the open south coast")
+    m.note("pass_w", 12, 5, "the ridge track's west pass"); m.note("pass_s", 21, 8, "Lili's plateau south pass to the valley")
+    m.note("harbour", 40, 17, "Caulder's port in the camp harbour"); m.note("airfield", 40, 8, "Caulder's airport")
+    m.note("reserve1", 40, 12, "Caulder's reserve column road (day 5, 8)")
+    m.note("port1", 9, 24, "the corps's port on the open south coast")
     m.note("mid_base", 24, 19, "neutral base in the valley")
-    m.note("legion_road", 7, 14, "the legion's reinforcements on days 5 and 8 at (6..9,14..15)")
+    m.note("corps_road", 7, 14, "the corps's reinforcements on days 5 and 8 at (6..9,14..15)")
     m.ragged("^", 6, seed=1).ragged("^", 6, seed=2)               # (no drawn wall of mountains: lint DQ12)
     m.lake(12, 11, 9, seed=0, river_end=(13, 11))          # (a river starts in water or at the map edge: AW2 has no source tile)
     # (the user's rule, Oct 2026: 12% fewer neutral cities, the ones that add least; the middle, the objectives and MD01/MD02 kept)
