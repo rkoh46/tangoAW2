@@ -435,7 +435,8 @@ fn strike_square(core: &mut Core) {
         return;
     }
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
-    if activating(core, army) != (VON_BOLT, SCOP) {
+    let firestorm = activating(core, army) == (crate::es_co::TABITHA, SCOP);
+    if !firestorm && activating(core, army) != (VON_BOLT, SCOP) {
         return;
     }
     let cpu = core.gba().cpu();
@@ -447,6 +448,13 @@ fn strike_square(core: &mut Core) {
     }
     let i = unit_index_at(core, x as u32, y as u32);
     if i == 0 {
+        return;
+    }
+    if firestorm {
+        // Tabitha's Firestorm spares her own team (AW2's meteor hits every unit on the square, Von Bolt's own too): no damage there. It never stuns.
+        if player_team(core, army_of_index(core, i)) == player_team(core, army) {
+            core.gba_mut().cpu_mut().set_gpr(2, 0);
+        }
         return;
     }
     let u = core.raw_read_32(UNITS_POINTER, -1) + UNIT * i;
