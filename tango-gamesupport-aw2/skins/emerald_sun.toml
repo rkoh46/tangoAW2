@@ -27,7 +27,7 @@ orb = ["DBEB6E", "A5D86C", "72B073"]
 # A unit that has moved: its own dimmed ramp (how much of the ramp's hue the grey keeps, and how bright it stays).
 moved_tint = 0.0
 moved_dim = 0.7
-moved_lift = 0.45
+moved_lift = 0.15
 
 # ---- Infantry and Mech: AW2's soldiers in the stone ramp with a steel face guard with an eye slit (the mask; the Roman plume is gone) ---------
 # The picture is 16x16, three idle frames. `.` keeps AW2's pixel, `_` clears it, a hex digit is a unit palette index
