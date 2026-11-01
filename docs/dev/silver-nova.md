@@ -45,7 +45,7 @@ is closed to a Tank (mountains, rivers); every passable terrain costs 1.
 ## Art
 The owner's three pictures (`art-src/cos/*_v1.jpg`, pixel art with a baked-in checkerboard for Tabitha) are imported directly (`aw2dev co portrait import`): grid resample, background flood (the checkerboard flattened first, a pocket by
 `hole_min`), palette, outline; faces stay as supplied (they all face as drawn: Caulder to the left, Lili slightly left, Tabitha front: no flip). Their heads are wider than AW2's 24-cell mug, so the large art is 1x (128 x 160 cells) and the faces `mug_scale = 1`.
-Caulder and Tabitha keep the white hair, coat, blouse and gloves, so no `fringe` (it would eat them); Lili has `fringe = "light"` with her pale hair protected (`edge_protect`). The name graphic gains the letters T b d h t.
+None of the three uses `fringe`/`hole_min` (white hair, coat, blouse, sleeves and gloves would be eaten); Caulder alone cuts the white pocket between his arm and coat (`hole_min`). Lili's art is the owner's second picture (`lili_v2.jpg`, a checkerboard on both sides flattened first; the first was replaced and removed): the frame shows head, scarf, torso and the pink bear at 1x. The name graphic gains the letters T b d h t.
 
 ## Music
 Each CO has her/his own full theme from the music branch: `music/sn/{tabitha,lili,caulder}.m4t` ("Stupid Weak People", "Carousel", "Claw"), registered for slots 86, 87, 88 in `es_music::SOURCES` (the retired slots 89 and 90 have no song: the CO table's like-CO song). The old Roman themes (music/es klaus, aurelia, varro, cassius, livia) are deleted.

@@ -1,0 +1,18 @@
+# Lili (the owner's second picture), imported directly from lili_v2.jpg (pixel art, 1408 x 1408, native cells of about 3.6 x 3.1 px, 391 x 452; the checkerboard on both sides of the figure is flattened first).
+# Coordinates are native cells of the picture as supplied (she faces front, a little to the left: kept).
+pixelart = true
+checker = true
+large_scale = 1
+frame = [150, 14]
+mug_scale = 1
+mug = [172, 50]
+eyes = [178, 63, 210, 72]
+bg_tolerance = 30
+max_specks = 1800
+max_face_specks = 400
+# Colours her palette must keep an entry for (native cells, the mean of each group): the yellow irises, the pale mint hair, the face's skin.
+protect = [
+  [[172, 61], [172, 62], [172, 63], [173, 63], [172, 66], [197, 65], [201, 65], [197, 66], [198, 66], [200, 66], [201, 66], [197, 67], [198, 67], [199, 67], [200, 67], [198, 68], [199, 68], [200, 68], [201, 64]],
+  [[184, 20], [185, 20], [186, 20], [187, 20], [188, 20], [189, 20], [190, 20], [191, 20]],
+  [[176, 56], [177, 56], [185, 56], [186, 56], [187, 56], [188, 56], [196, 56], [197, 56], [198, 56], [176, 57]],
+]
