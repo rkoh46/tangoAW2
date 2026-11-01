@@ -17,7 +17,9 @@ def skin_cos(identities, ds, seats=None):
     """The CO pokes: Tabitha for `seats` (default the skin's seats, identity 6), with the pack (without it no Silver Nova CO is on the list: the skin only recolours). The
     runs `check --live` compares (the skin's seat in Orange Star, Green Earth and the skin) all play Tabitha, so only the colours differ."""
     seats = [s for s, c in enumerate(identities) if c == 6] if seats is None else seats
-    return "".join(f"poke {SEL + 0x10 * s:08X} {TABITHA_INDEX:02x}\n" for s in seats if ds)
+    import os
+    index = int(os.environ.get("AW2DEV_SKIN_CO_INDEX", TABITHA_INDEX), 16) if os.environ.get("AW2DEV_SKIN_CO_INDEX") else TABITHA_INDEX     # (a review aid: the Teams index of another CO: Lili 0x12, Caulder 0x1E)
+    return "".join(f"poke {SEL + 0x10 * s:08X} {index:02x}\n" for s in seats if ds)
 
 
 def header(identities, fog=False, five=False, extra="", ds=False, tabitha=None):
