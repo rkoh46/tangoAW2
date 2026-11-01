@@ -1076,8 +1076,22 @@ fn war_bonds(core: &mut Core) {
     }
 }
 
+/// `sub_08044280(army)`, the map menu's "is the Super Power paid for": its `cmp r4, r0` (r4 the meter, r0 the cost) just before the `bge`. AW2's Power entry has a
+/// "no cost, no entry" test (Sturm has no CO Power), the Super entry has none: a CO with no Super Power (Lili: 0 stars) was offered one at any meter. A free Super is none:
+/// the meter is made smaller than the cost.
+const SUPER_PAID: u32 = 0x0804_429C;
+fn super_paid(core: &mut Core) {
+    if !is_on(core) {
+        return;
+    }
+    if core.gba().cpu().gpr(0) == 0 {
+        core.gba_mut().cpu_mut().set_gpr(4, -1);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
+        (SUPER_PAID, Box::new(super_paid)),
         (STRIKE_SQUARE, Box::new(strike_square)),
         (MASS_UNIT, Box::new(mass_unit)),
         (ACTIVATE, Box::new(activate)),

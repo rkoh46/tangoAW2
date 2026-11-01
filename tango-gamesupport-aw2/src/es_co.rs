@@ -398,11 +398,46 @@ pub fn lili_any(core: &Core) -> bool {
 pub fn set_lili_state(core: &mut Core, b: &[u8]) {
     if b.len() == LILI_LEN as usize {
         core.raw_write_range(LILI_STATE, -1, b);
+        // Snow and rain run on the game's own weather days, whose second-day flag ([`crate::ds_weather`]'s power snow) is not in the save: it follows from the turn starts left
+        // (2: the first day is not over yet, 1: it is and the second runs). Without it a continued game lost the weather a day early.
+        if b[0] != 0 && (b[2] == SNOW || b[2] == RAIN) {
+            core.raw_write_8(crate::ram_map::POWER_SNOW.0, -1, (b[0] >= 2) as u8);
+        }
+    }
+}
+
+/// gPlaySt's default weather: what a fixed-weather game (the Rules screen's, mode 3) has when no power weather is on.
+const DEFAULT_WEATHER: u32 = 0x0300_3FEF;
+/// `sub_08035170`'s return (the weather of the next turn in r4, drawn at each turn's end), as [`crate::sandstorm`] knows it.
+const NEXT_WEATHER_DONE: u32 = 0x0803_51E8;
+
+/// The army whose turn follows `army`'s (the next one in the game).
+fn next_army(core: &Core, army: u32) -> u32 {
+    (1..=5u32).map(|k| (army + k - 1) % 5 + 1).find(|&a| a != army && crate::co_roster::in_game(core, a)).unwrap_or(army)
+}
+
+/// The turn end that comes just before her last turn start of Enigma, in a game whose Rules weather is fixed to snow or rain: a sandstorm is clear weather to the game, and AW2 brings the
+/// Rules' weather back only from snow or rain (its draw of a clear day in a fixed game is clear again), so the end of Enigma's sand puts it back here: the next turn's weather is the
+/// Rules' own, which AW2 then starts as any weather change (the fade, the colours).
+fn next_weather(core: &mut Core) {
+    if !crate::ds_weather::is_on(core) {
+        return;
+    }
+    if core.raw_read_8(LILI_STATE, -1) != 1 || core.raw_read_8(LILI_STATE + 2, -1) != SAND || core.raw_read_8(WEATHER_MODE, -1) != 3 {
+        return;
+    }
+    let default = core.raw_read_8(DEFAULT_WEATHER, -1);
+    if default == 0 || core.gba().cpu().gpr(4) != 0 {
+        return;
+    }
+    let (now, hers) = (core.raw_read_16(CURRENT_ARMY, -1) as u32, core.raw_read_8(LILI_STATE + 1, -1) as u32);
+    if now != hers && next_army(core, now) == hers {
+        core.gba_mut().cpu_mut().set_gpr(4, default as i32);
     }
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    Vec::new()
+    vec![(NEXT_WEATHER_DONE, Box::new(next_weather))]
 }
 
 /// Every frame with the pack: the code is in ROM.
