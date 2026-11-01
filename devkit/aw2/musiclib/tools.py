@@ -5,7 +5,17 @@ from .. import cfg, util
 
 SONGS = ["tabitha", "lili", "caulder"]
 REF = ["kanbei", "sensei", "hawke", "jess", "andy", "olaf", "drake", "colin", "eagle", "grit"]   # AW2's own CO themes, for the level comparison
-MUSIC_DIR = cfg.REPO / "tango-gamesupport-aw2" / "music" / "es"
+# the three Silver Nova COs' themes are in music/sn, Asuka's, Crumb's and Clone Andy's in music/es (the game compiles both from the built-in text)
+MUSIC_DIRS = [cfg.REPO / "tango-gamesupport-aw2" / "music" / "sn", cfg.REPO / "tango-gamesupport-aw2" / "music" / "es"]
+MUSIC_DIR = MUSIC_DIRS[0]
+
+
+def song_file(name, dirpath=None):
+    """The .m4t of a song: in `dirpath` if given, else music/sn, then music/es."""
+    for d in ([Path(dirpath)] if dirpath else MUSIC_DIRS):
+        if (d / f"{name}.m4t").exists():
+            return d / f"{name}.m4t"
+    return (Path(dirpath) if dirpath else MUSIC_DIR) / f"{name}.m4t"
 RULES = dict(loop_min=45.0, loop_max=90.0, peak_voices=6, tracks=8, bytes=48 * 1024)
 # the BH2 credits roll (slot 201) is a staff-roll song, not a battle theme (AW2's own roll is 160 s): its loop may run to 120 s, the same allowance as
 # the Rust test every_source_compiles_and_has_the_right_shape (docs/dev/music-kit.md)
@@ -446,8 +456,8 @@ def inst_lines(dirpath=None):
     """Every `inst` line of the songs: name, group, program, shift (first definition of a name wins per group/program)."""
     import re
     seen = {}
-    d = Path(dirpath) if dirpath else MUSIC_DIR
-    for f in sorted(d.glob("*.m4t")):
+    dirs = [Path(dirpath)] if dirpath else MUSIC_DIRS
+    for f in sorted(f for d in dirs for f in d.glob("*.m4t")):
         for line in f.read_text().splitlines():
             m = re.match(r"\s*inst\s+(\w+)\s*=\s*(\w+)\.(\d+)(?:\s+shift=(-?\d+))?", line.split(";")[0])
             if m:
@@ -532,7 +542,7 @@ def stems(a):
     j = next((s for s in songs if s["name"] == a.song), None)
     if not j:
         util.die(f"no song {a.song}")
-    src = (Path(a.dir) if a.dir else MUSIC_DIR) / f"{a.song}.m4t"
+    src = song_file(a.song, a.dir)
     d = work_dir("stems", a.song)
     n = len(j["tracks"])
     import shutil

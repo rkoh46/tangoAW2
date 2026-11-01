@@ -92,17 +92,17 @@ pub const SOURCES: [Source; 9] = [
     Source {
         co: 86,
         name: "tabitha",
-        text: include_str!("../music/es/tabitha.m4t"),
+        text: include_str!("../music/sn/tabitha.m4t"),
     },
     Source {
         co: 87,
         name: "lili",
-        text: include_str!("../music/es/lili.m4t"),
+        text: include_str!("../music/sn/lili.m4t"),
     },
     Source {
         co: 88,
         name: "caulder",
-        text: include_str!("../music/es/caulder.m4t"),
+        text: include_str!("../music/sn/caulder.m4t"),
     },
     // Asuka (CO 92, crate::asuka): her theme is in Versus for everyone, like her.
     Source {

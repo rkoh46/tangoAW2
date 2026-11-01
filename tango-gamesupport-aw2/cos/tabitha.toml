@@ -8,7 +8,7 @@ role = "commander of the Silver Nova, Dr. Caulder's daughter"
 hq = "emerald_sun"
 
 full_name = "Tabitha"
-# Her theme: music/es/tabitha.m4t (our own composition, the old first commander's).
+# Her theme: music/sn/tabitha.m4t (our own composition: "Stupid Weak People").
 theme = "own:tabitha"
 bio = "Belongs to Silver Nova. A daughter of Dr. Caulder, she is extremely cruel and vindictive. Hit: Breakfast in bed Miss: \"Stupid Weak People\""
 luck = [10, 10, 10]

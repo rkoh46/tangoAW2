@@ -48,7 +48,7 @@ The owner's three pictures (`art-src/cos/*_v1.jpg`, pixel art with a baked-in ch
 Caulder and Tabitha keep the white hair, coat, blouse and gloves, so no `fringe` (it would eat them); Lili has `fringe = "light"` with her pale hair protected (`edge_protect`). The name graphic gains the letters T b d h t.
 
 ## Music
-No new theme: the old Klaus theme is now Tabitha's, Aurelia's is Lili's and Varro's is Caulder's (`music/es/{tabitha,lili,caulder}.m4t`, same notes); Cassius's and Livia's are removed.
+Each CO has her/his own full theme from the music branch: `music/sn/{tabitha,lili,caulder}.m4t` ("Stupid Weak People", "Carousel", "Claw"), registered for slots 86, 87, 88 in `es_music::SOURCES` (the retired slots 89 and 90 have no song: the CO table's like-CO song). The old Roman themes (music/es klaus, aurelia, varro, cassius, livia) are deleted.
 
 ## Casting
 | Where | Old CO | New CO |

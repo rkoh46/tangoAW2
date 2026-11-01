@@ -11,7 +11,7 @@ description: Pick and wire music for scenes or battles (AW2 / Dual Strike songs,
 
 ## B. Compose a song of our own (docs/dev/music-kit.md)
 1. Study how AW2 writes its themes: `./aw2dev sound dump 211` (Kanbei), `./aw2dev sound levels --ref` (the loudness of ten of AW2's themes), `./aw2dev sound voices --group A [--sheet out.png]` (the instruments, with the `shift` each needs).
-2. Copy `tango-gamesupport-aw2/music/es/<neighbour>.m4t`; write the song at the sounding pitch (format: header of `src/es_music.rs`, the doc). New song for a new CO: add it to `es_music::SOURCES` and `test_es_music.py COS`.
+2. Copy `tango-gamesupport-aw2/music/sn/<neighbour>.m4t` (or `music/es/`); write the song at the sounding pitch (format: header of `src/es_music.rs`, the doc). New song for a new CO: add it to `es_music::SOURCES` and `test_es_music.py COS`.
 3. `./aw2dev sound compose --dir tango-gamesupport-aw2/music/es`: it must compile (a bar of the wrong length names its place) and keep the rules (loop 45..90 s, at most 8 notes at once, 8 tracks).
 4. `./aw2dev sound render --song <name> --dir tango-gamesupport-aw2/music/es` (no rebuild: the game reads the folder): WAV in `devkit/work/music/`, a picture, the loop seams and the level next to AW2's themes. Look at the pictures, **listen to the WAV**.
    `./aw2dev sound stems <name>` for the mix (the lead 3 to 6 dB above the rest; set `gain=` on a track), `./aw2dev sound pitchcheck` after a new instrument (its `shift`).

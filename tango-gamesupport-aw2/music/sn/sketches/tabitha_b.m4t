@@ -1,0 +1,26 @@
+; Tabitha, sketch B "Hot Shuffle": C minor, 108 bpm, swung. A trumpet plays a swaggering shuffle hook over a swung guitar riff, a fuzz-bass shuffle and a backbeat kit. Original notes, AW2 voices, no rom lines.
+song tabitha_b
+tempo 108
+meter 4/4
+reverb 173
+priority 0
+
+inst trump = A.56 shift=-12
+inst rg = B.10 shift=20
+inst rgm = B.11 shift=20
+inst fz = A.97 shift=24
+inst kit = A.120
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=trump vol=100 pan=4 vel=114 gate=92 gain=1.084 
+track 2 inst=rgm vol=127 pan=-18 vel=124 gate=88 gain=1.084 
+track 3 inst=fz vol=100 pan=0 vel=118 gate=78 gain=0.867 
+track 4 inst=kit vol=76 pan=0 vel=108 gate=100 gain=0.596 
+
+section A bars=8
+  1: | C5/#16 C5/#8 Eb5/#24 D5/#16 C5/#8 G4/#24 | | C5/#16 C5/#8 Eb5/#24 G5/#24 F5/#24 | | Ab4/#16 Ab4/#8 C5/#24 Bb4/#16 Ab4/#8 Eb4/#24 | | Bb4/#16 Bb4/#8 D5/#24 F5/#24 D5/#24 | | Eb5/#16 Eb5/#8 G5/#24 F5/#16 Eb5/#8 C5/#24 | | G4/#16 C5/#8 Eb5/#16 G5/#8 Eb5/#24 F5/#24 | | F5/#24 Ab5/#24 G5/#16 F5/#8 C5/#24 | | D5/#16 D5/#8 F5/#16 G5/#8 B4/#48 |
+  2: | {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 | | {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C4/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C4/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 | | {inst rg} {vol 127} {gate 80} [D#3 G#3]/#8 {inst rgm} {vol 78} {gate 100} G#3/#8 r/#8 {inst rgm} {vol 78} {gate 100} G#2/#8 {inst rg} {vol 127} {gate 80} [D#3 G#3]/#8 {inst rgm} {vol 78} {gate 100} G#2/#8 r/#8 {inst rgm} {vol 78} {gate 100} G#2/#8 {inst rg} {vol 127} {gate 80} [D#3 G#3]/#8 {inst rgm} {vol 78} {gate 100} G#2/#8 r/#8 {inst rgm} {vol 78} {gate 100} G#2/#8 | | {inst rg} {vol 127} {gate 80} [F3 A#3]/#8 {inst rgm} {vol 78} {gate 100} A#2/#8 r/#8 {inst rgm} {vol 78} {gate 100} A#2/#8 {inst rg} {vol 127} {gate 80} [F3 A#3]/#8 {inst rgm} {vol 78} {gate 100} A#2/#8 r/#8 {inst rgm} {vol 78} {gate 100} A#2/#8 {inst rg} {vol 127} {gate 80} [F3 A#3]/#8 {inst rgm} {vol 78} {gate 100} A#2/#8 r/#8 {inst rgm} {vol 78} {gate 100} A#2/#8 | | {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C4/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 | | {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 {inst rg} {vol 127} {gate 80} [G3 C4]/#8 {inst rgm} {vol 78} {gate 100} C3/#8 r/#8 {inst rgm} {vol 78} {gate 100} C3/#8 | | {inst rg} {vol 127} {gate 80} [C4 F4]/#8 {inst rgm} {vol 78} {gate 100} F3/#8 r/#8 {inst rgm} {vol 78} {gate 100} F3/#8 {inst rg} {vol 127} {gate 80} [C4 F4]/#8 {inst rgm} {vol 78} {gate 100} F4/#8 r/#8 {inst rgm} {vol 78} {gate 100} F3/#8 {inst rg} {vol 127} {gate 80} [C4 F4]/#8 {inst rgm} {vol 78} {gate 100} F4/#8 r/#8 {inst rgm} {vol 78} {gate 100} F3/#8 | | {inst rg} {vol 127} {gate 80} [D3 G3]/#8 {inst rgm} {vol 78} {gate 100} G2/#8 r/#8 {inst rgm} {vol 78} {gate 100} G2/#8 {inst rg} {vol 127} {gate 80} [D3 G3]/#8 {inst rgm} {vol 78} {gate 100} G3/#8 r/#8 {inst rgm} {vol 78} {gate 100} G3/#8 {inst rg} {vol 127} {gate 80} [D3 G3]/#8 {inst rgm} {vol 78} {gate 100} G2/#8 r/#8 {inst rgm} {vol 78} {gate 100} G2/#8 |
+  3: | C4/#16' C3/#8' C3/#16' C4/#8' C3/#16' C3/#8' C3/#16' A#3/#8' | | C3/#16' C3/#8' C3/#16' C4/#8' C4/#16' C3/#8' C3/#16' A#3/#8' | | G#2/#16' G#2/#8' G#2/#16' G#3/#8' G#2/#16' G#2/#8' G#2/#16' F#3/#8' | | A#2/#16' A#2/#8' A#3/#16' A#3/#8' A#3/#16' A#2/#8' A#2/#16' G#3/#8' | | C4/#16' C4/#8' C3/#16' C4/#8' C3/#16' C3/#8' C3/#16' A#4/#8' | | C3/#16' C3/#8' C4/#16' C4/#8' C3/#16' C3/#8' C3/#16' A#3/#8' | | F3/#16' F3/#8' F3/#16' F4/#8' F3/#16' F3/#8' F3/#16' D#4/#8' | | G2/#16' G3/#8' G3/#16' G3/#8' G3/#16' G2/#8' G2/#16' F3/#8' |
+  4: | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 tom2/#8 tom3/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 snare/#8 r/#8 hat/#8 kick/#8 hat/#8 snare/#8 snare/#8 tom1/#8 tom3/#8 |
+end
+form loop A

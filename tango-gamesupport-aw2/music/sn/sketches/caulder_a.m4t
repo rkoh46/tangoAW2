@@ -1,0 +1,31 @@
+; Caulder, sketch A "Clarinet in the Lab": C# minor, 112 bpm. A low clarinet creeps over fuzz bass eighths and 3+3+2 brass stabs, strings hold thirds; a chromatic hook and a climbing answer. Original notes, AW2 voices, no rom lines.
+song caulder_a
+tempo 112
+meter 4/4
+reverb 173
+priority 0
+
+inst clar = A.71 shift=-12
+inst fz = A.97 shift=24
+inst brass = A.111 shift=-12
+inst str = A.48 shift=0
+inst kit = A.120
+inst timp = A.47 shift=24
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=clar vol=100 pan=6 vel=112 gate=94 gain=0.883 
+track 2 inst=fz vol=100 pan=0 vel=118 gate=78 gain=0.824 
+track 3 inst=str vol=84 pan=-14 vel=104 gate=98 gain=0.412 
+track 4 inst=brass vol=84 pan=10 vel=108 gate=88 gain=0.353 
+track 5 inst=kit vol=76 pan=0 vel=108 gate=100 gain=0.294 
+track 6 inst=timp vol=84 pan=0 vel=118 gate=92 gain=0.589 
+
+section A bars=8
+  1: | G#4/#36 C#5/#12 E5/#24 D#5/#12 D5/#12 | | C#5/#24 B4/#12 G#4/#36 A4/#24 | | A4/#12 C#5/#12 E5/#24 D5/#12 C#5/#12 B4/#24 | | B4/#36 A#4/#12 G#4/#48 | | G#4/#12 C#5/#12 E5/#12 G#5/#12 E5/#24 F#5/#24 | | D#5/#24 C#5/#24 B4/#48 | | F#5/#12 E5/#12 D5/#12 C#5/#12 D5/#24 A4/#24 | | C5/#12 D#5/#12 G#5/#24 G#5/#48 |
+  2: | C#3/#12' C#3/#12' C#3/#12' C#2/#12' C#2/#12' C#2/#12' C#4/#12' C#2/#12' | | C#2/#12' C#2/#12' C#3/#12' C#3/#12' C#3/#12' C#3/#12' C#3/#12' C#2/#12' | | A1/#12' A1/#12' A2/#12' A2/#12' A1/#12' A1/#12' A2/#12' A1/#12' | | G#2/#12' G#2/#12' G#2/#12' G#1/#12' G#1/#12' G#1/#12' A2/#12' A#1/#12' | | C#2/#12' C#2/#12' C#4/#12' C#2/#12' C#3/#12' C#3/#12' C#3/#12' C#3/#12' | | C#3/#12' C#3/#12' C#4/#12' C#2/#12' C#2/#12' C#3/#12' C#3/#12' C#2/#12' | | D3/#12' D2/#12' D3/#12' D2/#12' D3/#12' D2/#12' D3/#12' D3/#12' | | G#2/#12' G#1/#12' G#2/#12' G#1/#12' G#2/#12' G#2/#12' G#2/#12' G#1/#12' |
+  3: | E4/#96 | | E4/#48 D#4/#48 | | E4/#96 | | D#4/#96 | | G#4/#96 | | G#4/#48 F#4/#48 | | F#4/#96 | | G#4/#48 C5/#48 |
+  4: | G#3/#36' G#3/#36' G#3/#24' | | G#3/#36' G#3/#36' G#3/#24' | | E3/#36' E3/#36' E3/#24' | | D#3/#36' D#3/#36' D#3/#24' | | G#3/#36' G#3/#36' G#3/#24' | | G#3/#36' G#3/#36' G#3/#24' | | A3/#36' A3/#36' A3/#24' | | D#3/#36' D#3/#36' D#3/#24' |
+  5: | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 tom1/#6 tom2/#6 tom3/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 kick/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 kick/#6 hat/#6 r/#6 snare/#6 tom1/#6 tom2/#6 tom3/#6 |
+  6: | C#2/#24 r/#72 | | C#2/#24 r/#72 | | A1/#24 r/#72 | | G#1/#24 r/#72 | | C#2/#24 r/#72 | | C#2/#24 r/#72 | | D2/#24 r/#72 | | G#1/#24 G#1/#24 G#1/#24 G#1/#24 |
+end
+form loop A

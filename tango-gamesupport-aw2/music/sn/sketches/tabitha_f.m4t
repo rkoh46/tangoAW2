@@ -1,0 +1,28 @@
+; Tabitha, sketch F "Minuet of Ice": C minor, 3/4, 112 bpm. An aristocratic minuet: a harp states the cold hook, strings play open fifths on beats two and three, a low horn holds the harmony, plucked bass and rim-and-kick kit; a flat ninth (Ab over G7) for the cruelty. Original notes, AW2 voices, no rom lines.
+song tabitha_f
+tempo 112
+meter 3/4
+reverb 173
+priority 0
+
+inst harp = A.117
+inst str = A.48 shift=0
+inst horn = A.111 shift=-12
+inst bass = A.34 shift=24
+inst kit = A.120
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=harp vol=100 pan=4 vel=112 gate=92 gain=2.235 
+track 2 inst=str vol=84 pan=12 vel=104 gate=60 gain=1.490 
+track 3 inst=horn vol=80 pan=-14 vel=100 gate=98 gain=1.024 
+track 4 inst=bass vol=100 pan=0 vel=116 gate=78 gain=2.794 
+track 5 inst=kit vol=72 pan=0 vel=104 gate=100 gain=0.838 
+
+section A bars=8
+  1: | C5/#36 Eb5/#12 G5/#12 Eb5/#12 | | D5/#24 B4/#24 Ab4/#24 | | C5/#36 Eb5/#12 Ab5/#12 G5/#12 | | F5/#24 Ab5/#24 F5/#24 | | Eb5/#36 C5/#12 Eb5/#12 Ab4/#12 | | D5/#24 F5/#24 B4/#24 | | G5/#24 Eb5/#24 C5/#24 | | B4/#24 D5/#24 F5/#12 D5/#12 |
+  2: | r/#24 [C4 G4]/#12' r/#12 [C4 G4]/#12' r/#12 | | r/#24 [G3 D4]/#12' r/#12 [G3 D4]/#12' r/#12 | | r/#24 [C4 G4]/#12' r/#12 [C4 G4]/#12' r/#12 | | r/#24 [F4 C5]/#12' r/#12 [F4 C5]/#12' r/#12 | | r/#24 [G#3 D#4]/#12' r/#12 [G#3 D#4]/#12' r/#12 | | r/#24 [B3 F#4]/#12' r/#12 [B3 F#4]/#12' r/#12 | | r/#24 [C4 G4]/#12' r/#12 [C4 G4]/#12' r/#12 | | r/#24 [G3 D4]/#12' r/#12 [G3 D4]/#12' r/#12 |
+  3: | G3/#72 | | D3/#72 | | G3/#72 | | C4/#72 | | C4/#72 | | D4/#72 | | Eb4/#72 | | D4/#72 |
+  4: | C2/#24' G2/#24' C3/#24' | | G1/#24' D2/#24' G2/#24' | | C2/#24' G2/#24' C3/#24' | | F2/#24' C3/#24' F3/#24' | | G#1/#24' D#2/#24' G#2/#24' | | G1/#24' D2/#24' G2/#24' | | C2/#24' G2/#24' C3/#24' | | G1/#24' D2/#24' G2/#24' |
+  5: | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 r/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 r/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 r/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 tom1/#6 tom2/#6 tom3/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 r/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 r/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 rim/#6 r/#6 r/#6 r/#6 | | kick/#6 r/#6 r/#6 r/#6 rim/#6 r/#6 rim/#6 kick/#6 rim/#6 tom1/#6 tom2/#6 tom3/#6 |
+end
+form loop A
