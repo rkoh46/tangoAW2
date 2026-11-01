@@ -91,8 +91,8 @@ pub const CREDITS: u8 = 201;
 pub const SOURCES: [Source; 11] = [
     Source {
         co: 86,
-        name: "klaus",
-        text: include_str!("../music/es/klaus.m4t"),
+        name: "tabitha",
+        text: include_str!("../music/sn/tabitha.m4t"),
     },
     Source {
         co: 87,
@@ -101,8 +101,8 @@ pub const SOURCES: [Source; 11] = [
     },
     Source {
         co: 88,
-        name: "cassius",
-        text: include_str!("../music/es/cassius.m4t"),
+        name: "caulder",
+        text: include_str!("../music/sn/caulder.m4t"),
     },
     Source {
         co: 89,

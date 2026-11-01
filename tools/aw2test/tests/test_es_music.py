@@ -1,7 +1,7 @@
 """The Emerald Sun COs' own themes (crate::es_music, docs/dev/music-kit.md): each of the five has a song of its own in the sound engine's table, written from a
 text file in the repository, played with AW2's own voices (the group is copied from the ROM), on the CO's turn, and it loops.
 
-`run.py -k es_music_render` (opt-in: AW2TEST_MUSIC_SONGS=klaus,livia ...) records the game's audio output of each theme for AW2TEST_MUSIC_SECONDS (default: the intro and
+`run.py -k es_music_render` (opt-in: AW2TEST_MUSIC_SONGS=tabitha,livia ...) records the game's audio output of each theme for AW2TEST_MUSIC_SECONDS (default: the intro and
 two loops) into $AW2TEST_MUSIC_OUT/<name>.wav; `aw2dev sound render` drives it (and TANGOAW2_ES_MUSIC=<dir> lets a song be edited and heard without a rebuild).
 """
 
@@ -14,7 +14,7 @@ from aw2test.harness import test
 from tests.test_co_music import BGM, SONG, channels, header_of, playing, row_song, wait_song
 
 ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
-COS = {"klaus": 86, "lili": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "crumb": 82, "cloneandy": 81}
+COS = {"tabitha": 86, "lili": 87, "caulder": 88, "livia": 89, "varro": 90, "asuka": 92, "crumb": 82, "cloneandy": 81}
 FIRST_SONG = 505
 STORY = (0x09000000, 0x09C00000)
 DS_NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
@@ -155,9 +155,9 @@ def es_theme_returns_after_a_power_and_other_cos_keep_theirs(ctx):
     """Klaus's Super Power plays the game's power theme (not a theme of ours), the CPU Kanbei's turn plays AW2's Kanbei theme, and Klaus's next turn plays his song again."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, [COS["klaus"], "kanbei"], humans=(1,), visuals="a", env=env())
+    g = ctx.start(m, [COS["tabitha"], "kanbei"], humans=(1,), visuals="a", env=env())
     e = g.e
-    song = row_song(e, COS["klaus"])
+    song = row_song(e, COS["tabitha"])
     ctx.check(e.u16(SONG) == song or wait_song(e, song, 300), "Klaus's turn plays his theme")
     ctx.power(g, 1, "super")
     ours = {row_song(e, c) for c in COS.values()}
@@ -182,7 +182,7 @@ def es_music_absent_without_the_pack(ctx):
 
 @test(modes=("ds",))
 def es_music_render(ctx):
-    """Opt-in (AW2TEST_MUSIC_SONGS=klaus,aurelia ...): record each theme as the game plays it, from the song's first tick, for AW2TEST_MUSIC_SECONDS (default: the intro and two loops plus 2 s)
+    """Opt-in (AW2TEST_MUSIC_SONGS=tabitha,lili ...): record each theme as the game plays it, from the song's first tick, for AW2TEST_MUSIC_SECONDS (default: the intro and two loops plus 2 s)
     into $AW2TEST_MUSIC_OUT/<name>.wav. The console is recorded from the first frame and the recording cut where the song began (the music player's tick clock says how long ago that was)."""
     want = [s for s in os.environ.get("AW2TEST_MUSIC_SONGS", "").split(",") if s]
     if not want:

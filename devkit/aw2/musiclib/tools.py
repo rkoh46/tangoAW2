@@ -3,7 +3,7 @@ import json, os, subprocess, sys
 from pathlib import Path
 from .. import cfg, util
 
-SONGS = ["klaus", "lili", "cassius", "livia", "varro"]
+SONGS = ["tabitha", "lili", "caulder", "livia", "varro"]
 REF = ["kanbei", "sensei", "hawke", "jess", "andy", "olaf", "drake", "colin", "eagle", "grit"]   # AW2's own CO themes, for the level comparison
 MUSIC_DIR = cfg.REPO / "tango-gamesupport-aw2" / "music" / "es"
 RULES = dict(loop_min=45.0, loop_max=90.0, peak_voices=6, tracks=8, bytes=48 * 1024)
