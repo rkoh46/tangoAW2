@@ -3,7 +3,7 @@
 tangoAW2 has a sixth army, **Silver Nova** (until 2026-11 it was Emerald Sun; the data file keeps the id `emerald_sun`, which the CO data files name), and a general way to add more: an army is a **skin**, a data file (`tango-gamesupport-aw2/skins/<id>.toml`)
 that the game draws on top of one of AW2's five colours. The art is the project's own, applied at run time to AW2's own graphics, which are read from the player's ROM as always. Silver Nova's HQ is the project
 owner's own pixel art, imported faithfully (`art-src/silver-nova/hq.jpg`, `aw2dev armyskin import-hq`, section 9), its colours come from the owner's city picture (`art-src/silver-nova/city_ref.jpg`: silver and blue-grey with
-yellow windows); its soldiers (the owner's mask without the old Roman plume), emblem (the sun, now silver) and palette are drawn here. Nothing from any game is in the repository.
+yellow windows); its soldiers (the owner's mask without the old Roman plume), emblem (the sun, in shaded silver) and palette (bright chrome, the owner's pick of six options) are drawn here. Nothing from any game is in the repository.
 
 Code: `tango-gamesupport-aw2/src/army_skin.rs`. Kit: `aw2dev armyskin ...` (`devkit/aw2/commands/armyskin.py`, `devkit/aw2/armyskinlib/`), skill `aw2-add-army`.
 
@@ -80,6 +80,7 @@ ramp = [6 colours, light to dark]   # unit roles 2..7, every building, panel and
 trim = [3 colours]                  # unit roles 11..13 (tracks, barrels, the cheek plate): steel
 building = [4 colours]              # optional: the buildings' own ramp, light to dark (else the units' ramp)
 crest, gold, gold_dark              # crest (unit role 14: no picture draws a plume any more), gold: the HQ's lit windows (entry 14 of the building palettes)
+emblem_tones = [3 colours]          # optional: the emblem's c, b, a tones (default the ramp's 0, 4, 2): Silver Nova's are darker greys so the sun reads as shaded metal on the Teams card's white
 orb = [3 colours]                   # optional: the HQ's orb, light to dark: building palette entries 12, 11 and 8 (`ORB_ENTRIES`, only the HQs' pictures use them; the capture box's HQ gets them too); an HQ row says c, b, 8
 moved_tint = 0.5                    # how much of the ramp's hue the grey of a moved unit keeps
 moved_dim = 0.64                    # how bright it stays (the skin's own dimmed ramp; still readable)
@@ -121,6 +122,7 @@ applied in Python (`armyskinlib/figures.py`), (Silver Nova's patches have no plu
 |---|---|
 | `preview [--colour N] [--fast]` | the skin's pictures (Infantry, Mech, HQ, emblem) next to AW2's at 8x, and its palettes, as one PNG (`--fast` draws the art straight from the data file: no rebuild while drawing) |
 | `check [--live] [--scenario S ..] [--ds]` | **static**: the data file's shapes; the palette's margins; every unit 1..24 on every colour is recoloured and its done grey differs from its live colours. **`--live`**: runs the catalogue's scenarios three times (the base army, another colour, the skin) and fails on any screen where a colour only the base army had is still there |
+| `palette-options --dir DIR [--letters ABCDEF] --out PNG` | one comparison sheet of candidate palettes (`DIR/A.toml` ...: `name`, `description`, a `[colours]` table of overrides): per letter the skin file is swapped in for the run (always restored), the harness example rebuilt, and the real game draws the units idle and done (Dual Strike), the property capture boxes, a map crop beside an unowned city, Blue Moon and Black Hole; the HQ and emblem from the file; the static check's distances and the city's distance from the unowned city are under each row |
 | `import-hq PICTURE [--write] [--sheet PNG]` | the owner's upscaled HQ picture imported faithfully as the skin's `[hq]` rows (section 9) |
 | `sources [--a 1,2 --b 3,4]` | renders the screens with two armies, finds the palette banks that differ, searches the ROM for their colours and prints the **ROM palettes the skin does not patch yet** (the way to find the next table) |
 | `options --dir DIR [--letters ACF] [--awbw DIR]` | a sheet of **soldier options**: several complete Infantry + Mech designs (idle side frame) from candidate files `A.toml`, `B.toml` ... in DIR, one row per letter with a description, each at 8x and 1x and on a plain map tile at 2x beside Green Earth's and Black Hole's Infantry (and AWBW's pair on top with `--awbw`, review only). A candidate is a skin fragment: `name`, `description`, optional `[colours]` overrides (`trim`, `crest`, `ramp`) and the skin file's own `[infantry]` / `[mech]` patch tables, so the chosen letter is merged into `skins/<id>.toml` as it is. `armyskinlib/options.py` has `grid_of` (AW2's soldier as a grid), `patch_rows` (draw on a copy and let the difference become the patch) and `toml_for` to author them; candidates stay out of the repository until one is chosen |
@@ -143,18 +145,18 @@ CIE76 delta E between the skin's **body colours** (ramp 1..4) and:
 
 | Against | Needs | Silver Nova |
 |---|---|---|
-| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 55.9, Blue Moon 14.6, Green Earth 35.7, Yellow Comet 58.3, Black Hole 13.1 |
-| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 65.5, 29.2, 50.9, 64.6, 25.7 |
-| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.19 (18.6 of 97.5) |
-| the greys of units that have moved (all five armies) | >= 9 | 10.2 |
-| the terrain's colours in fog (measured with fog on) | >= 9 | 13.3 |
-| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 21.2 .. 26.9 |
-| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 8.1 .. 34.6 |
+| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 48.8, Blue Moon 18.8, Green Earth 32.5, Yellow Comet 43.9, Black Hole 11.4 |
+| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 54.9, 35.7, 40.8, 52.8, 17.9 |
+| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.06 (6.0 of 97.5) |
+| the greys of units that have moved (all five armies) | >= 9 | 11.4 |
+| the terrain's colours in fog (measured with fog on) | >= 9 | 12.2 |
+| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 28.4 .. 35.4 |
+| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 9.7 .. 32.9 |
 
-Silver Nova's units are silver with a cool blue-grey cast (`EEF4FC .. 262E48`: the blue keeps Black Hole's warm greys and purple and fog's grey-greens at a distance; the ramp's 4th tone is darkened so fog's purple-grey stays clear), with steel trim `C4CAD4 .. 626A7C`.
-Its buildings have their own ramp from the owner's city picture (`building`, four tones `C0DDE7 93AEC2 657491 535C78`), used for the building palettes only; the HQ's windows are the picture's yellow (`gold`) and its orb has three greens (`orb`). Black Hole's greys are the nearest colours (its highlights
+Silver Nova's units are **bright chrome** (the owner's choice, option C of `aw2dev armyskin palette-options`; the owner rejected the earlier blue-grey as not silver): `FFFFFF F0F2F8 C0C4CC 9497A0 363A44 16181E`, near-white highlights, hard contrast, neutral to faintly cool, steel trim `D0D3D8 8A8E98 4A4D55`. As picked (`E8EAEE B4B8C0 767B86` for the middle steps) the ramp failed four checks (Black Hole 6.2, done greys 8.6, fog 7.9, HQ contrast 69.2); each middle step was moved the least that clears its own margin (a neutral light step on Black Hole's `DEE6DE`: only a faintly cool `F0F2F8` clears it, since F8F8F8 quantises to the same 15-bit white as the highlight; the mid step lifted to `9497A0` off the fog's blue-greys; `C0C4CC` off Black Hole's `C5C5AC`). A done unit is dimmer (`moved_dim` 0.5, `moved_tint` 0.5).
+Its buildings have their own chrome ramp (`building`, four tones `FFFFFF BCC1C9 6C717C 444852`: white panels and dark greys, far from an unowned city's pale ones; 11.4 from the unowned city beside it), used for the building palettes only; the HQ's windows are the picture's yellow (`gold`) and its orb has three greens (`orb`). Black Hole's greys are the nearest colours (its highlights
 are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on lightness. A skin that is too grey is read as a done unit or as fogged ground;
-one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint` 0.8, `moved_dim`): the ramp's blue at 64% of its brightness, not a flat grey (a lower tint was too like Green Earth's done grey).
+one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim` 0.5): the ramp at half its brightness.
 
 ### Originality (`check --awbw-ref DIR`, local only)
 
@@ -186,9 +188,9 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 | pixels filled | 367 to 404 (of 512) | 341 to 444 | 416 |
 | shades used | 6 to 9 | 6 to 12 | 8 |
 | the commonest shade's share | 0.62 to 0.74 | 0.28 to 0.89 | 0.49 |
-| value contrast (std. dev. of brightness) | 25 to 39 | 23 to 69 | 60 |
+| value contrast (std. dev. of brightness) | 25 to 39 | 23 to 69 | 68 |
 | first row used | 1 to 5 | at most 5 | 0 |
-| left three columns against the right three | brighter on the left | the left brighter | 167 against 152 |
+| left three columns against the right three | brighter on the left | the left brighter | 176 against 154 |
 
 ## 7. Adding an army (skill `aw2-add-army`)
 

@@ -152,6 +152,9 @@ pub struct Skin {
     pub gold_dark: u16,
     /// The colours of the HQ's orb (light to dark), when the HQ has one: they take the building palette's entries [`ORB_ENTRIES`], which only the HQs' pictures use.
     pub orb: Option<[u16; 3]>,
+    /// The emblem's three tones (light, dark, mid: the art's `c`, `b`, `a`): the ramp's lightest, darkest-but-one and middle tones unless the skin file's `emblem_tones` says others (a silver
+    /// sun needs darker tones than the ramp's light ones to read as metal on the Teams card's pale ground).
+    pub emblem_tones: [u16; 3],
     pub moved_tint: f32,
     /// How bright a unit that has moved stays (0..1 of its live colour's brightness): the skin's own dimmed ramp.
     pub moved_dim: f32,
@@ -373,6 +376,12 @@ impl Skin {
                 Some(list("orb", 3)?.try_into().unwrap())
             } else {
                 None
+            },
+            emblem_tones: if c.get("emblem_tones").is_some() {
+                list("emblem_tones", 3)?.try_into().unwrap()
+            } else {
+                let r: [u16; 6] = list("ramp", 6)?.try_into().unwrap();
+                [r[0], r[4], r[2]]
             },
             moved_tint: c.get("moved_tint").and_then(|x| x.as_float()).unwrap_or(0.3) as f32,
             moved_dim: c.get("moved_dim").and_then(|x| x.as_float()).unwrap_or(1.0) as f32,
@@ -856,9 +865,9 @@ fn art_plan(rom: &dyn Rom, skin: &Skin, host: u8, out: &mut Vec<Patch>) {
         let pal = emblem_palette(rom);
         let idx = EMBLEM_INDICES[host as usize - 1];
         let mut row = row_of(rom, pal);
-        row[idx[0] as usize] = skin.ramp[0];
-        row[idx[1] as usize] = skin.ramp[4];
-        row[idx[2] as usize] = skin.ramp[2];
+        row[idx[0] as usize] = skin.emblem_tones[0];
+        row[idx[1] as usize] = skin.emblem_tones[1];
+        row[idx[2] as usize] = skin.emblem_tones[2];
         out.push(Patch {
             what: "emblem colours".to_string(),
             addr: pal,
@@ -994,9 +1003,9 @@ pub fn emblem_pixels(skin_index: usize) -> Vec<Option<(u8, u8, u8)>> {
             out.push(match ch {
                 '1' => Some((255, 255, 255)),
                 '2' => Some(rgb_of(sk.ramp[5])),
-                'a' => Some(rgb_of(sk.ramp[2])),
-                'b' => Some(rgb_of(sk.ramp[4])),
-                'c' => Some(rgb_of(sk.ramp[0])),
+                'a' => Some(rgb_of(sk.emblem_tones[2])),
+                'b' => Some(rgb_of(sk.emblem_tones[1])),
+                'c' => Some(rgb_of(sk.emblem_tones[0])),
                 _ => None,
             });
         }

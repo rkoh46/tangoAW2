@@ -1,31 +1,33 @@
-# Silver Nova: tangoAW2's own sixth army (the former Silver Nova; the file keeps its id `emerald_sun`, which the CO data files name).
-# The HQ is the project owner's own pixel art, imported faithfully (art-src/silver-nova/hq.jpg, `aw2dev armyskin import-hq`); the colours are taken from the owner's
-# city picture (art-src/silver-nova/city_ref.jpg: silver and blue-grey with yellow windows). The soldiers' helmets, the emblem and the rest are original work of this
+# Silver Nova: tangoAW2's own sixth army (until 2026-11 Emerald Sun; the file keeps its id `emerald_sun`, which the CO data files name).
+# The HQ is the project owner's own pixel art, imported faithfully (art-src/silver-nova/hq.jpg, `aw2dev armyskin import-hq`); the yellow windows and the green orb come from the owner's
+# pictures (art-src/silver-nova/hq.jpg, city_ref.jpg); the palette is the owner's pick, bright chrome. The soldiers' helmets, the emblem and the rest are original work of this
 # repository (GPL-3.0-or-later), applied at run time on top of Advance Wars 2's own graphics read from the player's ROM. Format: docs/dev/army-packs.md.
 
 id = "emerald_sun"
 name = "Silver Nova"
 short = "SN"
 
-# Colours are RRGGBB. The body ramp of every unit and building, light to dark: silver, with a cool blue-grey cast (the owner's city picture), far from Black Hole's
-# warm greys and purple and from Blue Moon's cyan.
+# Colours are RRGGBB. The body ramp of every unit and building, light to dark: bright chrome (the owner's choice, option C of the palette sheet): near-white highlights, hard
+# contrast, neutral to faintly cool greys. Tuned to stay clear of Black Hole's light greys, the done greys and the fog (`aw2dev armyskin check`).
 [colours]
-ramp = ["EEF4FC", "C8D8EE", "A6BCD8", "7F96BA", "3E4968", "262E48"]
-# The buildings (cities, bases, ...) are the owner's city picture's blue-greys: its pale panels, a mid and a dark blue-grey (light to dark).
-building = ["C0DDE7", "93AEC2", "657491", "535C78"]
+ramp = ["FFFFFF", "F0F2F8", "C0C4CC", "9497A0", "363A44", "16181E"]
+# The buildings (cities, bases, ...): white panels, a mid and a dark chrome grey (light to dark), so an owned city is far from an unowned one.
+building = ["FFFFFF", "BCC1C9", "6C717C", "444852"]
 # The trim greys of AW2's unit palette (tracks, barrels, metal, the cheek plate): steel.
-trim = ["C4CAD4", "8F98AA", "626A7C"]
+trim = ["D0D3D8", "8A8E98", "4A4D55"]
 # The plume's colours: no picture draws a plume any more (entries 14 and 15 of the unit palettes stay installed for a Silver Nova CO in another colour, unused).
 crest = "FAFCFF"
 crest_dark = "A4B3CB"
+# The emblem's tones (the art's c, b, a: the sun's rays, its unused dark, its frame and disc): darker than the ramp's lights so the sun reads as shaded metal on the Teams card's white.
+emblem_tones = ["B4B8C0", "3E424C", "6B707C"]
 # The lit windows of the HQ (also entry 14 of every building palette): the yellow of the owner's pictures.
 gold = "F6F782"
 gold_dark = "B5B650"
 # The orb of the HQ, light to dark: the owner's greens (building palette entries 12, 11 and 8, which only the HQs' pictures use).
 orb = ["DBEB6E", "A5D86C", "72B073"]
 # A unit that has moved: its own dimmed ramp (how much of the ramp's hue the grey keeps, and how bright it stays).
-moved_tint = 0.8
-moved_dim = 0.64
+moved_tint = 0.5
+moved_dim = 0.5
 moved_lift = 0.3
 
 # ---- Infantry and Mech: AW2's soldiers in the stone ramp with a steel face guard with an eye slit (the mask; the Roman plume is gone) ---------

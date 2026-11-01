@@ -41,6 +41,11 @@ def register(sub):
     a.add_argument("--write", action="store_true", help="replace the skin file's [hq] rows")
     a.add_argument("--sheet", help="write the picture beside the imported pixels (PNG)")
     a.set_defaults(fn=run_import_hq)
+    a = ps.add_parser("palette-options", help="a comparison sheet of candidate palettes (DIR/A.toml ... fragments with a [colours] table) drawn by the real game")
+    a.add_argument("--dir", required=True)
+    a.add_argument("--letters", default="ABCDEF")
+    a.add_argument("--out", required=True)
+    a.set_defaults(fn=run_palette_options)
     a = ps.add_parser("sources", help="find ROM palettes an army's colours come from that the skin does not patch")
     a.add_argument("--scenario", nargs="*")
     a.add_argument("--ds", action="store_true")
@@ -123,6 +128,16 @@ def run_import_hq(a):
             util.die("no [hq] rows in " + str(path))
         path.write_text(t2)
         util.say("wrote the HQ rows to", path)
+    return 0
+
+
+def run_palette_options(a):
+    from ..armyskinlib import paletteopts
+    notes = paletteopts.run(a.dir, a.letters, a.out, say=util.say)
+    for L, (fails, rep, gap) in notes.items():
+        print(f"== {L}: city vs the unowned city {gap if gap is None else round(gap, 1)}; " + ("check: " + "; ".join(fails) if fails else "check ok"))
+        print("\n".join(l for l in rep if any(k in l for k in ("closest", "done greys", "fog", "chroma", "on colour"))))
+    util.say("wrote", a.out)
     return 0
 
 

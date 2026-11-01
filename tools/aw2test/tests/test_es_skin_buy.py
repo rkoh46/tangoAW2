@@ -19,10 +19,19 @@ NEED = 20          # (the pixels of the pixels of the skin's silver the build pa
 PANEL = (151, 25, 176, 56)
 
 
+def _ramp():
+    """The skin's ramp (steps 1..3: the helmet's and the mask's tones) as the 15-bit palette shows them."""
+    import tomllib
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "tango-gamesupport-aw2", "skins", "emerald_sun.toml")
+    hexes = tomllib.load(open(path, "rb"))["colours"]["ramp"][1:4]
+    return [tuple((int(h[i:i + 2], 16) >> 3) * 255 // 31 for i in (0, 2, 4)) for h in hexes]
+
+
 def crest(path):
+    """Pixels of the panel in the skin's ramp (Silver Nova has no plume any more: the portrait's helmet and mask are its silver)."""
     im = Image.open(path).convert("RGB").crop(PANEL)
-    # (Silver Nova has no plume any more: the portrait's helmet and mask are the skin's silver ramp, A6BCD8 and 7F96BA as the 15-bit palette shows them)
-    return sum(1 for r, g, b in im.getdata() if min(abs(r - x) + abs(g - y) + abs(b - z) for x, y, z in ((165, 189, 222), (123, 148, 189))) <= 10)
+    ramp = _ramp()
+    return sum(1 for r, g, b in im.getdata() if min(abs(r - x) + abs(g - y) + abs(b - z) for x, y, z in ramp) <= 10)
 
 
 FIG_TABLE_AT = 0x09FC7000      # army_skin::fig_at(0): the first skin's table of battle figures and portraits in free ROM (six words, then the pictures)
