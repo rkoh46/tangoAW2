@@ -6,6 +6,8 @@ mug_scale = 1
 mug = [66, 6]
 eyes = [74, 24, 90, 32]
 bg_tolerance = 30
-# his white coat and white hair are the picture's own: the flood fill alone cuts the white background (no `fringe`, which would eat the hair); the coat's floral print and the glove's strands are single cells
+# the white background is cut by a flood fill from the border and from every pocket it fills (between the arm and the coat); no `fringe` (it would eat the white hair and coat, which touch the empty side)
+hole_min = 20
+hole_tolerance = 8
 max_specks = 2400
 max_face_specks = 520
