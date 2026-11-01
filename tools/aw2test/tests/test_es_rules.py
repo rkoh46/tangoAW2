@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign: the missions' own rules, played with the player passive (`-k es_rules`): M13's three-day hold of the Harbour Office, M14's Cassius changing
+"""Emerald Sun Campaign: the missions' own rules, played with the player passive (`-k es_rules`): M13's three-day hold of the Harbour Office, M14's Lili changing
 sides on day 4, M15's allied strait fleet (Nell's call on day 6 changes no side), M16's waves and the defenders' charged meters, M2's win on day 9, M9's and M11's day limits."""
 
 from aw2test import bhact2 as a2
@@ -64,14 +64,14 @@ def es_rules_m13_a_lost_office_resets_the_count(ctx):
 
 
 @test(modes=("ds",))
-def es_rules_m14_cassius_changes_sides_on_day_4(ctx):
+def es_rules_m14_lili_changes_sides_on_day_4(ctx):
     e, g, d = entered(ctx, 14)
     p = players(e)
     team = lambda a: e.u8(p + 0x3C * a + 0x2A)
-    ctx.check(team(3) != team(1), f"before: Cassius (army 3) is on another team than the player ({team(3)} / {team(1)})")
+    ctx.check(team(3) != team(1), f"before: Lili's detachment (army 3) is on another team than the player ({team(3)} / {team(1)})")
     pass_days(ctx, e, g, d, 4)
-    ctx.eq(team(3), team(1), "day 4: Cassius's army is the player's team")
-    ctx.check(team(2) != team(1), "Varro stays the enemy")
+    ctx.eq(team(3), team(1), "day 4: Lili's army is the player's team")
+    ctx.check(team(2) != team(1), "Caulder stays the enemy")
     e.close()
 
 

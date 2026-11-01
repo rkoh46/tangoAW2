@@ -89,15 +89,15 @@ class Apply(unittest.TestCase):
 
 class Kit(unittest.TestCase):
     def test_co_palette_extract(self):
-        pal = repal.load_palette("co:klaus")
-        flat = Image.open(cfg.REPO / "tango-gamesupport-aw2" / "art" / "cos" / "klaus" / "large.png").getpalette()
+        pal = repal.load_palette("co:tabitha")
+        flat = Image.open(cfg.REPO / "tango-gamesupport-aw2" / "art" / "cos" / "tabitha" / "large.png").getpalette()
         self.assertEqual(len(pal), 16)
         self.assertEqual(pal, [tuple(flat[3 * i:3 * i + 3]) for i in range(16)])
         tmp = Path(tempfile.mkdtemp())
         repal.write_palette(pal, tmp / "k.gpl")
         self.assertEqual(repal.read_gpl(tmp / "k.gpl"), pal)
-        # Klaus's own art put back on his own palette keeps every index
-        art = Image.open(cfg.REPO / "tango-gamesupport-aw2" / "art" / "cos" / "klaus" / "large.png")
+        # Tabitha's own art put back on his own palette keeps every index
+        art = Image.open(cfg.REPO / "tango-gamesupport-aw2" / "art" / "cos" / "tabitha" / "large.png")
         self.assertTrue(np.array_equal(repal.apply(art, pal, keep_index=True), np.array(art)))
 
     def test_army_rows_from_the_rom(self):
@@ -116,16 +116,16 @@ class Kit(unittest.TestCase):
         self.assertEqual(int(P.quantise(nat, fg, pal, "rgb")[0, 0]), 2)
         self.assertIn(int(P.quantise(nat, fg, pal)[0, 0]), (1, 2))              # no `match`: the Lab rule (unchanged callers)
         # the approved COs pin the Lab rule their art was made with (luma shifted their hues: docs/dev/art-repal.md)
-        for co in ("klaus", "aurelia", "cassius", "livia"):
-            spec = tomllib.loads((cfg.REPO / "art-src" / "cos" / f"{co}_v5.toml").read_text())
-            self.assertEqual(spec.get("match"), "lab", co)
+        for co in ("tabitha", "lili", "caulder"):
+            spec = tomllib.loads((cfg.REPO / "art-src" / "cos" / f"{co}_v1.toml").read_text())
+            self.assertEqual(spec.get("match", "lab"), "lab", co)      # (none given: the Lab rule)
 
     def test_command_registered(self):
         import argparse
         from ..commands import art
         ap = argparse.ArgumentParser()
         art.register(ap.add_subparsers())
-        a = ap.parse_args(["art", "repal", "apply", "--palette", "co:klaus", "x.png", "-o", "d"])
+        a = ap.parse_args(["art", "repal", "apply", "--palette", "co:tabitha", "x.png", "-o", "d"])
         self.assertEqual((a.weights, a.dither, a.alpha_last), ("luma", "none", False))
 
 

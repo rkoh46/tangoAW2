@@ -369,7 +369,7 @@ def name_plate_png(name):
 
 
 def write_name_plate(co, name, root=None):
-    """A CO with a placeholder face (Varro) still has his own name plate: art/cos/<co>/name.png only."""
+    """A CO with a placeholder face (none today) still has his own name plate: art/cos/<co>/name.png only."""
     d = (root or ART_DIR) / co
     d.mkdir(parents=True, exist_ok=True)
     name_plate_png(name).save(d / "name.png", optimize=True, transparency=0, bits=4)

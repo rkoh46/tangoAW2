@@ -35,7 +35,7 @@ BOT = {
     # (M12: the Iron Wall's seam on the south road is the siege's shortcut)
     12: {"goals": [(17, 12)], "seams": [(17, 20)]},
     13: {"goals": [(19, 15)]},
-    # (M14 storms the camp: Varro's HQ)
+    # (M14 storms the camp: Caulder's HQ)
     14: {"goals": [(38, 12)]},
     15: {"goals": [(39, 13)]},
     # (M16: hold the line while the computer's waves break on it, then go for the enemy HQs)

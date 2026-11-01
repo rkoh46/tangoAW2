@@ -8,21 +8,21 @@ game's colours when every seat is READY, so identity 6 is a skin whose colour is
 SEL = 0x0203CB10
 
 
-# The Teams list's index of Klaus (an Emerald Sun CO, with the Dual Strike pack: `cos` prints the list). A CO's unit designs and HQ follow the CO's nation, an army colour only recolours
-# (docs/dev/army-packs.md), so the army that wears the skin has the skin's own designs (the plume, the domed HQ) only with an Emerald Sun CO: the skin's seat plays Klaus.
-KLAUS_INDEX = 0x0F
+# The Teams list's index of Tabitha (an Emerald Sun CO, with the Dual Strike pack: `cos` prints the list). A CO's unit designs and HQ follow the CO's nation, an army colour only recolours
+# (docs/dev/army-packs.md), so the army that wears the skin has the skin's own designs (the plume, the domed HQ) only with an Emerald Sun CO: the skin's seat plays Tabitha.
+TABITHA_INDEX = 0x0F
 
 
 def skin_cos(identities, ds, seats=None):
-    """The CO pokes: Klaus for `seats` (default the skin's seats, identity 6), with the pack (without it no Emerald Sun CO is on the list: the skin only recolours). The
-    runs `check --live` compares (the skin's seat in Orange Star, Green Earth and the skin) all play Klaus, so only the colours differ."""
+    """The CO pokes: Tabitha for `seats` (default the skin's seats, identity 6), with the pack (without it no Emerald Sun CO is on the list: the skin only recolours). The
+    runs `check --live` compares (the skin's seat in Orange Star, Green Earth and the skin) all play Tabitha, so only the colours differ."""
     seats = [s for s, c in enumerate(identities) if c == 6] if seats is None else seats
-    return "".join(f"poke {SEL + 0x10 * s:08X} {KLAUS_INDEX:02x}\n" for s in seats if ds)
+    return "".join(f"poke {SEL + 0x10 * s:08X} {TABITHA_INDEX:02x}\n" for s in seats if ds)
 
 
-def header(identities, fog=False, five=False, extra="", ds=False, klaus=None):
+def header(identities, fog=False, five=False, extra="", ds=False, tabitha=None):
     n = len(identities)
-    pokes = "".join(f"poke {SEL + 0x10 * s + 1:08X} {c:02x}\n" for s, c in enumerate(identities)) + skin_cos(identities, ds, klaus)
+    pokes = "".join(f"poke {SEL + 0x10 * s + 1:08X} {c:02x}\n" for s, c in enumerate(identities)) + skin_cos(identities, ds, tabitha)
     picks = "".join(f"press {s} A\nwait 20\n" for s in range(n))
     ready = "".join(f"press {s} DOWN\npress {s} DOWN\npress {s} DOWN\npress {s} A\n" for s in reversed(range(n)))
     return (
@@ -159,7 +159,7 @@ def copage():
         + redraw((5, 2))
         + "press 0 A\nwait 30\nshot menu 0\npress 0 A\nwait 90\nshot page1 0\n"
         + "press 0 DOWN\nwait 60\npress 0 DOWN\nwait 60\npress 0 DOWN\nwait 60\nshot page4 0\npress 0 DOWN\nwait 60\nshot chart 0\n"
-        # (an Emerald Sun CO's page, the skin's seat with the pack, has one page more: Klaus's chart is one DOWN further, with the plumed soldiers)
+        # (an Emerald Sun CO's page, the skin's seat with the pack, has one page more: Tabitha's chart is one DOWN further, with the plumed soldiers)
         + "press 0 DOWN\nwait 60\nshot chart_es 0\n"
     )
 
@@ -301,11 +301,11 @@ def tilt5p():
     return "aid unit 2 inf 8 17\naid unit 2 mech 10 17\naid unit 3 inf 12 17\naid unit 5 inf 9 17\naid unit 5 mech 11 17\n" + redraw((9, 19))
 
 
-def script(name, identities=None, fog=None, vram=False, checkpoint=None, ds=False, klaus=None):
+def script(name, identities=None, fog=None, vram=False, checkpoint=None, ds=False, tabitha=None):
     """The harness script; with `vram` every shot also dumps its video memory (NAME.vram: palettes, tiles, OAM)."""
     sc = SCENARIOS[name]
     ids = identities or sc["ids"]
-    text = header(ids, fog=sc["fog"] if fog is None else fog, five=sc["five"], extra=sc["extra"], ds=ds, klaus=klaus) + sc["body"]()
+    text = header(ids, fog=sc["fog"] if fog is None else fog, five=sc["five"], extra=sc["extra"], ds=ds, tabitha=tabitha) + sc["body"]()
     if checkpoint:
         text += f"checkpoint save {checkpoint}\n"
     if vram:

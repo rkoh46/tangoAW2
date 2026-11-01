@@ -43,8 +43,13 @@ def problems(cos, tags, ref=None):
         if d.get("id") != co:
             p(co, "id differs from the file name")
         st = d.get("stars", {})
-        if not ((1 <= st.get("cop", 0) <= 5 or nocop) and st.get("cop", 0) < st.get("scop", 0) <= 10):
-            p(co, f"stars {st}: a CO Power costs 1..5 (0: none, like Sturm) and the Super Power (in all) more, at most 10")
+        noscop = st.get("scop") == 0                    # a CO with only a CO Power (Lili): no Super Power and no Super entry on the map menu
+        if noscop:
+            ok = 1 <= st.get("cop", 0) <= 5
+        else:
+            ok = (1 <= st.get("cop", 0) <= 5 or nocop) and st.get("cop", 0) < st.get("scop", 0) <= 10
+        if not ok:
+            p(co, f"stars {st}: a CO Power costs 1..5 (0: none, like Sturm) and the Super Power (in all) more, at most 10; a Super Power of 0 (none) needs a CO Power")
         for sect in ("d2d", "cop", "scop"):
             s = d.get(sect, {})
             for k in ("name", "text"):
@@ -108,7 +113,7 @@ def problems(cos, tags, ref=None):
         for s in (pr["a"], pr["b"]):
             if ":" not in s and s not in cos:
                 p("tags", f"unknown CO {s}")
-    army = [c for c, d in cos.items() if d.get("army") == "emerald_sun"]
+    army = [c for c, d in cos.items() if d.get("army") == "silver_nova"]
     for a, b in itertools.combinations(army, 2):
         if frozenset((a, b)) not in seen:
             p("tags", f"no Tag Power for {a} + {b}")

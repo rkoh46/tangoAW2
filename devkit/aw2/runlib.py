@@ -21,7 +21,7 @@ class Run:
         self.meta = {}
         if (p / "meta.json").exists():
             self.meta = json.loads((p / "meta.json").read_text())
-        self.seats = sorted(int(os.path.basename(f)[len("shots_s"):].split(".")[0]) for f in glob.glob(str(p / "shots_s*.jsonl")))      # (the file name, not the run dir's: a scenario called co_klaus_scop has "_s" in it)
+        self.seats = sorted(int(os.path.basename(f)[len("shots_s"):].split(".")[0]) for f in glob.glob(str(p / "shots_s*.jsonl")))      # (the file name, not the run dir's: a scenario called co_tabitha_scop has "_s" in it)
         self._shots, self._state = {}, {}
 
     @staticmethod

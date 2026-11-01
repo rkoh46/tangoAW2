@@ -21,11 +21,11 @@ class Recolour(unittest.TestCase):
     def test_selection_has_only_cos_with_a_picture(self):
         from ..commands import co
         sel, cos = co._cos([])
-        self.assertIn("klaus", sel)
-        for k in ("cloneandy", "crumb", "varro"):
+        self.assertIn("tabitha", sel)
+        for k in ("cloneandy", "crumb"):
             self.assertIn(k, cos)
             self.assertNotIn(k, sel)
-        self.assertEqual(list(co._cos(["klaus"])[0]), ["klaus"])
+        self.assertEqual(list(co._cos(["tabitha"])[0]), ["tabitha"])
 
     def test_import_check_without_names_does_not_crash(self):
         from ..commands import co

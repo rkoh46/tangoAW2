@@ -1,7 +1,7 @@
-"""The Emerald Sun COs' own themes (crate::es_music, docs/dev/music-kit.md): each of the five has a song of its own in the sound engine's table, written from a
+"""The Silver Nova COs' own themes (crate::es_music, docs/dev/music-kit.md): each of the three (and Asuka, Crumb and Clone Andy) has a song of its own in the sound engine's table, written from a
 text file in the repository, played with AW2's own voices (the group is copied from the ROM), on the CO's turn, and it loops.
 
-`run.py -k es_music_render` (opt-in: AW2TEST_MUSIC_SONGS=klaus,livia ...) records the game's audio output of each theme for AW2TEST_MUSIC_SECONDS (default: the intro and
+`run.py -k es_music_render` (opt-in: AW2TEST_MUSIC_SONGS=tabitha,lili ...) records the game's audio output of each theme for AW2TEST_MUSIC_SECONDS (default: the intro and
 two loops) into $AW2TEST_MUSIC_OUT/<name>.wav; `aw2dev sound render` drives it (and TANGOAW2_ES_MUSIC=<dir> lets a song be edited and heard without a rebuild).
 """
 
@@ -13,8 +13,8 @@ from aw2test import paths
 from aw2test.harness import test
 from tests.test_co_music import BGM, SONG, channels, header_of, playing, row_song, wait_song
 
-ENV = {"TANGOAW2_ES_VARRO": "1"}   # (the four are in Versus always; this one lists Varro too, a harness aid: co_new::listed)
-COS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "crumb": 82, "cloneandy": 81}
+ENV = {}   # (Tabitha, Lili and Caulder are in Versus always)
+COS = {"tabitha": 86, "lili": 87, "caulder": 88, "asuka": 92, "crumb": 82, "cloneandy": 81}
 FIRST_SONG = 505
 STORY = (0x09000000, 0x09C00000)
 DS_NEW = ["jugger", "koal", "kindle", "vonbolt", "grimm", "javier", "sasha", "jake", "rachel", "cloneandy"]
@@ -71,7 +71,7 @@ def rms_windows(path, seconds=1.0):
 
 @test(modes=("ds",))
 def es_themes_are_registered(ctx):
-    """Five songs of their own at the end of the song table, in the story's ROM range, with a voice group filled from AW2's own voices; AW2's and the Dual Strike COs' themes unchanged."""
+    """Songs of their own (one for each of the three, Asuka, Crumb and Clone Andy) at the end of the song table, in the story's ROM range, with a voice group filled from AW2's own voices; AW2's and the Dual Strike COs' themes unchanged."""
     dump = os.path.join(ctx.out, "tracks")
     songs = info(dump)
     m = ctx.map()
@@ -108,7 +108,7 @@ def es_themes_are_registered(ctx):
             want = open(os.path.join(dump, f"{name}.{t}.bin"), "rb").read()
             got = bytes(e.u8(p + k) for k in range(len(want) - 4))
             ctx.check(got == want[:-4], f"{name}: track {t}'s {len(want)} bytes are the compiler's")
-    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Emerald Sun COs, Asuka, Crumb and Clone Andy)")
+    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (Tabitha, Lili, Caulder, Asuka, Crumb and Clone Andy)")
     # the room: every piece inside the story's range, none over another
     for i, a in enumerate(ranges):
         ctx.check(STORY[0] <= a[0] and a[1] <= STORY[1], f"{a[2]} {a[0]:08x}..{a[1]:08x} is in the story's range")
@@ -129,8 +129,6 @@ def es_theme_plays_on_the_cos_turn_and_loops(ctx):
     out = os.environ.get("AW2TEST_MUSIC_OUT") or ctx.out
     os.makedirs(out, exist_ok=True)
     for name, co in COS.items():
-        if name == "varro":
-            continue  # the boss is not in Versus' CO lists (co_new::listed), so no battle can start with him; his song is checked by the registered / intact tests
         g = battle(ctx, co)
         e = g.e
         song = row_song(e, co)
@@ -152,22 +150,22 @@ def es_theme_plays_on_the_cos_turn_and_loops(ctx):
 
 @test(modes=("ds",))
 def es_theme_returns_after_a_power_and_other_cos_keep_theirs(ctx):
-    """Klaus's Super Power plays the game's power theme (not a theme of ours), the CPU Kanbei's turn plays AW2's Kanbei theme, and Klaus's next turn plays his song again."""
+    """Tabitha's Super Power plays the game's power theme (not a theme of ours), the CPU Kanbei's turn plays AW2's Kanbei theme, and Tabitha's next turn plays his song again."""
     m = ctx.map()
     m.unit(1, "tank", 10, 6).unit(2, "tank", 11, 6)
-    g = ctx.start(m, [COS["klaus"], "kanbei"], humans=(1,), visuals="a", env=env())
+    g = ctx.start(m, [COS["tabitha"], "kanbei"], humans=(1,), visuals="a", env=env())
     e = g.e
-    song = row_song(e, COS["klaus"])
-    ctx.check(e.u16(SONG) == song or wait_song(e, song, 300), "Klaus's turn plays his theme")
+    song = row_song(e, COS["tabitha"])
+    ctx.check(e.u16(SONG) == song or wait_song(e, song, 300), "Tabitha's turn plays his theme")
     ctx.power(g, 1, "super")
     ours = {row_song(e, c) for c in COS.values()}
-    ctx.check(e.u16(SONG) not in ours, f"the power plays the game's power theme, not one of the five themes ({e.u16(SONG)})")
+    ctx.check(e.u16(SONG) not in ours, f"the power plays the game's power theme, not one of our themes ({e.u16(SONG)})")
     kanbei = row_song(e, "kanbei")
     seen = []
     g.end_turn(observe=lambda gg: seen.append(wait_song(gg.e, kanbei, 600)))
     ctx.check(seen == [True], f"the CPU Kanbei's turn plays AW2's Kanbei song {kanbei}")
     ctx.eq(kanbei, row_song(e, "kanbei", 0x085D3DD0), "which is AW2's own row")
-    ctx.check(wait_song(e, song, 600) or e.u16(SONG) == song, "Klaus's next turn plays his theme again")
+    ctx.check(wait_song(e, song, 600) or e.u16(SONG) == song, "Tabitha's next turn plays his theme again")
     e.close()
 
 
@@ -182,7 +180,7 @@ def es_music_absent_without_the_pack(ctx):
 
 @test(modes=("ds",))
 def es_music_render(ctx):
-    """Opt-in (AW2TEST_MUSIC_SONGS=klaus,aurelia ...): record each theme as the game plays it, from the song's first tick, for AW2TEST_MUSIC_SECONDS (default: the intro and two loops plus 2 s)
+    """Opt-in (AW2TEST_MUSIC_SONGS=tabitha,lili ...): record each theme as the game plays it, from the song's first tick, for AW2TEST_MUSIC_SECONDS (default: the intro and two loops plus 2 s)
     into $AW2TEST_MUSIC_OUT/<name>.wav. The console is recorded from the first frame and the recording cut where the song began (the music player's tick clock says how long ago that was)."""
     want = [s for s in os.environ.get("AW2TEST_MUSIC_SONGS", "").split(",") if s]
     if not want:

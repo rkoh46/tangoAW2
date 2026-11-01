@@ -1,4 +1,4 @@
-"""The real app, offline, with the Dual Strike pack and the Emerald Sun COs on (`TANGOAW2_ES_VARRO=1`), driven through the AI debug channel: `aw2dev co portrait ingame` photographs a CO on the
+"""The real app, offline, with the Dual Strike pack and the Emerald Sun COs on (always in Versus), driven through the AI debug channel: `aw2dev co portrait ingame` photographs a CO on the
 game's own screens (CO select, CO page, HUD, dialogue) for the review sheet."""
 import json, os, subprocess, sys, time
 from pathlib import Path
@@ -15,7 +15,7 @@ class App:
         conf.update({"ds_graphics": True, "ds_tilt": tilt})
         cj.write_text(json.dumps(conf, indent=2))
         self.app = profiles.test_app(binary)
-        env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skinds")), TANGOAW2_AI_DEBUG="0", AW2DEV_LOOK="1", TANGOAW2_ES_VARRO="1")
+        env = dict(os.environ, TANGOAW2_PROFILE=str(profiles.profile_dir("skinds")), TANGOAW2_AI_DEBUG="0", AW2DEV_LOOK="1")
         env.update(extra_env or {})
         self.proc = subprocess.Popen([str(self.app)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cfg.REPO)
         addr, t0 = None, time.time()
@@ -90,11 +90,11 @@ def find_on(shot, co, need=0.93, patches=2, pic="face_normal"):
     return False
 
 
-# The Teams list (34 COs with the four): Klaus, Aurelia, Cassius and Livia stand at 27..30 (after Crumb, before Hawke; `co_new::build` puts a new CO after the one it takes after, Adder).
+# The Teams list (35 COs with the pack): Tabitha, Lili and Caulder stand after Crumb, before Hawke (after Crumb, before Hawke; `co_new::build` puts a new CO after the one it takes after, Adder).
 # The Teams screen keeps the P1 card's place in this list at 0x02017C6C (found by diffing EWRAM while UP walked the list): the walk presses UP or DOWN until it is on the CO, so a press
 # a busy machine drops or doubles does not matter.
 # The game's own list of the Teams screen is at TEAMS_ORDER (CO ids, 0xFF-ended): the CO's place in it is read from there, since each new CO stands after the one it takes after.
-ES_IDS = {"klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "cloneandy": 81, "varro": 90, "asuka": 92, "aria": 93, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
+ES_IDS = {"tabitha": 86, "lili": 87, "caulder": 88, "cloneandy": 81, "asuka": 92, "aria": 93, "andy": 1}      # (Clone Andy: a recolour of Andy's art, no committed art to compare with)
 TEAMS_ORDER = 0x0203FE80
 TEAMS_CURSOR = 0x02017C6C
 TEAMS_LEN = 34

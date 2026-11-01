@@ -20,7 +20,7 @@ def scenarios_for(cos):
 
 
 def run(a):
-    cos = a.co or ["klaus", "aurelia", "cassius", "livia", "crumb", "varro", "cloneandy"]
+    cos = a.co or ["tabitha", "lili", "caulder", "crumb", "cloneandy"]
     f = cfg.work("co_verify", "net.json")
     f.parent.mkdir(parents=True, exist_ok=True)
     data = json.loads(f.read_text()) if f.exists() else {}
