@@ -633,6 +633,51 @@ def firestorm_game(ctx, co=86, power="super"):
     return g
 
 
+POWER_ANIM = 0x0203F7A0     # crate::power_anim::STATE: +0 kind (1 Ex Machina), +1/+2 the target square, +4 u16 frames played, +0x1E 1 once the bolt's map is written
+
+
+def hook_firestorm_animation(ctx, shots=None):
+    """Firestorm plays Von Bolt's Ex Machina on the map, centred on her target, and not AW2's meteor: during the strike the power animation's state says kind 1 (Ex Machina; the meteor
+    draw is replaced by it), its target is the site, its frames advance and its bolt layer is written; and no unit is stunned. With `shots` (a directory) the frames before, during and
+    after are kept as BMPs (the game's own 240 x 160 picture)."""
+    import os
+    g = firestorm_game(ctx)
+    g.charge_power(1, "super")
+    g.open_map_menu()
+    army = g.current_army()
+    if shots:
+        os.makedirs(shots, exist_ok=True)
+        g.e.shot(os.path.join(shots, "1_before"))
+    g.choose("Super", g.MAP_MENU)
+    seen = {"kind": 0, "bolt": 0, "frames": 0, "target": None}
+    during = after = False
+    for _ in range(900):
+        g.e.wait(2)
+        kind, bolt, frames = g.e.u8(POWER_ANIM), g.e.u8(POWER_ANIM + 0x1E), g.e.u16(POWER_ANIM + 4)
+        if kind:
+            seen["kind"] = kind
+            seen["target"] = (g.e.u8(POWER_ANIM + 1), g.e.u8(POWER_ANIM + 2))
+            seen["frames"] = max(seen["frames"], frames)
+            seen["bolt"] = max(seen["bolt"], bolt)
+            if shots and bolt and frames > 30 and not during:
+                g.e.shot(os.path.join(shots, "2_during"))
+                during = True
+        elif seen["kind"] and not after:
+            if shots:
+                g.e.wait(40)
+                g.e.shot(os.path.join(shots, "3_after"))
+            after = True
+        if after and g.player(army)["co_mode"] == 2:
+            break
+    g.wait_for_input()
+    chk(ctx, "tabitha scop", seen["kind"] == 1, f"the strike plays Von Bolt's Ex Machina (power animation kind {seen['kind']}; 1 is Ex Machina, 0 would be AW2's meteor)", "firestorm animation")
+    chk(ctx, "tabitha scop", seen["target"] == FIRE_CENTRE, f"the animation is centred on her target {seen['target']} (the site {FIRE_CENTRE})", "firestorm animation")
+    chk(ctx, "tabitha scop", seen["frames"] >= 30 and seen["bolt"] == 1, f"the bolt falls: {seen['frames']} frames played, the bolt layer written ({seen['bolt']})", "firestorm animation")
+    marks = bytes(g.e.read(STUN_PENDING, 40)) + bytes(g.e.read(STUN_ACTIVE, 40))
+    chk(ctx, "tabitha scop", not any(marks), "and no stun mark carries over from Von Bolt's script", "firestorm animation")
+    g.e.close()
+
+
 def hook_firestorm(ctx):
     """Tabitha's Super Power: 8 HP to every enemy unit within 2 of the site AW2 picks (the richest cluster), a unit never dropping below 1 HP (a 9 HP unit is left on 1 HP and is not
     destroyed), her own team's units untouched, nobody stunned; the damaged units move normally on their turn. Control: Von Bolt's Ex Machina on the same field still stuns."""

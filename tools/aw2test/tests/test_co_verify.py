@@ -1,6 +1,7 @@
 """`aw2dev co verify`: every ability of the custom COs (Tabitha, Lili, Caulder, Crumb, Clone Andy, Aria; Asuka through her own suite) in real battles, compared with the specification (aw2test.cospec).
 Test names: `co_verify_<facet>_<co>[_<mode>]`; every check is tagged `[<co> <ability>]` (aw2test.coverify). Run: `aw2dev co verify [CO ...]`."""
 
+import os
 from aw2test import coverify as cv
 from aw2test.harness import test
 
@@ -108,6 +109,7 @@ unlisted_tags()
 @test(modes=("ds",))
 def co_verify_hooks_tabitha(ctx):
     cv.hook_firestorm(ctx)
+    cv.hook_firestorm_animation(ctx, shots=os.environ.get("AW2TEST_FIRESTORM_SHOTS"))
 
 
 @test(modes=("ds",))

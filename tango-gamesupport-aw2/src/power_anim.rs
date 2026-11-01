@@ -328,6 +328,8 @@ fn draw_meteor(core: &mut Core) {
     let kind = match activating(core, army) {
         _ if onyx => ONYX,
         (VON_BOLT, SCOP) => 1,
+        // Tabitha's Firestorm plays Von Bolt's Ex Machina (the falling bolt, the flashes, the sparks; the stun is `co_powers::strike_square`'s, for Von Bolt only)
+        (crate::es_co::TABITHA, SCOP) => 1,
         (RACHEL, SCOP) => 2,
         _ => return,
     };
