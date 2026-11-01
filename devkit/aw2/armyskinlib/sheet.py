@@ -64,7 +64,7 @@ def unit_rows(host, skin_path=None):
     S, cell = 4, 16 * 4 + 6
     W = 150 + cell * 10
     sheet = Image.new("RGB", (W, 32 + len(units) * (16 * S + 4)), BG)
-    heads = ["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole", "Emerald Sun", "ES done", "OS moving", "ES moving"]
+    heads = ["Orange Star", "Blue Moon", "Green Earth", "Yellow Comet", "Black Hole", "Silver Nova", "SN done", "OS moving", "SN moving"]
     for i, hname in enumerate(heads):
         label(sheet, hname, (150 + i * cell, 8), size=10)
     for r, t in enumerate(units):
@@ -165,7 +165,7 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
     W = 1500
     sheet = Image.new("RGB", (W, 3600), BG)
     y = 8
-    label(sheet, "Emerald Sun: the plumed galea on Infantry and Mech, at 4x (the three idle frames, then all nine moving frames: side, front, back) and 8x (idle, then side, front, back)", (8, y), size=16)
+    label(sheet, "Silver Nova: the face mask on Infantry and Mech, at 4x (the three idle frames, then all nine moving frames: side, front, back) and 8x (idle, then side, front, back)", (8, y), size=16)
     y += 28
     for unit, name in ((1, "Infantry"), (2, "Mech")):
         for scale in (4, 8):
@@ -207,7 +207,7 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
     if awbw_dir:
         y = _originality_block(sheet, y, sk, host, pal, base, Path(awbw_dir))
     # HQ
-    label(sheet, "HQ: AW2's five (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the earlier Emerald Sun HQs, the new one at 4x and 8x", (8, y), size=16)
+    label(sheet, "HQ: AW2's five (Orange Star, Blue Moon, Green Earth, Yellow Comet, Black Hole), the earlier Silver Nova HQs, the new one at 4x and 8x", (8, y), size=16)
     y += 26
     x = 8
     for c in (1, 2, 3, 4, 5):
@@ -241,7 +241,7 @@ def compare_strip(host, awbw_dir=None, S=4, prev=None, map_shot=None, tilt_shot=
             label(sheet, "AWBW's (reference only)", (x, y + im.height + 2), size=12)
     y += 32 * 8 + 30
     if map_shot is not None:
-        label(sheet, "On the map (harness frames at 2x, the cursor beside each HQ): Orange Star's, Emerald Sun's, Black Hole's, Green Earth's, Yellow Comet's", (8, y), size=16)
+        label(sheet, "On the map (harness frames at 2x, the cursor beside each HQ): Orange Star's, Silver Nova's, Black Hole's, Green Earth's, Yellow Comet's", (8, y), size=16)
         y += 26
         shots = map_shot if isinstance(map_shot, list) else [map_shot]
         for i, im in enumerate(shots):
@@ -315,8 +315,8 @@ def tilt_sheet(shots):
 def swatches(host):
     """The skin's ramp, trim and done grey next to Green Earth's, Black Hole's and the fog terrain's colours."""
     base, sk = Rom(), Rom(host)
-    rows = [("Emerald Sun ramp", sk.pal(UNIT_PAL + 32 * (host - 1))[2:8]), ("ES trim", sk.pal(UNIT_PAL + 32 * (host - 1))[11:14]),
-            ("ES done unit", sk.pal(UNIT_PAL + 0xA0 + 32 * (host - 1))[2:8]), ("Green Earth", base.pal(UNIT_PAL + 64)[2:8]), ("Black Hole", base.pal(UNIT_PAL + 128)[2:8]),
+    rows = [("Silver Nova ramp", sk.pal(UNIT_PAL + 32 * (host - 1))[2:8]), ("ES trim", sk.pal(UNIT_PAL + 32 * (host - 1))[11:14]),
+            ("SN done unit", sk.pal(UNIT_PAL + 0xA0 + 32 * (host - 1))[2:8]), ("Green Earth", base.pal(UNIT_PAL + 64)[2:8]), ("Black Hole", base.pal(UNIT_PAL + 128)[2:8]),
             ("Blue Moon", base.pal(UNIT_PAL + 32)[2:8]), ("Orange Star", base.pal(UNIT_PAL)[2:8]), ("Yellow Comet", base.pal(UNIT_PAL + 96)[2:8]),
             ("done greys (GE)", base.pal(UNIT_PAL + 0xA0 + 64)[2:8]), ("done greys (BH)", base.pal(UNIT_PAL + 0xA0 + 128)[2:8]), ("fog terrain", check.FOG_TERRAIN[:6])]
     sheet = Image.new("RGB", (560, 20 + len(rows) * 30), BG)

@@ -305,8 +305,8 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             else:
                 forb = {c: k for c, k in forbidden_all.items()}
             left = {c: skin[c] for c in forb if skin.get(c, 0) >= tolerance}
-            # (the skin's own plume and gold are an Emerald Sun CO's designs: only with the pack, where the skin's seat plays Klaus)
-            need = sc.get("crest", {}).get(shot) if ds else None
+            # (the skin's own plume and gold are a Silver Nova CO's designs: only with the pack, where the skin's seat plays Klaus)
+            need = None   # (Silver Nova has no plume any more: nothing of the skin's crest red is drawn; `_no_plume` below still guards the other army's soldiers)
             if need:
                 # the skin's own art must be there: the plume's red (the battle figures' and the portraits' helmets are drawn by the skin file)
                 reds = sum(k for c, k in skin.items() if c[0] > 150 and c[1] < 100 and c[2] < 100 and c[0] - c[1] > 80)
@@ -317,11 +317,12 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
             if gold_need:
                 # the skin's gold (the domed HQ's windows and finial) must be in the picture
                 from PIL import Image as _Img2
-                gold = sum(1 for r, g, b in _Img2.open(runs["skin"] / f).convert("RGB").getdata() if abs(r - 232) < 12 and abs(g - 194) < 12 and abs(b - 90) < 16)
+                gold = sum(1 for r, g, b in _Img2.open(runs["skin"] / f).convert("RGB").getdata() if abs(r - GOLD[0]) < 12 and abs(g - GOLD[1]) < 12 and abs(b - GOLD[2]) < 16)
                 rep.append(f"  {n}/{shot}: {gold} pixels of the skin's gold (needs >= {gold_need})")
                 if gold < gold_need:
                     fails.append(f"{n}/{shot}: only {gold} pixels of the skin's gold (>= {gold_need}): the box's HQ is not the skin's")
-            for box, need_px in ([] if ds or not sc.get("crest_boxes_es_co") else sc.get("crest_boxes", {}).get(shot, [])):   # (AW2's own CO page, only with an Emerald Sun CO, which the Versus list has with the pack alone, whose own CO page it then is: no box check)
+            for box, need_px in []:   # (no plume: the chart's cells have nothing of the skin's crest red to find)
+                  # (AW2's own CO page, only with a Silver Nova CO, which the Versus list has with the pack alone, whose own CO page it then is: no box check)
                 # a region (the unit chart's Infantry and Mech cells) must hold the skin's plume
                 from PIL import Image as _Img
                 px = _Img.open(runs["skin"] / f).convert("RGB").crop(box).getdata()
@@ -352,6 +353,7 @@ def live(names=None, out=None, ds=False, tolerance=6, say=print, keep=False):
     return fails, rep
 
 
+GOLD = (246, 246, 131)   # the skin's `gold` (windows of the HQ) as the 15-bit palette shows it
 PLUME = [(139, 238, 172), (0, 106, 139)]   # AW2's unit palette entries 14 and 15 (unused by the soldiers; the skin's helmet puts its plume there)
 
 

@@ -1,4 +1,4 @@
-//! Army skins: a custom army's look (Emerald Sun is the first) on top of one of AW2's five army colours.
+//! Army skins: a custom army's look (Silver Nova is the first) on top of one of AW2's five army colours.
 //!
 //! **The idea.** AW2 draws an army by its *colour* (1 Orange Star .. 5 Black Hole): palette rows, a few
 //! per-colour pictures (Infantry and Mech, the HQ, the emblem) and nothing else. A skin takes over one of
@@ -74,7 +74,7 @@ fn art_at(skin: usize) -> u32 {
 }
 
 pub mod names {
-    pub const EMERALD_SUN: &str = "Emerald Sun";
+    pub const EMERALD_SUN: &str = "Silver Nova";
 }
 
 /// A palette table indexed by colour (row `colour - 1`, 32 bytes a row).
@@ -130,6 +130,10 @@ const BLACK_HOLE_EXTRAS: &[(&str, u32, usize, Kind, u32, usize)] = &[
 /// AW2's moving-unit palette index of each map-unit role (see `ds_unit_art::MOVE_ROLES`).
 const MOVE_ROLE: [usize; 16] = [0, 1, 6, 2, 7, 8, 4, 5, 3, 10, 13, 11, 12, 15, 14, 9];
 
+/// The building palette's entries a skin's `orb` colours take (light to dark): used by the HQs' pictures only (a clear HQ's `b` and `c`, a snowy one's `8`), never by a city, base,
+/// airport, port or lab, so a skin may colour them (a skin's HQ picture says `c`, `b`, `8`).
+pub const ORB_ENTRIES: [usize; 3] = [12, 11, 8];
+
 /// A skin, parsed from its data file.
 #[derive(Clone, Debug)]
 pub struct Skin {
@@ -146,6 +150,8 @@ pub struct Skin {
     pub crest_dark: u16,
     pub gold: u16,
     pub gold_dark: u16,
+    /// The colours of the HQ's orb (light to dark), when the HQ has one: they take the building palette's entries [`ORB_ENTRIES`], which only the HQs' pictures use.
+    pub orb: Option<[u16; 3]>,
     pub moved_tint: f32,
     /// How bright a unit that has moved stays (0..1 of its live colour's brightness): the skin's own dimmed ramp.
     pub moved_dim: f32,
@@ -229,7 +235,7 @@ pub fn skin(i: usize) -> &'static Skin {
     &skins()[i]
 }
 
-/// Emerald Sun, the first (the HQ of the Roman COs).
+/// Silver Nova, the first (the HQ of the Roman COs).
 pub fn emerald_sun() -> &'static Skin {
     skin(0)
 }
@@ -363,6 +369,11 @@ impl Skin {
             crest_dark,
             gold: one("gold")?,
             gold_dark: one("gold_dark")?,
+            orb: if c.get("orb").is_some() {
+                Some(list("orb", 3)?.try_into().unwrap())
+            } else {
+                None
+            },
             moved_tint: c.get("moved_tint").and_then(|x| x.as_float()).unwrap_or(0.3) as f32,
             moved_dim: c.get("moved_dim").and_then(|x| x.as_float()).unwrap_or(1.0) as f32,
             moved_lift: c.get("moved_lift").and_then(|x| x.as_float()).unwrap_or(0.0) as f32,
@@ -592,7 +603,7 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
                 Some(b) => skin.rank_map(orig, siblings, b),
                 None => skin.hue_row(orig, siblings),
             };
-            row[14] = skin.gold;
+            skin.building_extras(&mut row);
             row
         }
         Kind::Banner => skin.banner_row(orig),
@@ -656,7 +667,7 @@ pub fn crest_plan(rom: &dyn Rom, skin: &Skin, host: u8) -> Vec<Patch> {
                 row[14] = skin.crest;
                 row[15] = skin.crest_dark;
             }
-            Kind::Building => row[14] = skin.gold,
+            Kind::Building => skin.building_extras(&mut row),
             _ => return None,
         }
         Some(row)
@@ -787,6 +798,16 @@ impl Skin {
             }
         }
         g
+    }
+
+    /// The entries of a building palette row only the skin's HQ uses: the gold (14) and the orb's colours.
+    pub fn building_extras(&self, row: &mut [u16; 16]) {
+        row[14] = self.gold;
+        if let Some(orb) = self.orb {
+            for (e, c) in ORB_ENTRIES.iter().zip(orb) {
+                row[*e] = c;
+            }
+        }
     }
 
     pub fn hq_grid(&self) -> Option<Vec<u8>> {
@@ -1022,13 +1043,13 @@ fn armies(core: &Core) -> Vec<(u32, u8, u8)> {
         .collect()
 }
 
-/// The skin whose designs (units, HQ) CO `co`'s nation has: Emerald Sun's for the Emerald Sun COs (their data files' `hq` line), None for everyone else.
+/// The skin whose designs (units, HQ) CO `co`'s nation has: Silver Nova's for the Silver Nova COs (their data files' `hq` line), None for everyone else.
 fn nation_skin(co: u8) -> Option<usize> {
     let id = hq_style(co)?;
     skins().iter().position(|s| s.id == id)
 }
 
-/// The skin a campaign forces on an army regardless of its CO (the Emerald Sun Campaign's player, a custom mission's skinned army).
+/// The skin a campaign forces on an army regardless of its CO (the Silver Nova Campaign's player, a custom mission's skinned army).
 fn forced_skin(core: &Core, army: u32) -> Option<usize> {
     let forced = crate::es_campaign::skin_colour(core).is_some()
         || (crate::ds_campaign::mission_skin(core).is_some() && crate::pvp::in_battle(core));
@@ -1040,7 +1061,7 @@ fn forced_skin(core: &Core, army: u32) -> Option<usize> {
 }
 
 /// The skin whose **designs** army `army` (1..5) shows (Infantry and Mech, battle figures, portrait, capture soldier, HQ): the designs follow the
-/// army's CO, never its colour. An Emerald Sun CO has the skin's, in whatever colour its army wears; every other CO has its own nation's
+/// army's CO, never its colour. A Silver Nova CO has the skin's, in whatever colour its army wears; every other CO has its own nation's
 /// (AW2 draws those by the CO's country), in the colour's palette (a skin colour included). A campaign that forces a skin on an army keeps it.
 fn design_style(core: &Core, army: u32) -> Option<usize> {
     if !(1..=5).contains(&army) {
@@ -1072,18 +1093,18 @@ pub fn sync(core: &mut Core) {
     present(hosts(core));
     init(core);
     ensure_art(core);
-    // (only a Versus match has skins, and the Emerald Sun Campaign's battles, where the player's army wears the first skin: the other modes' armies are
+    // (only a Versus match has skins, and the Silver Nova Campaign's battles, where the player's army wears the first skin: the other modes' armies are
     // the story's)
     let campaign = crate::es_campaign::skin_colour(core);
     if let Some(c) = campaign {
         set_host_of(core, 0, c);
     }
-    // A custom campaign's mission may name a skin for one of its armies (BH2's M26: the Emerald Sun legion is the enemy): it takes that army's colour.
+    // A custom campaign's mission may name a skin for one of its armies (BH2's M26: the Silver Nova legion is the enemy): it takes that army's colour.
     let enemy = crate::ds_campaign::mission_skin(core).filter(|_| crate::pvp::in_battle(core)).and_then(|(army, skin)| {
         let c = core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1);
         (1..=5).contains(&c).then_some((skin, c))
     });
-    // The Gauntlet's player who picked Emerald Sun wears it on the colour its map leaves free (the designs stay the CO's: the colour only recolours).
+    // The Gauntlet's player who picked Silver Nova wears it on the colour its map leaves free (the designs stay the CO's: the colour only recolours).
     let enemy = enemy.or_else(|| crate::gauntlet::player_skin(core));
     match enemy {
         Some((skin, c)) => set_host_of(core, skin, c),
@@ -2034,8 +2055,12 @@ fn capture_property_loaded(core: &mut Core) {
     if skin(i).hq_grid().is_none() || core.raw_read_32(art_mark(i), -1) != MAGIC {
         return;
     }
-    let gold = skin(i).gold;
-    write_obj_palette_entries(core, r7, &[(BOX_GOLD_ENTRY, gold)]);
+    let s = skin(i);
+    let mut entries = vec![(BOX_GOLD_ENTRY, s.gold)];
+    if let Some(orb) = s.orb {
+        entries.extend(ORB_ENTRIES.iter().copied().zip(orb));
+    }
+    write_obj_palette_entries(core, r7, &entries);
 }
 
 /// The scene decompresses a figure sheet (`r0`) for a side (the loop's counter at `sp + 0x20`): a skinned army's soldiers (Infantry and Mech)
@@ -2086,7 +2111,7 @@ fn fig_sheet(core: &mut Core) {
 /// the army is in the panel's state (at `*[*0x08090F70] + 8`). The callers are `0x0803A3FE` and `0x0803A4D0` (the panels opening) and `0x0803AA48` and
 /// `0x0803AA9A` (a unit chosen).
 ///
-/// The build menu's call was once left out (a guard on `r8`) because an Emerald Sun army that bought an Infantry or a Mech corrupted the game's memory
+/// The build menu's call was once left out (a guard on `r8`) because a Silver Nova army that bought an Infantry or a Mech corrupted the game's memory
 /// (the day, the mission's result byte). The call was not the cause: the skin's portrait is the right size for the game's buffer (`0x0200FD50`, 32 x 32 at 4 bits),
 /// and the game decompresses it with the same routine as its own. The cause was the skin's room in free ROM: with the skin on colour 5 (a Black Hole
 /// army outside a five-army game) the Dual Strike picture palettes' backup of colour 5 sat at `DATA + 0x7000`, over the table of the skin's figures and portraits
@@ -2350,7 +2375,7 @@ pub fn sync_map_art(core: &mut Core) {
     }
     if core.raw_read_32(0x0300_0000, -1) == CO_PAGE_LOOP {
         // (only on the game's own unit chart, page 4: on the other pages the tiles at `CHART_SHEET` + the skins' slots are the CO's big picture, which the
-        // soldiers' frames used to overwrite: stray fragments over her face on an Emerald Sun army's CO page)
+        // soldiers' frames used to overwrite: stray fragments over her face on a Silver Nova army's CO page)
         if core.raw_read_32(CO_PAGE_NUMBER, -1) == 4 {
             sync_chart_art(core);
         }
@@ -2420,7 +2445,7 @@ pub fn hq_style(co: u8) -> Option<&'static str> {
     .and_then(|(_, h)| h.as_deref())
 }
 
-/// The skin whose HQ army `army` has: the one its CO's data file names (the HQ follows the CO's nation, not the colour: Black Hole's army in the Emerald Sun colour keeps Black Hole's tower; a campaign's forced skin keeps its own) (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro); the picture takes the army's own building colours.
+/// The skin whose HQ army `army` has: the one its CO's data file names (the HQ follows the CO's nation, not the colour: Black Hole's army in the Silver Nova colour keeps Black Hole's tower; a campaign's forced skin keeps its own) (`hq = "emerald_sun"`: Klaus, Aurelia, Cassius, Livia, Varro); the picture takes the army's own building colours.
 fn hq_skin(core: &Core, army: u32) -> Option<usize> {
     design_style(core, army)
 }
@@ -2644,7 +2669,7 @@ mod tests {
     #[test]
     fn the_skin_parses() {
         let s = emerald_sun();
-        assert_eq!(s.name, "Emerald Sun");
+        assert_eq!(s.name, "Silver Nova");
         assert!(lum(s.ramp[0]) > lum(s.ramp[5]));
     }
 
