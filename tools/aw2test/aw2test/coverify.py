@@ -817,7 +817,7 @@ def unit_fuel(g, uid):
 
 def hook_enigma_immunity(ctx):
     """While Lili is in Enigma her units ignore the weather: in snow a Tank's move costs its plain fuel (3 for 3 cells, an enemy's costs 6), in a sandstorm her Artillery fires at
-    distance 3 (an enemy Artillery's range is cut to 2) -- and when her power is over (her next turn) the weather cuts into her army again."""
+    distance 3 (an enemy Artillery's range is cut to 2) -- the immunity lasts the weather's two days (through her next turn) and the weather cuts into her army again when her turn after next begins."""
     # snow
     g = enigma_game(ctx)
     word, w = use_enigma(ctx, g, SEEDS["snow"])
@@ -840,7 +840,7 @@ def hook_enigma_immunity(ctx):
     used = f1 - unit_fuel(g, e["id"])
     chk(ctx, "lili cop", used == 6, f"control: the enemy Tank used {used} fuel for 3 cells in the same snow (doubled: 6)", "immunity")
     pass_turn(g, 1)
-    chk(ctx, "lili cop", g.player(1)["co_mode"] == 0 and weather_of(g) == "snow", "her power is over on her next turn and the snow is still on", "immunity")
+    chk(ctx, "lili cop", g.player(1)["co_mode"] == 0 and weather_of(g) == "snow", "her CO Power is over on her next turn and the snow is still on (day 2)", "immunity")
     t = g.unit_at(13, 10)
     f2 = unit_fuel(g, t["id"])
     g.select(13, 10)
@@ -848,7 +848,10 @@ def hook_enigma_immunity(ctx):
     g.choose("Wait", g.ACTION_MENU)
     g.wait_idle()
     used = f2 - unit_fuel(g, t["id"])
-    chk(ctx, "lili cop", used == 6, f"her power over, her Tank pays {used} for 3 cells in the snow (doubled again)", "immunity")
+    chk(ctx, "lili cop", used == 3, f"on the second day her Tank still pays {used} for 3 cells in the snow (Enigma's immunity lasts both days; the plain price is 3)", "immunity")
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    chk(ctx, "lili cop", weather_of(g) != "snow" and lili_state(g)[0] == 0, f"when her turn after next begins the snow and Enigma are over (weather {weather_of(g)}, state {lili_state(g)})", "immunity")
     g.e.close()
     # sandstorm: Artillery range 2..3 -> an enemy's is 2..2
     g = enigma_game(ctx, extra=[(2, "artillery", 5, 14), (1, "infantry", 8, 14), (2, "artillery", 15, 14), (1, "infantry", 15, 12)])
@@ -873,15 +876,21 @@ def hook_enigma_immunity(ctx):
     g.e.wait(20)
     g.wait_for_input()
     pass_turn(g, 1)
-    chk(ctx, "lili cop", g.player(1)["co_mode"] == 0 and weather_of(g) == "sand", "her power is over on her next turn, the sandstorm blows on", "immunity")
+    chk(ctx, "lili cop", g.player(1)["co_mode"] == 0 and weather_of(g) == "sand", "her CO Power is over on her next turn, the sandstorm blows on (day 2)", "immunity")
     names = g.action_menu_at(5, 5)
     fire = any(n.lower().startswith("fire") and "(greyed)" not in n for n in names)
-    chk(ctx, "lili cop", not fire, f"and then her Artillery is cut to 2 cells too (menu {names})", "immunity")
+    chk(ctx, "lili cop", fire, f"and on the second day her Artillery still fires at 3 cells (Enigma's immunity lasts both days; menu {names})", "immunity")
+    g.e.press("B", 4)
+    g.e.wait(20)
+    g.wait_for_input()
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    chk(ctx, "lili cop", weather_of(g) != "sand" and lili_state(g)[0] == 0, "when her turn after next begins the sandstorm and Enigma are over", "immunity")
     g.e.close()
 
 
 def hook_enigma_move(ctx):
-    """In Enigma every unit of hers moves 1 more (Tank 6 -> 7, Recon 8 -> 9, Infantry 3 -> 4 on a road lane), and not one more once the power is over."""
+    """In Enigma every unit of hers moves 1 more (Tank 6 -> 7, Recon 8 -> 9, Infantry 3 -> 4 on a road lane) on both days, and not one more once the weather is over."""
     rules = use_spec(ctx)
     types = [5, 6, 1]
     m = ctx.map()
@@ -903,8 +912,14 @@ def hook_enigma_move(ctx):
     pass_turn(g, 1)
     for t in types:
         base = rules.unit(t)["move"]
+        ok1, ok2 = probe_move(g, (3, lanes[t]), (3 + base + 1, lanes[t])), probe_move(g, (3, lanes[t]), (3 + base + 2, lanes[t]))
+        chk(ctx, "lili cop", ok1 and not ok2, f"on Enigma's second day (her CO Power over) the {name_of(t)} still moves {base + 1}: reaches +{base + 1} {ok1}, +{base + 2} {ok2}", "move")
+    pass_turn(g, 2)
+    pass_turn(g, 1)
+    for t in types:
+        base = rules.unit(t)["move"]
         ok1, ok2 = probe_move(g, (3, lanes[t]), (3 + base, lanes[t])), probe_move(g, (3, lanes[t]), (3 + base + 1, lanes[t]))
-        chk(ctx, "lili cop", ok1 and not ok2, f"after the power the {name_of(t)} moves {base} again: reaches +{base} {ok1}, +{base + 1} {ok2}", "move")
+        chk(ctx, "lili cop", ok1 and not ok2, f"when her turn after next begins the {name_of(t)} moves {base} again: reaches +{base} {ok1}, +{base + 1} {ok2}", "move")
     g.e.close()
 
 

@@ -31,8 +31,8 @@ The power function (`es_co::ENIGMA`, ROM) calls AW2's weather setter `sub_080351
 game's own RNG (`sandstorm::next_random`, the same on every peer and every rollback): 1 snow, 2 rain, 3 sand. **Sand is a Dual Strike weather**: AW2 has no fourth weather, so the sandstorm is `sandstorm.rs`'s one-day state beside clear weather
 (range -1 for ranged units, sand colours and grains). Every Silver Nova CO exists only with the Dual Strike features on, so the sandstorm is always there; the roll falls back to snow or rain only (`es_co::roll(r, false)`) if it is not.
 Two days: snow and rain use the flag Olaf's snow uses (`POWER_SNOW`); the sandstorm is switched off by `es_co` after two of Lili's turn starts (the engine's own day count only runs in Random weather); a map whose weather is permanent keeps it.
-The weather and the immunity do not carry over to a new map; the state (turn starts left, her army, the roll) rides in a suspended game's tag tail (`es_co::lili_state`). Immunity (no sandstorm range cut, no snow fuel doubling) and +1
-move last while she is in the power (until her next turn); rain's -1 vision is made up by +1 vision in the power. The computer plays her power (`ds_ai_power.rs`).
+The weather and the immunity do not carry over to a new map; the state (turn starts left, her army, the roll) rides in a suspended game's tag tail (`es_co::lili_state`). Immunity (no sandstorm range cut, no snow fuel doubling), +1
+move and +1 vision in rain (rain's -1 is made up) last as long as the Enigma weather, both days (`es_co::enigma_on`; her CO Power itself ends at her next turn start, the table's +1 move covers day 1 and `co_roster::stat_function` adds it on day 2). The computer plays her power (`ds_ai_power.rs`).
 
 ## Firestorm (Tabitha)
 `co_powers::FIRESTORM_FN`: the meteor strike (`strike_fn`) at 80 (8 HP) with Von Bolt's animation script (`power_anim::EXM_SCRIPT`, Dual Strike art) and AW2's meteor script without the pack's pictures. The site is the richest cluster by

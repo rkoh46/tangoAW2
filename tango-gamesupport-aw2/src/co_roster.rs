@@ -548,11 +548,6 @@ fn new_row(rows: &[Vec<u8>], andy: &[u8], co: u8, ds: u8) -> Option<Vec<u8>> {
             row[at + 0x0E..at + 0x10].copy_from_slice(&crate::crumb::LUCK[mode as usize].to_le_bytes());
             row[at + 0x10..at + 0x12].copy_from_slice(&crate::crumb::BAD_LUCK[mode as usize].to_le_bytes());
         }
-        if crate::es_co::canon(co) == crate::es_co::LILI && mode == 1 {
-            // Enigma: her units ignore weather, so rain's -1 vision is made up for (+1 vision)
-            let v = i16::from_le_bytes([row[at + 0x0C], row[at + 0x0D]]) + 1;
-            row[at + 0x0C..at + 0x0E].copy_from_slice(&v.to_le_bytes());
-        }
         if let Some(i) = crate::es_co::info(co) {
             // Luck, no bad luck, and the unit cost.
             row[at + 0x0E..at + 0x10].copy_from_slice(&i.luck[mode as usize].to_le_bytes());
@@ -632,7 +627,10 @@ fn stat_function(core: &mut Core, field: usize) {
     }
     let cpu = core.gba().cpu();
     let (co, mode, t, lr) = (cpu.gpr(0) as u8, cpu.gpr(1) as u8, cpu.gpr(2) as u8, cpu.gpr(14) as u32);
-    if let Some(v) = stat(co, mode, t, field) {
+    if let Some(mut v) = stat(co, mode, t, field) {
+        if field == MOVE && mode == 0 && co == crate::es_co::LILI && t != crate::roster::OOZIUM {
+            v += crate::es_co::second_day_move(core); // (Lili's Enigma, second day: the CO Power is over, the +1 move is not)
+        }
         let cpu = core.gba_mut().cpu_mut();
         cpu.set_gpr(0, v);
         cpu.set_thumb_pc(lr & !1);

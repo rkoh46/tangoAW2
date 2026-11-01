@@ -284,7 +284,7 @@ pub fn each_unit(co: u8, power: u8) -> u32 {
 // - the sandstorm is [`crate::sandstorm`]'s one-day state, switched on by the roll and switched off again here after two of Lili's turn starts (the engine's own
 //   day count only runs in Random weather, so a Rules screen with fixed weather would keep the sand for ever);
 // - a map whose weather is permanent keeps it: Enigma only gives her units the immunity and the move there.
-// Her units are immune while she is in the power ([`weather_immune`]): no sandstorm range cut, no snow fuel doubling, and +1 vision offsets rain's -1.
+// Her units are immune while Enigma runs, both days ([`enigma_on`], [`weather_immune`]): no sandstorm range cut, no snow fuel doubling, +1 move ([`second_day_move`] on day 2) and +1 vision offsets rain's -1 ([`rain_vision`]).
 // The state rides in a suspended game's tag tail ([`lili_state`]): +0 turn starts left, +1 her army, +2 the weather rolled (1 snow, 2 rain, 3 sand), +40 the army of the last tick.
 
 /// RAM (`ram_map::REGIONS`): the state above.
@@ -299,9 +299,33 @@ pub const SNOW: u8 = 1;
 pub const RAIN: u8 = 2;
 pub const SAND: u8 = 3;
 
-/// Whether the army's CO is Lili in her CO Power (with CO abilities on).
+/// Whether Lili's Enigma is running for the army: from the activation through her second turn start after it, as long as the weather it drew
+/// (the state [`LILI_STATE`]: turn starts left, her army). Her CO Power itself ends at her next turn start; the immunity, the +1 move and the vision
+/// last the two days.
+pub fn enigma_on(core: &Core, army: u32) -> bool {
+    (1..=5).contains(&army)
+        && core.raw_read_8(LILI_STATE, -1) != 0
+        && core.raw_read_8(LILI_STATE + 1, -1) as u32 == army
+        && canon(crate::co_roster::army_co(core, army).0) == LILI
+}
+
+/// Whether the army's units ignore weather: Lili in Enigma's two days, or in her CO Power on a map where the weather is permanent (no state starts there).
 pub fn weather_immune(core: &Core, army: u32) -> bool {
-    (1..=5).contains(&army) && crate::co_roster::abilities_enabled(core) && crate::co_roster::army_co(core, army) == (LILI, 1)
+    (1..=5).contains(&army)
+        && crate::co_roster::abilities_enabled(core)
+        && (enigma_on(core, army) || crate::co_roster::army_co(core, army) == (LILI, 1))
+}
+
+/// Her units' extra move while Enigma runs on its second day, when the CO Power (mode 1) is over and the CO table gives day-to-day numbers: +1 for
+/// every unit (the table's own +1 covers the first day). (the table call names no army: Enigma's own army is taken).
+pub fn second_day_move(core: &Core) -> i32 {
+    let army = core.raw_read_8(LILI_STATE + 1, -1) as u32;
+    (enigma_on(core, army) && crate::co_roster::army_co(core, army) == (LILI, 0)) as i32
+}
+
+/// The vision Lili's units regain in rain while Enigma runs (rain takes 1 off): +1.
+pub fn rain_vision(core: &Core, army: u32) -> i32 {
+    (enigma_on(core, army) && core.raw_read_8(crate::ds_weather::WEATHER, -1) == RAIN) as i32
 }
 
 /// The weather Enigma draws: snow, rain or sand (without the sandstorm, only snow or rain).
