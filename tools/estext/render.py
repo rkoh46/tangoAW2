@@ -11,9 +11,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.normpath(os.path.join(HERE, "..", "..", "tango-gamesupport-aw2", "src", "es_text"))
-TITLES = {1: "Landfall", 2: "Testudo", 3: "The Wall", 4: "The Second Legion", 5: "Dust and Wheels", 6: "Tribute", 7: "Mare Nostrum", 8: "Hammer and Anvil",
-          9: "Grain Ships", 10: "The Quiet Pass", 11: "The Treasure Train", 12: "Siege of Iron", 13: "The Free Port", 14: "Varro's Gambit", 15: "Pax Romana",
-          16: "Sol Invictus"}
+TITLES = {1: "Landfall", 2: "The Ridge", 3: "The Wall", 4: "The Second Corps", 5: "Dust and Wheels", 6: "The Ledger", 7: "The Silver Sea", 8: "Two Hands",
+          9: "Grain Ships", 10: "The Quiet Pass", 11: "The Treasure Train", 12: "The Iron Bastion", 13: "The Free Port", 14: "Caulder's Gambit", 15: "The Strait",
+          16: "Silver Nova"}
 KINDS = {"pre": "Briefing", "pre2": "Briefing, part 2", "post": "After the battle", "post2": "After the battle, part 2", "map": "On the world map",
          "map2": "On the world map, part 2", "epilogue": "Epilogue", "epilogue2": "Epilogue, the black light"}
 
