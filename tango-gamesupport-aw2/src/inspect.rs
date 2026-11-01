@@ -38,7 +38,7 @@ const MAP_MENU_ITEMS: u32 = 0x0300_14A1;
 const SELECTED_UNIT: u32 = 0x0300_40D8;
 
 /// The online protocol version the shared console speaks (`SharedGame::sim_version`): peers with another do not match.
-pub const SIM_VERSION: u16 = 41;
+pub const SIM_VERSION: u16 = 42;
 
 pub const MOVED: u8 = 0x01;
 pub const CARRIED: u8 = 0x08;
@@ -109,7 +109,7 @@ impl UnitInfo {
 pub struct ArmyInfo {
     pub army: u8,
     pub colour: u8,
-    /// The army's name: the colour's, or an army skin's (Emerald Sun) where one sits on the colour.
+    /// The army's name: the colour's, or an army skin's (Silver Nova) where one sits on the colour.
     pub colour_name: String,
     pub controller: u8,
     pub co: u8,

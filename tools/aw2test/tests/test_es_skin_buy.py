@@ -1,5 +1,5 @@
-"""Emerald Sun: a skinned army buys an Infantry and a Mech from the build menu (`-k es_skin_buy`). The skin's portraits (army_skin.rs `portrait_blob`) are put in
-for the build menu's panel and the unit panel; the game's memory must stay sane (the day, the mission's result byte and the funds) and the panel shows the skin's plume."""
+"""Silver Nova: a skinned army buys an Infantry and a Mech from the build menu (`-k es_skin_buy`). The skin's portraits (army_skin.rs `portrait_blob`) are put in
+for the build menu's panel and the unit panel; the game's memory must stay sane (the day, the mission's result byte and the funds) and the panel shows the skin's silver."""
 
 import os
 
@@ -12,7 +12,7 @@ from aw2test.game import NavError
 from aw2test.harness import test
 
 MISSION = int(os.environ.get("AW2TEST_ES_BUY_MISSION", "8"))
-NEED = 20          # (the pixels of the skin's crest red the build panel's portrait has: M8's player wears Blue Moon, whose own soldier has none)
+NEED = 20          # (the pixels of the pixels of the skin's silver the build panel's portrait has: M8's player wears Blue Moon, whose own soldier has none)
 
 
 # The build menu's portrait panel (the picture's box), 240 x 160 pixels: the list's Infantry and Mech icons wear red caps too, so only the panel counts.
@@ -21,7 +21,8 @@ PANEL = (151, 25, 176, 56)
 
 def crest(path):
     im = Image.open(path).convert("RGB").crop(PANEL)
-    return sum(1 for r, g, b in im.getdata() if r > 150 and g < 100 and b < 100 and r - g > 80)
+    # (Silver Nova has no plume any more: the portrait's helmet and mask are the skin's silver ramp, A6BCD8 and 7F96BA as the 15-bit palette shows them)
+    return sum(1 for r, g, b in im.getdata() if min(abs(r - x) + abs(g - y) + abs(b - z) for x, y, z in ((165, 189, 222), (123, 148, 189))) <= 10)
 
 
 FIG_TABLE_AT = 0x09FC7000      # army_skin::fig_at(0): the first skin's table of battle figures and portraits in free ROM (six words, then the pictures)
@@ -75,8 +76,8 @@ def es_skin_buy_infantry_and_mech(ctx):
         open_menu(g, e, x, y, unit)
         shot = ctx.shot(g, f"build_{name}")
         reds = crest(shot)
-        ctx.log(f"{name}: {reds} pixels of crest red in the build menu")
-        ctx.check(reds >= NEED, f"the {name}'s build panel shows the skin's plume ({reds} >= {NEED})")
+        ctx.log(f"{name}: {reds} pixels of the skin's silver in the build menu")
+        ctx.check(reds >= NEED, f"the {name}'s build panel shows the skin's silver ({reds} >= {NEED})")
         e.press("A", 4)
         g.wait_for_input()
         e.wait(120)
@@ -87,7 +88,7 @@ def es_skin_buy_infantry_and_mech(ctx):
         g.goto(x, y)
         e.wait(40)
         shot = ctx.shot(g, f"panel_{name}")
-        ctx.log(f"{name}: {crest(shot)} pixels of crest red with the cursor on it")
+        ctx.log(f"{name}: {crest(shot)} pixels of the skin's silver with the cursor on it")
         # (one base: the new unit makes room for the next purchase)
         for u in built:
             d.remove_unit(u)
