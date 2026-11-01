@@ -133,7 +133,7 @@ def static(skin_path=None, say=print):
         fails.append(f"palette: too saturated, near Green Earth's leaf green ({cs / cg:.2f} > {MAX_CHROMA})")
     # -- the HQ's depth against AW2's five HQs (measured from the ROM)
     aw = [hq_metrics(aw2_hq_grid(base, c), base.pal(BLD_PAL + 32 * (c - 1))) for c in range(1, 6)]
-    mine = hq_metrics([[0 if ch == "." else int(ch, 16) for ch in r] for r in hq], Rom(3).pal(BLD_PAL + 64))
+    mine = hq_metrics([[0 if ch == "." else int(ch, 16) for ch in r] for r in hq], Rom(3, skin_path).pal(BLD_PAL + 64))
     rng = lambda k: (min(a[k] for a in aw), max(a[k] for a in aw))
     rep.append("HQ picture (ours | AW2's five: min..max):")
     for k, lo_t, hi_t in (("fill", 0.93, 1.1), ("shades", 1.0, 1.4), ("dominant", 0.45, 1.2), ("contrast", 0.9, MAX_CONTRAST)):
@@ -149,7 +149,7 @@ def static(skin_path=None, say=print):
         fails.append("hq: the right side is lighter than the left (light comes from the top left)")
     # -- the capture box's HQ (the engine's own picture, decoded from the dump) keeps the map HQ's proportions: the box draws it at half height
     from . import hqimport
-    mine_g = hqimport.box_grid(Rom(3).blobs["capture box HQ"][0])
+    mine_g = hqimport.box_grid(Rom(3, skin_path).blobs["capture box HQ"][0])
     a_map = hqimport.aspect(hq)
     a_box = hqimport.aspect(mine_g, hqimport.BOX_SQUASH, clear=0)
     twin = hqimport.capture_rows(hq)
@@ -161,7 +161,7 @@ def static(skin_path=None, say=print):
         fails.append("hq: the engine's capture box HQ differs from the kit's twin (hqimport.capture_rows)")
     # -- every colour the skin can sit on: the dump works, the rows differ from the colour's own, the done row differs from the live row
     for host in range(1, 6):
-        sk = Rom(host)
+        sk = Rom(host, skin_path)
         live = sk.pal(UNIT_PAL + 32 * (host - 1))
         done = sk.pal(UNIT_PAL + 0xA0 + 32 * (host - 1))
         d = min(de(quant(a), quant(b)) for a in live[2:8] for b in done[2:8])
@@ -196,7 +196,7 @@ def static(skin_path=None, say=print):
     # -- the battle figures and portraits: the engine's patched frames are the data file's rules applied (Python twin), and most frames have a helmet
     if "battle" in data or "portrait" in data:
         from . import figures
-        skf = Rom(3)
+        skf = Rom(3, skin_path)
         pf = figures.check_parity(base, skf, data)
         fails += pf
         sh = figures.sheets_of(base, skf)
