@@ -4,7 +4,7 @@ description: Put pictures onto a fixed palette in its slot order (aw2dev art rep
 ---
 
 Read docs/dev/art-repal.md first. Code: `devkit/aw2/artlib/repal.py`, `devkit/aw2/commands/art.py`; tests `devkit/aw2/artlib/test_repal.py`.
-1. Find or make the palette: `aw2dev art repal extract co:klaus -o devkit/work/repal/klaus.gpl` (also `skin:emerald_sun`, `army:os|bm|ge|yc|bh` from the ROM, a PNG,
+1. Find or make the palette: `aw2dev art repal extract co:tabitha -o devkit/work/repal/tabitha.gpl` (also `skin:emerald_sun`, `army:os|bm|ge|yc|bh` from the ROM, a PNG,
    a `.pal`); `aw2dev art repal convert FILE.pal -o FILE.gpl` between formats. The slot order is the palette's: index 0 is the transparent slot (`--alpha-last` for the last).
 2. Look first: `aw2dev art repal preview PICTURE --palette SRC` writes before and after side by side with the slots numbered (under `devkit/work/repal/`). Try
    `--weights rgb` when hues matter more than brightness.

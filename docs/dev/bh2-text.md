@@ -10,7 +10,7 @@ The BH2 Campaign's story is written and wired into `bh2_campaign.rs` (docs/dev/b
 | Tests | `cargo test -p tango-gamesupport-aw2 --lib bh2_text` (songs, parse, credits fit the roll, text ids inside 3,072 with 150 spare) |
 
 ## Voices and rules the text follows
-Asuka is cold, exact and dry; Sturm never shouts, never contracts and never shows warmth; Hawke, Koal, Kanbei, Sasha, Javier, Jugger (in capitals), Klaus and Livia never contract; Aria is fiery and personal. Mid-battle scenes (`mNN_dayN`, `mNN_front2_*`) keep the battle's music; every other scene names a song. No dates or ages. Free-pick scenes name the pool (Asuka, Crumb, Hawke, Koal, Kindle, Jugger, Flak, Lash, Adder, Von Bolt, Clone Andy; **Sturm is a pick nowhere**) and give each officer a line in an `@IF` block; pair missions add an `@PARTNER` block.
+Asuka is cold, exact and dry; Sturm never shouts, never contracts and never shows warmth; Hawke, Koal, Kanbei, Sasha, Javier, Jugger (in capitals), Tabitha, Lili and Caulder never contract; Aria is fiery and personal. Mid-battle scenes (`mNN_dayN`, `mNN_front2_*`) keep the battle's music; every other scene names a song. No dates or ages. Free-pick scenes name the pool (Asuka, Crumb, Hawke, Koal, Kindle, Jugger, Flak, Lash, Adder, Von Bolt, Clone Andy; **Sturm is a pick nowhere**) and give each officer a line in an `@IF` block; pair missions add an `@PARTNER` block.
 
 ## Songs
 `own:door` (crate, door, Obelisk and Lab 7 binder scenes), `own:credits` (not used by a scene: the staff roll's song), `own:aria` (Aria's scenes). They are `music/bh2/*.m4t`, rows of `es_music::SOURCES`; `bh2_text.rs` `OWN_SONGS` maps each name to
@@ -40,7 +40,7 @@ Per mission: `mNN_pre` the intro; `mNN_post` the victory; `mNN_map` the scene on
 | `m31_switch` (Eagle's fall), then `m31_stage2` (Aria's entrance, the approved draft) | the mid-battle map switch to Aria's citadel | play both at the switch |
 | `m31_day6`, `m31_day9`, `m31_day12`, `m31_post` | M31 stage 2 and the victory | Hawke speaks as a fixed radio voice |
 | `epilogue`, `epilogue_toasts` | after M31, chained; then `bh2_text::credits()` | |
-| `m32_pre`, `m32_day3` (Cassius), `m32_day5` (Aurelia), `m32_day7` (Livia), `m32_post`, `m32_epilogue` | secret M32 (unlocked by M29); `m32_epilogue` then the `secret` credits pages | |
+| `m32_pre`, `m32_day3` (Caulder), `m32_day5` (Lili), `m32_day7` (Lili), `m32_post`, `m32_epilogue` (the enemy pair is Caulder + Tabitha with Lili's waves) | secret M32 (unlocked by M29); `m32_epilogue` then the `secret` credits pages | |
 
 Wired (see bh2_campaign.rs); needs from the campaign data: the roster pools above; Asuka forced in M1, M2 (+Crumb), M12, M13 front 1, M23 (+Crumb), M26 (+Hawke), M28 (+Crumb), M31 (+ a free partner); Sturm + Asuka in M5 only; credits from `bh2_text::credits()` (`secret` pages show after M32); `final_mission` M31; a test like `bh_campaign::every_dialogue_scene_is_used` (`bh2_text::keys()` against `keys_used()`); `tools/bh2text/lint.py` checks the same once `bh2_campaign.rs` asks for scenes with `bh2_text::scene("...")`.
 

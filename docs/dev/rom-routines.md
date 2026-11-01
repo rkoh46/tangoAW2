@@ -132,15 +132,13 @@ Proc scripts (data) that mark screens:
 | `0x08029AF8`, `0x08029978`, `0x08029A48` | `RepairUnit(unit, hp, pay)`; ammo to full; fuel to full | `co_powers.rs`, `crumb.rs` |
 | `0x080253B0` / `0x08025434` / `0x08025B80` | daily fuel burn / fuel in r5 / `SubtractFuel` | `ds_weather.rs` |
 | `0x080251BC`, `0x08024ABC`, `0x08024C58`, `0x08024DDC` | battle work-out; `CalcDamage`; defence store; apply a hit | `co_powers.rs`, `co_roster.rs` |
-| `0x08024DDE` | `sub_08024DDC(target, attacker)` just after its push: a strike's damage applied; Testudo cuts the counterattack's `+0x0C`/`+0x14` to 75% | `es_co.rs` |
-| `0x08042532` | `sub_080424FC` (the selected unit's action ends) at the `orrs` that sets done (r1 = 1; the return address at `[sp + 4]`): Triumph leaves a vehicle not done after a battle (return addresses `0x08041A01`, `0x08041E05`, `0x08041E55`, `0x08040977`) | `es_co.rs` |
-| `0x0802CA78`, `0x0802CB20` | the command menu's two Fire rows' show tests (r0 = 1 hides): hidden for a unit that has used Triumph's extra move | `es_co.rs` |
-| `0x0805FD64` | the computer's action executor (`sub_0805FD64`, driver state 3), entry: the action struct `0x030046C0` (byte 0 the kind: 4 a move that ends in an attack toward byte 6, 2 a move that ends in Wait; byte 1 the unit's slot, bytes 2, 3 where it goes): an attack of a unit with its Triumph bit set becomes a Wait | `es_co.rs` |
 | `0x08043070`, `0x080433F8` | CO-scaled damage chart read / raw chart read | `roster.rs` |
 | `0x08042CF8`, `0x08042D42`, `0x08042DA6`, `0x08042D76`, `0x08042CC0`, `0x08042E64`, `0x08043050` | Trap sites in `GetUnitDefenceWithCoBonus` (entry), `GetUnitMovementWithCoBonus` (at its return), `GetUnitVisionWithCoBonus` (after the CO's vision is added), `GetUnitFiringRangeWithCoBonus` (max range in r4), `GetCoPriceMultiplier`, `GetPlayerCoLuckBonus` (entry/return), `GetPlayerSpecialAbilities` (entry/return) | `co_skills.rs`, `co_roster.rs`, `sandstorm.rs` |
 | `0x08044B28` | `ActivateCoPower(army, mode, proc)` | `co_powers.rs`, `online_stats.rs` |
 | `0x0804438C` | `PayForPower(army, mode)` entry (starts the quote `sub_08039634`) | `crumb.rs` |
 | `0x080440E0` | power-meter charge `(army, amount)` | `co_skills.rs` |
+| `0x0804429C` | `sub_08044280`'s `cmp r4, r0` (the map menu's "Super is paid"): a free Super Power (0 stars, Lili) is none | `co_powers.rs` |
+| `0x080351E8` | `sub_08035170`'s return (the next turn's weather in r4): Rules' weather back after Enigma's sand | `es_co.rs` |
 | `0x08044854`, `0x080448E4`, `0x08044968`, `0x08044F24` | strike square hit; strike pick step; strike draw (meteor); mass damage per unit | `co_powers.rs`, `power_anim.rs` |
 | `0x08043DAC`, `0x08043DF4`, `0x08043E18`, `0x08044BA0` | power music picks (AW2 songs `0x1A3/0x1A4/0x199/0x19A`) | `power_music.rs` |
 | `0x08035144` | power weather (`sub_08035144(weather)`) | `ds_weather.rs` |

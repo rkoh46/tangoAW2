@@ -215,7 +215,7 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 | the **palette** (the army's colours, panels, emblem, texts, the names) | the army's *colour*: the skin sits on a colour (`skin_on`, `skin_installed_on`) | `plan`, `sync` |
 | the **designs** (Infantry and Mech on the map, idle and moving, battle figures, the unit panel's portrait, the capture box's soldier and HQ, the HQ on the map, the Dual Strike tilt's unit slots) | the army's *CO* (`design_style`, `design_skin`, `design_on_colour`) | the traps in `traps()`, `map_slot`, `hq_loaded` |
 
-So an Emerald Sun CO (Klaus, Aurelia, Cassius, Livia, Varro: the CO data files with `hq = "emerald_sun"`, `nation_skin`) has the skin's plumed soldiers and domed HQ in **whatever colour** its army wears, and every
+So an Emerald Sun CO (Tabitha, Lili, Caulder: the CO data files with `hq = "emerald_sun"`, `nation_skin`) has the skin's plumed soldiers and domed HQ in **whatever colour** its army wears, and every
 other CO has its own nation's: AW2 draws those by the CO's country already (Black Hole's own tower and soldiers for Hawke, Lash, Adder, Flak, Sturm, Jugger, Koal, Kindle, Von Bolt, Asuka, Crumb; Orange Star's for Andy and
 Aria ...), so the traps simply leave them alone, in the skin's palette when the army wears the skin. Bug of 0.9.0: every trap asked "does this army wear the skin?" (by colour), so Asuka in the Emerald Sun colour got the plumes and the domed HQ.
 
@@ -228,7 +228,7 @@ Test: `python3 tools/aw2test/run.py -k army_designs --mode ds` (a Black Hole CO,
 
 ## The HQ follows the CO (`hq = "<skin id>"` in `cos/<id>.toml`)
 An army shows a skin's HQ picture (the domed tower, `[hq] rows` of `skins/<id>.toml`) when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
-`hq_loaded`) and not merely because the army wears the skin colour (see above). Klaus, Aurelia, Cassius, Livia and Varro have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
+`hq_loaded`) and not merely because the army wears the skin colour (see above). Tabitha, Lili and Caulder have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
 The picture is indexed in the building palette, so it is drawn in the **army's own building colours** (red for Orange Star, a Black Hole army's purple, the skin's green on the skin's army). Without this the HQ came from the country
-of the CO the data was based on (Klaus: Kanbei's, Yellow Comet's pale-green tower). `aw2dev co verify` (facet `hq`), `aw2dev campaign check --hq` and `aw2dev co sheet hq` check and show it. Not covered: the cursor's info panel
+of the CO the data was based on (the old Klaus: Kanbei's, Yellow Comet's pale-green tower). `aw2dev co verify` (facet `hq`), `aw2dev campaign check --hq` and `aw2dev co sheet hq` check and show it. Not covered: the cursor's info panel
 draws its own small HQ icon, which stays the game's.
