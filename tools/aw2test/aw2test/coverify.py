@@ -529,7 +529,7 @@ def special_hook(ctx, g, co, label, half, own, enemy, before):
         return
     now = {c: (g.unit_at(*c) or {"hp": 0})["hp"] for c in own + enemy}
     hurt = [c for c in enemy if before[c] and now[c] < before[c]]
-    chk(ctx, label, bool(hurt), f"{half}: Firestorm hurt the enemy units beside the site (hit {hurt}: {[(before[c], now[c]) for c in hurt]})", "firestorm")
+    chk(ctx, label, bool(hurt), f"{half}: Firestorm hurt the enemy units beside the site (hit {hurt}: {[(before[c], now[c]) for c in hurt]}; all {[(c, before[c], now[c]) for c in enemy]})", "firestorm")
     chk(ctx, label, all(now[c] == before[c] for c in own if before[c]), f"{half}: and none of her own ({[(before[c], now[c]) for c in own]})", "firestorm")
 
 
@@ -684,6 +684,15 @@ def hook_firestorm(ctx):
     pass_turn(g, 2)
     held = [c for c in sorted(inside) if g.unit_at(*c) and g.unit_at(*c)["army"] == 2 and g.unit_at(*c)["flags"] & 1]
     chk(ctx, "tabitha scop", len(held) >= 3, f"control: Von Bolt's Ex Machina holds the enemy units it hits on their turn ({len(held)} held)", "no stun")
+    g.e.close()
+    # her own units beside the enemy do not pull the strike away (they are spared, so they cost a site nothing): two enemy Tanks by her own Tanks against a lone Infantry far off
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(1, "tank", 10, 12).unit(2, "tank", 11, 10).unit(2, "tank", 11, 12).unit(2, "infantry", 24, 12)
+    g = ctx.start(m, [86, "andy"], env=ENV)
+    ctx.power(g, 1, "super")
+    hp = {c: g.unit_at(*c)["hp"] for c in ((11, 10), (11, 12), (24, 12), (10, 10), (10, 12))}
+    chk(ctx, "tabitha scop", hp[(11, 10)] == 20 and hp[(11, 12)] == 20 and hp[(24, 12)] == 100 and hp[(10, 10)] == 100 and hp[(10, 12)] == 100,
+        f"the site is the enemy Tanks beside her own, not the lone Infantry: {hp}", "firestorm site")
     g.e.close()
 
 

@@ -564,7 +564,10 @@ const STRIKE: u32 = crate::ram_map::STRIKE_SITE.0;
 /// set, +4 its x, +5 its y.
 const STRIKE_EX_MACHINA: u8 = 1;
 const STRIKE_COVERING_FIRE: u8 = 2;
+/// Tabitha's Firestorm: one strike at 8 HP, by funds, her own team not counted (it is spared).
+const STRIKE_FIRESTORM: u8 = 3;
 const STRIKE_DAMAGE: i32 = 30;
+const FIRESTORM_DAMAGE: i32 = 80;
 const STRIKE_RADIUS: i32 = 2;
 const NO_SITE: i32 = i32::MIN + 1;
 /// Units with no weapon (`UnitType_GetAttackKind` 2): APC, Black Boat, T
@@ -581,7 +584,7 @@ enum StrikeScore {
     Infantry,
 }
 
-fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32 {
+fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool, damage: i32) -> i32 {
     let t = core.raw_read_8(u, -1);
     if t == crate::roster::OOZIUM {
         return 0;
@@ -592,7 +595,7 @@ fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32
     if hp <= 10 || (no_weapon && enemy) {
         return small;
     }
-    let lost = if hp > STRIKE_DAMAGE { STRIKE_DAMAGE } else { hp - 1 };
+    let lost = if hp > damage { damage } else { hp - 1 };
     let mut v = match kind {
         StrikeScore::Hp => lost,
         StrikeScore::Funds => core.raw_read_16(crate::roster::table(core) + 0x5C * t as u32 + 6, -1) as i32 * lost,
@@ -613,7 +616,7 @@ fn strike_unit_score(core: &Core, u: u32, kind: StrikeScore, enemy: bool) -> i32
     v
 }
 
-fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, own_weight: i32) -> i32 {
+fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, own_weight: i32, damage: i32) -> i32 {
     let m = map(core);
     let (w, h) = (core.raw_read_16(m, -1) as i32, core.raw_read_16(m + 2, -1) as i32);
     let units = core.raw_read_32(UNITS_POINTER, -1);
@@ -631,9 +634,9 @@ fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, 
                 continue;
             }
             if team(army_of_index(core, i)) == mine {
-                own += strike_unit_score(core, u, kind, false);
+                own += strike_unit_score(core, u, kind, false, damage);
             } else {
-                enemy += strike_unit_score(core, u, kind, true);
+                enemy += strike_unit_score(core, u, kind, true, damage);
             }
         }
     }
@@ -649,13 +652,13 @@ fn strike_site_score(core: &Core, army: u32, x: i32, y: i32, kind: StrikeScore, 
 }
 
 /// `Strike_FindBestSite` for `army`.
-fn strike_best_site(core: &Core, army: u32, kind: StrikeScore, own_weight: i32) -> Option<(u8, u8)> {
+fn strike_best_site(core: &Core, army: u32, kind: StrikeScore, own_weight: i32, damage: i32) -> Option<(u8, u8)> {
     let m = map(core);
     let (w, h) = (core.raw_read_16(m, -1) as i32, core.raw_read_16(m + 2, -1) as i32);
     let mut best = (NO_SITE, None);
     for y in 0..h.min(64) {
         for x in 0..w.min(64) {
-            let v = strike_site_score(core, army, x, y, kind, own_weight);
+            let v = strike_site_score(core, army, x, y, kind, own_weight, damage);
             if v > best.0 {
                 best = (v, Some((x as u8, y as u8)));
             }
@@ -689,7 +692,11 @@ fn strike_pick(core: &mut Core) {
         } else {
             StrikeScore::Hp
         };
-        strike_best_site(core, army, kind, 2)
+        strike_best_site(core, army, kind, 2, STRIKE_DAMAGE)
+    } else if power == STRIKE_FIRESTORM {
+        // Firestorm: the richest cluster (Dual Strike's funds score, 8 HP), her own units spared by the strike and so not counted against a site
+        core.raw_write_8(STRIKE, -1, 0);
+        strike_best_site(core, army, StrikeScore::Funds, 0, FIRESTORM_DAMAGE)
     } else {
         let k = core.raw_read_8(STRIKE + 2, -1);
         core.raw_write_8(STRIKE + 2, -1, k + 1);
@@ -697,7 +704,7 @@ fn strike_pick(core: &mut Core) {
             core.raw_write_8(STRIKE, -1, 0);
         }
         let kind = [StrikeScore::Hp, StrikeScore::Funds, StrikeScore::Infantry][k.min(2) as usize];
-        strike_best_site(core, army, kind, 4)
+        strike_best_site(core, army, kind, 4, STRIKE_DAMAGE)
     };
     let p = core.gba().cpu().gpr(4) as u32;
     match site {
@@ -838,6 +845,7 @@ fn activate(core: &mut Core) {
         let power = match (army_co(core, army).0, mode) {
             (VON_BOLT, SCOP) => STRIKE_EX_MACHINA,
             (RACHEL, SCOP) => STRIKE_COVERING_FIRE,
+            (crate::es_co::TABITHA, SCOP) => STRIKE_FIRESTORM,
             _ => 0,
         };
         core.raw_write_range(STRIKE, -1, &[power, army as u8, 0, 0]);
