@@ -91,29 +91,29 @@ def clone_andy_bonus(mode, unit_type, which):
     return v
 
 
-# The Emerald Sun COs (crate::es_co, ids 86..90): the same numbers in Python, for the calculator.
-KLAUS, AURELIA, CASSIUS, LIVIA, VARRO = 86, 87, 88, 89, 90
-ES_LUCK = {KLAUS: (10, 10, 10), AURELIA: (10, 10, 10), CASSIUS: (10, 10, 10), LIVIA: (10, 10, 10), VARRO: (10, 10, 20)}
-_FOOT, _VEHICLE, _INDIRECT, _NAVAL = (1, 2), (3, 4, 5, 6, 7, 8, 9, 14), (10, 11, 15, 21), (18, 21, 22, 23, 24, 26)
+# The Silver Nova COs (crate::es_co, ids 86..88; 89 and 90 are retired slots that copy Lili and Caulder): the same numbers in Python, for the calculator.
+TABITHA, LILI, CAULDER, RETIRED_A, RETIRED_B = 86, 87, 88, 89, 90
+ES_FIRST, ES_LAST = TABITHA, RETIRED_B
+ES_LUCK = {co: (10, 10, 10) for co in range(ES_FIRST, ES_LAST + 1)}
+
+
+def es_canon(co):
+    """crate::es_co::canon: a retired slot is the CO it copies."""
+    return {RETIRED_A: LILI, RETIRED_B: CAULDER}.get(co, co)
 
 
 def es_bonus(co, mode, t, which):
-    """crate::es_co::bonus (+ the 10% every power adds to firepower)."""
+    """crate::es_co::bonus (+ the 10% every power adds to firepower): Tabitha +18 / +18 always; Lili +10 / +10 and +1 move in her CO Power; Caulder +18 / +18 and in
+    his Super Power +25 more (the power's own 10 inside it)."""
     m = min(mode, 2)
-    on = lambda b, v: v if b else 0
-    foot, veh, ind, nav = t in _FOOT, t in _VEHICLE, t in _INDIRECT, t in _NAVAL
+    co = es_canon(co)
     v = 0
-    if co == KLAUS:
-        v = {0: 10 + on(foot, 10) + on(m == 2, 20 + on(foot, 40)), 1: 10 + on(foot, 10) + on(m == 1, 20) + on(m == 2, on(foot, 40)),
-             2: on(m == 1, on(foot, 1)) + on(m == 2, 1)}.get(which, 0)
-    elif co == AURELIA:
-        v = {0: on(ind, 10 + on(m > 0, 30)) - on(veh, 10), 3: on(t in (10, 11), 1) + on(m > 0, on(ind, 1))}.get(which, 0)
-    elif co == CASSIUS:
-        v = {0: on(veh, 10 + on(m == 1, 30) + on(m == 2, 40)), 1: -on(veh, 10), 2: on(veh, 1 + on(m > 0, 1))}.get(which, 0)
-    elif co == LIVIA:
-        v = {0: on(m == 2, on(nav, 30)), 2: on(m == 2, on(nav, 2))}.get(which, 0)
-    elif co == VARRO:
-        v = {0: 15 + on(m == 1, 25) + on(m == 2, 45), 1: 15 + on(m == 1, 15) + on(m == 2, 30), 2: on(m > 0, 1)}.get(which, 0)
+    if co == TABITHA:
+        v = {0: 18, 1: 18}.get(which, 0)
+    elif co == LILI:
+        v = {0: 10, 1: 10, 2: 1 if m == 1 else 0}.get(which, 0)
+    elif co == CAULDER:
+        v = {0: 18 + (15 if m == 2 else 0), 1: 18 + (15 if m == 2 else 0)}.get(which, 0)
     if which == 0 and mode > 0:
         v += 10
     return v
@@ -174,7 +174,7 @@ class Rules:
             return crumb_bonus(mode, unit_type, which)
         if self.chart is not None and co == CLONE_ANDY:
             return clone_andy_bonus(mode, unit_type, which)
-        if self.chart is not None and KLAUS <= co <= VARRO:
+        if self.chart is not None and ES_FIRST <= co <= ES_LAST:
             return es_bonus(co, mode, unit_type, which)
         if self.chart is not None:
             v = self.chart.co_stat(co, mode, unit_type, which)
@@ -197,8 +197,8 @@ class Rules:
             m["counter"] = self.chart.co_field(81, mode, 0x20)
             m["abilities"] = 0
             return m
-        if KLAUS <= co <= VARRO and self.chart is not None:
-            # (the Emerald Sun five: their own luck, no bad luck, Andy's counter, no skills)
+        if ES_FIRST <= co <= ES_LAST and self.chart is not None:
+            # (the Silver Nova COs: their own luck, no bad luck, Andy's counter, no skills)
             m["luck"], m["neg_luck"] = ES_LUCK[co][min(mode, 2)], 0
             m["counter"] = self.chart.co_field(81, mode, 0x20)
             m["abilities"] = 0
@@ -437,8 +437,7 @@ def total_defence(rules, s: Side, cut=0, dist=1):
 
 
 def strike(rules, a: Side, b: Side, dist, is_attacker, a_hp_now, keep=100):
-    """Possible HP losses of `b` when `a` (now at `a_hp_now` HP) strikes it. `keep`: the percent of the damage that gets through (Klaus's Testudo
-    cuts a counterattack to 75, crate::es_co::strike_applied: after the shown-HP scaling, before the defence)."""
+    """Possible HP losses of `b` when `a` (now at `a_hp_now` HP) strikes it. `keep`: the percent of the damage that gets through (a counter cut by a rule: 100 for every CO today)."""
     weapon, base = choose_weapon(rules, a, b, dist, is_attacker)
     m = rules.co_mode(a.co, a.co_mode)
     acc = 100 + (0 if rules.chart is not None else step2_extra(rules, a))

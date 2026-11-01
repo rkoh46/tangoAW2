@@ -21,7 +21,7 @@ def stars(g):
 
 
 def make(co):
-    co_name = {86: "klaus", 87: "aurelia", 82: "crumb"}.get(co, co)
+    co_name = {86: "tabitha", 87: "lili", 88: "caulder", 82: "crumb"}.get(co, co)
 
     def fn(ctx):
         m = ctx.map()
@@ -55,5 +55,5 @@ def make(co):
     test(modes=("ds",))(fn)
 
 
-for co in ("asuka", 86, 87, 82, "andy", "sturm"):   # Klaus and Aurelia (Emerald Sun), Crumb
+for co in ("asuka", 86, 87, 88, 82, "andy", "sturm"):   # Tabitha, Lili and Caulder (Silver Nova), Crumb
     make(co)

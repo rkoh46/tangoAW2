@@ -32,7 +32,7 @@ def save_es_campaign_record_and_a_mission_saved_halfway(ctx):
     saves.expect_slots(ctx, base, img, [ES_RECORD], "Emerald Sun New", profile_allow=[saves.MODE_BYTE])
     rec = img.slot(ES_RECORD)
     ctx.eq(rec[:4], b"AWEC", "the record's magic")
-    ctx.eq(rec[0x0D] | rec[0x0E] << 8 | rec[0x0F] << 16, 1, "Klaus unlocked, nobody else")
+    ctx.eq(rec[0x0D] | rec[0x0E] << 8 | rec[0x0F] << 16, 1, "Tabitha unlocked, nobody else")
     # Mission 1 won.
     d.pick_mission()
     d.wait_map()
@@ -40,7 +40,7 @@ def save_es_campaign_record_and_a_mission_saved_halfway(ctx):
     won = saves.flash(e, os.path.join(ctx.out, "es_won1"))
     ctx.eq(int.from_bytes(won.slot(ES_RECORD)[8:12], "little"), 1, "mission 1 won, saved")
     ctx.eq(sorted(won.tags()), [0, ES_RECORD], "only the profile and the record")
-    # Mission 2 (Klaus fixed) saved from its map menu.
+    # Mission 2 (Tabitha fixed) saved from its map menu.
     from aw2test import bhact2 as a2
     a2.open_mission(ctx, e, g, d, 1, [], "m2")
     g._units_base = g._players_base = None
@@ -62,5 +62,5 @@ def save_es_campaign_record_and_a_mission_saved_halfway(ctx):
     g.wait_for_input()
     ctx.eq((d.mission(), e.u8(es.SOURCE)), (1, es.ES), "mission 2, the Emerald Sun session")
     saves.compare_snapshots(ctx, snap, saves.snapshot(g), "after a reboot, Emerald Sun Continue")
-    ctx.eq(d.unlocked(), [es.KLAUS], "the unlocked COs from the record")
+    ctx.eq(d.unlocked(), [es.TABITHA], "the unlocked COs from the record")
     e.close()

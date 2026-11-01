@@ -2,10 +2,9 @@
 and not from `damage.es_bonus` (the Python mirror of the engine). `aw2dev co verify` plays real battles and compares what the game did with these numbers.
 
 Sources, one per CO:
-  Klaus, Aurelia, Cassius, Livia  `tango-gamesupport-aw2/cos/<id>.toml` (d2d / cop / scop `mods`, `income`, `tribute`, `heal`, `stars`, `luck`) and
-                                  `docs/ES_CAMPAIGN.md` section 2.1 (which units a class word means); Tag Powers: `cos/tags.toml`
+  Tabitha, Lili, Caulder          `tango-gamesupport-aw2/cos/<id>.toml` (d2d / cop / scop `mods`, `income`, `tribute`, `heal`, `stars`, `luck`, and `strike` for Tabitha's Firestorm)
+                                  and `docs/ES_CAMPAIGN.md` section 2.1 (which units a class word means); Tag Powers: `cos/tags.toml`
   Crumb                           `crate::crumb` module doc (docs/BH_CAMPAIGN.md 3.9, 4.7c): Rank and File, Ration Run, Gerald's Blessing; Tag Power with Sturm: 115%, 2 stars
-  Varro                           the table in the module doc of `crate::es_co` (he has no data file)
   Clone Andy                      `cos/cloneandy.toml` (his own numbers; Andy's power names; Tag Power with Sturm: 118%, 2 stars)
 
 A class word of a `mods` line means (docs/ES_CAMPAIGN.md 2.1): `foot` Infantry and Mech; `vehicle` the ground vehicles Recon, APC, Tank, Md. Tank, Megatank, Neotank, Piperunner and Anti-Air
@@ -20,9 +19,10 @@ import tomllib
 REPO = pathlib.Path(__file__).resolve().parents[3]
 COS_DIR = REPO / "tango-gamesupport-aw2" / "cos"
 
-IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "klaus": 86, "aurelia": 87, "cassius": 88, "livia": 89, "varro": 90, "asuka": 92, "aria": 93}
-ES4 = ("klaus", "aurelia", "cassius", "livia")
-TOML_COS = ES4 + ("aria",)      # (Aria: an Orange Star CO with only a Super Power, cos/aria.toml)
+IDS = {"andy": 1, "cloneandy": 81, "crumb": 82, "tabitha": 86, "lili": 87, "caulder": 88, "asuka": 92, "aria": 93}
+RETIRED = (89, 90)      # Livia's and Varro's slots: copies of Lili's and Caulder's rows (crate::es_co::canon), in no CO list
+ES3 = ("tabitha", "lili", "caulder")
+TOML_COS = ES3 + ("aria",)      # (Aria: an Orange Star CO with only a Super Power, cos/aria.toml)
 
 FOOT = {1, 2}
 VEHICLE = {3, 4, 5, 6, 7, 8, 9, 14}      # Md. Tank, Megatank, Tank, Recon, APC, Neotank, Piperunner, Anti-Air (docs/ES_CAMPAIGN.md 2.1; the Megatank and the Piperunner are vehicles: the user's answer)
@@ -67,8 +67,18 @@ class Spec:
 
     @property
     def has_cop(self):
-        """A CO Power exists (a CO with only a Super Power, as Aria, has 0 stars for it)."""
+        """A CO Power exists (a CO with only a Super Power, as Aria, Tabitha and Caulder, has 0 stars for it)."""
         return self.stars[0] > 0
+
+    @property
+    def has_scop(self):
+        """A Super Power exists (a CO with only a CO Power, as Lili, has 0 stars for it: the map menu never offers a Super entry)."""
+        return self.stars[1] > 0
+
+    @property
+    def levels_played(self):
+        """The power levels a CO has (0 day to day, 1 CO Power, 2 Super Power)."""
+        return (0,) + ((1,) if self.has_cop else ()) + ((2,) if self.has_scop else ())
 
     def funds(self, mode, props, fpp=1000):
         """Funds a power collects when used: `tribute` a property that earns, and for `income_grant` (Aria's Build Anew) one day's income at once: the Funds rule's value x the properties that earn."""
@@ -97,19 +107,27 @@ def _from_toml(name):
                 power_names=(d.get("cop", {}).get("name", ""), d["scop"]["name"]), source=f"cos/{name}.toml", income_grant=bool(d.get("scop", {}).get("income_grant")))
 
 
+def strike(name):
+    """The strike of a CO's Super Power in its data file (`scop.strike`: Tabitha's Firestorm: hp, radius, pick, stun, can_kill), or None."""
+    return _toml(name).get("scop", {}).get("strike")
+
+
+def movement(name):
+    """The movement chart the data file gives a CO's units (`d2d.movement`: Caulder's "sturm": every terrain costs 1 for ground units), or None."""
+    return _toml(name).get("d2d", {}).get("movement")
+
+
+def power_days(name):
+    """How many days the CO Power's weather lasts (the text of Lili's CO Power says two)."""
+    return 2 if name == "lili" else 0
+
+
 def crumb():
     # crate::crumb module doc: Rank and File +10% attack and defence on Infantry and Mech (and a resupply on his properties), Ration Run: heal 1 HP, resupply, foot +1 move,
     # Gerald's Blessing: heal 2 HP, foot +30% attack on top, luck 0..19% (20), no bad luck. Stars 3 / 6.
     d2d = [{"units": "foot", "attack": 10, "defence": 10}]
     return Spec("crumb", (3, 6), d2d, [{"units": "foot", "move": 1}], [{"units": "foot", "attack": 30}], luck=(10, 10, 20), heal=(0, 1, 2),
                 power_names=("Ration Run", "Gerald's Blessing"), source="crate::crumb module doc")
-
-
-def varro():
-    # crate::es_co module doc table: Imperator +15/+15 all; Edict +25 attack +15 defence +1 move; Sol Invictus +45 attack +30 defence +1 move, heal 2. Stars 4 / 8, luck 10 10 20.
-    d2d = [{"units": "all", "attack": 15, "defence": 15}]
-    return Spec("varro", (4, 8), d2d, [{"units": "all", "attack": 25, "defence": 15, "move": 1}], [{"units": "all", "attack": 45, "defence": 30, "move": 1}],
-                luck=(10, 10, 20), heal=(0, 0, 2), power_names=("Edict", "Sol Invictus"), source="crate::es_co module doc")
 
 
 def andy():
@@ -131,13 +149,11 @@ def get(name):
         return _from_toml(name)
     if name == "crumb":
         return crumb()
-    if name == "varro":
-        return varro()
     raise KeyError(name)
 
 
 def all_specs():
-    return {n: get(n) for n in (*TOML_COS, "crumb", "varro", "cloneandy")}
+    return {n: get(n) for n in (*TOML_COS, "crumb", "cloneandy")}
 
 
 # --- Tag Powers (cos/tags.toml) ---------------------------------------------------------------------------------------------------------------
@@ -156,7 +172,7 @@ AW2_IDS = {"nell": 0, "andy": 1, "max": 2, "kanbei": 6, "colin": 16, "sturm": 10
 DS_IDS = {"vonbolt": 75}
 # Pairs with no entry in tags.toml: the file says "Every unlisted pair is 95" (its header and docs/ES_CAMPAIGN.md 2.3).
 UNLISTED_COMPAT = 95
-UNLISTED_PAIRS = [("klaus", "aw2:colin"), ("klaus", "aw2:andy"), ("aurelia", "aw2:kanbei"), ("cassius", "aw2:colin"), ("livia", "aw2:kanbei"), ("aria", "aw2:max")]
+UNLISTED_PAIRS = [("tabitha", "aw2:colin"), ("tabitha", "aw2:andy"), ("lili", "aw2:kanbei"), ("caulder", "aw2:colin"), ("caulder", "aw2:kanbei"), ("aria", "aw2:max")]
 
 
 def co_id(ref):
