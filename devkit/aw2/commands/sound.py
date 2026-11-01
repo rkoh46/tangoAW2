@@ -4,7 +4,7 @@
                                        ds: Dual Strike's sequences by name (BGM_* / SE_*) from the .nds' sound archive, with the ones the pack converts;
                                        roles: the names a scene's `@SONG` may use (src/campaign_music.rs)
 
-The Emerald Sun COs' own themes (docs/dev/music-kit.md, skill aw2-add-music): songs as text in tango-gamesupport-aw2/music/es/*.m4t,
+The Silver Nova COs' own themes (docs/dev/music-kit.md, skill aw2-add-music): songs as text in tango-gamesupport-aw2/music/es/*.m4t,
 compiled to AW2's sound engine (MP2K) data by src/es_music.rs and played with AW2's own voices.
   sound compose [--song N ..] [--dir D]   compile the song files and check the rules (loop 45..90 s, at most 8 notes at once, 8 tracks, size);
                                           exit 1 on an error or a rule broken. Needs `aw2dev build --examples`

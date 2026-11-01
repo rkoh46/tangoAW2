@@ -3,7 +3,7 @@ name: aw2-add-co
 description: Add a custom CO: its data file, its supplied portrait imported into AW2's CO art (figure, mug, mini, HUD face, expressions, name), balance against AW2's stars, Tag Powers, a look at it in the real game; then the engine side (co_new.rs, es_cos.rs, crumb.rs).
 ---
 
-Read docs/dev/co-kit.md first. The worked engine example is Crumb (`co_new.rs`, `crumb.rs`, `crumb_art.rs`); the data-and-art-first example is Emerald Sun's four (`tango-gamesupport-aw2/cos/`, `es_cos.rs`).
+Read docs/dev/co-kit.md first. The worked engine example is Crumb (`co_new.rs`, `crumb.rs`, `crumb_art.rs`); the data-and-art-first example is Silver Nova's four (`tango-gamesupport-aw2/cos/`, `es_cos.rs`).
 1. Write `tango-gamesupport-aw2/cos/<id>.toml` (copy `klaus.toml`): name, army, role, `stars`, `[d2d]`, `[cop]`, `[scop]`, quotes, theme, and `[portrait] source = "art-src/cos/<id>_v5.jpg"`
    (the one data line of the picture-to-CO mapping). List the Tag Powers in `cos/tags.toml` (every pair of the army). Compare the stars with AW2's: `aw2dev co check` prints the nearest AW2 COs
    and the name plates; `aw2dev co balance <id>` the averages against Dual Strike's COs. Keep the CO Power 2..5 and the Super Power (in all) 5..10.

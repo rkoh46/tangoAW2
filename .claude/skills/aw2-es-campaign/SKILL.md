@@ -1,6 +1,6 @@
 ---
 name: aw2-es-campaign
-description: Build, check and balance the Emerald Sun Campaign (16 missions): maps from specs, mission logic, dialogue lint, review sheets, the mission sim and the difficulty score. Use for any change to an Emerald Sun mission, map, scene or CO.
+description: Build, check and balance the Silver Nova Campaign (16 missions): maps from specs, mission logic, dialogue lint, review sheets, the mission sim and the difficulty score. Use for any change to a Silver Nova mission, map, scene or CO.
 ---
 
 Read docs/dev/es-campaign.md and docs/ES_CAMPAIGN.md. Standing rules: one battlefield (no two-front), Black Hole inventions only in M9 and M13, M16 clearly the hardest, no army above 56 start units, nothing pushed or released without the user.

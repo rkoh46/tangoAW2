@@ -2,7 +2,7 @@
 screen, the War Room's CO screen, Survival's and Champion's (the same screen),
 and the tag partner pick (the Teams list). With the Dual Strike pack that is
 AW2's 19 (Sturm included) and the 16 new ones (crate::co_new: Dual Strike's nine,
-Clone Andy, Crumb, Asuka, Aria, the Emerald Sun four), 36; without it AW2's 19. The War Room's records (the best
+Clone Andy, Crumb, Asuka, Aria, the Silver Nova four), 36; without it AW2's 19. The War Room's records (the best
 five of a map, each with its CO's id) are saved and loaded back for a new CO."""
 
 import os
@@ -16,7 +16,7 @@ from aw2test.game import Game
 from aw2test.harness import test
 
 AW2 = list(range(19))
-NEW = list(range(72, 83)) + [86, 87, 88, 89, 92, 93]      # (92: Asuka; 93: Aria; 86..89 the Emerald Sun four; Varro, 90, is on no list)
+NEW = list(range(72, 83)) + [86, 87, 88, 89, 92, 93]      # (92: Asuka; 93: Aria; 86..89 the Silver Nova four; Varro, 90, is on no list)
 
 
 def boot(ctx, save=None):

@@ -53,12 +53,12 @@ CRUMB CO: Yes, Sergeant! Two bowls!
 NARRATION: In the depot, a key hums. At / the Obelisk, a door hums with it.
 NARRATION: Closed, not locked. Beyond it, / a storm listens. And waits.
 
-# ---------------------------------------------------------------- M32 Through the Door (secret; FREE PAIR; Emerald Sun lands on Black Hole's island)
+# ---------------------------------------------------------------- M32 Through the Door (secret; FREE PAIR; Silver Nova lands on Black Hole's island)
 
 == m32_pre | ASUKA, CRUMB CO, HAWKE, KOAL, KINDLE, JUGGER, FLAK, LASH, ADDER, VON BOLT, CLONE ANDY
 @SONG co:klaus
 NARRATION: Black Hole's home island. / Desert, wind, and strange sails.
-KLAUS: Legate Klaus of the Emerald / Sun. We followed the black light.
+KLAUS: Legate Klaus of the Silver / Nova. We followed the black light.
 KLAUS: It carried us the last leagues. / We did not choose this shore.
 ASUKA: Legate. This is Black Hole's / island. You are trespassing.
 KLAUS: We were told the stencil leads / here. The stencil reads HOBB.
@@ -204,7 +204,7 @@ ASUKA: I look forward to being asked.
 
 == m32_epilogue
 @SONG ending2
-NARRATION: The edge of the map at dusk. / An Emerald Sun camp on a cliff.
+NARRATION: The edge of the map at dusk. / A Silver Nova camp on a cliff.
 AURELIA: Legate. The sun has set on us / twice already.
 KLAUS: The sun does not set, Engineer. / It waits.
 LIVIA: For what, Legate?

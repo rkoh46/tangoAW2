@@ -24,7 +24,7 @@ body:
     id: mode
     attributes:
       label: Where did it happen?
-      options: [Online (Unranked), Online (Lobby), Offline Versus, AW2 Campaign, DS Campaign, BH Campaign, Emerald Sun Campaign, War Room / Survival, Menus, Other]
+      options: [Online (Unranked), Online (Lobby), Offline Versus, AW2 Campaign, DS Campaign, BH Campaign, Silver Nova Campaign, War Room / Survival, Menus, Other]
     validations:
       required: true
   - type: checkboxes

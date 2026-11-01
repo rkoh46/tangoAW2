@@ -1,4 +1,4 @@
-"""The Emerald Sun COs' own themes (crate::es_music, docs/dev/music-kit.md): each of the five has a song of its own in the sound engine's table, written from a
+"""The Silver Nova COs' own themes (crate::es_music, docs/dev/music-kit.md): each of the five has a song of its own in the sound engine's table, written from a
 text file in the repository, played with AW2's own voices (the group is copied from the ROM), on the CO's turn, and it loops.
 
 `run.py -k es_music_render` (opt-in: AW2TEST_MUSIC_SONGS=klaus,livia ...) records the game's audio output of each theme for AW2TEST_MUSIC_SECONDS (default: the intro and
@@ -108,7 +108,7 @@ def es_themes_are_registered(ctx):
             want = open(os.path.join(dump, f"{name}.{t}.bin"), "rb").read()
             got = bytes(e.u8(p + k) for k in range(len(want) - 4))
             ctx.check(got == want[:-4], f"{name}: track {t}'s {len(want)} bytes are the compiler's")
-    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Emerald Sun COs, Asuka, Crumb and Clone Andy)")
+    ctx.eq(len(set(ids.values())), len(COS), "a different song for each CO (the five Silver Nova COs, Asuka, Crumb and Clone Andy)")
     # the room: every piece inside the story's range, none over another
     for i, a in enumerate(ranges):
         ctx.check(STORY[0] <= a[0] and a[1] <= STORY[1], f"{a[2]} {a[0]:08x}..{a[1]:08x} is in the story's range")

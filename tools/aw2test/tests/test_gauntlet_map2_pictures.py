@@ -1,5 +1,5 @@
 """A picture walkthrough of the Gauntlet's second map, for review (`-k gauntlet_map2_pictures`): Iron Crown on day 1, each arrival's scene and the whole map with the new line on it, Rachel's fall and the switch scene,
-Asuka's Keep (its opening scene, the whole fortress without the rain's fog, close-ups of the gate, the cannons and the west rim, the Emerald Sun army on it and in a battle scene), the victory. One sheet:
+Asuka's Keep (its opening scene, the whole fortress without the rain's fog, close-ups of the gate, the cannons and the west rim, the Silver Nova army on it and in a battle scene), the victory. One sheet:
 `gauntlet_map2_sheet.png` in the test's output (and `AW2TEST_REVIEW_DIR`)."""
 
 import os
@@ -136,7 +136,7 @@ def gauntlet_map2_pictures(ctx):
         e.wait(10)
     ctx.require(d.in_battle(), "Iron Crown loaded")
     if pic:
-        frames.append((pic, {"title": "Iron Crown opens with Grit", "plain": True, "lines": ["Mission start: Grit (Blue Moon) speaks over his river line. Map 2 of the Gauntlet; the player is Emerald Sun, the fifth army."]}))
+        frames.append((pic, {"title": "Iron Crown opens with Grit", "plain": True, "lines": ["Mission start: Grit (Blue Moon) speaks over his river line. Map 2 of the Gauntlet; the player is Silver Nova, the fifth army."]}))
     d.leave_setup()
     d.wait_control()
     to_player_turn(e, g, d)
@@ -153,7 +153,7 @@ def gauntlet_map2_pictures(ctx):
         return stitch.stitch(Quiet(ctx), g, tag, w, h)
 
     frames.append((full("iron_day1"), {"title": "Day 1: only Grit's line is on the map", "marks": marks(0, 0), "lines": [
-        "Iron Crown, 40 x 26 land map in five armies: the Emerald Sun player in the south-west camp, Grit (Blue Moon) behind the Aube in the west-centre.",
+        "Iron Crown, 40 x 26 land map in five armies: the Silver Nova player in the south-west camp, Grit (Blue Moon) behind the Aube in the west-centre.",
         "Jess's forests, Kanbei's mountain keep and Rachel's lowlands are plain ground: no HQ, no units, no turn yet. Lake (middle) joins the Aube, the Brenne and the Marle."]}))
     day1 = png(ctx, e, "day1_screen")
     for k, (key, army, who, nxt) in enumerate(ga.IRON_ORDER[:3]):
@@ -179,8 +179,8 @@ def gauntlet_map2_pictures(ctx):
     g._units_base = g._players_base = None
     w, h = d.size()
     game_pic = png(ctx, e, "keep_first_turn")
-    frames.append((game_pic, {"title": "Asuka's Keep, first turn (the rain's fog): the Emerald Sun army lands", "plain": True, "lines": [
-        "The player's survivors (Emerald Sun look on Orange Star's colour, in fog) on the landing cells in the south-west; Black Hole's colour is Asuka's."]}))
+    frames.append((game_pic, {"title": "Asuka's Keep, first turn (the rain's fog): the Silver Nova army lands", "plain": True, "lines": [
+        "The player's survivors (Silver Nova look on Orange Star's colour, in fog) on the landing cells in the south-west; Black Hole's colour is Asuka's."]}))
     home(g, e)
     unfog(g, e)
     keep = stitch.stitch(Quiet(ctx), g, "keep_full", w, h)
@@ -213,14 +213,14 @@ def gauntlet_map2_pictures(ctx):
 
 @test(name="gauntlet_map2_battle_scenes", modes=("ds",))
 def gauntlet_map2_battle_scenes(ctx):
-    """Battle scenes of the Emerald Sun army on both stages (animations on): the player's Tank fires on a unit placed next to it. `gauntlet_map2_battle_sheet.png`: the skin sits on Black Hole's colour on
+    """Battle scenes of the Silver Nova army on both stages (animations on): the player's Tank fires on a unit placed next to it. `gauntlet_map2_battle_sheet.png`: the skin sits on Black Hole's colour on
     Iron Crown and moves to Orange Star's on Asuka's Keep, where Asuka is Black Hole's."""
     from PIL import Image
     e, g, d = start(ctx)
     frames = []
     one = battle_scene(ctx, e, g, d, me=5, them=1, tag="iron_battle")
     ctx.require(one is not None, "a battle scene on Iron Crown")
-    frames.append((one, {"title": "Iron Crown: Emerald Sun (on Black Hole's colour) vs Grit", "plain": True, "lines": ["Animation option A; the foe was placed next to the Tank for the picture."]}))
+    frames.append((one, {"title": "Iron Crown: Silver Nova (on Black Hole's colour) vs Grit", "plain": True, "lines": ["Animation option A; the foe was placed next to the Tank for the picture."]}))
     for key, army, who, nxt in ga.IRON_ORDER:
         d.capture(ctx, ga.IRON[key], army=5)
         if nxt:
@@ -234,8 +234,8 @@ def gauntlet_map2_battle_scenes(ctx):
     ctx.log(f"stage two: army {g.current_army()}, scripts {d.scripts_running()}, day {e.u16(dc.DAY)}")
     two = battle_scene(ctx, e, g, d, me=1, them=2, tag="keep_battle")
     ctx.require(two is not None, "a battle scene on Asuka's Keep")
-    frames.append((two, {"title": "Asuka's Keep: Emerald Sun (now on Orange Star's colour) vs Asuka", "plain": True, "lines": ["The skin moved with the stage switch: sage and red crests, not Orange Star's red or Black Hole's grey."]}))
+    frames.append((two, {"title": "Asuka's Keep: Silver Nova (now on Orange Star's colour) vs Asuka", "plain": True, "lines": ["The skin moved with the stage switch: sage and red crests, not Orange Star's red or Black Hole's grey."]}))
     e.close()
     out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
     os.makedirs(out, exist_ok=True)
-    sheet(frames, os.path.join(out, "gauntlet_map2_battle_sheet.png"), "Gauntlet map 2: the Emerald Sun army's battle scenes on both stages")
+    sheet(frames, os.path.join(out, "gauntlet_map2_battle_sheet.png"), "Gauntlet map 2: the Silver Nova army's battle scenes on both stages")

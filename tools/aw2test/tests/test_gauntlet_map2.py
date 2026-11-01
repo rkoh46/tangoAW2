@@ -1,4 +1,4 @@
-"""The Gauntlet's second map (crate::gauntlet_mode: Iron Crown, then Asuka's Keep; docs/dev/gauntlet.md): a five-army land gauntlet (the player, Emerald Sun, is the fifth army) whose four lines
+"""The Gauntlet's second map (crate::gauntlet_mode: Iron Crown, then Asuka's Keep; docs/dev/gauntlet.md): a five-army land gauntlet (the player, Silver Nova, is the fifth army) whose four lines
 (Grit, Jess, Kanbei, Rachel) each come when the line before falls, then the stage switch to Asuka's Keep, where taking her HQ wins. `-k gauntlet_map2`. Map 2 is started from
 the selector's second entry."""
 
@@ -110,7 +110,7 @@ def gauntlet_map2_each_fall_reveals_the_next_line(ctx):
 
 @test(name="gauntlet_map2_stage_two_carries_the_survivors_and_asuka_wins", modes=("ds",))
 def gauntlet_map2_stage_two_carries_the_survivors_and_asuka_wins(ctx):
-    """The switch: the player's survivors land on Asuka's Keep, funds capped, the Emerald Sun skin sits on Orange Star's colour and Asuka is Black Hole's; taking her HQ wins."""
+    """The switch: the player's survivors land on Asuka's Keep, funds capped, the Silver Nova skin sits on Orange Star's colour and Asuka is Black Hole's; taking her HQ wins."""
     e, g, d = start(ctx)
     for key, army, who, nxt in ga.IRON_ORDER[:3]:
         d.capture(ctx, ga.IRON[key], army=5)
@@ -119,7 +119,7 @@ def gauntlet_map2_stage_two_carries_the_survivors_and_asuka_wins(ctx):
     p = g.player(5)["raw"]
     skin_before = e.u8(ga.SKIN_STATE)
     colour_before = e.u8(g.players_base + 0x3C * 5 + 0x1A)
-    ctx.eq((skin_before, colour_before), (5, 5), "stage one: the Emerald Sun skin sits on the fifth army's colour (Black Hole's)")
+    ctx.eq((skin_before, colour_before), (5, 5), "stage one: the Silver Nova skin sits on the fifth army's colour (Black Hole's)")
     # (a unit that moved this turn is greyed: it must be fresh on the new stage's first turn)
     tank = next(u for u in g.units(army=5) if u["type"] == 5 and not u["flags"] & 0x08)
     g.select(tank["x"], tank["y"])
@@ -143,8 +143,8 @@ def gauntlet_map2_stage_two_carries_the_survivors_and_asuka_wins(ctx):
     ctx.check(len(asuka) >= 25, f"Asuka's fresh army is on the keep ({len(asuka)})")
     ctx.eq(funds(g, 2) >= 60000, True, "Asuka holds her fortress with funds")
     cols = [e.u8(g.players_base + 0x3C * a + 0x1A) for a in (1, 2)]
-    ctx.eq(cols, [1, 5], "the player is Orange Star's colour (with the Emerald Sun skin), Asuka Black Hole's")
-    ctx.eq(e.u8(ga.SKIN_STATE), 1, "the Emerald Sun skin moved to the player's new colour")
+    ctx.eq(cols, [1, 5], "the player is Orange Star's colour (with the Silver Nova skin), Asuka Black Hole's")
+    ctx.eq(e.u8(ga.SKIN_STATE), 1, "the Silver Nova skin moved to the player's new colour")
     png(ctx, e, "keep_first_turn")
     ctx.eq(d.owner(ga.KEEP_ASUKA), 2, "Asuka's HQ is on the map")
     d.capture(ctx, ga.KEEP_ASUKA, army=1)

@@ -1,4 +1,4 @@
-"""Tests of the Emerald Sun difficulty score and campaign check (run by `aw2dev test python`; the report needs the built example aw2_es_report, skipped without)."""
+"""Tests of the Silver Nova difficulty score and campaign check (run by `aw2dev test python`; the report needs the built example aw2_es_report, skipped without)."""
 import sys, unittest
 from pathlib import Path
 
@@ -86,7 +86,7 @@ class WorldMap(unittest.TestCase):
 
 
 class AsukaRule(unittest.TestCase):
-    """`campaign check` fails when the Emerald Sun Campaign names Asuka (she is in Versus, not in that campaign)."""
+    """`campaign check` fails when the Silver Nova Campaign names Asuka (she is in Versus, not in that campaign)."""
 
     def test_the_real_campaign_does_not_name_her(self):
         from aw2.eslib import cli

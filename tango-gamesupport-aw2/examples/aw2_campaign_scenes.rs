@@ -1,4 +1,4 @@
-//! Lists the BH Campaign's (or, with `es` or `bh2`, the Emerald Sun or BH2 Campaign's) scenes with their songs: `aw2_campaign_scenes <aw2.gba>` prints one tab-separated line per scene:
+//! Lists the BH Campaign's (or, with `es` or `bh2`, the Silver Nova or BH2 Campaign's) scenes with their songs: `aw2_campaign_scenes <aw2.gba>` prints one tab-separated line per scene:
 //! mission, kind (prologue / intro / victory / after / trigger / front2), boxes, track label, AW2 song id (Dual Strike songs resolved with TANGOAW2_DS_ROM).
 //! Used by `aw2dev campaign scenes` (docs/dev/campaign-scenes.md).
 use tango_gamesupport_aw2::custom_campaign::{Action, Scene};

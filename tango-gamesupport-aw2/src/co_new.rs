@@ -101,11 +101,11 @@ fn turn_hue(c: u16, to: f32) -> u16 {
     q(r2) | q(g2) << 5 | q(b2) << 10
 }
 
-/// Emerald Sun's COs start here (ids 86..=90: Klaus, Aurelia, Cassius, Livia, Varro; `crate::es_co`); the first four wear the project owner's portraits (`crate::es_cos`).
+/// Silver Nova's COs start here (ids 86..=90: Klaus, Aurelia, Cassius, Livia, Varro; `crate::es_co`); the first four wear the project owner's portraits (`crate::es_cos`).
 pub const ES_FIRST: u8 = FIRST + 14;
 pub const ES_COUNT: u8 = 5;
-/// Asuka: Sonja after she defects to Black Hole, tangoAW2's own (`crate::asuka`, `docs/dev/asuka.md`). Id 92, after the Emerald Sun five and their dialogue's
-/// legionary face (91). A Black Hole CO of **every** list of this build (not an Emerald Sun one: no flag, not in that campaign).
+/// Asuka: Sonja after she defects to Black Hole, tangoAW2's own (`crate::asuka`, `docs/dev/asuka.md`). Id 92, after the Silver Nova five and their dialogue's
+/// legionary face (91). A Black Hole CO of **every** list of this build (not a Silver Nova one: no flag, not in that campaign).
 pub const ASUKA: u8 = FIRST + 20;
 /// Aria: Nell's sister, Commander of the New Accord, an Orange Star CO of tangoAW2's own (`crate::aria`, `docs/dev/aria.md`). Id 93, in every list of this build; a CO with only a Super Power.
 pub const ARIA: u8 = FIRST + 21;
@@ -184,7 +184,7 @@ pub fn all() -> impl Iterator<Item = (u8, u8, u8)> {
         .chain([(ARIA, CRUMB_BASE, crate::aria::LIKE)])
 }
 
-/// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Emerald Sun five are not, until the campaign is approved
+/// Whether a CO is in Versus' lists (the Teams list, the War Room's groups): the Silver Nova five are not, until the campaign is approved
 /// ([`crate::es_co::in_versus`]). Varro, the campaign's boss, is on no list, except for the harness: `TANGOAW2_ES_VARRO` (a test aid, both
 /// peers must agree) lists him so the CO checkers can pick him in Versus.
 pub fn listed(co: u8) -> bool {
@@ -823,7 +823,7 @@ fn build(core: &Core) -> Option<Built> {
     let mut strings: Vec<u8> = Vec::new();
     let mut slots: Vec<(u32, u32)> = Vec::new();
     for (co, ds, like) in all() {
-        // (an Emerald Sun CO wears a Dual Strike CO's pictures until its own are composed)
+        // (a Silver Nova CO wears a Dual Strike CO's pictures until its own are composed)
         // (the first four wear the project owner's portraits; Varro keeps a Dual Strike CO's face as a placeholder)
         let ds = crate::es_co::info(co).map_or(ds, |i| i.donor);
         let mut art = if co == CRUMB {
@@ -1193,7 +1193,7 @@ mod tests {
         let g = war_room_groups(&aw2).unwrap();
         assert_eq!(g.len(), 5);
         let all_ids: Vec<u8> = g.iter().flat_map(|x| x.0.clone()).collect();
-        // 19 of AW2's, 13 of Dual Strike's and tangoAW2's own, Asuka, Aria, and the four Emerald Sun COs (Varro, the boss, is not listed).
+        // 19 of AW2's, 13 of Dual Strike's and tangoAW2's own, Asuka, Aria, and the four Silver Nova COs (Varro, the boss, is not listed).
         assert_eq!(all_ids.len(), 19 + 13 + 4);
         let es = [crate::es_co::KLAUS, crate::es_co::AURELIA, crate::es_co::CASSIUS, crate::es_co::LIVIA];
         for co in (0..19).chain(FIRST..=CRUMB).chain([ASUKA, ARIA]).chain(es) {

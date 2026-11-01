@@ -1,11 +1,11 @@
-"""The BH2 Campaign's difficulty score: how hard each mission is to beat, from numbers a designer can read (the Emerald Sun kit's static score, `eslib/difficulty.py`, applied to BH2's missions).
+"""The BH2 Campaign's difficulty score: how hard each mission is to beat, from numbers a designer can read (the Silver Nova kit's static score, `eslib/difficulty.py`, applied to BH2's missions).
 
 For each mission the score takes, from the BH2 maps and `bh2_campaign.rs`:
 - force: the enemy's start units plus its scripted reinforcements (spawns, waves, takeover troops: `unit::` kinds in the mission's spawn lists) against the player's start units, at the games' unit prices (both fronts of a two-front mission are summed);
 - economy: the enemy's funds (start funds plus the funds a takeover adds) plus ten days of its properties' income against the player's;
 - fortified: the share of pipe-wall cells (a wall is a line the enemy holds: 60 cells is a fully walled map);
 - pressure: how many of ground, air and sea the enemy fields (start and spawns) over three.
-`score = 100 * (0.35 force + 0.20 economy + 0.10 fortified + 0.10 pressure) / 0.75` with each ratio mapped by r / (1 + r) (the Emerald Sun formula). `aw2dev bh2 difficulty` prints the table; the final mission must lead by 10%.
+`score = 100 * (0.35 force + 0.20 economy + 0.10 fortified + 0.10 pressure) / 0.75` with each ratio mapped by r / (1 + r) (the Silver Nova formula). `aw2dev bh2 difficulty` prints the table; the final mission must lead by 10%.
 Static only (no sims): the harness cannot yet play whole BH2 missions."""
 import collections
 import re

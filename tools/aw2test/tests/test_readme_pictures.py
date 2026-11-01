@@ -1,5 +1,5 @@
 """Pictures for the README (opt-in: `AW2TEST_README_DIR=<dir> python3 tools/aw2test/run.py -k readme_pictures`): the title screen with the version badge, and a
-picture of every fully typed box of an Emerald Sun mission's intro (`AW2TEST_README_MISSION`, default 1) for choosing the story scene. 240x160 BMPs, plus 3x
+picture of every fully typed box of a Silver Nova mission's intro (`AW2TEST_README_MISSION`, default 1) for choosing the story scene. 240x160 BMPs, plus 3x
 nearest-neighbour PNGs (720x480, the README's size) when PIL is there."""
 
 import os

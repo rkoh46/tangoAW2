@@ -128,7 +128,7 @@ screens = ["roulette_5p"]
 
 [[screen]]
 name = "emerald_sun_units"
-what = "Emerald Sun (the sixth army, a skin on one of AW2's colours): idle, done and moving units, its HQ, the build menu and the unit panel in its palette; none of the replaced army's colours left (past bug: moved units' outline grey, the battle gauge and the HUD panels stayed in the old army's colours)"
+what = "Silver Nova (the sixth army, a skin on one of AW2's colours): idle, done and moving units, its HQ, the build menu and the unit panel in its palette; none of the replaced army's colours left (past bug: moved units' outline grey, the battle gauge and the HUD panels stayed in the old army's colours)"
 runner = "harness"
 script = "aw2_skin_units_2p"
 vram = true
@@ -141,7 +141,7 @@ external = [{ cmd = ["python3", "{repo}/devkit/aw2dev", "armyskin", "check"], wh
 
 [[screen]]
 name = "emerald_sun_battle"
-what = "Emerald Sun's soldiers in a battle scene: the plumed helmet with its steel face guard on every figure (palette entries 14 and 15 are the plume's reds), the skin's colours on the figures"
+what = "Silver Nova's soldiers in a battle scene: the steel face mask on every figure (no plume any more), the skin's colours on the figures"
 runner = "harness"
 script = "aw2_skin_battle_2p"
 vram = true
@@ -153,7 +153,7 @@ golden = { tolerance = 0.002 }
 
 [[screen]]
 name = "emerald_sun_5p"
-what = "Emerald Sun on a five-army map beside Green Earth and Black Hole (it stands in for Blue Moon's colour there): properties, ships, units and the HQ in its palette"
+what = "Silver Nova on a five-army map beside Green Earth and Black Hole (it stands in for Blue Moon's colour there): properties, ships, units and the HQ in its palette"
 runner = "harness"
 script = "aw2_skin_5p"
 vram = true

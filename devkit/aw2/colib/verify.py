@@ -66,7 +66,7 @@ def list_tests(cos, quick=False):
 
     def mine(n):
         parts = n[len("co_verify_"):]
-        if re.match(r"hq_(m\d+|tag)$", parts):          # (the missions' and the pairs' HQ checks belong to the Emerald Sun COs)
+        if re.match(r"hq_(m\d+|tag)$", parts):          # (the missions' and the pairs' HQ checks belong to the Silver Nova COs)
             return any(c in cos for c in ("klaus", "aurelia", "cassius", "livia", "varro"))
         return any(re.search(rf"(^|_){c}(_|$)", parts) for c in cos)
     names = [n for n in names if mine(n)]

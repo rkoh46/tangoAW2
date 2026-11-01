@@ -1,4 +1,4 @@
-//! Emerald Sun's four COs, Klaus, Aurelia, Cassius and Livia (`docs/ES_CAMPAIGN.md`), as far as **art and texts** go: their pictures are the project owner's own art
+//! Silver Nova's four COs, Klaus, Aurelia, Cassius and Livia (`docs/ES_CAMPAIGN.md`), as far as **art and texts** go: their pictures are the project owner's own art
 //! ("portrait art provided by the project owner", `CREDITS.md`) converted by `aw2dev co portrait import` into indexed PNGs (`art/cos/<id>/`: the 128 x 160 figure, four 48 x 48
 //! expression faces, the Teams mini, the HUD face, the name set in our own letters), and their names, pages and quotes are written in `cos/<id>.toml`.
 //!
@@ -12,7 +12,7 @@ use std::sync::OnceLock;
 use crate::crumb_art::{body_files, decode, Px};
 use crate::ds_co_art::CoArt;
 
-/// The six with the owner's portraits: (CO id, file name). Asuka (92) is not Emerald Sun's: a Black Hole CO in every list (`crate::asuka`); Aria (93), an Orange Star CO in every list (`crate::aria`).
+/// The six with the owner's portraits: (CO id, file name). Asuka (92) is not Silver Nova's: a Black Hole CO in every list (`crate::asuka`); Aria (93), an Orange Star CO in every list (`crate::aria`).
 const IDS: [(u8, &str); 6] = [
     (86, "klaus"),
     (87, "aurelia"),

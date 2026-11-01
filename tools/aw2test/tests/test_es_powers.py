@@ -1,4 +1,4 @@
-"""The three Emerald Sun powers that need engine hooks (crate::es_co, "The powers' rules"), exercised in real battles on Versus maps (TANGOAW2_ES_VERSUS lists the
+"""The three Silver Nova powers that need engine hooks (crate::es_co, "The powers' rules"), exercised in real battles on Versus maps (TANGOAW2_ES_VERSUS lists the
 five COs): Klaus's Testudo (a counterattack against his attack does 25% less), Aurelia's Onager (an indirect hit costs the enemy units beside the target 1 HP)
 and Cassius's Triumph (a vehicle that has attacked may move once more, not attack again). Each also has its off case (no power: the plain rule) and a
 determinism case: the same scenario played twice from the same start ends with the same RAM, which is what both peers of a match need."""

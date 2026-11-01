@@ -3,7 +3,7 @@
 Black Hole's intelligence chief, tangoAW2's own CO. **Lore** (the CO page says it without naming her old self): once an Allied intelligence officer, she took the name Asuka on joining Black Hole, and with it a power
 far beyond her old self. (Developer note: she is Sonja after she defects; "Asuka" is Sonja's Japanese name. The CO page and quotes never name Sonja, players are left to work it out, and the BH2 story is not spoiled.)
 Code `tango-gamesupport-aw2/src/asuka.rs` (constants and the design in its header), the pieces in `co_new.rs` (`ASUKA`, `all()`, `like`, `is_own`, the texts, her presentation row), `co_roster.rs` (`ds_co`, `stat`:
-the +5%, the stars), `co_powers.rs` (`asuka_fn`, the ammo halving in `mass_unit`), `es_cos.rs` (her art and texts, the table of the Emerald Sun portraits), `ds_co_page.rs` (CO page), `sturm_pairs.rs` (her pairs), `es_music.rs` (`SOURCES`: her theme),
+the +5%, the stars), `co_powers.rs` (`asuka_fn`, the ammo halving in `mass_unit`), `es_cos.rs` (her art and texts, the table of the Silver Nova portraits), `ds_co_page.rs` (CO page), `sturm_pairs.rs` (her pairs), `es_music.rs` (`SOURCES`: her theme),
 `ds_ai.rs` (the CPU plays her with Hawke's profile). Data `cos/asuka.toml`, `cos/tags.toml`, art `art/cos/asuka/`, song `music/es/asuka.m4t`.
 
 ## Her theme
@@ -102,7 +102,7 @@ outline; the 128 x 160 figure is framed waist-up at 0.22 (head 63 px), she alrea
 Credit: portrait art provided by the project owner (`CREDITS.md`).
 *What the first in-game look got wrong (and was not the art):* (1) the **battle-scene header face** read as noise: the header draws the CO's **mini**, and the mini is not 32 x 24 but a **48 x 16 strip of the face**
 (12 tiles: the left 32 x 16 in rows of four, the right 16 x 16 in rows of two; found by poking each of a CO's 12 mini tiles with a colour of its own and reading the header, and checked on AW2's Sonja). The importer
-made it a 32 x 24 window in the wrong tile order, for the four Emerald Sun COs too; now `importer.mini_strip` cuts the strip and `es_cos.rs` lays the tiles out so, and all five headers read as faces (the Teams-page
+made it a 32 x 24 window in the wrong tile order, for the four Silver Nova COs too; now `importer.mini_strip` cuts the strip and `es_cos.rs` lays the tiles out so, and all five headers read as faces (the Teams-page
 sprites are the same two blocks: a 32 x 16 and a 16 x 16). (2) the **Power cut-ins** looked cropped or empty on the sheet because the captured frame was caught while the figure slid in (Dark Intel) or before it appeared
 (Event Horizon's cut-in comes after the flames); both cut-ins show the whole figure; `test_asuka_pictures.py` now picks the frame with the most of her black uniform and bursts long enough for both.
 **Edges** (the user compared her with Kanbei): the illustration importer cuts the silhouette hard (coverage at one half, spikes and fringe pixels off), draws the outline one pixel wide and unbroken in 8-connectivity (corners included), lifts the uniform's black into its own dark ramp (three tones at least 6.5 Lab lightness above the outline's, so the outline reads against the cloth and hair as it does on Hawke's coat), and puts a one-pixel seam in the darker material's shadow tone where two big materials meet (skin / collar, neckerchief / uniform, hand / sleeve, book edge); the faces get the same silhouette and outline, no seams (the eyes are their lines). `co portrait lint` checks all of it for illustration imports (`importer.outline_problems`, tests `OutlineLint`): no gap, one pixel wide, outline colour only, hardly any outline colour inside, and no tone of the palette within 8 Lab of the outline.
@@ -112,8 +112,8 @@ army 1 (Orange Star's slot) is drawn exactly as Hawke's and not as Andy's or Son
 `aw2dev co verify sonja` compares Sonja's rows, texts, pictures, numbers and tag page with the v0.8.7 build (docs/dev/co-kit.md). Her screens are compared by what is hers (HUD face without the cursor, her Super Power figure normalised to its bounding box, her quote boxes), not by whole-frame hashes: the current build's animation phase is a frame or two off v0.8.7's (cursor blink, idle frames, fire), which changed six whole-frame hashes while every Sonja pixel stayed identical. `AW2TEST_KEEP_FRAMES=1 aw2dev co verify sonja` keeps the BMPs in devkit/work/baseline/frames_reference and frames_current.
 
 ## Where she is
-In **this build, for everyone** (no playtest flag, unlike the Emerald Sun five): Versus' Teams list (after Hawke, Black Hole's group), the tag partner pick, the War Room and Survival / Champion CO screens, the DS-style
-CO select grid (Versus' grid no longer draws black cells for Emerald Sun COs the roster does not list), the CO pages, the HUD, the power and tag cut-ins, the dialogue boxes. **Not in the Emerald Sun Campaign**:
+In **this build, for everyone** (no playtest flag, unlike the Silver Nova five): Versus' Teams list (after Hawke, Black Hole's group), the tag partner pick, the War Room and Survival / Champion CO screens, the DS-style
+CO select grid (Versus' grid no longer draws black cells for Silver Nova COs the roster does not list), the CO pages, the HUD, the power and tag cut-ins, the dialogue boxes. **Not in the Silver Nova Campaign**:
 `aw2dev campaign check` fails if any campaign module, dialogue file or roster names her (`eslib/cli.py asuka_rule`; test `eslib/test_eslib.py AsukaRule`). **Not in the BH Campaign yet**: reserved for the BH2 Campaign.
 
 ## What she does (simplified: the owner's second design)
@@ -170,7 +170,7 @@ refresh it with `aw2dev gfx golden` when this line is merged).
 
 ## The quote boxes and the flash (checked in the game)
 - The cut-off quote lines on the first sheets were the sheet's frame timing (the text still being typed); the boxes finish both lines ("I have read your / every move. Observe.", "Event Horizon. Nothing / escapes it. Not even you."). `asuka_pics_*_activation` measures each line's pixel width in the typed-out frame against AW2's font width of the toml's line (within 3 px), so a truncated or wrong line fails.
-- The Super Power showed the CO Power's line because AW2 (and Dual Strike) write six quotes for every CO and pick **one of the six at random for any power** (`sub_080398D0`): the six lines are not a CO Power / Super Power split. That is AW2's design for its own COs, left alone. For tangoAW2's own COs (Crumb, the Emerald Sun five, Asuka) the pick is now the power's own (`crumb::quote_pick`, extended: slots CO Power, Super Power, Tag Power twice), so Event Horizon says its own line.
+- The Super Power showed the CO Power's line because AW2 (and Dual Strike) write six quotes for every CO and pick **one of the six at random for any power** (`sub_080398D0`): the six lines are not a CO Power / Super Power split. That is AW2's design for its own COs, left alone. For tangoAW2's own COs (Crumb, the Silver Nova five, Asuka) the pick is now the power's own (`crumb::quote_pick`, extended: slots CO Power, Super Power, Tag Power twice), so Event Horizon says its own line.
 - The white frame: AW2's own flash. The screen goes white for about 14 emulated frames, twice in a Super Power (Hawke's, Sonja's and Kanbei's are the same length, measured on all four with the same burst) and returns to the map normally; nothing lingers. The sheet shows the frames just before and after, never the white. A CO Power has a wash of light instead, no white.
 
 ## The simplification (SIM_VERSION 33, with Aria)

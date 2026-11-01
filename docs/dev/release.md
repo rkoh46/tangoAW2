@@ -31,9 +31,9 @@ Expect assets: macOS dmg, Windows exe + pdb, Linux AppImage + debug, iOS ipa. Us
 `--dry-run` to only list them.
 
 ## Playtest bundle (`aw2dev playtest-app`)
-`aw2dev playtest-app` builds `dist/TangoAW2-Playtest.app` (release-dist, cargo feature `playtest`, into `target/playtest`): this checkout with the Emerald Sun Campaign (`es_campaign::dev_flag`) and its
+`aw2dev playtest-app` builds `dist/TangoAW2-Playtest.app` (release-dist, cargo feature `playtest`, into `target/playtest`): this checkout with the Silver Nova Campaign (`es_campaign::dev_flag`) and its
 COs in Versus (`es_co::in_versus`) **on by default, no environment variables**, the self-updater off, and everything of its own so it installs beside the real app: bundle id `net.n1gp.TangoAW2Playtest`,
 name "TangoAW2 Playtest", settings under `net.n1gp.tangoaw2-playtest`, data under `~/Documents/TangoAW2-Playtest` (a fresh install: point it at your ROMs once, in its Settings). It installs nothing
 and never touches `/Applications/TangoAW2.app` or its settings, ROMs and saves. The campaign's save slot (Flash slot 11) lives in the playtest's own saves.
 
-README pictures: `AW2TEST_README_DIR=<dir> python3 tools/aw2test/run.py -k readme_pictures` (title screen with the version badge, every box of an Emerald Sun mission's intro; `AW2TEST_README_MISSION`, `AW2TEST_README_WIN=1` for the victory scenes), `-k bh_showcase` (BH shots, `AW2TEST_SHOWCASE_DIR`), `aw2dev co portrait ingame asuka`, `aw2dev armyskin scenario` (Versus with the skin); scale the 240x160 BMPs 3x nearest into `docs/screenshots/`.
+README pictures: `AW2TEST_README_DIR=<dir> python3 tools/aw2test/run.py -k readme_pictures` (title screen with the version badge, every box of a Silver Nova mission's intro; `AW2TEST_README_MISSION`, `AW2TEST_README_WIN=1` for the victory scenes), `-k bh_showcase` (BH shots, `AW2TEST_SHOWCASE_DIR`), `aw2dev co portrait ingame asuka`, `aw2dev armyskin scenario` (Versus with the skin); scale the 240x160 BMPs 3x nearest into `docs/screenshots/`.

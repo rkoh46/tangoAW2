@@ -1,6 +1,6 @@
 //! The writes an army skin makes (tango_gamesupport_aw2::army_skin::plan), as JSON, for `aw2dev armyskin`.
 //!
-//! Usage: aw2_skin_dump <aw2.gba> <colour 1..5> [skin.toml]   (the repository's Emerald Sun when no file is given)
+//! Usage: aw2_skin_dump <aw2.gba> <colour 1..5> [skin.toml]   (the repository's Silver Nova when no file is given)
 
 use tango_gamesupport_aw2::army_skin::{self, RomFile, Skin};
 

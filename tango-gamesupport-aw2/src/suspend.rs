@@ -406,7 +406,7 @@ fn mid_sector(core: &Core, slot: u8) -> Option<u32> {
 }
 
 /// The top three bits of a saved mission byte name the campaign when it is neither the DS Campaign's nor the BH Campaign's (those keep 0: their old
-/// saves stay valid): the Emerald Sun Campaign (source 2) shares the BH Campaign's slot 12, so the flash keeps fifteen of its sixteen sectors at most.
+/// saves stay valid): the Silver Nova Campaign (source 2) shares the BH Campaign's slot 12, so the flash keeps fifteen of its sixteen sectors at most.
 fn source_tag(source: usize) -> u8 {
     if source >= 2 {
         (source as u8) << 5
@@ -483,7 +483,7 @@ pub fn drop_mid(core: &mut Core, slot: u8) {
 }
 
 /// `SaveScreenCampaign_StartMessage` clears AW2's campaign suspend mark (`sub_08016CEC(2, 0)`: the prompt after a mission, as AW2's own campaign's
-/// save replaces the old one). In a DS, BH or Emerald Sun session the mission AW2 saved halfway in slot 2 is still there: the mark is noted at the
+/// save replaces the old one). In a DS, BH or Silver Nova session the mission AW2 saved halfway in slot 2 is still there: the mark is noted at the
 /// prompt's start ([`note_aw2_mark`]) and put back after the clearing ([`keep_aw2_mark`], at [`AFTER_MARK_CLEAR`]).
 pub const AFTER_MARK_CLEAR: u32 = 0x0803_D944;
 /// 0x80 | AW2's campaign mark at the prompt's start, while a session's prompt is up.

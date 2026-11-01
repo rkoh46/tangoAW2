@@ -234,7 +234,7 @@ fn is_crumb(core: &Core, army: u32) -> bool {
     (1..=5).contains(&army) && crate::co_roster::army_co(core, army).0 == CRUMB
 }
 
-/// A CO of tangoAW2's own whose six quotes are in the order CO Power, Super Power, Tag Power, twice (Crumb, the Emerald Sun COs, Asuka): the game's random pick of
+/// A CO of tangoAW2's own whose six quotes are in the order CO Power, Super Power, Tag Power, twice (Crumb, the Silver Nova COs, Asuka): the game's random pick of
 /// one of six (AW2 and Dual Strike write their COs' quotes as six lines, any of which any power may say) is replaced by the power's own.
 fn has_own_quotes(core: &Core, army: u32) -> bool {
     if !(1..=5).contains(&army) {

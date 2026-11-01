@@ -3,14 +3,14 @@
 `aw2dev maps lint` finds what makes a map look or play broken before a player does: unfinished rivers, puddles, joins the game never draws, bridges that end
 in water, units on ground they cannot stand on, properties nobody reaches, tiles the game would draw as garbage. It reads the user's ROMs at run time and stores
 nothing from them. Code: `devkit/aw2/commands/maps.py` (CLI), `devkit/aw2/maplint/` (`load.py` sources, `terrain.py` tile -> terrain, `rules.py` the rules,
-`spawns.py` units the BH and Emerald Sun missions place from Rust (`UnitDef::new` and `wave(army, unit::KIND, &CELLS[a..b])`), `render.py` pictures, `test_maplint.py` tests). Skill: `.claude/skills/aw2-map-lint`.
+`spawns.py` units the BH and Silver Nova missions place from Rust (`UnitDef::new` and `wave(army, unit::KIND, &CELLS[a..b])`), `render.py` pictures, `test_maplint.py` tests). Skill: `.claude/skills/aw2-map-lint`.
 
 ## Commands
 | Command | What |
 |---|---|
 | `aw2dev maps lint [--source bh\|versus\|aw2\|ds\|all] [--map NAME ...] [--rule ID ...] [--warn] [--png DIR \| --no-png] [--json]` | lint the BH Campaign's maps (default), tangoAW2's Versus maps, AW2's own (ROM) or Dual Strike's (the .nds); one line per problem (rule id, level, cell, text); an annotated picture per map in `devkit/work/maps/lint/<source>/` (errors red, warnings amber, rule list beside the map); exit 1 on an error in a bh / versus map (AW2's and DS's own hits are reference, only reported) |
 | `aw2dev maps rules [--md]` | every rule with the number of maps of each source that trip it: what the games themselves do |
-| `aw2dev maps compare --base REV [--source bh\|es] [--out DIR] [--sheet FILE]` | BH (or Emerald Sun) maps at git REV against the working tree: tiles changed per map and a before / after picture (changed cells outlined white; titles with errors, MD findings, properties, the farthest ground from a property and the plain share); `--sheet` one picture of them all |
+| `aw2dev maps compare --base REV [--source bh\|es] [--out DIR] [--sheet FILE]` | BH (or Silver Nova) maps at git REV against the working tree: tiles changed per map and a before / after picture (changed cells outlined white; titles with errors, MD findings, properties, the farthest ground from a property and the plain share); `--sheet` one picture of them all |
 | `aw2dev maps study [DIR] [--source es bh versus aw2 ds] [--rows] [--png DIR] [--json FILE]` | the design study: AWBW grids from a scratchpad folder and our maps measured, per map and per set, with the MD rules' hits (docs/dev/map-design.md) |
 | `aw2dev maps boot [--mission N ...]` | enter BH missions in the offline harness (`tools/aw2test` `bh_review_m*`) and keep the game's own whole-map picture of each: the proof that a mission loads |
 
@@ -77,13 +77,13 @@ Tables found in the ROM and used:
 | DQ12 | warn | a long straight line of mountains away from the map edge: a drawn wall, not a range | 9 | 10 | 0 | 5 | 0 |
 | DQ11 | warn | a map meant to be fair (Versus, or a `fair` line) with unequal properties per army | 0 | 0 | 0 | 0 | 0 |
 | SP01 | warn | not enough room to fight: too many units for the walkable ground or for the frontage between the sides | 0 | 0 | 0 | 7 | 0 |
-| MD01..MD08 | warn | the design principles (too few properties, dead corners, one narrow corridor, a base in a day-one rush's reach, nothing in the middle, open field, an uncrossed river, roads to nowhere): `docs/dev/map-design.md`; failing for the Emerald Sun maps | 17-44 | 15-78 | 0-13 | 0-19 | see map-design.md |
+| MD01..MD08 | warn | the design principles (too few properties, dead corners, one narrow corridor, a base in a day-one rush's reach, nothing in the middle, open field, an uncrossed river, roads to nowhere): `docs/dev/map-design.md`; failing for the Silver Nova maps | 17-44 | 15-78 | 0-13 | 0-19 | see map-design.md |
 | IV02 | error | BH2 maps: a unit of either army starts in an invention's firing zone (a Laser's row and column, a minicannon's four cells, a Black Cannon's cone, the Deathray's columns): the first turn's shot must hit nothing | 0 | 0 | 0 | 0 | 0 |
 | IV03 | error | BH2 maps: a Laser's row or column crosses a property of its owner (Black Hole): no Laser may shoot its own airport, port or city | 0 | 0 | 0 | 0 | 0 |
 | PT02 | error | BH2 maps: a port whose door is not open sea a ship can use: no open-sea (`~`) neighbour (shoal, reef, river do not count), a sealed pond under 24 cells, or a door cell with no sea beyond it (the owner's standing rule: a port touches sea it can launch into; `aw2dev maps ports --source bh2` lists every port) | 0 | 0 | 0 | 0 | 0 |
 | HQ01 | error | BH2 maps: an army has one HQ: no second HQ tile (`Q`) of the same army (the owner prefers none; each nation is its own army with its own colour and HQ) | 0 | 0 | 0 | 0 | 0 |
 | IV01 | error | BH2 maps: an invention (Deathray, Black Cannon, minicannon, Laser, Black Crystal, Black Obelisk, Black Factory) nearer to another army's HQ than to Black Hole's, or a Deathray below the top rows | 0 | 0 | 0 | 0 | 0 |
-| ES01 | error | Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line) | 0 | 0 | 0 | 0 | 0 |
+| ES01 | error | Black Hole's inventions on a Silver Nova map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line) | 0 | 0 | 0 | 0 | 0 |
 
 Levels: **error** = AW2 and Dual Strike do it in at most a few percent of their maps (the rule's hits there are listed above, they are the games' own slips or deliberate shapes;
 `aw2dev maps lint --source aw2 --rule RV01` names them); **warn** = the games do it regularly, reported with `--warn` only (bridge ends in woods, single road tiles, mountains drawn
@@ -103,7 +103,7 @@ What each rule looks at (all on tiles, so the same code reads a text map, a Vers
 - **Roads and pipes.** RD01 (warn): a single road tile; RD02 (warn): two road ends in line one or two plain tiles apart; PP01: a pipe tile that opens onto a tile it does not join;
   PP02: a seam outside a straight run. Dead-end roads are NOT a rule: the games end roads against plain, wood, mountains and the sea all the time (measured: 54 plain, 54 wood, 19 mountain
   ends in 179 maps).
-- **Units** (BH maps: the `unit` lines of the map file and every `UnitDef::new(army, unit::KIND, x, y)` a mission places from `bh_act*.rs` / `es_act*.rs`: reinforcements, paratroopers, scripted columns, and every cell of an Emerald Sun `wave(...)` over its `const` cell table;
+- **Units** (BH maps: the `unit` lines of the map file and every `UnitDef::new(army, unit::KIND, x, y)` a mission places from `bh_act*.rs` / `es_act*.rs`: reinforcements, paratroopers, scripted columns, and every cell of a Silver Nova `wave(...)` over its `const` cell table;
   a second-front pair `bh08` / `bh08b` is checked against both maps, a unit must fit at least one): UN01 on terrain its kind cannot occupy (`bhmap.py passable`: foot, tires, treads, sea,
   Lander, air), UN02 two on one cell (a spawn on a unit of the map file), UN03 boxed in, UN04 off the map.
 - **Reachability** (`bhmap.py check_reach`): RC01 land with properties or units no army or Lander reaches, RC02 an army that must take an enemy HQ and cannot by land, Lander or aircraft,
@@ -129,7 +129,7 @@ Left as they are (warnings, a design call, not defects): DQ04 (little but plain)
 Crystal Isles and Obelisk Plains; DQ05 (a 6 x 6 empty plain, AW2's largest is 5) on Obelisk Plains; DQ01 (a river with no bend) on Rust Basin, Cinder Flats and Black Wastes; DQ02 (rectangular woods) on Pentagon Atoll.
 
 ## Design quality ("bad game design"): `maplint/design.py`
-The integrity rules ask whether a map is *broken*; these ask whether it looks machine-made or plays cramped. All are warnings (the Emerald Sun maps are held to them: a
+The integrity rules ask whether a map is *broken*; these ask whether it looks machine-made or plays cramped. All are warnings (the Silver Nova maps are held to them: a
 DQ.. or SP.. finding fails `maps lint --source es`; the BH Campaign's and Versus maps only report). Every threshold (`design.LIMITS`) sits where AW2's and Dual Strike's own
 maps (435 of them) almost never go; the unit rules are calibrated on the BH Campaign's 35 maps, the only source with unit positions in the files.
 
@@ -151,7 +151,7 @@ maps (435 of them) almost never go; the unit rules are calibrated on the BH Camp
 Room to fight (SP01): the density is all units over all cells a vehicle can drive on (BH Campaign: .07 to .23, median .12). The frontage runs the axis between the two strongest
 sides' unit centroids and counts, at nine points between 30% and 70% of it, the cells (any ground a foot soldier can cross) within half a cell of the perpendicular; the units of the smaller
 side divided by the narrowest count must not pass 1.25 (BH median .8). Fleets and air wings are exempt (they cross water and sky): the rule looks at maps where ground units are 60% or more.
-For the Emerald Sun maps the aim is stricter than the limits: density .12 or less, so a 40-unit army has room to flank and to put its artillery behind a line.
+For the Silver Nova maps the aim is stricter than the limits: density .12 or less, so a 40-unit army has room to flank and to put its artillery behind a line.
 
 Calibration, what was tried: the mirror symmetry of a map is no sign of a machine (a quarter of AW2's own maps are mirrored, 19 of 20 Versus maps), so it is not a rule. Diagonal neighbours for
 river, road and shoal tile choice (to catch a wrong autotile the 4-neighbour key misses) found 4409 distinct contexts in the games' maps and would flag hand-made Versus maps by the dozen:
@@ -161,28 +161,28 @@ the learned 4-neighbour key of TJ02 stays the check of what the game draws (the 
 ## The river rule (RV05), and the render check (RN01)
 - **Both ends of every river reach the map edge, the sea, a shoal or a lake.** AW2 has no river source or end tile, so a river that stops on land always looks cut off, and a mountain "spring" is no exception
   (RV01 already refused plain, wood, road, pipe and buildings; RV05 refuses a mountain). AW2's and Dual Strike's own maps break it in 3 + 2 of 435 (about 1%): `aw2_69`, `aw2_7A`, `aw2_92`, `ds_07D`, `ds_099`.
-  It is an **error** for the BH Campaign, the Emerald Sun Campaign and Versus. No tangoAW2 map trips it any more: `bh10`'s river now runs on to the east edge and `bh31`'s turns east at its top, under the road's bridge, into the shoal
+  It is an **error** for the BH Campaign, the Silver Nova Campaign and Versus. No tangoAW2 map trips it any more: `bh10`'s river now runs on to the east edge and `bh31`'s turns east at its top, under the road's bridge, into the shoal
   (the generator draws a straight east-west run in the phase of the bend it leaves, `map.py river_phase`: 0x58 -> 0x39 -> 0x7B), so `rules.KNOWN` is empty (a mechanism for a finding the user excuses; the test fails while it is not).
-  Emerald Sun: M1, M2, M3, M13 (two), M14 and M16 broke it; each river now starts in a
+  Silver Nova: M1, M2, M3, M13 (two), M14 and M16 broke it; each river now starts in a
   small lake (`Canvas.lake`: the map builder draws a river mouth only on a straight shore, so the lake has a flat 3-cell shore row at the river's end) or runs to the edge.
 - **Render check (RN01), `aw2dev maps render-check [--source es|bh] [--pictures DIR] [--corpus DIR ...]`.** For river, shoal, bridge and coast tiles only: every cell of the game's own picture of a map (the
   `m<N>_full.png` pictures of `aw2dev campaign sheets` or `maps boot`, 16 pixels a cell, no unit on the cell) is compared with the drawings the reference pictures have of the same tile id, 4-neighbour class
   (`rules.trans_key`), shade (a tall neighbour on its left) and look (the plain's colour). The pixels all reference drawings agree on must agree (a cell under a building is skipped, as one under a unit: the building's roof covers it); water is animated, so a cell is flagged only when more than 30%
-  of those pixels differ (a wrongly drawn tile differs in most of them; a phase of the animation in a few). The reference is the BH Campaign's 35 pictures (`maps boot`, about 8 minutes) and, for Emerald Sun, the
-  other Emerald Sun pictures. A key with fewer than 6 reference drawings has no verdict. Result: 0 findings in the BH and Emerald Sun pictures. A planted wrong drawing is flagged by the unit test.
+  of those pixels differ (a wrongly drawn tile differs in most of them; a phase of the animation in a few). The reference is the BH Campaign's 35 pictures (`maps boot`, about 8 minutes) and, for Silver Nova, the
+  other Silver Nova pictures. A key with fewer than 6 reference drawings has no verdict. Result: 0 findings in the BH and Silver Nova pictures. A planted wrong drawing is flagged by the unit test.
   The diagonal-neighbour variant (which flagged hand-made maps) is not used.
 - **DQ12:** a straight line of 11 or more mountains away from the map edge (AW2 and Dual Strike have one in about 5% of their maps). `Canvas.ragged` breaks such lines.
 
 ## BH2 maps (`--source bh2`)
-The BH2 Campaign's maps (docs/dev/bh2-maps.md) are held to the integrity rules, the design rules (DQ, SP, MD, PP03/04 fail) and IV01, as the Emerald Sun maps are. A `nohq` map (a sky front) skips the design rules. AR02 lets a held second HQ (`Q` in the text rows, as BH1's M30) stand beside an army's HQ, once.
+The BH2 Campaign's maps (docs/dev/bh2-maps.md) are held to the integrity rules, the design rules (DQ, SP, MD, PP03/04 fail) and IV01, as the Silver Nova maps are. A `nohq` map (a sky front) skips the design rules. AR02 lets a held second HQ (`Q` in the text rows, as BH1's M30) stand beside an army's HQ, once.
 `aw2dev maps features --campaign bh2` lists the properties, terrain and inventions each map uses. `render-check --source bh2` is wired for the game's pictures once the missions are in the game.
 
 ## Armies and reachability (AR01 to AR03)
-- **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Emerald Sun and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.
-- **AR03** a missile silo or an airport must be reachable on foot from some HQ (a port or a Lander lets infantry cross water and land on any shore). AW2 breaks it in 12 of 179 maps, Dual Strike in 24 of 256, BH, Versus and Emerald Sun in none. A silo is AW2's own terrain (tile 0x180), so ES01 no longer counts it as a Black Hole invention.
+- **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Silver Nova and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.
+- **AR03** a missile silo or an airport must be reachable on foot from some HQ (a port or a Lander lets infantry cross water and land on any shore). AW2 breaks it in 12 of 179 maps, Dual Strike in 24 of 256, BH, Versus and Silver Nova in none. A silo is AW2's own terrain (tile 0x180), so ES01 no longer counts it as a Black Hole invention.
 
 ## Pipelines, ports (PP03, PP04, PT01) and the port audit
-- **PP03** a pipeline must be infrastructure: 6 or more cells (a wall with gates of up to 3 cells counts as one line) and no end hanging in open terrain: every end stops at the map edge, the sea, a river, a mountain, a gate, or a building or structure it feeds. **PP04** the seam of a barrier pipeline must change something: broken, it joins ground that was cut off, or shortens the way between two HQs by 6 cells or more (a supply line's seam, one that ends in a base or factory, only cuts the feed). Warnings everywhere; failing for Emerald Sun maps. AW2 and Dual Strike pipes mostly break them (15 of 18 and 43 of 50 maps with pipes: the games end pipes in open ground all the time), so the rule is this campaign's taste, not the games'. The supply pipe of a Black Hole factory or cannon is exempt.
-- **PT01** every port touches navigable sea of a body of 12 or more cells (AW2's smallest is 23, Dual Strike's 16, the BH Campaign's 14); on a wasteland map (look 3, read from the mission's Rust `m.look`) the water is lava and no ship sails there. Error. Findings: Emerald Sun M9 (2 ports) and M13 (5 ports) on lava, Versus `Crystal Isles` (3 ports with no sea: kept in `rules.KNOWN`); BH none.
+- **PP03** a pipeline must be infrastructure: 6 or more cells (a wall with gates of up to 3 cells counts as one line) and no end hanging in open terrain: every end stops at the map edge, the sea, a river, a mountain, a gate, or a building or structure it feeds. **PP04** the seam of a barrier pipeline must change something: broken, it joins ground that was cut off, or shortens the way between two HQs by 6 cells or more (a supply line's seam, one that ends in a base or factory, only cuts the feed). Warnings everywhere; failing for Silver Nova maps. AW2 and Dual Strike pipes mostly break them (15 of 18 and 43 of 50 maps with pipes: the games end pipes in open ground all the time), so the rule is this campaign's taste, not the games'. The supply pipe of a Black Hole factory or cannon is exempt.
+- **PT01** every port touches navigable sea of a body of 12 or more cells (AW2's smallest is 23, Dual Strike's 16, the BH Campaign's 14); on a wasteland map (look 3, read from the mission's Rust `m.look`) the water is lava and no ship sails there. Error. Findings: Silver Nova M9 (2 ports) and M13 (5 ports) on lava, Versus `Crystal Isles` (3 ports with no sea: kept in `rules.KNOWN`); BH none.
 - **`aw2dev maps ports [--source es|bh|versus]`** prints every port (map, army digit or N neutral, cell, water, OK or FIX).
 

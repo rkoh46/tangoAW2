@@ -1,5 +1,5 @@
 """The CO name graphic (48 x 16, six 8 x 16 sprites): a blocky italic-free capital-and-lowercase face of our own (original art, GPL-3.0-or-later) in the style of AW2's names: white fill (index 1),
-a dark outline (15) and a drop shadow (14), drawn with the fixed name palette (0x080F6164). The letters the Emerald Sun names and Asuka need: A C K L V, a e i k l o r s u v."""
+a dark outline (15) and a drop shadow (14), drawn with the fixed name palette (0x080F6164). The letters the Silver Nova names and Asuka need: A C K L V, a e i k l o r s u v."""
 import numpy as np
 
 G = {

@@ -1,4 +1,4 @@
-"""aw2dev playtest-app: build `dist/TangoAW2-Playtest.app`, a macOS bundle of this checkout with the Emerald Sun Campaign and its COs on by default (cargo feature `playtest`, no environment
+"""aw2dev playtest-app: build `dist/TangoAW2-Playtest.app`, a macOS bundle of this checkout with the Silver Nova Campaign and its COs on by default (cargo feature `playtest`, no environment
 variables) and everything of its own: bundle id `net.n1gp.TangoAW2Playtest`, name "TangoAW2 Playtest", settings under `net.n1gp.tangoaw2-playtest`, data under `~/Documents/TangoAW2-Playtest`
 (a fresh install: point it at your ROMs once). It installs beside the real TangoAW2.app and never touches it, its settings, ROMs or saves; this command installs nothing and does not
 touch /Applications. The self-updater is off in this build. Needs the Command Line Tools toolchain only."""

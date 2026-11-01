@@ -1,10 +1,10 @@
-"""The Normal Battle TEAMS screen's look with the new COs and the Emerald Sun skin.
+"""The Normal Battle TEAMS screen's look with the new COs and the Silver Nova skin.
 
 * The CO cards (`teams_cards_show_the_committed_faces`): each custom CO's 48 x 48 face on the card, in the 1P and the CP column, is the committed
-  `art/cos/<id>/face_normal.png` pixel for pixel (the screen's colours, 5 bits a channel). Until 0.9.1 the four Emerald Sun COs' faces were
+  `art/cos/<id>/face_normal.png` pixel for pixel (the screen's colours, 5 bits a channel). Until 0.9.1 the four Silver Nova COs' faces were
   cut from the picture at twice the size (`mug_scale` missing in their framing files), so the card showed eyes and nose only.
 * The windows (`teams_windows_stay_aw2s_with_the_skin`): AW2's own screen paints its help box in Orange Star's window colours whichever armies
-  are chosen (checked with each of AW2's five); the Emerald Sun skin on a seat's army must not change them (it used to turn the box olive when it
+  are chosen (checked with each of AW2's five); the Silver Nova skin on a seat's army must not change them (it used to turn the box olive when it
   took Orange Star's colour: `army_skin::refresh_palettes` rewrote the windows' palette bank too)."""
 
 import os
@@ -46,7 +46,7 @@ def teams_cards_show_the_committed_faces(ctx):
     for name, co in COS.items():
         face = Image.open(os.path.join(ART, name, "face_normal.png")).convert("RGBA")
         # a face framed to show the whole head leaves the picture's background around it (Aria's 231 pixels is the least of the six; the zoomed
-        # Emerald Sun faces had 0 to 404 and filled the square with eyes and nose)
+        # Silver Nova faces had 0 to 404 and filled the square with eyes and nose)
         clear = sum(1 for y in range(48) for x in range(48) if face.getpixel((x, y))[3] == 0)
         bad += not ctx.check(clear >= 150, f"{name}: the face shows the whole head, not a zoomed crop ({clear} background pixels in the 48 x 48 square)")
         for col in (0, 1):
@@ -86,12 +86,12 @@ def teams_windows_stay_aw2s_with_the_skin(ctx):
     g.set_teams(["andy", "andy"], {1})
     e.press("LEFT", 6); e.wait(14); e.press("LEFT", 6); e.wait(40)   # the cursor on the 1P column
     seen = []
-    for k in range(7):         # 1P's army through Orange Star, Yellow Comet, Green Earth, Black Hole, then Emerald Sun, and on
+    for k in range(7):         # 1P's army through Orange Star, Yellow Comet, Green Earth, Black Hole, then Silver Nova, and on
         e.wait(60)
         rows = read_bmp(ctx.shot(g, f"win1p_{k}"))
         seen.append((rows[HELP_BOX[1]][HELP_BOX[0]], rows[HELP_BOX_EDGE[1]][HELP_BOX_EDGE[0]]))
         e.press("R", 6)
         e.wait(30)
     ctx.log(f"help box colours by army: {seen}")
-    ctx.eq(len(set(seen)), 1, "the help box's colours with every army (AW2's five and Emerald Sun) on 1P")
+    ctx.eq(len(set(seen)), 1, "the help box's colours with every army (AW2's five and Silver Nova) on 1P")
     e.close()

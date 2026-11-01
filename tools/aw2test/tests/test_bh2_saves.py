@@ -1,5 +1,5 @@
 """Save integrity, the BH2 Campaign (docs/dev/bh2-maps.md "Flash slot budget"): its record has no sector of its own. It follows the BH Campaign's record in slot 13 (the BH record "AWBC" at +0,
-the BH2 record "AWB2" at +0x120); nothing is written to slot 10; the Emerald Sun Campaign keeps slot 11. A save and a reboot round-trip with all three campaigns' progress present, each Continue brings its own
+the BH2 record "AWB2" at +0x120); nothing is written to slot 10; the Silver Nova Campaign keeps slot 11. A save and a reboot round-trip with all three campaigns' progress present, each Continue brings its own
 progress back, and a BH save from before BH2 existed (a 0x120-byte payload) still loads (`-k bh2_saves`)."""
 
 import os
@@ -63,14 +63,14 @@ def bh2_saves_share_slot_13_with_the_bh_campaign_and_emerald_sun_keeps_its_own(c
     ctx.eq(s13[:OFF], bh_record, "the BH record is untouched by BH2's win")
     ctx.eq(sorted(won.tags()), [0, BH_SLOT], "only the profile and slot 13")
     e.close()
-    # Emerald Sun New on top of both: slot 11 appears, slot 13 is as it was.
+    # Silver Nova New on top of both: slot 11 appears, slot 13 is as it was.
     e, g, d = boot(ctx, won.path, es.EsCampaign, es.ENV)
     d.start_es(new=True, pick=False)
     d.wait_world_map()
     both = saves.flash(e, os.path.join(out, "b2s_es_new"))
-    ctx.eq(sorted(both.tags()), [0, ES_SLOT, BH_SLOT], "the profile, Emerald Sun's record and slot 13")
-    ctx.eq(bytes(both.slot(BH_SLOT)), s13, "slot 13 (BH and BH2) is untouched by Emerald Sun New")
-    ctx.eq(bytes(both.slot(ES_SLOT)[:4]), b"AWEC", "Emerald Sun's record")
+    ctx.eq(sorted(both.tags()), [0, ES_SLOT, BH_SLOT], "the profile, Silver Nova's record and slot 13")
+    ctx.eq(bytes(both.slot(BH_SLOT)), s13, "slot 13 (BH and BH2) is untouched by Silver Nova New")
+    ctx.eq(bytes(both.slot(ES_SLOT)[:4]), b"AWEC", "Silver Nova's record")
     e.close()
     # Rebooted: each campaign's Continue brings its own progress back.
     e, g, d = boot(ctx, both.path, b2.Bh2Campaign, b2.ENV)
@@ -88,8 +88,8 @@ def bh2_saves_share_slot_13_with_the_bh_campaign_and_emerald_sun_keeps_its_own(c
     e, g, d = boot(ctx, both.path, es.EsCampaign, es.ENV)
     d.start_es(new=False, pick=False)
     d.wait_world_map()
-    ctx.eq(e.u8(es.SOURCE), es.ES, "the Emerald Sun session")
-    ctx.eq(d.unlocked(), [es.KLAUS], "Emerald Sun Continue: its record")
+    ctx.eq(e.u8(es.SOURCE), es.ES, "the Silver Nova session")
+    ctx.eq(d.unlocked(), [es.KLAUS], "Silver Nova Continue: its record")
     e.close()
 
 

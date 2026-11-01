@@ -60,7 +60,7 @@ def test(args):
         # `aw2dev co verify`'s tests (the specification read from the data files, the table builder, the net scenarios of every power and pair)
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.colib.test_verify"], cwd=cfg.DEVKIT, check=False)
         rc |= r.returncode
-        # the Emerald Sun kit's tests (the map generator and its rules, the difficulty score and the campaign check)
+        # the Silver Nova kit's tests (the map generator and its rules, the difficulty score and the campaign check)
         for mod in ("aw2.esmaplib.test_esmaplib", "aw2.eslib.test_eslib", "aw2.bh2lib.test_bh2"):
             r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", mod], cwd=cfg.DEVKIT, check=False)
             rc |= r.returncode

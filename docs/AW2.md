@@ -2721,7 +2721,7 @@ front's advancing units are checked the same way. `AW2TEST_CPUAI_BOT=1 -k bh_cpu
 Found in the 0.9.0 playtest (BH M1): a player's Infantry walked onto the enemy HQ with the enemy's units standing round it, and
 took the mission. Orders (above) leave units holding, standing or frozen; `custom_campaign::ai_unit` skips a held or frozen
 foot soldier unless an enemy is next to it, and AW2's attack check (`sub_0805E9DC`, called by the unit queue `sub_0805D438` at
-`0x0805D54C`) weighs trades, not HQs. In the custom campaigns (BH, BH2, Emerald Sun, the gauntlet; not Versus, not the DS
+`0x0805D54C`) weighs trades, not HQs. In the custom campaigns (BH, BH2, Silver Nova, the gauntlet; not Versus, not the DS
 Campaign) a unit of a CPU army whose team owns an HQ with a foot soldier (Infantry, Mech) of another team on it is not skipped
 (`cpu_defend::engaged`) and, where the check is called, plans (`cpu_defend::plan`, from the `Board` of `ds_ai`):
 
@@ -2740,7 +2740,7 @@ Campaign) a unit of a CPU army whose team owns an HQ with a foot soldier (Infant
 A scripted march's unit keeps its path (it is skipped before this). Scripted triggers are not affected. Nothing is read that a
 player could not see (the soldier stands on the CPU's own property) and only emulated memory is used, so online peers, replays
 and rollback agree: `SIM_VERSION` 38. A development switch, `ds_ai::SWITCHES` bit 4, turns the rule off for A/B runs.
-Test: `tests/test_cpu_defends_hq.py` (a soldier captures the HQ of BH M1, BH2 M1 and Emerald Sun M1 with four held
+Test: `tests/test_cpu_defends_hq.py` (a soldier captures the HQ of BH M1, BH2 M1 and Silver Nova M1 with four held
 soldiers two squares away: after the enemy's turn it is dead or hurt and the HQ is still the enemy's; with the switch on the
 same scene shows the old behaviour: the held soldiers do nothing).
 
@@ -4609,7 +4609,7 @@ from the directory.
 | 5..7 | design maps 1..3, 0x724 (tangoAW2: +0x4C4 the five-army mark, +0x723 the look) | Design Room Save |
 | 8 | the design map a saved Versus game is on (its current terrain and units) | map menu Save on a design map |
 | 9 | a Survival map saved halfway (tangoAW2): the block, the run in its tail ("SV"), the pairs after it | map menu Save on a Survival map |
-| 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14; the Emerald Sun and BH2 missions share it, told apart by the saved mission byte's top bits) | map menu Save in a BH mission |
+| 12 | a BH Campaign mission saved halfway (tangoAW2; as slot 14; the Silver Nova and BH2 missions share it, told apart by the saved mission byte's top bits) | map menu Save in a BH mission |
 | 13 | the BH Campaign's record, 0x120: progress, unlocked COs, mission records (tangoAW2; "BH Campaign"), then the BH2 Campaign's record at +0x120 (also 0x120, magic "AWB2": `Source::save_offset`, `ds_campaign::merge_record` / `extract_record`; a campaign saving keeps the other's region as the slot has it) | BH Campaign or BH2 Campaign New, mission start, after a win |
 | 14 | a DS Campaign mission saved halfway (tangoAW2); a two-front mission's second front and two-front state, or a five-army mission's record, follow the block (two sectors) | map menu Save in a DS mission |
 | 15 | the DS Campaign's record, 0x20 (tangoAW2), its records, the CO skills' data, the History's record (`history.rs`, 0x1A4) and the War Room's records on Dual Strike's maps (`ds_versus.rs`, at the payload's end) | DS Campaign New, mission start, after a win, a skills change, a War Room record, after a profile write once a battle has ended (EXP, the History) |

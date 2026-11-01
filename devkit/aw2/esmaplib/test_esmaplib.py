@@ -1,4 +1,4 @@
-"""Regression tests of the Emerald Sun map generator and its rules (run by `aw2dev test python`): the painting API, every committed text map equal to what its spec makes,
+"""Regression tests of the Silver Nova map generator and its rules (run by `aw2dev test python`): the painting API, every committed text map equal to what its spec makes,
 the invention rule ES01 (only the missions against Black Hole, at most two), every ES map lint-clean and within the unit caps. Needs the AW2 ROM for the lint ones."""
 import sys, unittest
 from pathlib import Path

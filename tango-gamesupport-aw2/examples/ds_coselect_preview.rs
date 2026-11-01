@@ -2,7 +2,7 @@
 //! with two and five armies, and the CO screen with one, two and three cards.
 //!
 //! Usage: TANGOAW2_DS_ROM=<Dual Strike ROM or pack> ds_coselect_preview <out dir>
-//! With `PREVIEW_SKIN=1,3` the armies at those places (0-based) wear the first skin (Emerald Sun): its colours and emblem on their cards.
+//! With `PREVIEW_SKIN=1,3` the armies at those places (0-based) wear the first skin (Silver Nova): its colours and emblem on their cards.
 
 use tango_gamesupport_aw2::ds_coselect::{
     art_mug, art_name, render_cell, render_pick, render_versus, Card, Cell, PickView, Slot, Stop, Tab, VersusArmy, H, W,

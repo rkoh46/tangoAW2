@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign: each mission's weather and look in the game (`-k es_weather_m`), and the weather pictures for the sheet (`es_weather.png`, AW2TEST_REVIEW_DIR).
+"""Silver Nova Campaign: each mission's weather and look in the game (`-k es_weather_m`), and the weather pictures for the sheet (`es_weather.png`, AW2TEST_REVIEW_DIR).
 
 The campaign sets a mission's weather in its header: clear, snow (gPlaySt weather 1, mode 3 = fixed), rain (2, mode 3, and it brings fog) or Dual Strike's sandstorm (fixed weather mode 3 with clear as the weather: bytes
 00 03 00 00 at 0x03003FEC, `crate::sandstorm`). The test enters the mission, reads those bytes and the fog flag, and photographs the field twice: a weather moves (rain streaks, drifting grains,

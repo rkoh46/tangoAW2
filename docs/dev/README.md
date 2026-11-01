@@ -11,7 +11,7 @@ session scratchpad.
 ./aw2dev ci                          # what the GitHub checks workflow runs: cargo machete, workspace conventions, rustfmt, the test steps
 ./aw2dev suite                       # offline waiting-view suite, must end `suite done bad=0`
 ./aw2dev net sim moveview            # 2 real clients, local signalling mock, verdict: stall / hash / leak / result
-./aw2dev net repeat                  # 2P Unranked with Emerald Sun, 8 runs: `8 of 8 runs with equal hashes` (a timing race passes single runs by chance)
+./aw2dev net repeat                  # 2P Unranked with Silver Nova, 8 runs: `8 of 8 runs with equal hashes` (a timing race passes single runs by chance)
 ./aw2dev live lobby --players 3 --local
 ./aw2dev check latest                # pass/fail JSON report (check.json) of the newest live run
 ./aw2dev sheet latest --around 0 --kind move --strip     # then LOOK at the PNG
@@ -48,12 +48,12 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [bh2-text.md](bh2-text.md) | the BH2 Campaign's dialogue: `bh2_text`, `tools/bh2text/lint.py`, the wiring table, voices and songs (`aw2dev bh2 scenes`) |
 | [worldmap.md](worldmap.md) | `aw2dev worldmap convert / preview / check`: the picture world map (`WorldArt::Picture`): the owner's picture to GBA tiles, nine palettes, region masks per nation, conquest re-tint, budgets, the live harness test |
 | [campaign-scenes.md](campaign-scenes.md) | `aw2dev campaign` / `aw2dev sound`: how AW2 presents story scenes, the BH Campaign's prologue card, songs per scene, Sturm's scenes |
-| [es-campaign.md](es-campaign.md) | the Emerald Sun Campaign: files, rules, the kit (`maps gen`, `campaign sheets / sim / difficulty / check`, the dialogue lint), the five COs |
+| [es-campaign.md](es-campaign.md) | the Silver Nova Campaign: files, rules, the kit (`maps gen`, `campaign sheets / sim / difficulty / check`, the dialogue lint), the five COs |
 | [aria.md](aria.md) | Aria, CO 93: Nell's sister, an Orange Star CO with only a Super Power (Build Anew), the checkerboard-background pixel-art import, how she was verified |
-| [asuka.md](asuka.md) | Asuka, CO 92: Sonja's kit with Hawke's Black Wave / Black Storm, 4 / 8 stars, where she is (every Versus list, not the Emerald Sun Campaign), how she was verified |
-| [music-kit.md](music-kit.md) | the Emerald Sun COs' own themes: songs as text compiled to AW2's sound engine, played with AW2's own voices; `aw2dev sound compose / render / loopcheck / levels / stems / pitchcheck / voices / dump` |
+| [asuka.md](asuka.md) | Asuka, CO 92: Sonja's kit with Hawke's Black Wave / Black Storm, 4 / 8 stars, where she is (every Versus list, not the Silver Nova Campaign), how she was verified |
+| [music-kit.md](music-kit.md) | the Silver Nova COs' own themes: songs as text compiled to AW2's sound engine, played with AW2's own voices; `aw2dev sound compose / render / loopcheck / levels / stems / pitchcheck / voices / dump` |
 | [ds-pack.md](ds-pack.md) | how Dual Strike content is converted and gated |
-| [army-packs.md](army-packs.md) | army skins: Emerald Sun, the sixth army (a data file on one of AW2's colours), what it patches, `aw2dev armyskin`, adding the next army |
+| [army-packs.md](army-packs.md) | army skins: Silver Nova, the sixth army (a data file on one of AW2's colours), what it patches, `aw2dev armyskin`, adding the next army |
 | [decomp.md](decomp.md) | using ~/advance-wars-dual-strike-decomp (CC0) for DS rules |
 | [graphics.md](graphics.md) | `aw2dev gfx`: detect and debug garbled graphics, the catalogue of screens, past bugs and the detector for each |
 | [release.md](release.md) | the release checklist |

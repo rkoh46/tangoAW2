@@ -24,7 +24,7 @@ UI = 0x0203D080
 UI_STEP, UI_ANSWER, UI_MAP_CURSOR, UI_MAP, UI_COLOUR_CURSOR = UI, UI + 1, UI + 2, UI + 3, UI + 4
 SELECTOR, COLOURS = 1, 2
 PLAYER_COLOUR = lambda g: g.player(1)["colour"]   # (the player's army record's colour byte)
-# the army codes of the Teams screen (crate::army_skin::SKIN: 6 is Emerald Sun) and AW2's colour bytes
+# the army codes of the Teams screen (crate::army_skin::SKIN: 6 is Silver Nova) and AW2's colour bytes
 ORANGE_STAR, BLUE_MOON, GREEN_EARTH, YELLOW_COMET, BLACK_HOLE, EMERALD_SUN = 1, 2, 3, 4, 5, 6
 CINDER_FREE = [ORANGE_STAR, BLUE_MOON, EMERALD_SUN]   # AW2's five minus Cinder Sea's enemies (Green Earth, Yellow Comet, Black Hole), then the skin
 CINDER_ENEMY_COLOURS = [GREEN_EARTH, YELLOW_COMET, BLACK_HOLE]
@@ -48,7 +48,7 @@ IRON = {"player": (4, 22), "grit": (8, 9), "jess": (24, 5), "kanbei": (34, 6), "
 IRON_ORDER = [("grit", 1, "Grit", 2), ("jess", 2, "Jess", 3), ("kanbei", 3, "Kanbei", 4), ("rachel", 4, "Rachel", None)]   # (HQ key, its army, CO, the army it brings)
 KEEP_ASUKA = (22, 5)
 MAP2 = 1                           # the selector's second entry (mission 1)
-SKIN_STATE = 0x0203C500             # crate::army_skin::STATE: +0 the colour (1..5) skin 0 (Emerald Sun) sits on
+SKIN_STATE = 0x0203C500             # crate::army_skin::STATE: +0 the colour (1..5) skin 0 (Silver Nova) sits on
 STAGE_AT = 0x0203DCA0               # crate::ram_map::STAGE: +0 the stage the battle is on
 
 # AW2 CO ids (crate::co_new, crate::es_co): the pick any CO can be

@@ -77,7 +77,7 @@ def tags():
     for p in cospec.tags():
         for act, par in ((p["a"], p["b"]), (p["b"], p["a"])):
             if act.startswith("aw2:"):
-                continue          # (the other CO's own numbers are Dual Strike's, not under test; its pair is run from the Emerald Sun side as the partner)
+                continue          # (the other CO's own numbers are Dual Strike's, not under test; its pair is run from the Silver Nova side as the partner)
             def fn(ctx, act=act, par=par):
                 cv.tag_pair(ctx, act, par)
             fn.__name__ = "co_verify_tag_" + act.split(":")[-1] + "_with_" + par.split(":")[-1]

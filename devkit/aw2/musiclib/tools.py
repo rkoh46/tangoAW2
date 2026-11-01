@@ -1,4 +1,4 @@
-"""The Emerald Sun themes' kit: `aw2dev sound compose | render | loopcheck | levels | stems | pitchcheck | voices | dump` (docs/dev/music-kit.md). Registered by commands/sound.py."""
+"""The Silver Nova themes' kit: `aw2dev sound compose | render | loopcheck | levels | stems | pitchcheck | voices | dump` (docs/dev/music-kit.md). Registered by commands/sound.py."""
 import json, os, subprocess, sys
 from pathlib import Path
 from .. import cfg, util
@@ -123,7 +123,7 @@ def study_cmd(a):
 
 
 def register(ss):
-    a = ss.add_parser("compose", help="compile the Emerald Sun song files and check the rules (docs/dev/music-kit.md)")
+    a = ss.add_parser("compose", help="compile the Silver Nova song files and check the rules (docs/dev/music-kit.md)")
     a.add_argument("--song", nargs="*")
     a.add_argument("--dir", help="song files from this folder instead of the repository's")
     a.add_argument("--json", action="store_true")

@@ -1,10 +1,10 @@
 """A CO's unit designs and HQ follow the CO's own nation; an army colour only recolours (`-k army_designs`, docs/dev/army-packs.md "Designs follow the CO").
 
-Real Versus battles on the Emerald Sun colour (the Teams screen's R puts the skin on army 1), the CO of army 1 being
-  - a Black Hole CO (Asuka): the map Infantry and the HQ are Black Hole's pictures, in Emerald Sun's palette;
-  - a base nation's CO (Andy): Orange Star's pictures, in Emerald Sun's palette;
-  - an Emerald Sun CO (Klaus): the skin's plumed Infantry and domed HQ, in Emerald Sun's palette;
-and an Emerald Sun CO in a base colour (Klaus without the skin): the skin's pictures in the colour's own palette, with only the plume's red (unit palette entry 14) and the HQ's gold (building entry 14) added.
+Real Versus battles on the Silver Nova colour (the Teams screen's R puts the skin on army 1), the CO of army 1 being
+  - a Black Hole CO (Asuka): the map Infantry and the HQ are Black Hole's pictures, in Silver Nova's palette;
+  - a base nation's CO (Andy): Orange Star's pictures, in Silver Nova's palette;
+  - a Silver Nova CO (Klaus): the skin's plumed Infantry and domed HQ, in Silver Nova's palette;
+and a Silver Nova CO in a base colour (Klaus without the skin): the skin's pictures in the colour's own palette, with only the plume's red (unit palette entry 14) and the HQ's gold (building entry 14) added.
 
 Shapes are compared, not colours: the pictures drawn are the 4-tile idle Infantry (the map's unit tiles, found by the BG map's entries) and the 16 x 32 HQ sprite, and their palette-index bytes are looked up
 among AW2's pictures of every country and the skin's own (read from the console's ROM image, where the skin's pictures are kept). The palette is the unit palette row of army 1's colour (ROM image)."""
@@ -127,10 +127,10 @@ def check(ctx, name, co, skin, designs, palette, blue=False):
     ctx.log(f"{name}: army 1 colour {colour}, CO {g.player(1)['co']}, unit palette {[hex(c) for c in have]}")
     ctx.eq(g.player(1)["co"], co, f"{name}: army 1's CO")
     if palette == "skin":
-        ctx.eq(have[2:8], ramp, f"{name}: the unit palette is Emerald Sun's ramp")
+        ctx.eq(have[2:8], ramp, f"{name}: the unit palette is Silver Nova's ramp")
         ctx.eq(e.u8(STATE), colour, f"{name}: the skin sits on army 1's colour")
     else:
-        ctx.check(have[2:8] != ramp, f"{name}: the colour's own palette, not Emerald Sun's")
+        ctx.check(have[2:8] != ramp, f"{name}: the colour's own palette, not Silver Nova's")
         ctx.eq(have[14], crest, f"{name}: the plume's red is in the palette")
         brow = e.read(BUILDING_PALETTES + 32 * (colour - 1), 32)
         ctx.eq(int.from_bytes(brow[28:30], "little"), gold, f"{name}: the HQ's gold is in the building palette")
@@ -149,8 +149,8 @@ def check(ctx, name, co, skin, designs, palette, blue=False):
     ctx.check(want in inf, f"{name}: army 1's Infantry is {want}'s picture ({sorted(map(str, inf))})")
     ctx.check(want in hq, f"{name}: army 1's HQ is {want}'s picture ({sorted(map(str, hq))})")
     if want != "es":
-        ctx.check("es" not in inf, f"{name}: no Emerald Sun Infantry on the map")
-        ctx.check("es" not in hq, f"{name}: no Emerald Sun HQ on the map")
+        ctx.check("es" not in inf, f"{name}: no Silver Nova Infantry on the map")
+        ctx.check("es" not in hq, f"{name}: no Silver Nova HQ on the map")
     ctx.shot(g, name)
     # (the battle scene, both sides, for the pictures: army 1's Infantry attacks army 2's)
     try:

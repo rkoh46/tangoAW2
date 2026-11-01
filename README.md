@@ -10,8 +10,8 @@ No game is included: you need your own dump of the USA cartridge.
 <table>
 <tr>
 <td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 version badge (v0.8.9)"></td>
-<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="Klaus briefing the legion on the beach in the Emerald Sun Campaign"></td>
-<td><img src="docs/screenshots/es-versus.png" width="240" alt="A Versus battle: Emerald Sun's plumed legionaries and domed HQ against Black Hole"></td>
+<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="Klaus briefing the legion on the beach in the Silver Nova Campaign"></td>
+<td><img src="docs/screenshots/es-versus.png" width="240" alt="A Versus battle: Silver Nova's plumed legionaries and domed HQ against Black Hole"></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/asuka-co.png" width="240" alt="Asuka's Dark Intel power cut-in"></td>
@@ -66,10 +66,10 @@ your army and kept in your settings).
   roulette draws one of the proposals. Every player picks their own army
   (CO, colour, team, partner) on **SELECT YOUR ARMY** and presses READY, and
   the host sets the rules (including battle animations, for everyone).
-- **Emerald Sun**, a sixth army (a pale emerald-grey one with
-  masked, red-plumed legionaries and a domed HQ), is a sixth choice next to the five armies'
+- **Silver Nova**, a sixth army (a silver and blue-grey one with
+  masked soldiers and a tall HQ with a green orb), is a sixth choice next to the five armies'
   colours on SELECT YOUR ARMY, online and offline: any seat on any map can be
-  Emerald Sun, with any combination of the others. Its four Roman COs
+  Silver Nova, with any combination of the others. Its four Roman COs
   (Klaus, Aurelia, Cassius, Livia) are in Versus, and its 16-mission Campaign is
   on Select Mode's Campaign list (Dual Strike pack).
 - Maps that need the Dual Strike pack (its units or art, such as the 5-army
@@ -148,7 +148,7 @@ GPL-3.0-or-later, like Tango. See [LICENSE](LICENSE) and
 tangoAW2 is not affiliated with Nintendo or Intelligent Systems.
 
 The new COs' portraits (Crumb, Asuka, Klaus, Aurelia, Cassius, Livia), the
-Emerald Sun army's art and tangoAW2's own songs are original work of this
+Silver Nova army's art and tangoAW2's own songs are original work of this
 project; see [CREDITS.md](CREDITS.md). Everything else you see and hear comes
 from the player's own ROMs at run time; nothing from the games is in the
 repository.

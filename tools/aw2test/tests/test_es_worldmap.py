@@ -1,4 +1,4 @@
-"""The Emerald Sun Campaign's world map: Dual Strike's Omega Land with the 16 missions as flags in story order (es_campaign::region), stitched from real screenshots
+"""The Silver Nova Campaign's world map: Dual Strike's Omega Land with the 16 missions as flags in story order (es_campaign::region), stitched from real screenshots
 (`AW2TEST_REVIEW_DIR` gets es_world_map_<stage>.png): `-k es_world_map`."""
 import os
 
@@ -123,7 +123,7 @@ def _win(ctx, e, g, d, n):
 
 @test(modes=("ds",))
 def es_progression(ctx):
-    """The Emerald Sun Campaign from New to the epilogue, every mission won by the test aid: after each win the next flag opens, the cursor goes to it, the cleared flags and the record are right, and
+    """The Silver Nova Campaign from New to the epilogue, every mission won by the test aid: after each win the next flag opens, the cursor goes to it, the cleared flags and the record are right, and
     Continue after a save brings the same map back. Pictures of the unlock moments go to AW2TEST_REVIEW_DIR (es_unlock_<n>_before / _after / _after2)."""
     from aw2test import saves
     review = os.environ.get("AW2TEST_REVIEW_DIR")

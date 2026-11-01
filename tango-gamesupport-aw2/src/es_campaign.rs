@@ -1,11 +1,11 @@
-//! The Emerald Sun Campaign: sixteen missions played as Emerald Sun, tangoAW2's sixth army (Roman-themed; `docs/dev/army-packs.md`), with four Roman
+//! The Silver Nova Campaign: sixteen missions played as Silver Nova, tangoAW2's sixth army (Roman-themed; `docs/dev/army-packs.md`), with four Roman
 //! COs and a boss ([`crate::es_co`]). The second custom campaign on the BH Campaign's data-driven engine ([`crate::custom_campaign`]); the story is
 //! `docs/ES_CAMPAIGN.md`, the dialogue `src/es_text/*.txt` ([`crate::es_text`]), the maps `five/es/spec/*.py` -> `five/es/*.txt` -> `es_map_data.rs`
 //! (`aw2dev maps gen`), the missions `es_act1.rs` .. `es_act4.rs`. Developer guide: `docs/dev/es-campaign.md`.
 //!
 //! Until the user approves it the campaign is behind a development flag (`TANGOAW2_ES_CAMPAIGN`): the Campaign sub-menu still says "Coming soon".
 //!
-//! The player's army wears the Emerald Sun skin ([`crate::army_skin`]): it takes the colour the mission gives army 1, always one of the four of a normal game
+//! The player's army wears the Silver Nova skin ([`crate::army_skin`]): it takes the colour the mission gives army 1, always one of the four of a normal game
 //! (1..4) that no enemy or ally wears (a skin on colour 5 in a game that is not five-army corrupts the build menu: found by the mission sim). Black Hole's
 //! inventions appear only in M9 and M13, the two missions against Black Hole (rule ES01 of `aw2dev maps lint`).
 
@@ -57,7 +57,7 @@ pub fn available(core: &Core) -> bool {
     crate::ds_weather::is_on(core) && dev_flag()
 }
 
-/// The colour the player's army wears in an Emerald Sun battle (its skin sits on it), `None` outside one.
+/// The colour the player's army wears in a Silver Nova battle (its skin sits on it), `None` outside one.
 pub fn skin_colour(core: &Core) -> Option<u8> {
     if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::pvp::in_battle(core) {
         return None;
@@ -67,9 +67,9 @@ pub fn skin_colour(core: &Core) -> Option<u8> {
     (1..=5).contains(&c).then_some(c)
 }
 
-/// Army colours in an Emerald Sun battle. A mission in which the player picks a CO starts with the game's own colours for that case (the player's
+/// Army colours in a Silver Nova battle. A mission in which the player picks a CO starts with the game's own colours for that case (the player's
 /// army in Black Hole's colour 5, the others' shuffled to the free ones: the BH Campaign's player is always Black Hole), not the mission's. Found in
-/// the real game: M13's player wore Black Hole's colour and Kindle Orange Star's, and the Emerald Sun skin landed on Black Hole's inventions. Every
+/// the real game: M13's player wore Black Hole's colour and Kindle Orange Star's, and the Silver Nova skin landed on Black Hole's inventions. Every
 /// tick of such a battle the colour bytes are set to the mission's and the army's palette rows reloaded when one changes.
 pub fn sync_colours(core: &mut Core) -> Vec<(u32, u8)> {
     let mut changed = Vec::new();
@@ -148,7 +148,7 @@ fn credits() -> Vec<CreditSection> {
         secret: false,
     };
     vec![
-        sec("EMERALD SUN", &["A tangoAW2 story", "Sol invictus"]),
+        sec("SILVER NOVA", &["A tangoAW2 story", "Sol invictus"]),
         sec("THE LEGION", &["KLAUS", "The Legate", "AURELIA", "The Engineer"]),
         sec("THE LEGION", &["CASSIUS", "The Cavalry", "LIVIA", "The Quaestor"]),
         sec("THE SENATE", &["VARRO", "The Consul"]),
@@ -216,7 +216,7 @@ pub fn load(core: &Core) -> Option<Model> {
     match compile(core, &def()) {
         Ok(m) => Some(m),
         Err(e) => {
-            eprintln!("Emerald Sun Campaign: {e}");
+            eprintln!("Silver Nova Campaign: {e}");
             None
         }
     }
@@ -327,7 +327,7 @@ mod tests {
     #[test]
     fn only_the_finale_has_a_volcano_and_it_erupts_round_mount_sol() {
         // M16's Mount Sol (five/es/spec/es16.py: the cone x21..24, y12..15 in its rock x20..25, y11..16): from day 3, every day, 3 cells of the ring round
-        // the rock; no other Emerald Sun mission has a volcano.
+        // the rock; no other Silver Nova mission has a volcano.
         for m in &def().missions {
             if m.key == "es16" {
                 let v = m.volcano.as_ref().expect("M16 has Mount Sol");

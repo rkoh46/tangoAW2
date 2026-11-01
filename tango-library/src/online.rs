@@ -136,7 +136,7 @@ pub fn room_picks() -> Vec<(u8, u8)> {
 pub fn room_picks() -> Vec<(u8, u8)> {
     Vec::new()
 }
-/// The colour (RGB) of the army skin (Emerald Sun) when it sits on army colour `code` (1..=5) in this match, for the
+/// The colour (RGB) of the army skin (Silver Nova) when it sits on army colour `code` (1..=5) in this match, for the
 /// legends: `None` for the five armies' own colours.
 #[cfg(feature = "gamesupport-aw2")]
 pub fn skin_accent(code: u8) -> Option<(u8, u8, u8)> {

@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign, all 16 missions: the review pictures, one test a mission (`-k es_review_m`). Every mission is entered through its CO screens,
+"""Silver Nova Campaign, all 16 missions: the review pictures, one test a mission (`-k es_review_m`). Every mission is entered through its CO screens,
 its opening played out (Deploy, the intro's boxes), and photographed whole by the cursor's sweep: the full map (fog OFF) and, for a fog mission, the
 fogged view as well (a fog mission or a rain mission, whose rain brings fog: the player sees the fogged one in play; the sheets show both). The pictures go to the folder AW2TEST_REVIEW_DIR (m<N>_<view>.png,
 16 pixels a cell); `es_sheets.py` labels them "MISSION N - Title" and makes a contact sheet per act (`aw2dev campaign sheets`)."""

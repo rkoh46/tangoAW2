@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign: the missions' own rules, played with the player passive (`-k es_rules`): M13's three-day hold of the Harbour Office, M14's Cassius changing
+"""Silver Nova Campaign: the missions' own rules, played with the player passive (`-k es_rules`): M13's three-day hold of the Harbour Office, M14's Cassius changing
 sides on day 4, M15's allied strait fleet (Nell's call on day 6 changes no side), M16's waves and the defenders' charged meters, M2's win on day 9, M9's and M11's day limits."""
 
 from aw2test import bhact2 as a2

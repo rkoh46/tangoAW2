@@ -1,10 +1,9 @@
-# Army skins: Emerald Sun, and how to add the next army
+# Army skins: Silver Nova, and how to add the next army
 
-tangoAW2 has a sixth army, **Emerald Sun**, and a general way to add more: an army is a **skin**, a data file (`tango-gamesupport-aw2/skins/<id>.toml`)
-that the game draws on top of one of AW2's five colours. Everything in the file is original work of this repository (GPL-3.0-or-later): colours and
-pixel art drawn here, applied at run time to AW2's own graphics, which are read from the player's ROM as always. Nothing from any game (or from AWBW)
-is in the repository. Emerald Sun is *inspired by* the Jade Sun army of Advance Wars By Web (AWBW; credited in `CREDITS.md`): its Roman legionaries
-with a red-crested helmet, its tall domed HQ and its sun; no AWBW picture was copied or traced (it was looked at, and only in review sheets, never committed).
+tangoAW2 has a sixth army, **Silver Nova** (until 2026-11 it was Emerald Sun; the data file keeps the id `emerald_sun`, which the CO data files name), and a general way to add more: an army is a **skin**, a data file (`tango-gamesupport-aw2/skins/<id>.toml`)
+that the game draws on top of one of AW2's five colours. The art is the project's own, applied at run time to AW2's own graphics, which are read from the player's ROM as always. Silver Nova's HQ is the project
+owner's own pixel art, imported faithfully (`art-src/silver-nova/hq.jpg`, `aw2dev armyskin import-hq`, section 9), its colours come from the owner's city picture (`art-src/silver-nova/city_ref.jpg`: silver and blue-grey with
+yellow windows); its soldiers (the owner's mask without the old Roman plume), emblem (the sun, now silver) and palette are drawn here. Nothing from any game is in the repository.
 
 Code: `tango-gamesupport-aw2/src/army_skin.rs`. Kit: `aw2dev armyskin ...` (`devkit/aw2/commands/armyskin.py`, `devkit/aw2/armyskinlib/`), skill `aw2-add-army`.
 
@@ -26,7 +25,7 @@ Not changed: rules (every CO is allowed, no army-specific rules), the CPU (it pl
 
 - **EWRAM** `0x0203C500` (`army_skin::STATE`, registered in `ram_map.rs`, 16 bytes): `+0..+2` the colour (1..5) skin 0..2 sits on (0 none), `+4..+8` each Teams-screen
   army's choice (0: its colour; else a skin's code), `+0xF` set once the Teams screen has reset them. In the shared console, so rollback, replays, rejoin and every peer agree;
-  **`SIM_VERSION` is 41** (41: the skin leaves the windows' palette row alone, so every window, menu and dialogue box is AW2's own; 40: the online army page's directions repeat like AW2's menus; 39: designs follow the CO and an Emerald Sun CO in another colour gets the skin's crest only, `army_skin::crest_plan`; 38: the computer defends its HQ when a foot soldier stands on it in the custom campaigns, `crate::cpu_defend`; 37: the skins' chart soldiers only on the CO page's unit chart; 36: the Emerald Sun COs' faces frame the whole head; 35: a skin's palette refresh reaches the sprite palettes only, so the Teams screen's windows stay AW2's own; 34: Asuka's kit; 33: Aria, CO 93, `crate::aria`; 32: Crumb's and Clone Andy's own themes, Crumb's HQ Black Hole's again; 31: the choice is taken back when the Versus map list is up, `army_skin::reset_choice`, so a skin chosen and backed out of no longer stays in the menus or on the next Teams screen; 27: the sim's behaviour changed: the byte, the sixth choice and the ROM image's patches; 28: the Dual Strike backups moved below the skins' figures, see §8).
+  **`SIM_VERSION` is 42** (42: the sixth army is Silver Nova: its palette, masks without plumes, HQ and orb are what the console's ROM image holds; 41: the skin leaves the windows' palette row alone, so every window, menu and dialogue box is AW2's own; 40: the online army page's directions repeat like AW2's menus; 39: designs follow the CO and a Silver Nova CO in another colour gets the skin's crest only, `army_skin::crest_plan`; 38: the computer defends its HQ when a foot soldier stands on it in the custom campaigns, `crate::cpu_defend`; 37: the skins' chart soldiers only on the CO page's unit chart; 36: the Silver Nova COs' faces frame the whole head; 35: a skin's palette refresh reaches the sprite palettes only, so the Teams screen's windows stay AW2's own; 34: Asuka's kit; 33: Aria, CO 93, `crate::aria`; 32: Crumb's and Clone Andy's own themes, Crumb's HQ Black Hole's again; 31: the choice is taken back when the Versus map list is up, `army_skin::reset_choice`, so a skin chosen and backed out of no longer stays in the menus or on the next Teams screen; 27: the sim's behaviour changed: the byte, the sixth choice and the ROM image's patches; 28: the Dual Strike backups moved below the skins' figures, see §8).
 - **The ROM image** is patched by [`sync`] every tick (`pvp::before_tick`, after `five::sync`), from the state alone, idempotently, per console (waiting views run their own consoles). Free ROM at
   `0x09FC0000` (`DATA`) holds a marker word, which skin is patched on each colour, a list of the **originals** of everything patched (one per colour: `restore` puts them back,
   so a rematch, a room's next match or a skin changing colour is exact), and each skin's own pictures (`art_at`). Writes are word-aligned: `raw_write_32` at an odd halfword aligns down (the first
@@ -49,7 +48,7 @@ By **colour** (the colour's rows of tables indexed by colour): `army_skin::TABLE
 | battle gauge | `0x0816D498` | the HP gauge of a battle scene |
 | turn banner | `0x080A1238` (four colours; Black Hole's is `five::BANNER5`) | NEXT TURN banner |
 | emblem | the sprite group 1's art of colour `c` and its palette `0x081018E4` (entries per colour) | the army's logo (Teams screens, results) |
-| texts | the text table `0x08610A38`, ids 2269.. (names), 3221.. (`The ... Army has lost!`), 3288, 3311 | "Emerald Sun" wherever the game names an army |
+| texts | the text table `0x08610A38`, ids 2269.. (names), 3221.. (`The ... Army has lost!`), 3288, 3311 | "Silver Nova" wherever the game names an army |
 | Dual Strike | `ds_unit_pictures::PALETTES`, the pack's battle figures | the new units' pictures and battle scenes (with the pack) |
 | Dual Strike graphics and tilt | the console's own palettes and tiles (the tilt reads them), `ds_hud` panel palette 7, `ds_co_page` unit chart, `ds_coselect` Teams/CO cards | the same tables as the normal map (the tilt draws the console's picture), the skin's Infantry/Mech slot (`army_skin::map_slot`, read by `ds_tilt::ram_units`), and for the screens that draw from the pack's own palettes `army_skin::ds_row` (`Skin::hue_row` on the pack's five rows) and the emblem from the skin file (`emblem_pixels`) |
 
@@ -75,12 +74,13 @@ Still the colour's: the CO's national emblem on the CO page (it is the CO's coun
 ## 4. The data file (`skins/<id>.toml`)
 
 ```toml
-id = "emerald_sun"; name = "Emerald Sun"; short = "ES"
+id = "emerald_sun"; name = "Silver Nova"; short = "ES"
 [colours]                       # RRGGBB
 ramp = [6 colours, light to dark]   # unit roles 2..7, every building, panel and gauge by rank
 trim = [3 colours]                  # unit roles 11..13 (tracks, barrels, the cheek plate): steel
 building = [4 colours]              # optional: the buildings' own ramp, light to dark (else the units' ramp)
-crest, gold, gold_dark              # crest red (unit role 14), the sun
+crest, gold, gold_dark              # crest (unit role 14: no picture draws a plume any more), gold: the HQ's lit windows (entry 14 of the building palettes)
+orb = [3 colours]                   # optional: the HQ's orb, light to dark: building palette entries 12, 11 and 8 (`ORB_ENTRIES`, only the HQs' pictures use them; the capture box's HQ gets them too); an HQ row says c, b, 8
 moved_tint = 0.5                    # how much of the ramp's hue the grey of a moved unit keeps
 moved_dim = 0.64                    # how bright it stays (the skin's own dimmed ramp; still readable)
 moved_lift = 0.3                    # the darker entries of a moved unit's greys (6..14) are lifted by this much first: a done unit is not black
@@ -89,7 +89,7 @@ base = 3                            # AW2's picture of this colour's soldier is 
 [[infantry.patch]]  frames = [0,1,2]  x = 0  y = 0  rows = [ ... ]   # `.` keep, `_` clear, hex digit = unit palette index (b c d the steel trim, e crest, f outline)
   moving = [0,1,2]  anchor = [6,1]   # also on those frames of the moving sheet (0..2 sideways, 3..5 front, 6..8 back), the point `anchor` of `rows`
                                      # lying on the left outline of the helmet's top row (found in the frame); `frames = []` for a moving-only patch
-[infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Emerald Sun draws its crest with patches instead
+[infantry.moving] crest = true      # (older way) a plain crest over every moving frame's helmet; Silver Nova draws its crest with patches instead
 [battle.infantry]  dome = [12, 9]  x = 2  y = -3  rows = [ ... ]   # the helmet at the battle figures' size (see below); also [battle.mech], [portrait.infantry], [portrait.mech]
 [hq]       rows = [32 rows of 16]   # `.` clear, hex digits = the building palette's index (1 white, 2..5 the body ramp light to dark, b shadow)
 [emblem]   rows = [16 rows of 16]   # 1 white, 2 shadow, a b c = the mid, dark and light tones of the skin's ramp (`ramp[2]`, `ramp[4]`, `ramp[0]`; they go to the three emblem entries of the colour the skin sits on; Black Hole has one entry: all three); used by the game's own emblem
@@ -104,7 +104,7 @@ tone, entries 8..10), `x`, `y` where `rows` start from that block's top-left cor
 b c d the steel greys, e the skin's `crest`, f its `crest_dark`: entries 14 and 15, free in the soldiers' palette), `.` keep, `_` clear. The engine finds the block on each frame of the soldiers' two sheets (Green Earth's, as
 the map pictures' `base`) and lays the rows there; a frame without such a block (a soldier falling over) is left as it is. `[battle.infantry]` and `[battle.mech]` both end up on the same sheets (the Mech uses the soldiers'
 frames): the Mech's own is used for the Mech's side, and one copy is kept when they are equal. `crest_dark` is optional in `[colours]` (default: the crest darkened). `armyskin check` compares the engine's frames with the rules
-applied in Python (`armyskinlib/figures.py`), and `check --live` needs the plume's red in the battle and build-menu screens.
+applied in Python (`armyskinlib/figures.py`), (Silver Nova's patches have no plume: only the face mask, so `check --live` no longer looks for the crest's red; the other army's soldiers are still checked for the plume's palette entries.)
 
 ## 5. Choosing the army
 
@@ -121,10 +121,11 @@ applied in Python (`armyskinlib/figures.py`), and `check --live` needs the plume
 |---|---|
 | `preview [--colour N] [--fast]` | the skin's pictures (Infantry, Mech, HQ, emblem) next to AW2's at 8x, and its palettes, as one PNG (`--fast` draws the art straight from the data file: no rebuild while drawing) |
 | `check [--live] [--scenario S ..] [--ds]` | **static**: the data file's shapes; the palette's margins; every unit 1..24 on every colour is recoloured and its done grey differs from its live colours. **`--live`**: runs the catalogue's scenarios three times (the base army, another colour, the skin) and fails on any screen where a colour only the base army had is still there |
+| `import-hq PICTURE [--write] [--sheet PNG]` | the owner's upscaled HQ picture imported faithfully as the skin's `[hq]` rows (section 9) |
 | `sources [--a 1,2 --b 3,4]` | renders the screens with two armies, finds the palette banks that differ, searches the ROM for their colours and prints the **ROM palettes the skin does not patch yet** (the way to find the next table) |
 | `options --dir DIR [--letters ACF] [--awbw DIR]` | a sheet of **soldier options**: several complete Infantry + Mech designs (idle side frame) from candidate files `A.toml`, `B.toml` ... in DIR, one row per letter with a description, each at 8x and 1x and on a plain map tile at 2x beside Green Earth's and Black Hole's Infantry (and AWBW's pair on top with `--awbw`, review only). A candidate is a skin fragment: `name`, `description`, optional `[colours]` overrides (`trim`, `crest`, `ramp`) and the skin file's own `[infantry]` / `[mech]` patch tables, so the chosen letter is merged into `skins/<id>.toml` as it is. `armyskinlib/options.py` has `grid_of` (AW2's soldier as a grid), `patch_rows` (draw on a copy and let the difference become the patch) and `toml_for` to author them; candidates stay out of the repository until one is chosen |
 | `matrix [--quick] [--armies N ..] [--colours C ..] [--no-ds]` | the skin on **every colour 1..5 in every army count 2..5** with the Dual Strike pack (released 0.8.7 corrupted the game's memory when the skin sat on colour 5 with the pack: the pack's backup of colour 5 lay over the skin's table of battle figures, see §8): per run the harness's `skincheck` (`army_skin::self_check`: the figure table's pointers are LZ77 streams in the skin's room, the backup lists are whole entries) before and after the panel, the build menu and a battle; the plume's red in the unit panel, both build-menu portraits and the three battle shots. Where the map does not give the skin the colour, the test aids `aid colour 1 C` and `aid skincolour C` move it as a campaign mission does. `--quick` (four of the twenty) is in `aw2dev suite` |
-| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Emerald Sun Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `battle_mech` (a Mech against a Tank), `dsunits` and `crumb` (with the pack), `tilt` and `tilt5p` (the Dual Strike tilted map from the real app, with the pack: `check --live --ds` compares its picture the same way) |
+| `catalogue` | the scenarios: `units` (idle, done, HQ, build menu, panel), `parade` (every unit), `battle`, `power`, `capture`, `turn` (hand-off and DAY banners), `results`, `lost3p` ("The Silver Nova Army has lost!"), `rematch` (the room's next match on the same console has no trace of the skin), `map5p` (the skin with Green Earth and Black Hole on a five-army map), `hqs` (the five HQs on the map, side by side), `battle_mech` (a Mech against a Tank), `dsunits` and `crumb` (with the pack), `tilt` and `tilt5p` (the Dual Strike tilted map from the real app, with the pack: `check --live --ds` compares its picture the same way) |
 | `scenario NAME [--ids 6,2] [--ds]` | runs one scenario and keeps its shots (for sheets) |
 | `checkpoint NAME [--scenario S] [--ids ..] [--ds]` and `look NAME [--ds] [--tilt] [--tilt-scale N]` | save a scenario's end state, then boot the real app from it through the AI debug channel and take its own picture (`--tilt`: the Dual Strike tilted map, `--tilt-scale 4` the hi-res picture; it needs the pack and sets `TANGOAW2_TILT_NO_GROUNDCHECK`, see `env-aids.md`) |
 
@@ -140,26 +141,25 @@ Tests: `cargo test -p tango-gamesupport-aw2 --lib army_skin` (+ `-- --ignored` w
 
 CIE76 delta E between the skin's **body colours** (ramp 1..4) and:
 
-| Against | Needs | Emerald Sun |
+| Against | Needs | Silver Nova |
 |---|---|---|
-| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 36.2, Blue Moon 35.5, Green Earth 17.5, Yellow Comet 29.7, Black Hole 12.0 |
-| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 45.4, 46.9, 30.1, 34.2, 18.4 |
-| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.19 (18.8 of 97.5) |
-| the greys of units that have moved (all five armies) | >= 9 | 14.8 |
-| the terrain's colours in fog (measured with fog on) | >= 9 | 13.8 |
-| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 10.8 .. 21.3 |
-| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 11.7 .. 24.9 |
+| each of AW2's five armies' body colours (ramp 2..7 of the unit palette): the closest pair | >= 10 | Orange Star 55.9, Blue Moon 14.6, Green Earth 35.7, Yellow Comet 58.3, Black Hole 13.1 |
+| ... and the mean over the four body colours of the distance to that army's nearest colour | >= 16 | 65.5, 29.2, 50.9, 64.6, 25.7 |
+| chroma, as a share of Green Earth's body chroma (a stone, not a leaf green) | <= 0.4 | 0.19 (18.6 of 97.5) |
+| the greys of units that have moved (all five armies) | >= 9 | 10.2 |
+| the terrain's colours in fog (measured with fog on) | >= 9 | 13.3 |
+| the skin's own done unit against its live unit (on each of the five colours it can sit on) | >= 10 | 21.2 .. 26.9 |
+| the skin's done ramp against the other armies' done greys (still the skin's) | >= 6 | 8.1 .. 34.6 |
 
-Emerald Sun's units are a sage stone with a faint jade tint (the tones of AWBW's Jade Sun units, nudged a little greener so Black Hole's greys and fog stay clear of them: `DEE4C0 .. 292C23`), with steel trim and a red crest.
-Its buildings have their own, paler and greener ramp (`building`, four tones `D6FFB8 .. 6C8555`, AWBW's pale-green buildings), used for the building palettes only. Black Hole's greys are the nearest colours (its highlights
+Silver Nova's units are silver with a cool blue-grey cast (`EEF4FC .. 262E48`: the blue keeps Black Hole's warm greys and purple and fog's grey-greens at a distance; the ramp's 4th tone is darkened so fog's purple-grey stays clear), with steel trim `C4CAD4 .. 626A7C`.
+Its buildings have their own ramp from the owner's city picture (`building`, four tones `C0DDE7 93AEC2 657491 535C78`), used for the building palettes only; the HQ's windows are the picture's yellow (`gold`) and its orb has three greens (`orb`). Black Hole's greys are the nearest colours (its highlights
 are grey too: the army differs by its purple body, so the mean over its colours is the looser margin), and fog's grey-greens set the floor on lightness. A skin that is too grey is read as a done unit or as fogged ground;
-one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint`, `moved_dim`): the ramp's hue at 64% of its brightness, not a flat grey.
+one too saturated is Green Earth. A unit that has moved takes the skin's own dimmed ramp (`moved_tint` 0.8, `moved_dim`): the ramp's blue at 64% of its brightness, not a flat grey (a lower tint was too like Green Earth's done grey).
 
 ### Originality (`check --awbw-ref DIR`, local only)
 
-Emerald Sun is *inspired by* AWBW's Jade Sun and is drawn to read like it at a glance: a sage steel soldier in a red-plumed helmet, a tall pale-green domed HQ with gold windows and a door, a pale square logo with a soft sun.
-The repository is public and nothing of AWBW's may be in it, so every pixel is drawn here, by hand, looking at the style and never tracing, copying or pasting (the Infantry and Mech start from AW2's own soldier, as
-AWBW's do). The shapes differ in the details: a closed galea with a steel face guard and an eye slit under a long plume that sweeps back, a finial and an arched door on a domed HQ, a twelve-ray sun against their eight.
+Silver Nova no longer has anything of the Jade Sun that inspired it as Emerald Sun: its HQ is the owner's own art, its soldiers wear the mask without the Roman plume. The check stays for the next army that is
+drawn after a reference (the repository is public and nothing of AWBW's may be in it: look, then draw, never trace). The table below is the old Emerald Sun design's, for the scale of the numbers.
 
 `aw2dev armyskin check --awbw-ref DIR` measures it. DIR holds the reference pictures (`jsinfantry.gif`, `jsmech.gif`, `jadesunhq.gif`, `jslogo.gif`; fetched by hand, kept outside the repository, never committed);
 the check needs them, so it only runs where they are. What separates a drawing from a copy is how many *pixels* are the same: a hand redraw matches the shapes and rarely the pixels, a copy matches nearly all of them.
@@ -181,18 +181,18 @@ An HQ is 16 x 32 palette indices. AW2's five get their depth from one dominant m
 the picture filling from row 1 to 5 down to the bottom, the left columns brighter than the right. The check measures these on the five and the skin's HQ must lie in their range (the allowed band is wider: the skin's HQ has a
 dark outline all round, like theirs, and AWBW's own are paler and flatter):
 
-| Measure | AW2's five | Allowed | Emerald Sun |
+| Measure | AW2's five | Allowed | Silver Nova |
 |---|---|---|---|
-| pixels filled | 367 to 404 (of 512) | 341 to 444 | 428 |
-| shades used | 6 to 9 | 6 to 12 | 7 |
-| the commonest shade's share | 0.62 to 0.74 | 0.28 to 0.89 | 0.33 |
-| value contrast (std. dev. of brightness) | 25 to 39 | 23 to 69 | 41 |
+| pixels filled | 367 to 404 (of 512) | 341 to 444 | 416 |
+| shades used | 6 to 9 | 6 to 12 | 8 |
+| the commonest shade's share | 0.62 to 0.74 | 0.28 to 0.89 | 0.49 |
+| value contrast (std. dev. of brightness) | 25 to 39 | 23 to 69 | 60 |
 | first row used | 1 to 5 | at most 5 | 0 |
-| left three columns against the right three | brighter on the left | the left brighter | 169 against 152 |
+| left three columns against the right three | brighter on the left | the left brighter | 167 against 152 |
 
 ## 7. Adding an army (skill `aw2-add-army`)
 
-1. `aw2dev armyskin preview --fast` while you draw: write `skins/<id>.toml` (copy Emerald Sun's), start with the ramp and trim.
+1. `aw2dev armyskin preview --fast` while you draw: write `skins/<id>.toml` (copy Silver Nova's), start with the ramp and trim.
 2. Add the file to `FILES`; `aw2dev build --all`; `aw2dev armyskin check` (palette margins) and `check --live`.
 3. Draw the Infantry/Mech patches, the HQ and the emblem; `preview` again; look at the screens (`scenario units`, `parade`, `battle`, `map5p`) in `devkit/work/armyskin/`.
 4. `aw2dev armyskin sources` must print nothing; `AW2DEV_SKIN=1 aw2dev live moveview --local` and `lobby --players 3 --local`; `aw2dev suite`.
@@ -215,20 +215,30 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 | the **palette** (the army's colours, panels, emblem, texts, the names) | the army's *colour*: the skin sits on a colour (`skin_on`, `skin_installed_on`) | `plan`, `sync` |
 | the **designs** (Infantry and Mech on the map, idle and moving, battle figures, the unit panel's portrait, the capture box's soldier and HQ, the HQ on the map, the Dual Strike tilt's unit slots) | the army's *CO* (`design_style`, `design_skin`, `design_on_colour`) | the traps in `traps()`, `map_slot`, `hq_loaded` |
 
-So an Emerald Sun CO (Klaus, Aurelia, Cassius, Livia, Varro: the CO data files with `hq = "emerald_sun"`, `nation_skin`) has the skin's plumed soldiers and domed HQ in **whatever colour** its army wears, and every
+So a Silver Nova CO (Klaus, Aurelia, Cassius, Livia, Varro: the CO data files with `hq = "emerald_sun"`, `nation_skin`) has the skin's masked soldiers and domed HQ in **whatever colour** its army wears, and every
 other CO has its own nation's: AW2 draws those by the CO's country already (Black Hole's own tower and soldiers for Hawke, Lash, Adder, Flak, Sturm, Jugger, Koal, Kindle, Von Bolt, Asuka, Crumb; Orange Star's for Andy and
-Aria ...), so the traps simply leave them alone, in the skin's palette when the army wears the skin. Bug of 0.9.0: every trap asked "does this army wear the skin?" (by colour), so Asuka in the Emerald Sun colour got the plumes and the domed HQ.
+Aria ...), so the traps simply leave them alone, in the skin's palette when the army wears the skin. Bug of 0.9.0: every trap asked "does this army wear the skin?" (by colour), so Asuka in the Silver Nova colour got the plumes and the domed HQ.
 
-An Emerald Sun CO whose army wears another colour has the skin's designs in that colour's palette: `army_skin::sync` installs **the crest only** on that colour (`crest_plan`: the plume's red in the unit rows' entry 14 and the
-moving rows', the battle scene's entries 14 and 15, the HQ's gold in the buildings' entry 14, everything else of the row stays the colour's; `applied_at` holds `0x11 + skin`, `crest_on`). Where a campaign forces the skin on
-an army (the Emerald Sun Campaign's player, a custom mission's skinned army: `forced_skin`) the army keeps the skin's designs whatever its CO.
+A Silver Nova CO whose army wears another colour has the skin's designs in that colour's palette: `army_skin::sync` installs **the crest only** on that colour (`crest_plan`: the plume's red in the unit rows' entry 14 and the
+moving rows', the battle scene's entries 14 and 15, the HQ's gold in the buildings' entry 14 and its orb's greens in entries 12, 11 and 8 (`building_extras`), everything else of the row stays the colour's; `applied_at` holds `0x11 + skin`, `crest_on`). Where a campaign forces the skin on
+an army (the Silver Nova Campaign's player, a custom mission's skinned army: `forced_skin`) the army keeps the skin's designs whatever its CO.
 
 Not changed on purpose: the emblem on the Teams screens and the army box is the colour's (the skin's sun, in its palette) wherever the skin sits; the CO cards, results and the HUD are palettes. The cursor's info panel draws its own small HQ icon, which stays the game's.
-Test: `python3 tools/aw2test/run.py -k army_designs --mode ds` (a Black Hole CO, a base CO and an Emerald Sun CO in the skin's colour, and an Emerald Sun CO in a base colour: the pictures compared as shapes, the palette checked).
+Test: `python3 tools/aw2test/run.py -k army_designs --mode ds` (a Black Hole CO, a base CO and a Silver Nova CO in the skin's colour, and a Silver Nova CO in a base colour: the pictures compared as shapes, the palette checked).
 
 ## The HQ follows the CO (`hq = "<skin id>"` in `cos/<id>.toml`)
-An army shows a skin's HQ picture (the domed tower, `[hq] rows` of `skins/<id>.toml`) when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
+An army shows a skin's HQ picture (the tower, `[hq] rows` of `skins/<id>.toml`) when its CO's data file says `hq = "<skin id>"` (`army_skin::hq_style`, `hq_skin`, put into OBJ VRAM at the end of the game's HQ loader,
 `hq_loaded`) and not merely because the army wears the skin colour (see above). Klaus, Aurelia, Cassius, Livia and Varro have `hq = "emerald_sun"`; `"default"` keeps the game's HQ of the CO's country (Clone Andy). The HQ follows the CO that starts the battle (a Tag pair: the lead).
 The picture is indexed in the building palette, so it is drawn in the **army's own building colours** (red for Orange Star, a Black Hole army's purple, the skin's green on the skin's army). Without this the HQ came from the country
 of the CO the data was based on (Klaus: Kanbei's, Yellow Comet's pale-green tower). `aw2dev co verify` (facet `hq`), `aw2dev campaign check --hq` and `aw2dev co sheet hq` check and show it. Not covered: the cursor's info panel
 draws its own small HQ icon, which stays the game's.
+
+## 9. Importing the owner's pictures (`aw2dev armyskin import-hq`)
+The user's rule: their art is imported, never drawn or "improved". `aw2dev armyskin import-hq art-src/silver-nova/hq.jpg [--write] [--sheet PNG]` (`armyskinlib/hqimport.py`) finds the pixel grid of an upscaled
+pixel-art picture (period and phase of the strongest edges), samples each cell (the median of its middle, so JPEG noise goes), removes the grass the HQ stands on (the cells of the grass family joined to the sprite's
+edge), and maps every other cell to the nearest of the picture's own few colours, written as the skin's `[hq]` rows: white 1, the pale panel 2, the body 4, the shade 5 (building ramp tones 1, 3, 4: the skin's
+`building` ramp is the owner's city picture's), the yellow windows `e` (`gold`) and the orb's three greens `c`, `b`, `8` (`orb`). `--sheet` writes the picture beside the imported pixels. Nothing is added or smoothed.
+Silver Nova's HQ is 416 of 512 cells; the source pictures are in `art-src/silver-nova/`.
+
+The Roman-specific bits that remain after the rename (for the owner to decide): the Roman COs and their data (`hq = "emerald_sun"`, `nation_skin`, bios, dialogue, campaign mission names, music files `music/es/`) belong to the CO branch; in this branch the plumes
+(white-silver since the rename, then removed) are gone from every picture; the `crest` / `crest_dark` colours stay in the skin file and are still written to unit palette entries 14 and 15 (nothing draws with them); the sun emblem keeps its shape (silver).

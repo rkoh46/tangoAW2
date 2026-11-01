@@ -1,4 +1,4 @@
-//! The Emerald Sun Campaign's missions as tab-separated rows for the kit (`aw2dev campaign difficulty`, `campaign check`; docs/dev/es-campaign.md):
+//! The Silver Nova Campaign's missions as tab-separated rows for the kit (`aw2dev campaign difficulty`, `campaign check`; docs/dev/es-campaign.md):
 //!   M  key title day_limit fog weather armies objective look
 //!   A  key army colour team co funds
 //!   S  key day army kind x y        (a unit a trigger spawns, with the day it fires: 0 when the rule has no day)

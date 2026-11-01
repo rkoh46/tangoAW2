@@ -1,5 +1,5 @@
 """Map design study (`aw2dev maps study`, docs/dev/map-design.md): measures what makes a map play well, on any map: Advance Wars By Web grids (the
-community's Hall of Fame, read from a folder the user fetched: nothing of them is stored in the repo), tangoAW2's Emerald Sun and BH Campaign maps,
+community's Hall of Fame, read from a folder the user fetched: nothing of them is stored in the repo), tangoAW2's Silver Nova and BH Campaign maps,
 and AW2's and Dual Strike's own (read from the user's ROMs at run time).
 
 A map is studied as a `StudyMap`: a grid of terrain characters (the linter's: `. f ^ R - = ~ , r I Z M H B C A P T`, plus `L` lab, `m` a fired silo, `X`

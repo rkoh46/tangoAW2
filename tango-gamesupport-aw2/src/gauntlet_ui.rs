@@ -7,7 +7,7 @@
 //! a flow function that answers 1 while a step is up), so this module only owns the pad while a step is up ([`tick`] takes every key) and says which button ended it ([`ANSWER`]).
 //!
 //! The maps and their enemies come from [`crate::gauntlet_mode::entries`] (a new map's mission lists itself), the colours from [`crate::gauntlet_mode::Entry::free`] (the five minus the
-//! enemies' fixed ones, plus Emerald Sun). The choice is an army code of the Teams screen (1..5, or `army_skin::SKIN + i` for a skin); [`crate::gauntlet::keep_colour`] puts it on the
+//! enemies' fixed ones, plus Silver Nova). The choice is an army code of the Teams screen (1..5, or `army_skin::SKIN + i` for a skin); [`crate::gauntlet::keep_colour`] puts it on the
 //! player's army when the battle starts.
 //!
 //! State: [`STATE`] in EWRAM (`ram_map`): the step, the answer, the cursors, and the last colour worn on each map.

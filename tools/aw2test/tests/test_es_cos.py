@@ -1,4 +1,4 @@
-"""The Emerald Sun Campaign's five COs (crate::es_co, ids 86..90; Versus lists the four but Varro): their rows, texts and meters; the numbers of each
+"""The Silver Nova Campaign's five COs (crate::es_co, ids 86..90; Versus lists the four but Varro): their rows, texts and meters; the numbers of each
 day to day and power in fights against the calculator (aw2test.damage.es_bonus); Klaus's heal and move, Livia's funds; the Tag pairs."""
 
 from aw2test import rom as romlib

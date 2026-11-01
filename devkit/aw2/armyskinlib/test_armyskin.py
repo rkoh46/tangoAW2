@@ -22,7 +22,7 @@ class Scripts(unittest.TestCase):
             self.assertRegex(text.splitlines()[0], r"^n \d$")
 
     def test_the_skin_seat_plays_an_emerald_sun_co_with_the_pack(self):
-        # (designs follow the CO: the skin's plume and domed HQ need Klaus; without the pack no Emerald Sun CO is listed)
+        # (designs follow the CO: the skin's plume and domed HQ need Klaus; without the pack no Silver Nova CO is listed)
         self.assertIn("poke 0203CB10 0f", scenarios.script("units", [6, 2], ds=True))
         self.assertNotIn("poke 0203CB10", scenarios.script("units", [6, 2]))
         self.assertIn("poke 0203CB10 0f", scenarios.script("units", [1, 2], ds=True, klaus=[0]))
@@ -84,3 +84,24 @@ class Options(unittest.TestCase):
         self.assertEqual((x, y), (3, 2))
         self.assertEqual(rows, ["_.", ".e"])
 
+
+
+class SilverNovaName(unittest.TestCase):
+    """The army is Silver Nova: no player-visible 'Emerald' is left in the sources (the data files keep the id `emerald_sun`, comments and the CO branch's files are not text a player sees)."""
+    # (the Silver Nova COs' own text is the CO branch's: their bios and roles are renamed there)
+    OWNED_ELSEWHERE = ("tango-gamesupport-aw2/cos/", "tango-gamesupport-aw2/src/es_co.rs", "tango-gamesupport-aw2/music/")
+
+    def test_no_emerald_text(self):
+        import re, subprocess
+        files = subprocess.check_output(["git", "ls-files", "tango-gamesupport-aw2", "tango", "tango-library", "README.md"], cwd=cfg.REPO, text=True).split()
+        bad = []
+        for f in files:
+            if f.startswith(self.OWNED_ELSEWHERE) or f.startswith("tango-gamesupport-aw2/five/") or not f.endswith((".rs", ".txt", ".toml", ".md")):
+                continue
+            for n, line in enumerate((cfg.REPO / f).read_text(errors="ignore").splitlines(), 1):
+                code = line.split("//", 1)[0] if f.endswith(".rs") else line
+                if f.endswith((".toml", ".txt")) and line.lstrip().startswith("#"):
+                    continue
+                if re.search(r"emerald", code, re.I) and 'id = "emerald_sun"' not in code and "emerald_sun" not in code.lower().replace("emerald sun", ""):
+                    bad.append(f"{f}:{n}: {line.strip()[:90]}")
+        self.assertEqual(bad, [])

@@ -1,4 +1,4 @@
-"""Story presentation of the Emerald Sun Campaign (docs/dev/campaign-scenes.md; `aw2dev campaign trace --campaign es`): the prologue (the card, its song, the world map) and
+"""Story presentation of the Silver Nova Campaign (docs/dev/campaign-scenes.md; `aw2dev campaign trace --campaign es`): the prologue (the card, its song, the world map) and
 each mission's flow traced (every few frames the song started, the music player's fade, the dialogue box, the screen's brightness, the sound that came out): music in
 every story scene, no silent gaps. `AW2TEST_STORY_MISSIONS=1,2` names the missions (default 1)."""
 
@@ -16,7 +16,7 @@ from tests.test_bh_story import out_dir
 
 @test(modes=("ds",))
 def story_trace_es_opening(ctx):
-    """EMERALD SUN, New: the prologue card with its narration and song, the world map, mission 1's pick, card, intro and first turn."""
+    """SILVER NOVA, New: the prologue card with its narration and song, the world map, mission 1's pick, card, intro and first turn."""
     e = Emu(save=paths.base_save(), ds=True, env=es.ENV)
     g = Game(e, ctx.image)
     d = es.EsCampaign(g)

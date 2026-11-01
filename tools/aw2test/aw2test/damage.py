@@ -91,7 +91,7 @@ def clone_andy_bonus(mode, unit_type, which):
     return v
 
 
-# The Emerald Sun COs (crate::es_co, ids 86..90): the same numbers in Python, for the calculator.
+# The Silver Nova COs (crate::es_co, ids 86..90): the same numbers in Python, for the calculator.
 KLAUS, AURELIA, CASSIUS, LIVIA, VARRO = 86, 87, 88, 89, 90
 ES_LUCK = {KLAUS: (10, 10, 10), AURELIA: (10, 10, 10), CASSIUS: (10, 10, 10), LIVIA: (10, 10, 10), VARRO: (10, 10, 20)}
 _FOOT, _VEHICLE, _INDIRECT, _NAVAL = (1, 2), (3, 4, 5, 6, 7, 8, 9, 14), (10, 11, 15, 21), (18, 21, 22, 23, 24, 26)
@@ -198,7 +198,7 @@ class Rules:
             m["abilities"] = 0
             return m
         if KLAUS <= co <= VARRO and self.chart is not None:
-            # (the Emerald Sun five: their own luck, no bad luck, Andy's counter, no skills)
+            # (the Silver Nova five: their own luck, no bad luck, Andy's counter, no skills)
             m["luck"], m["neg_luck"] = ES_LUCK[co][min(mode, 2)], 0
             m["counter"] = self.chart.co_field(81, mode, 0x20)
             m["abilities"] = 0

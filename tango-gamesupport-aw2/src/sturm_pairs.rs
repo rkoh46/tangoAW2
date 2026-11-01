@@ -307,7 +307,7 @@ pub const DUOS: [Duo; 15] = [
         a_first: [("Together, sis!", "Always."), ("Orange Star forever!", "The Accord holds.")],
         b_first: [("The Accord holds.", "Together, sis!"), ("Stand with me.", "Always, Aria.")],
     },
-    // The Emerald Sun Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
+    // The Silver Nova Campaign's pairs (cos/tags.toml; docs/ES_CAMPAIGN.md 2.3).
     es_duo(
         KLAUS,
         AURELIA,

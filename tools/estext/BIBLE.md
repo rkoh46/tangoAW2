@@ -1,6 +1,6 @@
-# Emerald Sun Campaign dialogue: writers' bible
+# Silver Nova Campaign dialogue: writers' bible
 
-You are writing the Emerald Sun Campaign's dialogue (sixteen missions, a prologue and an epilogue) so that it reads like Advance Wars at its best:
+You are writing the Silver Nova Campaign's dialogue (sixteen missions, a prologue and an epilogue) so that it reads like Advance Wars at its best:
 people who actually talk to each other, speeches across 2 to 4 boxes, reactions, interruptions, one joke a mission, menace, grief, stakes explained in
 character. The user's standing complaint about every campaign: "make sure all dialogues aren't just 1 sentences actually talk damnit have some soul".
 The BH Campaign's text (`tango-gamesupport-aw2/src/bh_text/act1.txt` etc.) is the bar for length, warmth and menace: read two scenes of it first.
@@ -32,7 +32,7 @@ plot are said in character, so that a player who reads only the scenes understan
 ## Speakers
 Playable / story COs: KLAUS, AURELIA, CASSIUS, LIVIA, VARRO. Nations' COs: JESS, EAGLE, DRAKE, JAVIER (Green Earth); GRIMM, SENSEI, KANBEI, SONJA (Yellow Comet); COLIN, SASHA, OLAF, GRIT
 (Blue Moon); MAX, JAKE, SAMI, NELL, ANDY, HACHI, RACHEL (Orange Star); ADDER, FLAK, KINDLE, KOAL, LASH (Black Hole, hired or enemy).
-Others: NARRATION (a box with no face), LEGIONARY (an Emerald Sun soldier: the lines say who he is), SOLDIER OS / BM / GE / YC (a nation's trooper), SOLDIER BH.
+Others: NARRATION (a box with no face), LEGIONARY (a Silver Nova soldier: the lines say who he is), SOLDIER OS / BM / GE / YC (a nation's trooper), SOLDIER BH.
 `[CO]` is the CO the player leads and `[CO2]` the player's tag partner (see `@IF` below) but you will almost never need them: **the officers are characters, not the player.**
 Klaus, Aurelia, Cassius and Livia speak in camp scenes ungated whoever the player leads, once they have appeared in the story (below). Only a few lines need `@IF`.
 
@@ -71,7 +71,7 @@ Klaus, Aurelia, Cassius and Livia speak in camp scenes ungated whoever the playe
 - Aurea starves: three grey harvests, ash on the wind. The relief grain came from **HOBB Grain & Freight**: no office, no owner, a stencil on every crate, a creditor's stamp on every bill. The Senate split
   its orders: find who feeds us (Klaus, in writing) and, if there is nobody, take the north's granaries (Cassius, a sealed letter). **Never reveal who HOBB is.** The BH2 hooks are the **HOBB stencil** (Livia
   recognises the mark from a bill and never says where; the same mark is on Black Hole's crates) and the **black light on the northern horizon** the night the campaign ends (nobody knows what it is). Plant them; do not explain them.
-- Black Hole is not at war with Aurea. In M9 and M13 Emerald Sun fights Black Hole because the trail of HOBB's freight runs through Black Hole's yards: its quartermasters run the freight for whoever pays in advance and defend their
+- Black Hole is not at war with Aurea. In M9 and M13 Silver Nova fights Black Hole because the trail of HOBB's freight runs through Black Hole's yards: its quartermasters run the freight for whoever pays in advance and defend their
   cargo against what they read as raiders. Adder and Flak (M9), Kindle (M13) are officers of the freight yards, with their own manners; no event of the BH Campaign is referred to, no spoilers for BH2.
 - The Allies (Orange Star, Blue Moon, Green Earth, Yellow Comet) are jumpy after the Cinder Coast fence fell; everyone assumes the green fleet is Black Hole's next trick. Each nation's scene shows it misreading the legion,
   and Klaus, over the campaign, making himself understood.

@@ -55,5 +55,5 @@ def make(co):
     test(modes=("ds",))(fn)
 
 
-for co in ("asuka", 86, 87, 82, "andy", "sturm"):   # Klaus and Aurelia (Emerald Sun), Crumb
+for co in ("asuka", 86, 87, 82, "andy", "sturm"):   # Klaus and Aurelia (Silver Nova), Crumb
     make(co)

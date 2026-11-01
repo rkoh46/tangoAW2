@@ -8,13 +8,13 @@ game's colours when every seat is READY, so identity 6 is a skin whose colour is
 SEL = 0x0203CB10
 
 
-# The Teams list's index of Klaus (an Emerald Sun CO, with the Dual Strike pack: `cos` prints the list). A CO's unit designs and HQ follow the CO's nation, an army colour only recolours
-# (docs/dev/army-packs.md), so the army that wears the skin has the skin's own designs (the plume, the domed HQ) only with an Emerald Sun CO: the skin's seat plays Klaus.
+# The Teams list's index of Klaus (a Silver Nova CO, with the Dual Strike pack: `cos` prints the list). A CO's unit designs and HQ follow the CO's nation, an army colour only recolours
+# (docs/dev/army-packs.md), so the army that wears the skin has the skin's own designs (the plume, the domed HQ) only with a Silver Nova CO: the skin's seat plays Klaus.
 KLAUS_INDEX = 0x0F
 
 
 def skin_cos(identities, ds, seats=None):
-    """The CO pokes: Klaus for `seats` (default the skin's seats, identity 6), with the pack (without it no Emerald Sun CO is on the list: the skin only recolours). The
+    """The CO pokes: Klaus for `seats` (default the skin's seats, identity 6), with the pack (without it no Silver Nova CO is on the list: the skin only recolours). The
     runs `check --live` compares (the skin's seat in Orange Star, Green Earth and the skin) all play Klaus, so only the colours differ."""
     seats = [s for s, c in enumerate(identities) if c == 6] if seats is None else seats
     return "".join(f"poke {SEL + 0x10 * s:08X} {KLAUS_INDEX:02x}\n" for s in seats if ds)
@@ -159,7 +159,7 @@ def copage():
         + redraw((5, 2))
         + "press 0 A\nwait 30\nshot menu 0\npress 0 A\nwait 90\nshot page1 0\n"
         + "press 0 DOWN\nwait 60\npress 0 DOWN\nwait 60\npress 0 DOWN\nwait 60\nshot page4 0\npress 0 DOWN\nwait 60\nshot chart 0\n"
-        # (an Emerald Sun CO's page, the skin's seat with the pack, has one page more: Klaus's chart is one DOWN further, with the plumed soldiers)
+        # (a Silver Nova CO's page, the skin's seat with the pack, has one page more: Klaus's chart is one DOWN further, with the plumed soldiers)
         + "press 0 DOWN\nwait 60\nshot chart_es 0\n"
     )
 
@@ -274,7 +274,7 @@ def map5p():
     )
 
 
-@scenario("hqs", [1, 6, 3, 4, 5], "the five-army map's five HQs on the map: Orange Star's, Emerald Sun's, Black Hole's, Green Earth's, Yellow Comet's (depth and scale beside each other)",
+@scenario("hqs", [1, 6, 3, 4, 5], "the five-army map's five HQs on the map: Orange Star's, Silver Nova's, Black Hole's, Green Earth's, Yellow Comet's (depth and scale beside each other)",
           ["hq_os", "hq_es", "hq_bh", "hq_ge", "hq_yc"], seats_five=True)
 def hqs():
     body = ""

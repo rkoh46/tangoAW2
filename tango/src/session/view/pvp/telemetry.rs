@@ -613,7 +613,7 @@ fn players_header<'a>(
 }
 
 /// The legend; `two` is the two-player view's (local seat is P1, seats colour the armies), all a pvp session adds.
-/// A seat's army colour in the legends: the army's own `normal`, or the army skin's (Emerald Sun) when the seat's army
+/// A seat's army colour in the legends: the army's own `normal`, or the army skin's (Silver Nova) when the seat's army
 /// colour (its pick's, else the seat's own number) is the colour the skin sits on.
 fn army_colour(normal: Color, picks: &[(u8, u8)], n: usize, seat: usize) -> Color {
     let code = if picks.len() == n {

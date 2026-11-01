@@ -3,7 +3,7 @@
 A player's Infantry stands on the enemy HQ and captures it; the enemy's units are held (role 0) two squares away, the order
 AW2's CPU leaves alone (a held soldier is skipped by the unit queue unless an enemy stands next to it). After the enemy's
 turn the soldier has been attacked (its HP is lower, or it is dead) and the HQ is still the enemy's. The first mission of
-the BH Campaign, the BH2 Campaign and the Emerald Sun Campaign. `-k cpu_defends_hq_m1_off` is the same scene with the
+the BH Campaign, the BH2 Campaign and the Silver Nova Campaign. `-k cpu_defends_hq_m1_off` is the same scene with the
 rule's development switch off (`cpu_defend::OFF_DEFEND`): the held soldiers watch and the soldier is not touched, which
 is the report that led to the rule (the player took the HQ of the first mission with the enemy's units standing by).
 Pictures: tools/aw2test/out/ds/<test>/before_end.bmp and after_enemy.bmp."""

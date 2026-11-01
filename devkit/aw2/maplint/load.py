@@ -129,7 +129,7 @@ def bh_maps(rom=None, files=None):
 
 
 def es_maps(rom=None, files=None):
-    """The Emerald Sun Campaign's maps (five/es/es*.txt, built by bhmap.py --campaign es): the same MapData as the BH Campaign's, source "es"."""
+    """The Silver Nova Campaign's maps (five/es/es*.txt, built by bhmap.py --campaign es): the same MapData as the BH Campaign's, source "es"."""
     mappy, tc, bhmap = _five()
     rom = rom or rom_bytes()
     edge = mappy.sea_edges(rom)
@@ -142,7 +142,7 @@ def es_maps(rom=None, files=None):
 
 
 def bh2_maps(rom=None, files=None):
-    """The BH2 Campaign's maps (five/bh2/bh2_NN.txt, built by bhmap.py --campaign bh2): the same MapData as the Emerald Sun maps, source "bh2"."""
+    """The BH2 Campaign's maps (five/bh2/bh2_NN.txt, built by bhmap.py --campaign bh2): the same MapData as the Silver Nova maps, source "bh2"."""
     mappy, tc, bhmap = _five()
     rom = rom or rom_bytes()
     edge = mappy.sea_edges(rom)
@@ -179,7 +179,7 @@ def versus_maps(rom=None):
 
 
 def look_of(name):
-    """The Dual Strike look (0 normal, 1 snow, 2 desert, 3 wasteland) of an Emerald Sun or BH Campaign mission map, read from its Rust (`m.look = N;` inside `fn <name>()`); 0 for any other map."""
+    """The Dual Strike look (0 normal, 1 snow, 2 desert, 3 wasteland) of a Silver Nova or BH Campaign mission map, read from its Rust (`m.look = N;` inside `fn <name>()`); 0 for any other map."""
     import re
     if not hasattr(look_of, "cache"):
         look_of.cache = {}

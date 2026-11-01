@@ -1,5 +1,5 @@
-"""Save integrity, the Emerald Sun Campaign (docs/dev/es-campaign.md "Saves"): New writes its record in slot 11 only ("AWEC"); a mission saved halfway goes to slot 12, shared
-with the BH Campaign, its saved mission byte carrying the campaign in its top bits; rebooted, EMERALD SUN's Continue brings the battle back as saved and a BH CAMPAIGN
+"""Save integrity, the Silver Nova Campaign (docs/dev/es-campaign.md "Saves"): New writes its record in slot 11 only ("AWEC"); a mission saved halfway goes to slot 12, shared
+with the BH Campaign, its saved mission byte carrying the campaign in its top bits; rebooted, SILVER NOVA's Continue brings the battle back as saved and a BH CAMPAIGN
 with no record of its own does not take it; won, the halfway save is dropped and the record has the mission."""
 
 import os
@@ -29,7 +29,7 @@ def save_es_campaign_record_and_a_mission_saved_halfway(ctx):
     d.start_es(new=True, pick=False)
     d.wait_world_map()
     img = saves.flash(e, os.path.join(ctx.out, "es_new"))
-    saves.expect_slots(ctx, base, img, [ES_RECORD], "Emerald Sun New", profile_allow=[saves.MODE_BYTE])
+    saves.expect_slots(ctx, base, img, [ES_RECORD], "Silver Nova New", profile_allow=[saves.MODE_BYTE])
     rec = img.slot(ES_RECORD)
     ctx.eq(rec[:4], b"AWEC", "the record's magic")
     ctx.eq(rec[0x0D] | rec[0x0E] << 8 | rec[0x0F] << 16, 1, "Klaus unlocked, nobody else")
@@ -46,21 +46,21 @@ def save_es_campaign_record_and_a_mission_saved_halfway(ctx):
     g._units_base = g._players_base = None
     d.wait_control()
     names = saves.suspend(g)
-    ctx.check("Save" in names, f"Save on an Emerald Sun mission's map menu ({names})")
+    ctx.check("Save" in names, f"Save on a Silver Nova mission's map menu ({names})")
     snap = saves.snapshot(g)
     saved = saves.flash(e, os.path.join(ctx.out, "es_saved"))
     ctx.eq(sorted(saved.tags()), [0, ES_RECORD, ES_SUSPEND], "the slots: the profile, the record, the shared halfway slot")
     block = saved.slot(ES_SUSPEND)
     at = block.find(b"DS")
-    ctx.check(at > 0 and block[at + 2] == (1 | 0x40), f"the saved mission byte is mission 2 (1) tagged Emerald Sun (0x40): {block[at + 2] if at > 0 else None}")
+    ctx.check(at > 0 and block[at + 2] == (1 | 0x40), f"the saved mission byte is mission 2 (1) tagged Silver Nova (0x40): {block[at + 2] if at > 0 else None}")
     e.close()
     # Rebooted: Continue brings mission 2 back as saved.
     e, g, d = boot(ctx, saved.path)
     d.start_es(new=False, pick=False)
-    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1200, step=10), "EMERALD SUN's Continue: the battle")
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1200, step=10), "SILVER NOVA's Continue: the battle")
     g._units_base = g._players_base = None
     g.wait_for_input()
-    ctx.eq((d.mission(), e.u8(es.SOURCE)), (1, es.ES), "mission 2, the Emerald Sun session")
-    saves.compare_snapshots(ctx, snap, saves.snapshot(g), "after a reboot, Emerald Sun Continue")
+    ctx.eq((d.mission(), e.u8(es.SOURCE)), (1, es.ES), "mission 2, the Silver Nova session")
+    saves.compare_snapshots(ctx, snap, saves.snapshot(g), "after a reboot, Silver Nova Continue")
     ctx.eq(d.unlocked(), [es.KLAUS], "the unlocked COs from the record")
     e.close()

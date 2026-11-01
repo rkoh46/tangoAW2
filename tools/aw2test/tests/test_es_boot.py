@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign: every mission boots (`-k es_boot_m`): entered through its CO screens from a record with the earlier missions won, in the
+"""Silver Nova Campaign: every mission boots (`-k es_boot_m`): entered through its CO screens from a record with the earlier missions won, in the
 right mode (the right armies, the map's size, every unit at full HP, ammo and fuel, the skin on the player's colour). The pictures go to
 AW2TEST_REVIEW_DIR (m<N>_setup.bmp). The whole-map review sheets: `aw2dev campaign sheets`."""
 

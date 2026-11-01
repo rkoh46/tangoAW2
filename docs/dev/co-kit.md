@@ -3,7 +3,7 @@
 How a new CO is described, its art made game-ready and checked before (and while) the engine work is done. Code: `devkit/aw2/colib/` (`importer.py` picture to AW2 art, `namefont.py` the name graphic,
 `ingame.py` the real app on the game's screens, `sheet.py` the review sheet, `data.py` the data check and balance, `roms.py` / `render.py` readers for the sheets, `test_co.py` tests),
 `devkit/aw2/commands/co.py`. Data: `tango-gamesupport-aw2/cos/<id>.toml` (one per CO), `cos/tags.toml` (Tag Powers). Art: `tango-gamesupport-aw2/art/cos/<id>/` (committed, indexed PNGs) from the
-supplied picture `art-src/cos/<id>_v5.jpg`. Engine side: `src/es_cos.rs` (art, texts, off by default), `co_new.rs` (`ES_FIRST` .. , `is_es`). Skill: `aw2-add-co`. First users: Emerald Sun's four COs
+supplied picture `art-src/cos/<id>_v5.jpg`. Engine side: `src/es_cos.rs` (art, texts, off by default), `co_new.rs` (`ES_FIRST` .. , `is_es`). Skill: `aw2-add-co`. First users: Silver Nova's four COs
 (`docs/ES_CAMPAIGN.md`). How a CO gets its powers and numbers is `co_new.rs`, `crumb.rs` (the worked example); this kit is the front half: the data and the pictures.
 
 ## Credits and what is committed
@@ -37,7 +37,7 @@ The owner's pictures are already pixel art, upscaled by a (fractional) factor an
 Output: `art/cos/<id>/{large,face_normal,face_happy,face_sad,face_angry,mini,hud,name}.png` (4-bit indexed, index 0 transparent) and `crop.toml`; deterministic. The AW2 figures are 1:1 pixels and ours are 2x
 cells, so ours look chunkier beside Hawke's 1-px detail; that is the picture's own pixel size. The older painterly import (`importer.import_co` without `pixelart`) remains for pictures that are not pixel art.
 
-Face framing: the 48 x 48 face is a square of `mug` cells at `mug_scale` output pixels per cell (default = `large_scale`: a 24-cell square at 2x). A picture whose head is wider than 24 cells needs `mug_scale = 1` (a 48-cell square) or the card, the HUD and the battle header show a zoomed crop (eyes and nose only: the first four Emerald Sun COs did until 0.9.1). `test_teams_look.py` checks each CO's face keeps the picture's background round the head and that the Teams card shows the committed face. `max_face_specks` raises the lint's isolated-pixel limit for such a face.
+Face framing: the 48 x 48 face is a square of `mug` cells at `mug_scale` output pixels per cell (default = `large_scale`: a 24-cell square at 2x). A picture whose head is wider than 24 cells needs `mug_scale = 1` (a 48-cell square) or the card, the HUD and the battle header show a zoomed crop (eyes and nose only: the first four Silver Nova COs did until 0.9.1). `test_teams_look.py` checks each CO's face keeps the picture's background round the head and that the Teams card shows the committed face. `max_face_specks` raises the lint's isolated-pixel limit for such a face.
 
 ## The illustration import (`illustration.py`, `co portrait import --illustration` or `illustration = true` in the framing file)
 For a **clean drawing** that is not upscaled pixel art (Asuka's `art-src/cos/asuka_v1.jpg`, 1136 x 1744, a full-body anime illustration on white; framing file `art-src/cos/asuka_v1.toml`). Nothing is drawn, stylised or retouched:

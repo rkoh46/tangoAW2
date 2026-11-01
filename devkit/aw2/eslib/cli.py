@@ -1,4 +1,4 @@
-"""aw2dev campaign sheets | sim | difficulty | check for the Emerald Sun Campaign (docs/dev/es-campaign.md)."""
+"""aw2dev campaign sheets | sim | difficulty | check for the Silver Nova Campaign (docs/dev/es-campaign.md)."""
 import json, os, subprocess, sys, tempfile
 from pathlib import Path
 from .. import cfg, util
@@ -117,13 +117,13 @@ def asuka_rule(say):
             for n, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
                 if pat.search(line):
                     hits.append(f"{f.name}:{n}")
-        say(not hits, f"{who} is not in the Emerald Sun Campaign" + (f" (found at {', '.join(hits[:6])})" if hits else " (no mention in the campaign's modules, dialogue or rosters)"))
+        say(not hits, f"{who} is not in the Silver Nova Campaign" + (f" (found at {', '.join(hits[:6])})" if hits else " (no mention in the campaign's modules, dialogue or rosters)"))
         bad += bool(hits)
     return bad
 
 
 def check(a):
-    """The static campaign check: the rules the user set for the Emerald Sun Campaign, failed loudly."""
+    """The static campaign check: the rules the user set for the Silver Nova Campaign, failed loudly."""
     rc = 0
     ms = report.missions()
     say = lambda ok, msg: print(("ok   " if ok else "FAIL ") + msg)
@@ -143,7 +143,7 @@ def check(a):
         if d["boxes"] < 20:
             say(False, f"{key}: only {d['boxes']} dialogue boxes")
             bad += 1
-    # Asuka (CO 92) is in Versus, War Room and Survival but NOT in the Emerald Sun Campaign (and reserved for the BH2 Campaign): nothing of the campaign may name her
+    # Asuka (CO 92) is in Versus, War Room and Survival but NOT in the Silver Nova Campaign (and reserved for the BH2 Campaign): nothing of the campaign may name her
     bad += asuka_rule(say)
     # no mission but the two has an enemy army of Black Hole's colour
     for key, d in ms.items():
@@ -151,7 +151,7 @@ def check(a):
         if foes and key not in ("es09", "es13"):
             say(False, f"{key}: a Black Hole army (colour 5) is an enemy")
             bad += 1
-    # the player is Emerald Sun in every mission: the colour slot its skin sits on is the player's alone (no enemy or ally of the mission wears it)
+    # the player is Silver Nova in every mission: the colour slot its skin sits on is the player's alone (no enemy or ally of the mission wears it)
     names = {1: "Orange Star", 2: "Blue Moon", 3: "Green Earth", 4: "Yellow Comet", 5: "Black Hole"}
     slots = []
     for key, d in ms.items():
@@ -162,7 +162,7 @@ def check(a):
             say(False, f"{key}: the player's colour slot {names[pc]} is shared with army {clash} or is Black Hole's")
             bad += 1
         slots.append(f"{key[2:]}:{names[pc][:2].upper()}")
-    say(True, "the player (Emerald Sun skin) sits in the slot " + " ".join(slots))
+    say(True, "the player (Silver Nova skin) sits in the slot " + " ".join(slots))
     # every army its own nation (colour), at most one HQ each (the maps: maps lint AR01 / AR02)
     for key, d in ms.items():
         cols = [a["colour"] for a in d["armies"]]

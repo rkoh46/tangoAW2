@@ -2246,7 +2246,7 @@ mod save_tests {
         f.save(BH, &bhb);
         assert_eq!(f.load(BH).unwrap(), bhb, "BH's newest record, untouched by BH2's saves");
         assert_eq!(f.load(BH2).unwrap(), bh2b, "BH2's newest record, untouched by BH's saves");
-        assert_eq!(f.load(ES).unwrap(), es, "Emerald Sun's record has its own slot");
+        assert_eq!(f.load(ES).unwrap(), es, "Silver Nova's record has its own slot");
     }
 
     #[test]
@@ -2260,7 +2260,7 @@ mod save_tests {
         f.save(BH2, &bh2);
         assert_eq!(f.load(BH).unwrap(), old, "the BH record survives BH2's first save");
         assert_eq!(f.load(BH2).unwrap(), bh2);
-        // the other way: an old Emerald Sun save is its own slot and is read at offset 0 as before
+        // the other way: an old Silver Nova save is its own slot and is read at offset 0 as before
         let es = record(SOURCES[ES].progress_magic, 0x88);
         f.0.insert(SOURCES[ES].save_slot, es.clone());
         assert_eq!(f.load(ES).unwrap(), es);

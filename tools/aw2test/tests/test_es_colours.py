@@ -1,4 +1,4 @@
-"""Emerald Sun Campaign, every mission: each army wears its own country's colours, and the Emerald Sun skin only the player's (`-k es_colours_m`).
+"""Silver Nova Campaign, every mission: each army wears its own country's colours, and the Silver Nova skin only the player's (`-k es_colours_m`).
 In the real game, after the mission is entered: the colour byte of every army is the mission's (the Rust spec, `ArmyDef::new(colour::X ..)`), the skin is
 installed on the player's colour alone, and each army's unit palette row on the screen (less the entries the game redraws every frame) is that colour's palette in the ROM (Black Hole's own copy for 5):
 an army drawn in another's colours (the bug of M9 and M13: the player picked a CO, the game gave the player Black Hole's colour) fails here."""
@@ -66,7 +66,7 @@ def check_pixels(ctx, e, g, n, want, base):
     seen_skin = sum(1 for p in px if p in skin_only)
     seen_nation = sum(1 for p in px if p in nation_only)
     ctx.log(f"M{n}: {seen_skin} skin pixels, {seen_nation} of the nation's own colours on the screen")
-    ctx.require(seen_skin >= 15, f"M{n}: the player's units and buildings are drawn in the Emerald Sun colours ({seen_skin} pixels)")
+    ctx.require(seen_skin >= 15, f"M{n}: the player's units and buildings are drawn in the Silver Nova colours ({seen_skin} pixels)")
     ctx.eq(seen_nation, 0, f"M{n}: none of the player's nation's colours are drawn for the player")
 
 
@@ -76,10 +76,10 @@ def check(ctx, n):
     base = e.u32(PLAYERS)
     have = [e.u8(base + 0x3C * a + 0x1A) for a in range(1, len(want) + 1)]
     ctx.eq(have, want, f"M{n}: the armies' colours are the mission's")
-    # (0x11 + skin: only the skin's crest, on the colour of an army whose CO is an Emerald Sun CO: the designs follow the CO, army_skin::crest_plan)
+    # (0x11 + skin: only the skin's crest, on the colour of an army whose CO is a Silver Nova CO: the designs follow the CO, army_skin::crest_plan)
     skinned = [c for c in range(1, 6) if 1 <= e.u8(SKIN_APPLIED + c) <= 0x0F]
-    ctx.eq(skinned, [want[0]], f"M{n}: the Emerald Sun skin is on the player's colour alone")
-    ctx.eq(e.u8(SKIN_APPLIED + want[0]), 1, f"M{n}: it is the Emerald Sun skin (the campaign's only one) on colour {want[0]}")
+    ctx.eq(skinned, [want[0]], f"M{n}: the Silver Nova skin is on the player's colour alone")
+    ctx.eq(e.u8(SKIN_APPLIED + want[0]), 1, f"M{n}: it is the Silver Nova skin (the campaign's only one) on colour {want[0]}")
     e.wait(30)
     for slot, c in enumerate(want):
         rom = BH_UNIT_PALETTE if c == 5 else UNIT_PALETTES + 0x20 * (c - 1)

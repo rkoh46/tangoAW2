@@ -373,7 +373,7 @@ class DsCampaign:
 
     def chooser_row(self, row):
         e = self.e
-        for _ in range(8):     # (the chooser wraps: AW2, Dual Strike, BH and Emerald Sun campaigns, the custom ones: more rows than the four it once had)
+        for _ in range(8):     # (the chooser wraps: AW2, Dual Strike, BH and Silver Nova campaigns, the custom ones: more rows than the four it once had)
             if e.u8(MENU_CHOICE) == row:
                 return
             e.press("DOWN", 6)

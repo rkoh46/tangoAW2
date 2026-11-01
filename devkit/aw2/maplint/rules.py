@@ -75,7 +75,7 @@ RULES = {
     "MD06": ("warn", "open field: more than 53% of the land is plain"),
     "MD07": ("warn", "a river of more than 10 cells with no bridge or ford"),
     "MD08": ("warn", "roads lead nowhere worth going: under half the properties have a road within 2 cells"),
-    "ES01": ("error", "Black Hole's inventions on an Emerald Sun map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line)"),
+    "ES01": ("error", "Black Hole's inventions on a Silver Nova map that is not one of the (at most two) missions against Black Hole (the map file's `blackhole` line)"),
 }
 
 
@@ -560,7 +560,7 @@ def spawned(G):
 
 
 def inventions(G):
-    """ES01: Black Hole's inventions only on the (at most two) Emerald Sun maps that fight Black Hole."""
+    """ES01: Black Hole's inventions only on the (at most two) Silver Nova maps that fight Black Hole."""
     if G.m.source != "es":
         return []
     out = []
@@ -955,7 +955,7 @@ def design_checks(G):
     return design.checks(G) + principles.checks(G)
 
 
-# Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for an Emerald Sun map.
+# Findings in the BH Campaign's and Versus maps that the user has not approved changing: reported, not failing (map name -> rule -> how many). Never add to it for a Silver Nova map.
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
