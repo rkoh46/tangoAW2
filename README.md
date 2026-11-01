@@ -10,7 +10,7 @@ No game is included: you need your own dump of the USA cartridge.
 <table>
 <tr>
 <td><img src="docs/screenshots/menu-title-tangoaw2.png" width="240" alt="The title screen with the tangoAW2 version badge (v0.8.9)"></td>
-<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="a briefing on the beach in the Silver Nova Campaign"></td>
+<td><img src="docs/screenshots/es-campaign-story.png" width="240" alt="Caulder briefing Tabitha and Lili in the Silver Nova Campaign"></td>
 <td><img src="docs/screenshots/es-versus.png" width="240" alt="A Versus battle: Silver Nova's chrome soldiers and orb-topped HQ against Black Hole"></td>
 </tr>
 <tr>
@@ -66,7 +66,7 @@ your army and kept in your settings).
   roulette draws one of the proposals. Every player picks their own army
   (CO, colour, team, partner) on **SELECT YOUR ARMY** and presses READY, and
   the host sets the rules (including battle animations, for everyone).
-- **Silver Nova**, a sixth army (a silver and blue-grey one with
+- **Silver Nova**, a sixth army (a silver metal one with
   masked soldiers and a tall HQ with a green orb), is a sixth choice next to the five armies'
   colours on SELECT YOUR ARMY, online and offline: any seat on any map can be
   Silver Nova, with any combination of the others. Its three COs

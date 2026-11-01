@@ -5,6 +5,7 @@
                                                                       catalogue of army-coloured screens and fails on any left in the base army's colours
   armyskin matrix [--quick] [--armies 2 3] [--colours 5] [--no-ds]    the skin on every colour in every army count (2..5): the skins' rooms in free ROM, the panel, the build menu, a battle
   armyskin import-hq PICTURE [--write] [--sheet PNG] [--capture]                  import the user's HQ picture on its pixel grid (grass removed, nothing redrawn); --write puts its rows in the skin file
+  armyskin readme-pics [--out DIR]                                    regenerate the README's Silver Nova Versus picture (docs/screenshots/es-versus.png) from the current build (the story picture: AW2TEST_README_DIR=.. tools/aw2test/run.py -k readme_pictures)
   armyskin catalogue                                                  the screens (scenarios) and what each shows
   armyskin options --dir DIR [--letters ACF] [--awbw DIR]            a sheet of soldier options (candidate files A.toml ...) to choose from
   armyskin scenario NAME [--ids 6,2] [--ds] [--out DIR]              run one scenario's harness script and keep its shots (for sheets)
@@ -42,6 +43,9 @@ def register(sub):
     a.add_argument("--sheet", help="write the picture beside the imported pixels (PNG)")
     a.add_argument("--capture", action="store_true", help="also show the import at the capture box's size (32 x 64, drawn at half height) with its proportions against the map HQ's")
     a.set_defaults(fn=run_import_hq)
+    a = ps.add_parser("readme-pics", help="regenerate the README's Silver Nova Versus picture from the current build")
+    a.add_argument("--out", help="directory (default docs/screenshots)")
+    a.set_defaults(fn=run_readme_pics)
     a = ps.add_parser("palette-options", help="a comparison sheet of candidate palettes (DIR/A.toml ... fragments with a [colours] table) drawn by the real game")
     a.add_argument("--dir", required=True)
     a.add_argument("--letters", default="ABCDEF")
@@ -143,6 +147,20 @@ def run_palette_options(a):
         print("\n".join(l for l in rep if any(k in l for k in ("closest", "done greys", "fog", "chroma", "on colour"))))
     util.say("wrote", a.out)
     return 0
+
+
+def run_readme_pics(a):
+    """The Silver Nova army (Tabitha, the Dual Strike pack) beside Black Hole: the `units` scenario's HQ shot, 3x like the other README pictures."""
+    from PIL import Image
+    work = cfg.work("armyskin", "readme_pics")
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "script.txt").write_text(scenarios.script("units", [6, 5], ds=True))
+    rc, _ = harness.run_script(work / "script.txt", work, ds=True)
+    out = Path(a.out) if a.out else cfg.REPO / "docs" / "screenshots"
+    im = Image.open(work / "hq_s0.bmp").convert("RGB")
+    im.resize((im.width * 3, im.height * 3), Image.NEAREST).save(out / "es-versus.png")
+    util.say("wrote", out / "es-versus.png")
+    return rc
 
 
 def run_check(a):
