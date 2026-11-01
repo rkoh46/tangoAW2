@@ -650,7 +650,7 @@ def hook_firestorm_animation(ctx, shots=None):
         g.e.shot(os.path.join(shots, "1_before"))
     g.choose("Super", g.MAP_MENU)
     seen = {"kind": 0, "bolt": 0, "frames": 0, "target": None}
-    during = after = False
+    during_n, after = 0, False
     for _ in range(900):
         g.e.wait(2)
         kind, bolt, frames = g.e.u8(POWER_ANIM), g.e.u8(POWER_ANIM + 0x1E), g.e.u16(POWER_ANIM + 4)
@@ -659,9 +659,9 @@ def hook_firestorm_animation(ctx, shots=None):
             seen["target"] = (g.e.u8(POWER_ANIM + 1), g.e.u8(POWER_ANIM + 2))
             seen["frames"] = max(seen["frames"], frames)
             seen["bolt"] = max(seen["bolt"], bolt)
-            if shots and bolt and frames > 30 and not during:
-                g.e.shot(os.path.join(shots, "2_during"))
-                during = True
+            if shots and bolt and frames >= 30 + 25 * during_n and during_n < 5:
+                g.e.shot(os.path.join(shots, f"2_during{during_n}"))
+                during_n += 1
         elif seen["kind"] and not after:
             if shots:
                 g.e.wait(40)
