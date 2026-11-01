@@ -1,0 +1,29 @@
+; Lili, sketch A "Teddy March": E minor, 116 bpm. A toy-soldier march: the flute chirps a chromatic hook (D# against E minor) over an oom-pah bass and a snare-roll kit, a low clarinet fills the gaps. Original notes, AW2 voices, no rom lines.
+song lili_a
+tempo 116
+meter 4/4
+reverb 173
+priority 0
+
+inst flute = A.23 shift=-12
+inst clar = A.71 shift=-12
+inst bass = A.34 shift=24
+inst str = A.48 shift=0
+inst kit = A.120
+inst timp = A.47 shift=24
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=flute vol=100 pan=4 vel=110 gate=92 gain=1.119 
+track 2 inst=clar vol=86 pan=-10 vel=104 gate=90 gain=0.775 
+track 3 inst=bass vol=100 pan=0 vel=116 gate=70 gain=1.378 
+track 4 inst=str vol=70 pan=-18 vel=96 gate=98 gain=0.387 
+track 5 inst=kit vol=76 pan=0 vel=108 gate=100 gain=0.430 
+
+section A bars=8
+  1: | E5/#18 E5/#6 G5/#12 E5/#12 F#5/#12 D#5/#12 E5/#24 | | B4/#18 B4/#6 E5/#12 B4/#12 C5/#12 A4/#12 B4/#24 | | C5/#18 C5/#6 E5/#12 C5/#12 D5/#12 B4/#12 C5/#24 | | D#5/#24 F#5/#24 A5/#12 G#5/#12 F#5/#12 D#5/#12 | | G5/#12 F#5/#12 E5/#12 B4/#12 G4/#24 E4/#24 | | A4/#12 C5/#12 E5/#12 A5/#12 G5/#24 E5/#24 | | E5/#12 C5/#12 G4/#12 C5/#12 E5/#24 G5/#24 | | F#5/#36 D#5/#12 B4/#48 |
+  2: | r/#72 B3/#12 E4/#12 | | r/#72 G4/#12 B4/#12 | | r/#72 E4/#12 G4/#12 | | r/#72 B3/#12 F#4/#12 | | E4/#24 G4/#24 B4/#24 G4/#24 | | C5/#24 A4/#24 E4/#24 C4/#24 | | G4/#24 E4/#24 C4/#24 E4/#24 | | D#4/#48 F#4/#24 B3/#24 |
+  3: | E2/#12' r/#12 B2/#12' r/#12 E2/#12' r/#12 B2/#12' r/#12 | | E2/#12' r/#12 B2/#12' r/#12 E2/#12' r/#12 B2/#12' r/#12 | | C2/#12' r/#12 G2/#12' r/#12 C2/#12' r/#12 G2/#12' r/#12 | | B1/#12' r/#12 F#2/#12' r/#12 B1/#12' r/#12 F#2/#12' r/#12 | | E2/#12' r/#12 B2/#12' r/#12 E2/#12' r/#12 B2/#12' r/#12 | | A1/#12' r/#12 E2/#12' r/#12 A1/#12' r/#12 E2/#12' r/#12 | | C2/#12' r/#12 G2/#12' r/#12 C2/#12' r/#12 G2/#12' r/#12 | | B1/#12' r/#12 F#2/#12' r/#12 B1/#12' r/#12 F#2/#12' r/#12 |
+  4: | G4/#96 | | G4/#96 | | E4/#96 | | F#4/#96 | | G4/#96 | | A4/#96 | | G4/#96 | | F#4/#96 |
+  5: | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 tom1/#6 tom2/#6 tom2/#6 tom3/#6 tom3/#6 tom3/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 | | kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 snare/#6 tom2/#6 tom2/#6 tom3/#6 tom3/#6 tom3/#6 tom3/#6 |
+end
+form loop A

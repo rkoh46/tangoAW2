@@ -1,0 +1,28 @@
+; Lili, sketch B "Carousel": F# minor, 6/8, 104 bpm. A koto rocks a music-box hook with a chromatic F natural against the minor chord; a low clarinet sighs on the second dotted beat; pick bass, held strings and a soft rim-and-kick kit. Original notes, AW2 voices, no rom lines.
+song lili_b
+tempo 104
+meter 6/8
+reverb 173
+priority 0
+
+inst koto = A.117
+inst clar = A.71 shift=-12
+inst bass = A.36 shift=24
+inst str = A.48 shift=0
+inst kit = A.120
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=koto vol=100 pan=4 vel=110 gate=90 gain=3.642 
+track 2 inst=clar vol=84 pan=-10 vel=100 gate=92 gain=2.980 
+track 3 inst=bass vol=100 pan=0 vel=112 gate=75 gain=4.967 
+track 4 inst=str vol=70 pan=-16 vel=94 gate=98 gain=1.490 
+track 5 inst=kit vol=70 pan=0 vel=100 gate=100 gain=1.325 
+
+section A bars=8
+  1: | C#5/#12 F#5/#12 A5/#18 G#5/#6 F#5/#12 F5/#12 | | F#5/#36 C#5/#18 G#4/#18 | | D5/#12 F#5/#12 A5/#12 F#5/#24 D5/#12 | | C#5/#12 F5/#12 G#5/#24 F5/#24 | | A5/#18 G#5/#6 F#5/#12 E5/#12 C#5/#12 A4/#12 | | B4/#12 D5/#12 F#5/#12 E5/#12 D5/#12 F#5/#12 | | A4/#12 D5/#12 F#5/#12 E5/#12 A5/#24 | | G#5/#36 F5/#12 C#5/#24 |
+  2: | r/#36 A4/#36 | | r/#36 E4/#36 | | r/#36 D4/#36 | | r/#36 G#4/#36 | | r/#36 C#5/#36 | | r/#36 D5/#36 | | r/#36 F#4/#36 | | G#4/#36 C#4/#36 |
+  3: | F#2/#12' r/#24 C#3/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | D2/#12' r/#24 A2/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 | | F#2/#12' r/#24 C#3/#12' r/#24 | | B1/#12' r/#24 F#2/#12' r/#24 | | D2/#12' r/#24 A2/#12' r/#24 | | C#2/#12' r/#24 G#2/#12' r/#24 |
+  4: | A4/#72 | | A4/#72 | | F#4/#72 | | G#4/#72 | | A4/#72 | | B4/#72 | | A4/#72 | | G#4/#72 |
+  5: | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 tom1/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 | | kick/#6 r/#6 hat/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 snare/#6 r/#6 snare/#6 tom2/#6 |
+end
+form loop A

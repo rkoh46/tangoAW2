@@ -1,0 +1,25 @@
+; Tabitha, sketch C "Pigtail Funk": F# minor, 118 bpm. A plucked-guitar riff in syncopated sixteenths answered by offbeat brass stabs over a busy plucked bass and a funk kit. Original notes, AW2 voices, no rom lines.
+song tabitha_c
+tempo 118
+meter 4/4
+reverb 173
+priority 0
+
+inst pluck = A.27 shift=12
+inst brass = A.111 shift=-12
+inst bass = A.34 shift=24
+inst kit = A.120
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=pluck vol=100 pan=-4 vel=116 gate=70 gain=1.307 
+track 2 inst=brass vol=90 pan=12 vel=110 gate=80 gain=1.070 
+track 3 inst=bass vol=100 pan=0 vel=118 gate=70 gain=1.902 
+track 4 inst=kit vol=76 pan=0 vel=110 gate=100 gain=0.654 
+
+section A bars=8
+  1: | F#4/#12 A4/#6 C#5/#12 r/#6 E5/#12 C#5/#6 A4/#6 B4/#12 F#4/#24 | | F#4/#12 A4/#6 C#5/#12 r/#6 F#5/#12 E5/#6 C#5/#6 A4/#12 C#5/#24 | | D4/#12 F#4/#6 A4/#12 r/#6 D5/#12 C#5/#6 A4/#6 F#4/#12 A4/#24 | | E4/#12 G#4/#6 B4/#12 r/#6 E5/#12 D#5/#6 B4/#6 G#4/#12 B4/#24 | | A4/#12 C#5/#6 F#5/#12 r/#6 A5/#12 G#5/#6 F#5/#6 E5/#12 C#5/#24 | | F#5/#12 E5/#6 C#5/#12 r/#6 E5/#12 C#5/#6 A4/#6 B4/#12 E5/#24 | | D5/#12 C#5/#6 A4/#12 r/#6 D5/#12 F#5/#6 A5/#6 E5/#12 D5/#24 | | B4/#12 C5/#6 F5/#12 r/#6 G#5/#12 F5/#6 B4/#6 G#4/#12 C#5/#24 |
+  2: | r/#6 C#4/#6' r/#6 C#4/#6' r/#12 C#5/#6' r/#12 C#4/#6' r/#6 C#5/#6' r/#12 C#4/#6' r/#6 | | r/#6 C#4/#6' r/#6 C#5/#6' r/#12 C#4/#6' r/#12 C#4/#6' r/#6 C#4/#6' r/#12 C#4/#6' r/#6 | | r/#6 A3/#6' r/#6 A4/#6' r/#12 A3/#6' r/#12 A3/#6' r/#6 A3/#6' r/#12 A3/#6' r/#6 | | r/#6 B4/#6' r/#6 B4/#6' r/#12 B4/#6' r/#12 B3/#6' r/#6 B3/#6' r/#12 B3/#6' r/#6 | | r/#6 C#5/#6' r/#6 C#5/#6' r/#12 C#4/#6' r/#12 C#5/#6' r/#6 C#4/#6' r/#12 C#5/#6' r/#6 | | r/#6 C#4/#6' r/#6 C#5/#6' r/#12 C#4/#6' r/#12 C#5/#6' r/#6 C#4/#6' r/#12 C#4/#6' r/#6 | | r/#6 A3/#6' r/#6 A4/#6' r/#12 A4/#6' r/#12 A4/#6' r/#6 A3/#6' r/#12 A4/#6' r/#6 | | r/#6 G#3/#6' r/#6 G#3/#6' r/#12 G#3/#6' r/#12 G#3/#6' r/#6 G#4/#6' r/#12 G#3/#6' r/#6 |
+  3: | F#1/#12' F#2/#6' F#2/#6' r/#6 E2/#6' F#2/#12' F#1/#12' F#2/#6' F#2/#6' r/#6 C#2/#6' B1/#12' | | F#1/#12' F#2/#6' F#1/#6' r/#6 E3/#6' F#1/#12' F#1/#12' F#2/#6' F#1/#6' r/#6 C#3/#6' B2/#12' | | D3/#12' D3/#6' D2/#6' r/#6 C3/#6' D3/#12' D3/#12' D3/#6' D3/#6' r/#6 A2/#6' G3/#12' | | E2/#12' E4/#6' E2/#6' r/#6 D4/#6' E2/#12' E2/#12' E3/#6' E3/#6' r/#6 B3/#6' A3/#12' | | F#1/#12' F#3/#6' F#1/#6' r/#6 E2/#6' F#1/#12' F#1/#12' F#3/#6' F#1/#6' r/#6 C#2/#6' B1/#12' | | F#2/#12' F#2/#6' F#2/#6' r/#6 E2/#6' F#1/#12' F#2/#12' F#3/#6' F#1/#6' r/#6 C#2/#6' B1/#12' | | D2/#12' D3/#6' D3/#6' r/#6 C3/#6' D3/#12' D2/#12' D3/#6' D3/#6' r/#6 A2/#6' G2/#12' | | C#2/#12' C#3/#6' C#2/#6' r/#6 B3/#6' C#2/#12' C#2/#12' C#3/#6' C#2/#6' r/#6 G#3/#6' F#3/#12' |
+  4: | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 hat/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 hat/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 hat/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 snare/#6 tom1/#6 tom2/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 hat/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 hat/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 r/#6 hat/#6 r/#6 snare/#6 r/#6 hat/#6 hat/#6 | | kick/#6 r/#6 hat/#6 hat/#6 snare/#6 r/#6 hat/#6 kick/#6 kick/#6 kick/#6 hat/#6 snare/#6 snare/#6 snare/#6 tom1/#6 tom3/#6 |
+end
+form loop A

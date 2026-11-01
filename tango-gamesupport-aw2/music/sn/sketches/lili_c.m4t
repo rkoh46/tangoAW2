@@ -1,0 +1,28 @@
+; Lili, sketch C "Wonky Circus": C minor, 110 bpm, shuffle. A clarinet sways through a lopsided swung hook over a walking pluck bass, offbeat plucked-guitar dyads and a held string line; clap-and-hat shuffle. Original notes, AW2 voices, no rom lines.
+song lili_c
+tempo 110
+meter 4/4
+reverb 173
+priority 0
+
+inst clar = A.71 shift=-12
+inst bass = A.36 shift=24
+inst pluck = A.27 shift=12
+inst str = A.48 shift=0
+inst kit = A.120
+hit kick=36 rim=37 clap=39 snare=40 hat=44 ohat=46 tom1=45 tom2=48 tom3=50 crash=49
+
+track 1 inst=clar vol=100 pan=4 vel=110 gate=92 gain=1.106 
+track 2 inst=bass vol=100 pan=0 vel=116 gate=72 gain=1.362 
+track 3 inst=pluck vol=84 pan=12 vel=104 gate=60 gain=0.681 
+track 4 inst=str vol=70 pan=-18 vel=96 gate=98 gain=0.383 
+track 5 inst=kit vol=74 pan=0 vel=104 gate=100 gain=0.426 
+
+section A bars=8
+  1: | C5/#16 Eb5/#8 G5/#16 F5/#8 Eb5/#16 D5/#8 C5/#24 | | G4/#16 Bb4/#8 C5/#16 B4/#8 G4/#48 | | Ab4/#16 C5/#8 Eb5/#16 C5/#8 Bb4/#16 Ab4/#8 Eb4/#24 | | B4/#16 D5/#8 F5/#24 D5/#16 B4/#8 G4/#24 | | Eb5/#16 G5/#8 Eb5/#16 C5/#8 G4/#16 C5/#8 Eb5/#24 | | F5/#16 Ab5/#8 F5/#16 C5/#8 Ab4/#16 C5/#8 F5/#24 | | Eb5/#16 Ab5/#8 G5/#16 Eb5/#8 C5/#16 Bb4/#8 Ab4/#24 | | D5/#16 F5/#8 G5/#16 F5/#8 D5/#16 B4/#8 G4/#24 |
+  2: | C2/#16' r/#8 G2/#16' r/#8 C3/#16' r/#8 G2/#16' r/#8 | | C2/#16' r/#8 G2/#16' r/#8 C3/#16' r/#8 G2/#16' r/#8 | | G#1/#16' r/#8 D#2/#16' r/#8 G#2/#16' r/#8 D#2/#16' r/#8 | | G1/#16' r/#8 D2/#16' r/#8 G2/#16' r/#8 D2/#16' r/#8 | | C2/#16' r/#8 G2/#16' r/#8 C3/#16' r/#8 G2/#16' r/#8 | | F2/#16' r/#8 C3/#16' r/#8 F3/#16' r/#8 C3/#16' r/#8 | | G#1/#16' r/#8 D#2/#16' r/#8 G#2/#16' r/#8 D#2/#16' r/#8 | | G1/#16' r/#8 D2/#16' r/#8 G2/#16' r/#8 D2/#16' r/#8 |
+  3: | r/#24 [D#4 A#4]/#12' r/#36 [D#4 A#4]/#12' r/#12 | | r/#24 [D#4 A#4]/#12' r/#36 [D#4 A#4]/#12' r/#12 | | r/#24 [C4 G4]/#12' r/#36 [C4 G4]/#12' r/#12 | | r/#24 [B3 F#4]/#12' r/#36 [B3 F#4]/#12' r/#12 | | r/#24 [D#4 A#4]/#12' r/#36 [D#4 A#4]/#12' r/#12 | | r/#24 [G#3 D#4]/#12' r/#36 [G#3 D#4]/#12' r/#12 | | r/#24 [C4 G4]/#12' r/#36 [C4 G4]/#12' r/#12 | | r/#24 [B3 F#4]/#12' r/#36 [B3 F#4]/#12' r/#12 |
+  4: | G4/#96 | | G4/#96 | | Eb4/#96 | | D4/#96 | | G4/#96 | | Ab4/#96 | | Eb4/#96 | | D4/#96 |
+  5: | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 tom2/#8 tom3/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 | | kick/#8 r/#8 hat/#8 clap/#8 r/#8 hat/#8 kick/#8 clap/#8 clap/#8 tom1/#8 tom3/#8 r/#8 |
+end
+form loop A
