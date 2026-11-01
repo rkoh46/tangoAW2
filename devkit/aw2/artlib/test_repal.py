@@ -117,7 +117,7 @@ class Kit(unittest.TestCase):
         self.assertIn(int(P.quantise(nat, fg, pal)[0, 0]), (1, 2))              # no `match`: the Lab rule (unchanged callers)
         # the approved COs pin the Lab rule their art was made with (luma shifted their hues: docs/dev/art-repal.md)
         for co in ("tabitha", "lili", "caulder"):
-            spec = tomllib.loads((cfg.REPO / "art-src" / "cos" / f"{co}_v1.toml").read_text())
+            spec = tomllib.loads((cfg.REPO / "art-src" / "cos" / f"{co}_{'v2' if co == 'lili' else 'v1'}.toml").read_text())
             self.assertEqual(spec.get("match", "lab"), "lab", co)      # (none given: the Lab rule)
 
     def test_command_registered(self):
