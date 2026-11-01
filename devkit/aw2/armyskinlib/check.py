@@ -37,6 +37,7 @@ MIN_FOG = 9.0        # ... against the colours the fog gives the terrain
 MIN_DONE = 10.0      # the skin's own done unit against its live unit
 MAX_CHROMA = 0.4     # the skin's body chroma as a share of Green Earth's: a stone, not a leaf green
 MAX_CONTRAST = 1.75  # the HQ's value contrast (std. dev. of brightness) as a multiple of the strongest of AW2's five (it is asked to be stronger than theirs, not wilder)
+MAX_BOX_ASPECT_GAP = 0.10  # the capture box's HQ (as drawn) against the map HQ: width over height within this share
 MIN_DONE_OWN = 6.0   # the skin's done ramp against the other armies' done greys (a done skin unit is still the skin's)
 # The terrain's colours under fog (rendered with fog on, Bean Island: grass, road, forest, mountain, sea ...): what a unit stands on in the fog of war.
 FOG_TERRAIN = [(131, 156, 148), (148, 164, 148), (98, 98, 123), (106, 131, 148), (57, 123, 123), (82, 131, 106), (115, 90, 139), (74, 74, 197), (82, 57, 172)]
@@ -146,6 +147,18 @@ def static(skin_path=None, say=print):
         fails.append(f"hq: the picture starts at row {mine['top']}: AW2's HQs fill the frame from row {rng('top')[1]} at the latest")
     if mine["left"] < mine["right"]:
         fails.append("hq: the right side is lighter than the left (light comes from the top left)")
+    # -- the capture box's HQ (the engine's own picture, decoded from the dump) keeps the map HQ's proportions: the box draws it at half height
+    from . import hqimport
+    mine_g = hqimport.box_grid(Rom(3).blobs["capture box HQ"][0])
+    a_map = hqimport.aspect(hq)
+    a_box = hqimport.aspect(mine_g, hqimport.BOX_SQUASH, clear=0)
+    twin = hqimport.capture_rows(hq)
+    rep.append(f"  capture box HQ: width/height {a_box:.2f} as drawn (map HQ {a_map:.2f}; needs within {MAX_BOX_ASPECT_GAP:.0%}), {hqimport.bbox(mine_g, 0)[1] // 2} rows tall on the screen")
+    if abs(a_box - a_map) > MAX_BOX_ASPECT_GAP * a_map:
+        fails.append(f"hq: the capture box's HQ is {a_box:.2f} wide for its height, the map HQ's {a_map:.2f}: it is squashed or stretched")
+    want = [[{14: 13, 13: 1}.get(v, v) for v in (0 if c == "." else int(c, 16) for c in r)] for r in twin]
+    if want != mine_g:
+        fails.append("hq: the engine's capture box HQ differs from the kit's twin (hqimport.capture_rows)")
     # -- every colour the skin can sit on: the dump works, the rows differ from the colour's own, the done row differs from the live row
     for host in range(1, 6):
         sk = Rom(host)

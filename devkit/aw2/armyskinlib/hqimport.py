@@ -3,6 +3,10 @@ grass background); this finds its pixel grid, samples every cell (the median of 
 (the cells of the grass family joined to the picture's edge) and writes the cells as the skin file's `[hq]` rows in the building palette's indices.
 Nothing is redrawn: a cell is the nearest of the picture's own few colours.
 
+The capture box (`capture_rows`, `import-hq --capture`): the box draws its property picture (32 x 64 in the data) at half its height, so the same imported
+cells go into it with every row doubled and the tower in the middle at its own width: on the screen it keeps the map HQ's proportions (`aspect`, checked by
+`aw2dev armyskin check`). It is the owner's cells either way; nothing is redrawn.
+
 The colours of the picture (`--map`) go to the building palette's entries as `NAME=INDEX` pairs; the default is Silver Nova's (docs/dev/army-packs.md)."""
 import statistics
 from collections import Counter
@@ -117,3 +121,42 @@ def sheet(path, rows, pal, out, scale=10):
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     img.save(out)
     return out
+
+
+# ---- the capture box (the engine's twin is `army_skin::capture_hq_grid`) ----
+BOX = (32, 64)      # the box's property picture, in cells of the data
+BOX_SQUASH = 0.5    # the box draws it at half its height
+
+
+def capture_rows(rows):
+    """The 16 x 32 HQ rows as the capture box's 32 x 64 picture: every row twice, the tower centred at its own width."""
+    pad = (BOX[0] - len(rows[0])) // 2
+    out = []
+    for r in rows:
+        line = "." * pad + r + "." * (BOX[0] - pad - len(r))
+        out += [line, line]
+    return out
+
+
+def bbox(rows, clear="."):
+    """(width, height) of the cells that are not `clear`; rows are strings or lists."""
+    pts = [(x, y) for y, r in enumerate(rows) for x, c in enumerate(r) if c not in (clear, 0)]
+    return (max(p[0] for p in pts) - min(p[0] for p in pts) + 1, max(p[1] for p in pts) - min(p[1] for p in pts) + 1)
+
+
+def aspect(rows, squash=1.0, clear="."):
+    """Width over height of the drawn cells as they look on the screen (`squash` the picture's vertical scale)."""
+    w, h = bbox(rows, clear)
+    return w / (h * squash)
+
+
+def box_grid(blob):
+    """The capture box HQ blob (the engine's 32 x 64 picture, 4 x 8 tiles of 4 bits) as a grid of palette indices [64][32]."""
+    g = [[0] * BOX[0] for _ in range(BOX[1])]
+    for k in range(32):
+        for y in range(8):
+            for x in range(4):
+                b = blob[k * 32 + y * 4 + x]
+                g[(k // 4) * 8 + y][(k % 4) * 8 + 2 * x] = b & 15
+                g[(k // 4) * 8 + y][(k % 4) * 8 + 2 * x + 1] = b >> 4
+    return g

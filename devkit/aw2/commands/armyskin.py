@@ -4,7 +4,7 @@
   armyskin check [--live] [--skin FILE] [--scenario S ...]            the data file, the palette's margins, every unit's recolouring; --live also walks the
                                                                       catalogue of army-coloured screens and fails on any left in the base army's colours
   armyskin matrix [--quick] [--armies 2 3] [--colours 5] [--no-ds]    the skin on every colour in every army count (2..5): the skins' rooms in free ROM, the panel, the build menu, a battle
-  armyskin import-hq PICTURE [--write] [--sheet PNG]                  import the user's HQ picture on its pixel grid (grass removed, nothing redrawn); --write puts its rows in the skin file
+  armyskin import-hq PICTURE [--write] [--sheet PNG] [--capture]                  import the user's HQ picture on its pixel grid (grass removed, nothing redrawn); --write puts its rows in the skin file
   armyskin catalogue                                                  the screens (scenarios) and what each shows
   armyskin options --dir DIR [--letters ACF] [--awbw DIR]            a sheet of soldier options (candidate files A.toml ...) to choose from
   armyskin scenario NAME [--ids 6,2] [--ds] [--out DIR]              run one scenario's harness script and keep its shots (for sheets)
@@ -40,6 +40,7 @@ def register(sub):
     a.add_argument("--skin", help="the skin file (default the first skin's)")
     a.add_argument("--write", action="store_true", help="replace the skin file's [hq] rows")
     a.add_argument("--sheet", help="write the picture beside the imported pixels (PNG)")
+    a.add_argument("--capture", action="store_true", help="also show the import at the capture box's size (32 x 64, drawn at half height) with its proportions against the map HQ's")
     a.set_defaults(fn=run_import_hq)
     a = ps.add_parser("palette-options", help="a comparison sheet of candidate palettes (DIR/A.toml ... fragments with a [colours] table) drawn by the real game")
     a.add_argument("--dir", required=True)
@@ -109,6 +110,9 @@ def run_import_hq(a):
     from ..armyskinlib import hqimport, SKIN_DIR
     rows, rep = hqimport.import_hq(a.picture)
     print("\n".join(rep))
+    if a.capture:
+        box = hqimport.capture_rows(rows)
+        print(f"capture box: {len(box[0])} x {len(box)} cells, {hqimport.bbox(box)[0]} x {hqimport.bbox(box)[1] // 2} on the screen; width/height {hqimport.aspect(box, hqimport.BOX_SQUASH):.2f} (map HQ {hqimport.aspect(rows):.2f})")
     path = Path(a.skin) if a.skin else SKIN_DIR / "emerald_sun.toml"
     if a.sheet:
         import tomllib

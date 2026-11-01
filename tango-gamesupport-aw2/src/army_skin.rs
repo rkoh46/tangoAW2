@@ -1938,7 +1938,7 @@ fn figure_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
 /// The capture box (`sub_08041128`, `sub_0804103c`): its soldier is a 16 x 32 picture of four frames, LZ77 by the capturing army's country
 /// (`0x0849FD6C[country]`) decompressed to OBJ VRAM `0x06014940`, in the palette row `0x081213F4 + 32 * colour` (bank 4); its property is a 32 x 64 picture
 /// by terrain class, copied (queued) from ROM to OBJ tile `r6` in bank 5 from the same row. For a skinned colour the soldier is the skin's (Green Earth's, the
-/// plume laid on, the plume in palette entries 2 and 3, which no soldier uses) and an HQ is the skin's, the map HQ's art at twice the size (its gold in entry 13, which no
+/// plume laid on, the plume in palette entries 2 and 3, which no soldier uses) and an HQ is the skin's, the map HQ's art at its own width and twice the height of the box's half-height drawing (its gold in entry 13, which no
 /// property uses).
 const CAPTURE_SOLDIERS: u32 = 0x0849_FD6C;
 const CAPTURE_VRAM: u32 = 0x0601_4940;
@@ -1984,20 +1984,27 @@ pub fn capture_soldier(rom: &dyn Rom, skin: &Skin) -> Option<Vec<u8>> {
     Some(data)
 }
 
-/// The skin's HQ for the capture box: the map HQ at twice the size (32 x 64), the gold in entry 13 and the cream in white.
+/// The skin's HQ for the capture box: a 32 x 64 picture the box draws at half its height (AW2's own property pictures are stored that way: a stock HQ is 32 wide
+/// and 64 tall in the data and 32 x 32 on the screen), so the map HQ's rows are each doubled in height and the tower sits in the middle at its own width: on
+/// the screen it keeps the map HQ's proportions (the first version doubled it both ways and came out twice as wide as tall). The gold goes to entry 13, the cream to white.
 pub fn capture_hq(skin: &Skin) -> Option<Vec<u8>> {
     let g = skin.hq_grid()?;
+    Some(grid_to_tiles(&capture_hq_grid(&g), 4))
+}
+
+/// [`capture_hq`]'s 32 x 64 grid of palette indices from the map HQ's 16 x 32 grid.
+pub fn capture_hq_grid(g: &[u8]) -> Vec<u8> {
     let mut big = vec![0u8; 32 * 64];
     for y in 0..64 {
-        for x in 0..32 {
-            big[y * 32 + x] = match g[(y / 2) * 16 + x / 2] {
+        for x in 8..24 {
+            big[y * 32 + x] = match g[(y / 2) * 16 + x - 8] {
                 14 => BOX_GOLD_ENTRY as u8,
                 13 => 1,
                 v => v,
             };
         }
     }
-    Some(grid_to_tiles(&big, 4))
+    big
 }
 
 fn capture_blobs(rom: &dyn Rom, skin: &Skin, idx: usize, out: &mut Vec<Patch>) {
@@ -2566,6 +2573,23 @@ mod tests {
         assert!(p.anchor.1 < p.rows.len() && p.anchor.0 < p.rows[0].chars().count());
         assert_eq!(capture_hq(sk).expect("an HQ").len(), 1024);
         assert!(capture_soldier_at(0) + 0x400 <= capture_hq_at(0) && capture_hq_at(0) + 0x400 <= art_at(0) + 0x1000, "the box's pictures stay between the HQ and the moving sheets");
+    }
+
+    /// The capture box draws its 32 x 64 picture at half height: the HQ there must keep the map HQ's proportions (width : height of the drawn cells).
+    #[test]
+    fn the_capture_box_hq_keeps_the_map_hqs_proportions() {
+        fn extent(g: &[u8], w: usize) -> (usize, usize) {
+            let rows = g.len() / w;
+            let xs: Vec<usize> = (0..g.len()).filter(|&i| g[i] != 0).map(|i| i % w).collect();
+            let ys: Vec<usize> = (0..g.len()).filter(|&i| g[i] != 0).map(|i| i / w).collect();
+            assert!(rows > 0);
+            (xs.iter().max().unwrap() - xs.iter().min().unwrap() + 1, ys.iter().max().unwrap() - ys.iter().min().unwrap() + 1)
+        }
+        let map = emerald_sun().hq_grid().expect("an HQ");
+        let (mw, mh) = extent(&map, 16);
+        let (cw, ch) = extent(&capture_hq_grid(&map), 32);
+        let (map_aspect, box_aspect) = (mw as f64 / mh as f64, cw as f64 / (ch as f64 / 2.0));
+        assert!((map_aspect - box_aspect).abs() < 0.02, "map {map_aspect}, box {box_aspect}");
     }
 
     #[test]
