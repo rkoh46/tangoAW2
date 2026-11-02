@@ -74,9 +74,9 @@ def settle(e, g, d, frames=6000):
         if d.scripts_running():
             e.press("A", 4)
         e.wait(30)
-        if not d.scripts_running() and d.in_battle():
+        if not d.scripts_running() and d.in_battle() and g.idle():      # (a rout's explosions are procs between the scripts)
             e.wait(30)
-            if not d.scripts_running():
+            if not d.scripts_running() and g.idle():
                 break
     g._units_base = g._players_base = None
 
@@ -257,7 +257,8 @@ def bh2_m31_progression(ctx):
         ctx.log(f"after {name}'s HQ: units by army {cur}, HQ owners {[owner(e, *c) for _, c, _, _ in HQS]}, day {e.u16(dc.DAY)}")
         ctx.check(owner(e, *cell) == player, f"{name}'s HQ is the player's after the capture")
         ctx.check(cur[woke] - prev[woke] >= WAVES[k], f"{ARMY_NAMES[woke]} wakes with its whole wave ({cur[woke] - prev[woke]} new units for {WAVES[k]} in the list)")
-        ctx.check(all(cur[a] == prev[a] for a in (2, 3, 4) if a != woke), f"no other dormant nation changed ({prev} -> {cur})")
+        ctx.check(all(cur[a] == prev[a] for a in (2, 3, 4) if a not in (woke, k + 1)), f"no other dormant nation changed ({prev} -> {cur})")
+        ctx.eq(cur[k + 1], 0, f"{ARMY_NAMES[k + 1]} is routed by the capture: no unit left (the gauntlet rout rule)")
         nxt = HQS[k + 1][1]
         ctx.eq(owner(e, *nxt), woke, f"{ARMY_NAMES[woke]}'s HQ is built on its cell {nxt} (the gauntlet engine's reveal)")
         ctx.eq(e.u8(g.players_base + 0x3C * woke + 0x1B), 2, f"{ARMY_NAMES[woke]} is in the battle (the computer's)")

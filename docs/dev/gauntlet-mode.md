@@ -54,8 +54,11 @@ game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of 
 - **Online.** Offline only: `mode_menu::tick` is called with `ds && ds_features && mode.is_none()` (as Survival's), the wheel is AW2's own six in a netplay room, and nothing of the battle's
   simulation is changed (no `SIM_VERSION` bump).
 
+## The rout rule
+Capturing a line's HQ routes that army at once (all its units destroyed by AW2's own `DefeatArmy`, every property it owns neutral), then the next line comes; the last line's HQ wins as before. It is the shared engine's, so every map has it by default: list every line but the last in `cut_off` ([gauntlet.md](gauntlet.md), "The rout"). Tests `-k gauntlet_rout`.
+
 ## Adding a map
-A function in `gauntlet_mode.rs` added to `def()`'s missions (spec `five/gauntlet/spec/gauntlet_NN.py`, `aw2dev maps gen --campaign gauntlet`): the selector lists it, with its enemies, and the colour pick
+A function in `gauntlet_mode.rs` added to `def()`'s missions (every line but the last in `cut_off`: that is the rout rule) (spec `five/gauntlet/spec/gauntlet_NN.py`, `aw2dev maps gen --campaign gauntlet`): the selector lists it, with its enemies, and the colour pick
 offers what its enemies leave, from the mission alone. **The enemies' colours are the map's data**: each enemy `ArmyDef::new(colour::.., CoSpec::Fixed(co))` in `armies` (index 1 on, in the order they
 come) is what the selector shows and what the player may not wear; `Entry::free` computes the offered colours (AW2's five minus those, then Silver Nova while one of the five is free to host it), so a
 map that fixes other colours changes the offer with no other edit. The enemy armies need teams of their own (team 2: team 0 is "my own number" and 1 is the player's). A map with later stages lists their enemies too and keeps a plain colour out of the offer if any stage's enemy wears it ([gauntlet.md](gauntlet.md), "Colours and stages"); a five-army map has the player in army 5 (its pick is the CO screen's army-1 pick, army 1 a fixed enemy).

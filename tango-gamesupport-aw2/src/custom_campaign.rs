@@ -900,8 +900,8 @@ pub struct MissionDef {
     pub held_more: Vec<(u8, u8)>,
     /// Sleeping armies of a gauntlet: (army, the HQs the player must hold before it wakes). Until then the army cannot be defeated by losing its units (its holders may be killed; its wave still lands and fights).
     pub sleepers: Vec<(u8, Vec<(u8, u8)>)>,
-    /// Armies cut off once the player holds their HQ: (army, HQ). From then on the army's income is taken back at each of its turn starts (it fights on with what is on the field). A sleeping army has
-    /// no funds either while it sleeps ([`cut_funds`]).
+    /// The lines a gauntlet's player routes by taking their HQ: (army, HQ), every line but the last. The capture destroys the army at once (all its units, every property neutral: [`rout_army`]); its
+    /// income is also taken back at each of its turn starts ([`cut_funds`]), as a sleeping army has no funds either while it sleeps.
     pub cut_off: Vec<(u8, (u8, u8))>,
     /// The gauntlet engine's hidden lines: armies that are not on the battlefield while they sleep ([`Self::sleepers`]): no HQ (its cell is plain), no units, no turn (controller 0), no
     /// funds. [`Action::Reveal`] brings one in when the lines before it fall ([`Cond::LineFallen`]).
@@ -3082,6 +3082,20 @@ fn wake_after_rout(core: &mut Core, army: u8) {
             core.raw_write_8(p + 0x1B, -1, 2);
         }
     }
+}
+
+/// `DefeatArmy(army, code)`'s entry (`sub_08028894`).
+pub const DEFEAT_ARMY: u32 = 0x0802_8894;
+
+/// The gauntlet engine's rout rule: the army whose line the player's capture of the HQ at (x, y) ends (its [`MissionDef::cut_off`] entry: every line but the last, which ends the battle), or
+/// None. Capturing it routes the army at once ([`crate::com_tower`]'s `held_hq_capture` calls `DefeatArmy`): all its units go (cargo and hidden ones too), every property it owns turns neutral.
+pub fn rout_army(core: &Core, x: u8, y: u8) -> Option<u8> {
+    if !crate::ds_campaign::active(core) || crate::stage::stage(core) > 0 {
+        return None;
+    }
+    let cut = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.cut_off.get(crate::ds_campaign::mission(core) as usize).cloned()))?;
+    cut.iter().find(|&&(_, hq)| hq == (x, y)).map(|&(a, _)| a)
 }
 
 /// Whether `army` is one of this mission's sleepers still asleep: some HQ before it is not the player's yet (stage 1 only).

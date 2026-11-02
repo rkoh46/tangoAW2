@@ -176,9 +176,10 @@ class Gauntlet(BhCampaign):
             if self.scripts_running():
                 e.press("A", 4)
             e.wait(30)
-            if not self.scripts_running() and self.in_battle():
+            # (a rout's explosions run as procs between the scripts: the map is idle only once they are over)
+            if not self.scripts_running() and self.in_battle() and g.idle():
                 e.wait(30)
-                if not self.scripts_running():
+                if not self.scripts_running() and g.idle():
                     break
         self.wait_control()
         g._units_base = g._players_base = None

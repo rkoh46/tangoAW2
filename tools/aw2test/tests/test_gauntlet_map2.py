@@ -101,7 +101,7 @@ def gauntlet_map2_each_fall_reveals_the_next_line(ctx):
         ctx.check(len(g.units(army=nxt)) >= WAVES[nxt] - 1, f"{nxt_who}'s wave is on the field ({len(g.units(army=nxt))} of {WAVES[nxt]})")
         ctx.eq(d.owner(ga.IRON[nxt_key]), nxt, f"{nxt_who}'s HQ is built")
         ctx.check(funds(g, nxt) >= base, f"{nxt_who}'s war chest is paid ({funds(g, nxt)} >= {base})")
-        ctx.check(len(g.units(army=army)) > 0 or d.owner(ga.IRON[key]) == 5, f"{who}'s survivors stay on the map")
+        ctx.eq(len(g.units(army=army)), 0, f"{who}'s line is routed by the capture (no survivors stay)")
     d.capture(ctx, ga.IRON["rachel"], army=5)
     wait_stage(ctx, e, g, d, 1)
     ctx.eq(stage(e), 1, "Rachel's fall moves the battle to stage two")

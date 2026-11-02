@@ -231,6 +231,16 @@ fn held_hq_capture(core: &mut Core) {
         core.raw_read_16(CAPTURE_CELL + 2, -1) as u8,
     );
     if crate::ds_campaign::is_held_hq(core, x as u8, y as u8) {
+        // A gauntlet line's HQ (not the last line's): the line is routed at once, by the game's own `DefeatArmy(army, 2)` (all its units destroyed, its properties neutral, the counts
+        // and records as an HQ capture's), which returns to where a held HQ's capture goes on.
+        if let Some(army) = crate::custom_campaign::rout_army(core, x as u8, y as u8) {
+            let cpu = core.gba_mut().cpu_mut();
+            cpu.set_gpr(0, army as i32);
+            cpu.set_gpr(1, 2);
+            cpu.set_gpr(14, (CAPTURED_DONE | 1) as i32);
+            cpu.set_thumb_pc(crate::custom_campaign::DEFEAT_ARMY);
+            return;
+        }
         core.gba_mut().cpu_mut().set_thumb_pc(CAPTURED_DONE);
     }
 }
