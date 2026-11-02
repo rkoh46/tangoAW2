@@ -190,3 +190,23 @@ def silver_nova_battle_scene_colours(ctx):
         p = shot(ctx, e, f"{look}_battle")
         o = orange_share(p, (0, 40, 120, 160))
         ctx.check(o < 0.005, f"{look}: Silver Nova's ship has no orange ({o:.1%} of its half)")
+
+
+@test(modes=("ds",))
+def silver_nova_hawke_arrives_in_black_hole(ctx):
+    """Caulder in Silver Nova takes Drake's and Sensei's HQs: Hawke's line arrives in Black Hole's colour, his units drawn in Black Hole's palette, not the skin's (the owner's 0.9.2 report)."""
+    e, g = start(ctx, "aw2")
+    d = ga.Gauntlet(g)
+    for name in ("drake", "sensei"):
+        d.capture(ctx, ga.CINDER[name])
+        d.settle()
+    g._players_base = g._units_base = None
+    cols = [g.player(a)["colour"] for a in range(1, 5)]
+    ctx.eq(cols, [1, 3, 4, 5], "after Sensei's HQ: Hawke's army is Black Hole's colour")
+    hk = g.units(army=4)
+    ctx.check(len(hk) > 0, f"Hawke's line is on the map ({len(hk)} units)")
+    if hk:
+        u = hk[0]
+        g.goto(u["x"], u["y"])
+        e.wait(30)
+        shot(ctx, e, "hawke_line")
