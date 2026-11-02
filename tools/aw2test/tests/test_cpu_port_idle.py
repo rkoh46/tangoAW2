@@ -169,3 +169,21 @@ for _row in range(len(_wr.DS_IDS)):       # (with the pack the War Room lists Du
     _warroom(_row, "ds")
 for _row in range(30):                    # (without it AW2's own 30: ids 0x6C..)
     _warroom(_row, "aw2")
+
+
+@test(modes=("ds",))
+def war_room_dual_strike_cpu_plays_then_the_win_is_recorded(ctx):
+    """The War Room is played by Dual Strike's CPU: three days with the player passive, then every computer army yields (the win aid): the results and the record screen follow, and
+    the win is in the War Room's records."""
+    from aw2test import warroom as wr
+    from aw2test import survival as sv
+    e, g, (snaps, _) = cpo.run_warroom(ctx, 0, days=3)
+    ctx.check(len(snaps) >= 3, f"three days played ({len(snaps)})")
+    log = [l for l in e.decisions() if l.startswith("dsai")]
+    ctx.check(log, "Dual Strike's CPU logged its decisions in the War Room")
+    wr.set_ds(ctx.ds)
+    before = wr.rows(e)
+    wr.win_map(e, g)       # (raises if SELECT MAP does not come back after the results and the rank screen)
+    ctx.check(sv.running(e, sv.SELECT_MAP_PROC), "back on SELECT MAP after the results")
+    ctx.check(len(wr.rows(e)) > len(before) or wr.rows(e) != before, "the win is in the War Room's records")
+    e.close()

@@ -1,7 +1,7 @@
 # CPU unit use: boats, carriers, idle units and the ports they must not block
 
 Code: `tango-gamesupport-aw2/src/cpu_units.rs` (with `cpu_defend::check` and `ds_ai_move::role_move` as its two doors). Tests: `tools/aw2test/tests/test_cpu_unit_use.py`
-(`-k cpu_unit_use`). `inspect::SIM_VERSION` 46.
+(`-k cpu_unit_use`). `inspect::SIM_VERSION` 47 (46 was 0.9.3; 47 adds the portidle changes and the War Room).
 
 ## What was broken
 
@@ -77,5 +77,4 @@ Dual Strike's own rule); Iron Crown 29..35 units, 25..29 act.
 The campaigns' CPU audits are the existing ones (`bh_cpuai_acts` for every BH mission: the enemy moves, captures and builds; `ds_campaign`, `es_`, `bh2_` mission tests). Where a
 mission declares a unit a holder (role 0, `UnitDef::freeze`, `STAND`, a march) it stays; nothing in this change touches those.
 
-Scope: Dual Strike's CPU (and so every rule above) plays in Versus, the DS Campaign and the custom campaigns (BH, BH2, Silver Nova, the Gauntlet). AW2's own campaign, Survival
-and the War Room keep AW2's own CPU: their maps name AW2's personalities, and none has the Dual Strike units this page is about.
+Scope: Dual Strike's CPU (and so every rule above) plays in Versus, the War Room (title mode 5, `ds_ai::in_scope`; its maps' AW2 personalities are mapped onto Dual Strike's profiles by the CO the army has, as Versus does), the DS Campaign and the custom campaigns (BH, BH2, Silver Nova, the Gauntlet). AW2's own campaign and Survival keep AW2's own CPU.

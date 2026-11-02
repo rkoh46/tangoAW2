@@ -74,8 +74,8 @@ pub(crate) fn is_cpu(core: &Core, army: u32) -> bool {
     (1..=5).contains(&army) && core.raw_read_8(players(core) + 0x3C * army + 0x1B, -1) == 2
 }
 
-/// Dual Strike's CPU plays army `army`'s turn: the pack is on, the army is the computer's, in Versus, the DS
-/// Campaign or the BH Campaign (not AW2's campaign, whose maps name AW2's own personalities, nor Survival).
+/// Dual Strike's CPU plays army `army`'s turn: the pack is on, the army is the computer's, in Versus, the War Room, the DS
+/// Campaign or the custom campaigns (not AW2's campaign, whose maps name AW2's own personalities, nor Survival).
 /// `part` is one of the [`SWITCHES`] bits ([`OFF_BUILD`], [`OFF_POWER`]).
 pub(crate) fn in_scope(core: &Core, army: u32, part: u8) -> bool {
     if !is_on(core) || !is_cpu(core, army) || crate::survival::on(core) {
@@ -85,7 +85,7 @@ pub(crate) fn in_scope(core: &Core, army: u32, part: u8) -> bool {
     if sw & (OFF | part) != 0 {
         return false;
     }
-    crate::pvp::in_versus(core) || crate::ds_campaign::active(core)
+    crate::pvp::in_versus(core) || crate::pvp::in_war_room(core) || crate::ds_campaign::active(core)
 }
 
 pub(crate) fn current_army(core: &Core) -> u32 {

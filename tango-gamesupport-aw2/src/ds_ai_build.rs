@@ -1773,10 +1773,10 @@ fn entry(core: &Core, k: u32) -> Build {
 fn start(core: &mut Core) {
     let army = current_army(core);
     core.raw_write_8(BUILDS, -1, 0);
+    // (the units AW2's queue left parked on a building make room first, so the building can build this turn)
     if !in_scope(core, army, OFF_BUILD) {
         return;
     }
-    // (the units AW2's queue left parked on a building make room first, so the building can build this turn)
     crate::cpu_units::sweep(core, army);
     let started = std::time::Instant::now();
     let (builds, notes) = plan(core, army);
