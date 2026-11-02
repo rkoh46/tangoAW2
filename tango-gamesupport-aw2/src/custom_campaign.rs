@@ -2852,6 +2852,25 @@ pub fn ai_unit(core: &mut Core) {
     }
 }
 
+/// The computer's buy (`sub_080610D0`) just after `BuyUnit` returned the new unit (r0) and its role (r1: AW2's roll or Dual Strike's order) is about to be stored at +0x0B.
+const BUY_STORES_ROLE: u32 = 0x0806_1132;
+
+/// A custom campaign's computer buys an Infantry or Mech whose role roll came out 0 (`sub_08061178` answers 0 for a foot soldier when the army's personality row has no weights): that is
+/// AW2's hold, which [`ai_unit`] keeps (a designer's garrison stands still on purpose), so the soldier stood on the base it was built on for the rest of the mission and the base could never build
+/// again. A soldier built during the mission is nobody's garrison: it takes role 3, the enemy's properties, as Dual Strike's order for foot soldiers does ([`crate::ds_ai_build::role_of`]).
+fn built_foot_role(core: &mut Core) {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
+        return;
+    }
+    let unit = core.gba().cpu().gpr(0) as u32;
+    if unit < 0x0200_0000 || core.gba().cpu().gpr(1) != 0 {
+        return;
+    }
+    if matches!(core.raw_read_8(unit, -1), 1 | 2) {
+        core.gba_mut().cpu_mut().set_gpr(1, 3);
+    }
+}
+
 /// The army moving has given up or is defeated (its flags +0x31 / +0x14: AW2 then ends its
 /// units' turns its own way, which no skip may get in the way of).
 fn army_out(core: &Core) -> bool {
@@ -2886,7 +2905,7 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
 /// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
 /// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive)), (DEFEAT_PROC_OWNER, Box::new(rout_neutral)), (DEFEAT_PROC_HANDED, Box::new(rout_keep_hq_city))]
+    vec![(BUY_STORES_ROLE, Box::new(built_foot_role)), (DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive)), (DEFEAT_PROC_OWNER, Box::new(rout_neutral)), (DEFEAT_PROC_HANDED, Box::new(rout_keep_hq_city))]
 }
 
 /// AW2's end-of-battle check (`sub_08028BAC`), past its loop that marks each army still in the battle as alive (a byte per army at sp + army): the battle ends when no army of a team is.
