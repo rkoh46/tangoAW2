@@ -61,6 +61,7 @@ Tables found in the ROM and used:
 | RC02 | error | an army cannot reach an enemy HQ it must take | 0 | 0 | 0 | 0 | 0 |
 | RC03 | error | an HQ or production property no unit can leave (no ground, or no sea for a port) | 0 | 7 | 0 | 0 | 0 |
 | RC04 | error | a Lander with no beach or port to load or unload at | 0 | 0 | 0 | 0 | 0 |
+| RC05 | error | naval maps: a landmass (4+ cells) touched by the Lander's sea with no shoal or port a Lander can reach (exempt for AW2 and Dual Strike's own maps, not measured here) | - | - | 0 | 0 | 0 |
 | GB01 | error | a tile id no game map uses (drawn as garbage) | 0 | 0 | 0 | 0 | 0 |
 | GB02 | error | a building or structure with part of its footprint missing or wrong | 0 | 2 | 0 | 0 | 0 |
 | DQ01 | warn | a long river with no bend: rivers wander | 8 | 9 | 3 | 12 | 0 |
@@ -180,6 +181,9 @@ The BH2 Campaign's maps (docs/dev/bh2-maps.md) are held to the integrity rules, 
 ## Armies and reachability (AR01 to AR03)
 - **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Silver Nova and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.
 - **AR03** a missile silo or an airport must be reachable on foot from some HQ (a port or a Lander lets infantry cross water and land on any shore). AW2 breaks it in 12 of 179 maps, Dual Strike in 24 of 256, BH, Versus and Silver Nova in none. A silo is AW2's own terrain (tile 0x180), so ES01 no longer counts it as a Black Hole invention.
+
+## Landings (RC05, the owner's permanent rule)
+- **RC05** (error): on any map with naval play (a port, or a ship or Lander on the map) every landmass touched by the Lander's sea must have a beach: a shoal (or a port of its own) that a Lander reaches from that sea and that touches the land, so Infantry can step off a Lander onto the island. Land = every cell a foot soldier stands on, shoal aside (plain, wood, mountain, road, river ford, bridge, properties), 4-connected, of at least 4 cells (a one-cell rock or reef is not an island). The Lander's sea = the water body (a flood over sea, reef, shoal and port) holding the ports and the naval units, else the biggest. A cliff-coast island fails it. AW2's and Dual Strike's own maps are exempt (`rules.LANDING_EXEMPT`: not ours to change). Findings and fixes: Gauntlet Cinder Sea's three middle islets and Versus Crystal Isles' four islets.
 
 ## Pipelines, ports (PP03, PP04, PT01) and the port audit
 - **PP03** a pipeline must be infrastructure: 6 or more cells (a wall with gates of up to 3 cells counts as one line) and no end hanging in open terrain: every end stops at the map edge, the sea, a river, a mountain, a gate, or a building or structure it feeds. **PP04** the seam of a barrier pipeline must change something: broken, it joins ground that was cut off, or shortens the way between two HQs by 6 cells or more (a supply line's seam, one that ends in a base or factory, only cuts the feed). Warnings everywhere; failing for Silver Nova maps. AW2 and Dual Strike pipes mostly break them (15 of 18 and 43 of 50 maps with pipes: the games end pipes in open ground all the time), so the rule is this campaign's taste, not the games'. The supply pipe of a Black Hole factory or cannon is exempt.

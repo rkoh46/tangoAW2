@@ -39,6 +39,7 @@ RULES = {
     "RC02": ("error", "an army cannot reach an enemy HQ it must take"),
     "RC03": ("error", "an HQ or production property no unit can leave (no ground, or no sea for a port)"),
     "RC04": ("error", "a Lander with no beach or port to load or unload at"),
+    "RC05": ("error", "naval maps: a landmass touched by the sea (a Lander's sea) with no shoal or port a Lander can reach from that sea and unload from onto the land: every island needs a beach (docs/dev/map-design.md)"),
     "GB01": ("error", "a tile id no game map uses (drawn as garbage)"),
     "GB02": ("error", "a building or structure with part of its footprint missing or wrong"),
     "DQ01": ("warn", "a long river with no bend: rivers wander"),
@@ -458,6 +459,61 @@ def access(G):
             elif c == "P":
                 if not any(n in "~r=" or n == "," for n in G.nb(x, y)):
                     out.append(Problem("RC03", x, y, "port with no sea beside it"))
+    return out
+
+
+LAND_FOOT = set(".fR^=-HBCAPTMbcapt")      # what a foot soldier stands on, shoal aside
+LANDING_MIN = 4                            # a one-cell rock or a lone mountain is not an island
+LANDING_EXEMPT = ("aw2", "ds")             # AW2's and Dual Strike's own maps are not ours to change
+
+
+def landings(G):
+    """RC05: a Lander must be able to land on every island. On a map with naval play (a port, or a ship or Lander on the map), every landmass (4-connected cells a foot soldier stands
+    on, shoal aside, of at least LANDING_MIN cells) that touches the Lander's sea needs a landing: a shoal (or a port of its own) that a Lander reaches from that sea (a flood over sea, reef,
+    shoal and port) and that touches the land. The Lander's sea is the water body holding the ports and the naval units (else the biggest). AW2's and Dual Strike's own maps are exempt."""
+    if G.m.source in LANDING_EXEMPT:
+        return []
+    bh = _bh()
+    ports_ = G.cells("Pp")
+    ships = [(u["x"], u["y"]) for u in (G.m.units or []) if bh.CLASS.get(u["kind"], bh.FOOT) in (bh.SEA, bh.LANDER)]
+    if not ports_ and not ships:
+        return []
+    water = set("~r,Pp")
+    seen, bodies = set(), []
+    for x0, y0 in G.cells("~r"):
+        if (x0, y0) in seen:
+            continue
+        comp, todo = {(x0, y0)}, [(x0, y0)]
+        while todo:
+            x, y = todo.pop()
+            for dx, dy in D4:
+                c = (x + dx, y + dy)
+                if c not in comp and G.at(*c) in water:
+                    comp.add(c)
+                    todo.append(c)
+        seen |= comp
+        bodies.append(comp)
+    if not bodies:
+        return []
+    starts = set(ports_) | set(ships)
+    main = [b for b in bodies if b & starts or any((x + dx, y + dy) in b for x, y in starts for dx, dy in D4)]
+    if not main:
+        main = [max(bodies, key=len)]
+    sea = set().union(*main)
+    open_sea = {c for c in sea if G.g[c[1]][c[0]] in "~r"}
+    out = []
+    for comp in G.comps(LAND_FOOT):
+        port_cells = [c for c in comp if G.g[c[1]][c[0]] in "Pp"]
+        if len(comp) < LANDING_MIN and not port_cells:
+            continue
+        ring = {(x + dx, y + dy) for x, y in comp for dx, dy in D4}
+        if not (ring & open_sea):
+            continue                                 # (not on the Lander's sea)
+        beach = [c for c in ring if c in sea and G.g[c[1]][c[0]] == ","]
+        beach += [c for c in port_cells if any((c[0] + dx, c[1] + dy) in open_sea for dx, dy in D4)]
+        if not beach:
+            x, y = min(comp, key=lambda c: (c[1], c[0]))
+            out.append(Problem("RC05", x, y, f"a landmass of {len(comp)} cells touched by the sea has no shoal or port a Lander can reach: add a beach"))
     return out
 
 
@@ -959,7 +1015,7 @@ def design_checks(G):
 KNOWN = {"bh30": {"AR02": 1}}      # (bh10 / bh31 RV05 and Crystal Isles PT01: fixed in the bugfix branch; bh30's second Black Hole HQ is not approved for change)
 
 
-CHECKS = [one_hq, laser_own_property, river, bridges, sea, joins, roads, pipes, garbage, access, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, first_move_safe, design_checks]
+CHECKS = [one_hq, laser_own_property, river, bridges, sea, joins, roads, pipes, garbage, access, landings, units, spawned, reach, inventions, black_hole_inventions, armies, reachables, pipelines, ports, port_doors, day_one_fire, first_move_safe, design_checks]
 
 
 def lint(m, only=None):

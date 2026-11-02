@@ -342,6 +342,23 @@ class Lint(unittest.TestCase):
         rows[3] = rows[3][:7] + "P" + rows[3][8:]
         self.assertNotIn("PT01", {p.rule for p in rules.lint(build(rows))})    # 27 cells of sea
 
+    def test_an_island_needs_a_beach_for_a_lander(self):
+        rows = ["~" * 12, "~~~~~~~~~~~~", "~~~....~~~~~", "~~~....~~~~~", "~~~....~~~~~", "~~~~~~~~~~~~", "1....~~~~~~2", "~~~~~~~~~~~~"]
+        rows[6] = "1~~~~~~~~~~2"
+        rows[5] = "~~P~~~~~~~~~"
+        m = build(rows)
+        m.source = "bh2"
+        self.assertIn("RC05", {p.rule for p in rules.lint(m)})            # a cliff-coast island with a port elsewhere: no landing
+        rows[2] = "~~~,...~~~~~"                                           # one shoal on the shore
+        m = build(rows)
+        m.source = "bh2"
+        self.assertNotIn("RC05", {p.rule for p in rules.lint(m)})
+        m.source = "aw2"
+        rows[2] = "~~~....~~~~~"
+        m = build(rows)
+        m.source = "aw2"
+        self.assertNotIn("RC05", {p.rule for p in rules.lint(m)})         # AW2's own maps are exempt
+
     def test_emerald_sun_rivers_all_end_in_water_or_at_the_edge(self):
         bad = [(m.name, str(p)) for m in load.es_maps() for p in rules.lint(m, {"RV01", "RV03", "RV05"})]
         self.assertEqual(bad, [])
