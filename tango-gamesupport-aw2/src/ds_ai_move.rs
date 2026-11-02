@@ -337,6 +337,10 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
                 cells.len()
             ));
         }
+        // (a ship or aircraft whose target the sea or its fuel does not reach does not sit: it drifts towards the enemy)
+        if to[here] < 0 && stats(u.t).group & (SEA | AIR) != 0 {
+            return crate::cpu_units::drift(core, b, army, u, roll);
+        }
         return None;
     }
     let (cell, why) = if let Some(i) = pick {
@@ -380,7 +384,9 @@ pub fn role_move(core: &mut Core) -> bool {
     }
     let t = core.raw_read_8(rec, -1);
     // (the units AW2's role moves leave where they stand, crate::cpu_units: any army behaviour, any role)
-    let special = crate::cpu_units::handles(t) && crate::custom_campaign::driven_goal(core, rec).is_none();
+    let special = crate::cpu_units::handles(t)
+        && crate::custom_campaign::driven_goal(core, rec).is_none()
+        && (t == crate::roster::CARRIER || behaviour(core, army) != DEFENSE);
     if !special && behaviour(core, army) == DEFENSE {
         return false;
     }

@@ -24,9 +24,11 @@ use mgba::core::Core;
 use crate::ds_ai::*;
 use crate::roster::{BLACK_BOAT, CARRIER};
 
+const MISSILES: u8 = 15;
+
 /// The unit types this module moves.
 pub(crate) fn handles(t: u8) -> bool {
-    t == CARRIER
+    matches!(t, CARRIER | MISSILES)
 }
 
 /// The unit queue is about to run the attack check for the current unit ([`crate::cpu_defend::check`]): a Black
@@ -257,23 +259,35 @@ fn boat(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32,
 fn carrier(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll: u32) -> Option<((i32, i32), String)> {
     if let Some(c) = crate::ds_ai_move::choose(core, b, army, u, if role == 0 { 4 } else { role }, roll) {
         if !(on_production(b, army, b.idx(c.0 .0, c.0 .1)) && (c.0 .0, c.0 .1) != (u.x, u.y)) {
-            return Some((c.0, format!("Carrier {}", c.1)));
+            return Some((c.0, c.1));
         }
     }
-    // The way is blocked (or no enemy it can hurt): drift towards the nearest enemy unit, off the ports.
+    drift(core, b, army, u, roll)
+}
+
+/// A unit whose target the sea (or its fuel) does not reach this turn: it drifts towards the nearest enemy unit
+/// (else enemy HQ or property) over the safe cells it can reach, never closer than 3 to a foe while it can help it,
+/// never onto a port, base or airport of its team: the turn is not spent in a harbour.
+pub(crate) fn drift(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32, i32), String)> {
     let g = Ground::new(core, b, army, u, roll)?;
-    let foes: Vec<(i32, i32)> = b
+    let mut foes: Vec<(i32, i32)> = b
         .units
         .iter()
         .filter(|e| !e.carried() && b.playing[e.army as usize % 6] && !b.same_team(e.army, army))
         .map(|e| (e.x, e.y))
         .collect();
+    if foes.is_empty() {
+        foes = (0..b.class.len())
+            .filter(|&i| b.owner[i] != 0 && !b.team_owns(i, army) && b.class[i] == C_HQ)
+            .map(|i| xy(b, i))
+            .collect();
+    }
+    if foes.is_empty() {
+        return None;
+    }
     let gap = |i: usize| {
         let (x, y) = xy(b, i);
-        foes.iter()
-            .map(|&(fx, fy)| (fx - x).abs() + (fy - y).abs())
-            .min()
-            .unwrap_or(0)
+        foes.iter().map(|&(fx, fy)| (fx - x).abs() + (fy - y).abs()).min().unwrap_or(0)
     };
     let pick = g
         .cells
@@ -281,11 +295,15 @@ fn carrier(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll: u32) -> 
         .copied()
         .filter(|&i| g.safe(i))
         .min_by_key(|&i| (on_production(b, army, i), gap(i).max(3), g.danger(i), i))?;
+    if pick == g.here {
+        return None;
+    }
     let (x, y) = xy(b, pick);
     Some((
         (x, y),
         format!(
-            "Carrier at ({},{}): ({x},{y}) drifts towards the enemy ({} away)",
+            "{} at ({},{}): ({x},{y}) drifts towards the enemy ({} away)",
+            crate::bh_smart::NAMES[u.t as usize % 28],
             u.x,
             u.y,
             gap(pick)

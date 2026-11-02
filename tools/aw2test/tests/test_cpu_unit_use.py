@@ -117,8 +117,8 @@ def netplay_cpu_unit_use(ctx):
     ctx.check(identical, "netplay: both peers and the straight replay identical")
 
 
-def gauntlet_days(ctx, days):
-    """Cinder Sea in the Gauntlet (docs/dev/gauntlet-mode.md) with the player passive: the enemy armies' DS units' cells after each CPU day."""
+def gauntlet_days(ctx, days, map=0, me=1, armies=(2, 3, 4)):
+    """A Gauntlet map with the player (army `me`) passive: the enemy armies' units' cells after each CPU day (index 0: before the first)."""
     from aw2test import gauntlet as ga
     from aw2test import paths
     from aw2test.emu import Emu
@@ -127,11 +127,21 @@ def gauntlet_days(ctx, days):
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    d.start(ga.ANDY)
-    out = []
-    for day in range(days):
+    if map:
+        from tests.test_gauntlet_map2 import to_player_turn
+        d.start(ga.ANDY, map=map)
+        to_player_turn(e, g, d)
+    else:
+        d.start(ga.ANDY)
+
+    def snap():
         g._units_base = g._players_base = None
-        out.append({u["id"]: (u["army"], romlib.UNIT_NAMES[u["type"]], u["x"], u["y"], u["hp"]) for a in (2, 3, 4) for u in g.units(army=a)})
+        return {u["id"]: (u["army"], romlib.UNIT_NAMES[u["type"]], u["x"], u["y"], u["hp"], u["flags"], u["raw"][0x0B], u["ammo"])
+                for a in armies for u in g.units(army=a)}
+    out = []
+    mine0 = [(u["x"], u["y"], u["hp"]) for u in g.units(army=me) if not u["flags"] & 8]
+    for day in range(days):
+        out.append(snap())
         for attempt in range(4):
             try:
                 d.wait_control()
@@ -142,22 +152,24 @@ def gauntlet_days(ctx, days):
                 for _ in range(20):
                     e.press("B" if attempt % 2 else "A", 4)
                     e.wait(20)
+        left = False
         for _ in range(3000):
-            if g.current_army() == 1 and d.in_battle() and not d.scripts_running():
+            left = left or g.current_army() != me
+            if left and g.current_army() == me and d.in_battle() and not d.scripts_running():
                 break
             if d.scripts_running():
                 e.press("A", 4)
             e.wait(10)
         d.wait_control()
-    g._units_base = g._players_base = None
-    out.append({u["id"]: (u["army"], romlib.UNIT_NAMES[u["type"]], u["x"], u["y"], u["hp"]) for a in (2, 3, 4) for u in g.units(army=a)})
-    return g, out
+    out.append(snap())
+    mine1 = [(u["x"], u["y"], u["hp"]) for u in g.units(army=me) if not u["flags"] & 8]
+    return g, out, (mine0, mine1)
 
 
 @test(modes=DS)
 def cpu_unit_use_gauntlet_cinder_sea(ctx):
     """Cinder Sea's fleets: every Black Boat the enemy has (they build them) leaves its port the turn after it is built, and none sits on a port two days running."""
-    g, days = gauntlet_days(ctx, 5)
+    g, days, _ = gauntlet_days(ctx, 5)
     boats = {}
     for n, d in enumerate(days):
         ctx.log(f"day {n}: " + str({i: v[1:] for i, v in d.items() if v[1] in ("Black Boat", "Carrier", "Lander")}))
@@ -168,3 +180,79 @@ def cpu_unit_use_gauntlet_cinder_sea(ctx):
     for i, cells in boats.items():
         stuck = [c for c, nxt in zip(cells, cells[1:]) if c == nxt and g.terrain_class(*c) == 11]
         ctx.check(not stuck, f"Black Boat {i} never stays on a port ({cells})")
+
+
+def acted_fractions(ctx, days, label):
+    """Per CPU day the share of the CPU's units (present at its start) that moved, changed hp or used ammo; the idle ones are logged."""
+    out = []
+    for before, after in zip(days, days[1:]):
+        moved = [i for i, v in before.items() if i not in after or (after[i][2:5], after[i][-1]) != (v[2:5], v[-1])]
+        out.append(len(moved) / max(1, len(before)))
+        ctx.log(f"{label}: {len(before)} units, {len(moved)} acted; idle: {sorted(v[1] for i, v in before.items() if i not in moved)}")
+    return out
+
+
+def closing_in(ctx, days, mine, label):
+    """The CPU makes progress: its units' mean distance to the nearest of the passive player's units fell, or the player lost hit points."""
+    def mean_gap(day, units):
+        cells = [(x, y) for x, y, _ in units]
+        pts = [(v[2], v[3]) for v in day.values()]
+        return sum(min(abs(x - a) + abs(y - b) for a, b in cells) for x, y in pts) / max(1, len(pts))
+    first, last = mean_gap(days[0], mine[0]), mean_gap(days[-1], mine[0])
+    lost = sum(h for *_, h in mine[0]) - sum(h for *_, h in mine[1])
+    ctx.log(f"{label}: mean distance to the player's units {first:.1f} -> {last:.1f}, the player lost {lost} hp")
+    ctx.check(last <= first - 3 or lost > 0, f"{label}: the CPU closes in or attacks ({first:.1f} -> {last:.1f}, {lost} hp lost)")
+
+
+def check_share(ctx, shares, floor, label):
+    late = shares[1:] or shares
+    avg = sum(late) / len(late)
+    ctx.check(avg >= floor, f"{label}: on average {avg:.0%} of the CPU's units act each turn (at least {floor:.0%}: {[f'{x:.0%}' for x in shares]})")
+
+
+@test(modes=DS)
+def cpu_progress_gauntlet_cinder_sea(ctx):
+    g, days, mine = gauntlet_days(ctx, 6)
+    for n, d in enumerate(days):
+        ctx.log(f"day {n} transports and foot: " + str(sorted((v[1], v[2], v[3]) for v in d.values() if v[1] in ("Lander", "Infantry", "Mech"))))
+    check_share(ctx, acted_fractions(ctx, days, "cinder sea"), 0.6, "Cinder Sea")
+    closing_in(ctx, days, mine, "Cinder Sea")
+
+
+@test(modes=DS)
+def cpu_progress_gauntlet_iron_crown(ctx):
+    g, days, mine = gauntlet_days(ctx, 5, map=1, me=5, armies=(1, 2, 3, 4))
+    check_share(ctx, acted_fractions(ctx, days, "iron crown"), 0.6, "Iron Crown")
+    closing_in(ctx, days, mine, "Iron Crown")
+
+
+def land_map(ctx):
+    """A Versus-style land map: HQs in opposite corners, a river of mountains and woods in between, cities, a base and an army of every ground type each."""
+    m = ctx.map()
+    for y in range(4, 16):
+        m.terrain(15, y, "mountain")
+    for x, y in ((12, 8), (13, 12), (18, 6), (17, 13)):
+        m.terrain(x, y, "wood")
+    for x, y, a in ((10, 10, 0), (20, 9, 0), (8, 3, 0), (22, 16, 0)):
+        m.terrain(x, y, "city", a)
+    m.terrain(3, 3, "base", 1).terrain(26, 16, "base", 2).terrain(27, 17, "base", 2)
+    for kind, x, y in (("infantry", 25, 17), ("infantry", 24, 16), ("mech", 26, 15), ("tank", 25, 15), ("tank", 24, 17), ("mdtank", 23, 16),
+                       ("artillery", 27, 16), ("rockets", 26, 14), ("recon", 23, 14), ("antiair", 24, 14), ("apc", 25, 16), ("missiles", 22, 15)):
+        m.unit(2, kind, x, y)
+    for kind, x, y in (("infantry", 4, 3), ("tank", 5, 4), ("tank", 4, 5)):
+        m.unit(1, kind, x, y)
+    return m
+
+
+@test(modes=DS)
+def cpu_progress_versus(ctx):
+    g = ctx.start(land_map(ctx), ["andy", "andy"])
+    g.e.w32(g.player(2)["addr"], 0)
+    days = [sheet(g)]
+    for _ in range(6):
+        g.end_turn()
+        days.append(sheet(g))
+    days = [{i: v[:5] + (v[5], 0, 0) for i, v in d.items()} for d in days]
+    mine = ([(u["x"], u["y"], u["hp"]) for u in g.units(army=1)],) * 2
+    check_share(ctx, acted_fractions(ctx, days, "versus"), 0.8, "Versus")
+    closing_in(ctx, days, mine, "Versus")
