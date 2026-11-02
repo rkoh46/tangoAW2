@@ -66,7 +66,7 @@ def teams_cards_show_the_committed_faces(ctx):
                     r, gg, b, a = face.getpixel((x, y))
                     if min(x, y, 47 - x, 47 - y) < 3:      # (the card's frame)
                         continue
-                    if (x < 18 and y >= 29) or (x >= 24 and y < 14):    # (the army's emblem, Silver Nova's sun a row taller, and the 1P / CP tag lie over the face's corners)
+                    if (x < 19 and y >= 29) or (x >= 24 and y < 14):    # (the army's emblem, Silver Nova's sun a row taller and a column wider, and the 1P / CP tag lie over the face's corners)
                         continue
                     if a == 0 or not (0 <= y0 + y < 160 and 0 <= x0 + x < 240):
                         continue

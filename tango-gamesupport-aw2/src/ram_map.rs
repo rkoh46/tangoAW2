@@ -51,7 +51,7 @@ pub const STRIKE_SITE: Region = (0x0203_C840, 8);
 pub const DS_AI: Region = (0x0203_C700, 0x100);
 
 /// The army skin (crate::army_skin): the colour it sits on, each Teams-screen army's choice, a flag.
-pub const ARMY_SKIN: Region = (0x0203_C500, 0x10);
+pub const ARMY_SKIN: Region = (0x0203_C500, 0x18);
 
 /// A mission's stage switch (crate::stage): the stage, the swap's flags, the survivors carried (40 units of 12 bytes) with the player's funds, CO and meters.
 pub const STAGE: Region = (0x0203_DCA0, 0x20 + 12 * 40);

@@ -100,7 +100,9 @@ def play(ctx, co, skin, blue=False):
     g.set_teams([co, ANDY], {1})
     if blue:
         # (after the CO: picking a Silver Nova CO puts the skin on the army, army_skin::teams_follow_co; R then cycles the colours: stop at Yellow Comet,
-        # Blue Moon being army 2's here)
+        # Blue Moon being army 2's here; the cursor back on army 1's stop first)
+        e.write(0x02017C50 + 0x32, bytes([0]))
+        e.wait(10)
         for _ in range(8):
             if e.u8(0x02017C5D) == 4 and e.u8(STATE + 4) == 0:
                 break

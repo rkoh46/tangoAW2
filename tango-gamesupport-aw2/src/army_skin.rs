@@ -25,12 +25,16 @@ use mgba::core::Core;
 /// Teams screen has chosen (0: its colour as the game has it; else a skin's code, [`SKIN`] + its index); +0xF 1 once the
 /// Teams screen has reset them.
 pub const STATE: u32 = 0x0203_C500;
-pub const STATE_LEN: u32 = 0x10;
+pub const STATE_LEN: u32 = 0x18;
 const HOSTS: u32 = STATE;
 const IDENT: u32 = STATE + 4;
 const SEEN: u32 = STATE + 0xF;
 /// The CO each Teams army had last frame (+9.., 5 bytes; [`teams_follow_co`]).
 const LAST_CO: u32 = STATE + 9;
+/// Bit k: Teams army k's skin was put on by [`teams_follow_co`] (not by R / L), so a pick of another CO takes it off again.
+const AUTO: u32 = STATE + 0xE;
+/// The plain colour each Teams army wore before [`teams_follow_co`] put the skin on it (+0x10.., 5 bytes): given back when the pick moves on.
+const ORIG: u32 = STATE + 0x10;
 
 /// How many skins a match can have at once (each has its own colour, its own map sprite slots and its own room in free ROM).
 pub const MAX_SKINS: usize = 3;
@@ -1604,6 +1608,7 @@ pub fn teams_frame(core: &mut Core) {
         core.raw_write_8(SEEN, -1, 1);
         core.raw_write_range(IDENT, -1, &[0u8; 5]);
         core.raw_write_range(LAST_CO, -1, &[0xFFu8; 5]);
+        core.raw_write_8(AUTO, -1, 0);
         for i in 0..MAX_SKINS {
             set_host_of(core, i, 0);
         }
@@ -1632,6 +1637,8 @@ pub fn teams_left(core: &mut Core) {
 /// record at `colours_at`, the skins). On a five-army map the colours are the armies' own and R / L only put a skin on
 /// the army or take it off.
 pub fn teams_step(core: &mut Core, colours_at: u32, slot: u32, armies: u32, step: isize, five: bool) {
+    let auto = core.raw_read_8(AUTO, -1);
+    core.raw_write_8(AUTO, -1, auto & !(1 << slot));
     let colour = |core: &Core, s: u32| core.raw_read_8(colours_at + s, -1);
     let mut choices: Vec<u8> = (0..armies)
         .map(|s| match core.raw_read_8(IDENT + s, -1) {
@@ -1697,19 +1704,30 @@ pub fn teams_follow_co(core: &mut Core, colours_at: u32, armies: u32) {
             continue;
         }
         core.raw_write_8(LAST_CO + s, -1, co);
-        if !crate::es_co::is_es(co) || core.raw_read_8(IDENT + s, -1) != 0 {
-            continue;
-        }
+        let auto = core.raw_read_8(AUTO, -1);
         let mut choices: Vec<u8> = (0..armies)
             .map(|k| match core.raw_read_8(IDENT + k, -1) {
                 0 => core.raw_read_8(colours_at + k, -1),
                 c => c,
             })
             .collect();
-        if choices.iter().enumerate().any(|(k, &c)| k as u32 != s && c == SKIN) {
+        if crate::es_co::is_es(co) {
+            // (a plain colour, and the skin on no other army: the pick takes it)
+            if choices[s as usize] >= SKIN || choices.iter().enumerate().any(|(k, &c)| k as u32 != s && c == SKIN) {
+                continue;
+            }
+            core.raw_write_8(ORIG + s, -1, choices[s as usize]);
+            choices[s as usize] = SKIN;
+            core.raw_write_8(AUTO, -1, auto | 1 << s);
+        } else if auto >> s & 1 == 1 {
+            // (scrolled on past a Silver Nova CO: the skin it put on comes off and the army wears its plain colour again, or the one the skin sat on if another army took it)
+            let orig = core.raw_read_8(ORIG + s, -1);
+            let taken = choices.iter().enumerate().any(|(k, &c)| k as u32 != s && c == orig);
+            choices[s as usize] = if (1..=5).contains(&orig) && !taken { orig } else { core.raw_read_8(colours_at + s, -1) };
+            core.raw_write_8(AUTO, -1, auto & !(1 << s));
+        } else {
             continue;
         }
-        choices[s as usize] = SKIN;
         let (values, hosts) = assign(&choices);
         for k in 0..armies {
             core.raw_write_8(IDENT + k, -1, if choices[k as usize] >= SKIN { choices[k as usize] } else { 0 });
