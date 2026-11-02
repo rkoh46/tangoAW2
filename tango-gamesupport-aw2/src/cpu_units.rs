@@ -37,6 +37,10 @@ pub(crate) fn handles(t: u8) -> bool {
 pub(crate) fn plan(core: &mut Core, rec: u32) -> Option<(i32, i32)> {
     let army = current_army(core);
     let t = core.raw_read_8(rec, -1);
+    // (a foot soldier that needs the Black Boat's ferry walks to its beach, crate::cpu_ferry)
+    if matches!(t, INFANTRY | MECH) {
+        return crate::cpu_ferry::plan_foot(core, rec);
+    }
     if !matches!(t, BLACK_BOAT | LANDER)
         || core.raw_read_8(rec + 1, -1) & 1 != 0
         || !in_scope(core, army, OFF_MOVE)
@@ -175,6 +179,12 @@ fn xy(b: &Board, i: usize) -> (i32, i32) {
 
 fn boat(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32, i32), String)> {
     let g = Ground::new(core, b, army, u, roll)?;
+    // A ferry job (docs/dev/cpu-unit-use.md): soldiers to the landing, or to the beach to wait for them.
+    let job = if u.t == BLACK_BOAT {
+        crate::cpu_ferry::mission(core, b, army, u)
+    } else {
+        None
+    };
     // Where to head when no Repair is in reach: damaged units of its army, else its warships, else any unit of its army.
     let mine = || {
         b.units
@@ -197,7 +207,9 @@ fn boat(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32,
         .map(|o| (o.x, o.y))
         .collect();
     let any: Vec<(i32, i32)> = mine().map(|o| (o.x, o.y)).collect();
-    let (targets, what) = if !hurt.is_empty() {
+    let (targets, what) = if let Some((cells, what)) = job.clone() {
+        (cells, what)
+    } else if !hurt.is_empty() {
         (
             cells_next_to(b, hurt.into_iter()),
             if repairs { "damaged units" } else { "its soldiers" },
@@ -208,7 +220,13 @@ fn boat(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32,
         (cells_next_to(b, any.into_iter()), "its army")
     };
     let to = crate::ds_ai_move::distance_to(b, army, u.t, &targets);
-    let worth = |i: usize| if repairs { repair_worth(core, b, army, u, i) } else { 0 };
+    let worth = |i: usize| {
+        if repairs && job.is_none() {
+            repair_worth(core, b, army, u, i)
+        } else {
+            0
+        }
+    };
     let score = |i: usize| -> i64 {
         let mut s = worth(i) as i64 * 4;
         if on_production(b, army, i) {

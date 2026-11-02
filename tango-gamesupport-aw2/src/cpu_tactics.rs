@@ -223,6 +223,7 @@ pub fn cpu_unit(core: &mut Core) {
     core.raw_write_8(BOMBS_DONE, -1, army as u8);
     bombs(core, army);
     crate::oozium::cpu_eats(core, army);
+    crate::cpu_ferry::turn_start(core, army);
     if crate::cpu_inventions::owner(core).is_some() {
         // A human owns the inventions (the BH Campaign, Versus): the computer
         // hits those in reach of its units ([`crate::cpu_inventions`]).

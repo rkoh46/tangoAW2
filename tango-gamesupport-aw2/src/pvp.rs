@@ -629,6 +629,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 45: the gauntlet rout rule: capturing a gauntlet line's HQ routes its army at once (AW2's DefeatArmy: every unit destroyed, every property neutral) before the next line comes (crate::custom_campaign::rout_army; Gauntlet mode maps, BH2 M31).
         // 46: the 45 lines above in one build (0.9.3), and Gauntlet's enemies keep their map's colours whatever CO the player picks, a Silver Nova CO picked on Versus' Teams screen takes the skin, Aria's Vengeance is 10 points weaker.
         // 46: the CPU moves its Black Boats and Landers off the ports they were parked on, repairs and follows its fleet with the boats, advances its Carriers (crate::cpu_units).
+        // 46 (cont.): the CPU's Black Boats ferry its Infantry and Mechs over water (loads and drops made at the start of its turn: crate::cpu_ferry), its Carriers launch fit aircraft near enemies and take in aircraft low on fuel or hit points.
         crate::inspect::SIM_VERSION
     }
 

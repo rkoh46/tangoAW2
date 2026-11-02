@@ -215,6 +215,9 @@ def cpu_progress_gauntlet_cinder_sea(ctx):
     g, days, mine = gauntlet_days(ctx, 6)
     for n, d in enumerate(days):
         ctx.log(f"day {n} transports and foot: " + str(sorted((v[1], v[2], v[3]) for v in d.values() if v[1] in ("Lander", "Infantry", "Mech"))))
+    log = [l for l in g.e.decisions() if "dsai ferry" in l]
+    ctx.log("\n".join(log[:12]))
+    ctx.check(any("takes the soldier" in l for l in log) and any("drops a soldier" in l for l in log), "a CPU Black Boat took soldiers aboard and dropped them in Cinder Sea")
     check_share(ctx, acted_fractions(ctx, days, "cinder sea"), 0.6, "Cinder Sea")
     closing_in(ctx, days, mine, "Cinder Sea")
 
@@ -256,3 +259,81 @@ def cpu_progress_versus(ctx):
     mine = ([(u["x"], u["y"], u["hp"]) for u in g.units(army=1)],) * 2
     check_share(ctx, acted_fractions(ctx, days, "versus"), 0.8, "Versus")
     closing_in(ctx, days, mine, "Versus")
+
+
+def strait_map(ctx, boats=(("blackboat", 14, 12),), foot=(("infantry", 8, 10), ("infantry", 7, 11), ("mech", 8, 9))):
+    """Two lands split by a sea strait (x 10..20): the CPU (army 2, west) has foot soldiers and only the boats given; cities and the player (army 1) are east."""
+    m = ctx.map(hq=((1, 29, 0), (2, 0, 19)))
+    for x in range(10, 21):
+        for y in range(0, 20):
+            m.terrain(x, y, "shoal" if x in (10, 20) else "sea")
+    for x, y in ((22, 10), (24, 12), (23, 7), (26, 15)):
+        m.terrain(x, y, "city", 0)
+    for kind, x, y in foot + boats:
+        m.unit(2, kind, x, y)
+    m.unit(1, "tank", 27, 3).unit(1, "infantry", 28, 2)
+    return m
+
+
+@test(modes=DS)
+def cpu_unit_use_black_boat_ferries_infantry(ctx):
+    """Only a Black Boat can take the CPU's foot soldiers over the strait: within six CPU days one has boarded it, crossed and been dropped on the far shore, and none is left aboard."""
+    g = ctx.start(strait_map(ctx), ["andy", "andy"])
+    g.e.w32(g.player(2)["addr"], 0)
+    days = [sheet(g)]
+    west = {i for i, v in days[0].items() if v[1] in ("Infantry", "Mech") and v[2] < 10}
+    for _ in range(6):
+        g.end_turn()
+        days.append(sheet(g))
+    for n, d in enumerate(days):
+        ctx.log(f"day {n}: " + str(sorted((v[1], v[2], v[3]) for v in d.values() if v[1] in ("Infantry", "Mech", "Black Boat", "Lander"))))
+    crossed = [i for i in west if i in days[-1] and days[-1][i][2] >= 20]
+    ctx.check(crossed, f"a CPU foot soldier crossed the strait in the Black Boat ({[days[-1].get(i) for i in west]})")
+    ctx.check(any(i not in d for d in days for i in west), "soldiers were aboard (off the map) on some day")
+
+
+def carrier_map(ctx, fuel_low=2):
+    m = ctx.map(hq=((1, 29, 0), (2, 0, 19)))
+    for x in range(8, 24):
+        for y in range(4, 16):
+            m.terrain(x, y, "sea")
+    m.unit(2, "carrier", 15, 10)
+    for k in range(fuel_low):
+        m.unit(2, "fighter", 13, 9 + 2 * k)
+    m.unit(1, "bomber", 24, 10).unit(1, "infantry", 28, 2)
+    return m
+
+
+def fighters(g):
+    return [u for u in g.units(army=2) if u["type"] == 16]
+
+
+@test(modes=DS)
+def cpu_unit_use_low_fuel_fighters_land_on_a_carrier(ctx):
+    g = ctx.start(carrier_map(ctx), ["andy", "andy"])
+    g.e.w32(g.player(2)["addr"], 0)
+    for u in fighters(g):
+        g.e.w8(g.unit_addr(u["id"]) + 6, 8)
+    g.end_turn()
+    ship = [u for u in g.units(army=2) if u["type"] == 26][0]
+    fs = fighters(g)
+    ctx.log(f"carrier {ship['cargo']} flags {ship['flags']:#x}; fighters {[(u['x'], u['y'], u['flags'], u['fuel']) for u in fs]}")
+    ctx.check(all(u["flags"] & 0x08 for u in fs) and len(fs) == 2, "both low-fuel Fighters landed on the Carrier (carried)")
+    ctx.check(sorted(ship["cargo"]) == sorted(u["id"] for u in fs), f"the Carrier holds them ({ship['cargo']})")
+
+
+@test(modes=DS)
+def cpu_unit_use_carrier_launches_its_fighters(ctx):
+    g = ctx.start(carrier_map(ctx), ["andy", "andy"])
+    g.e.w32(g.player(2)["addr"], 0)
+    for u in fighters(g):
+        g.e.w8(g.unit_addr(u["id"]) + 6, 8)
+    g.end_turn()
+    g.end_turn()
+    fs = fighters(g)
+    ship = [u for u in g.units(army=2) if u["type"] == 26][0]
+    log = [l for l in g.e.decisions() if "launches" in l]
+    ctx.log("\n".join(log))
+    ctx.check(log, "the Carrier launched its Fighters with an enemy Bomber near")
+    ctx.check(len(fs) == 2 and not any(u["flags"] & 0x08 for u in fs) and not [c for c in ship["cargo"] if c], f"the Fighters are out ({[(u['x'], u['y'], u['fuel']) for u in fs]}, cargo {ship['cargo']})")
+    ctx.check(all(u["fuel"] > 40 for u in fs), "refuelled by the Carrier before they launched")
