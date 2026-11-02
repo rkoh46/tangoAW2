@@ -900,8 +900,8 @@ pub struct MissionDef {
     pub held_more: Vec<(u8, u8)>,
     /// Sleeping armies of a gauntlet: (army, the HQs the player must hold before it wakes). Until then the army cannot be defeated by losing its units (its holders may be killed; its wave still lands and fights).
     pub sleepers: Vec<(u8, Vec<(u8, u8)>)>,
-    /// Armies cut off once the player holds their HQ: (army, HQ). From then on the army's income is taken back at each of its turn starts (it fights on with what is on the field). A sleeping army has
-    /// no funds either while it sleeps ([`cut_funds`]).
+    /// The lines a gauntlet's player routes by taking their HQ: (army, HQ), every line but the last. The capture destroys the army at once (all its units, every property neutral: [`rout_army`]); its
+    /// income is also taken back at each of its turn starts ([`cut_funds`]), as a sleeping army has no funds either while it sleeps.
     pub cut_off: Vec<(u8, (u8, u8))>,
     /// The gauntlet engine's hidden lines: armies that are not on the battlefield while they sleep ([`Self::sleepers`]): no HQ (its cell is plain), no units, no turn (controller 0), no
     /// funds. [`Action::Reveal`] brings one in when the lines before it fall ([`Cond::LineFallen`]).
@@ -2886,7 +2886,7 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
 /// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
 /// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive))]
+    vec![(DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive)), (DEFEAT_PROC_OWNER, Box::new(rout_neutral)), (DEFEAT_PROC_HANDED, Box::new(rout_keep_hq_city))]
 }
 
 /// AW2's end-of-battle check (`sub_08028BAC`), past its loop that marks each army still in the battle as alive (a byte per army at sp + army): the battle ends when no army of a team is.
@@ -2906,6 +2906,56 @@ fn hidden_alive(core: &mut Core) {
     }
 }
 
+/// The defeat proc's first step (`0x08028580`, started by `DefeatArmy`), once it has the captor in sb (the owner of the defeated army's HQ cell: AW2 hands an HQ-defeated army's properties to it;
+/// an army defeated another way hands them to nobody, sb = 0). [`rout_neutral`] makes a gauntlet line's rout (the capture of its HQ) hand them to nobody too.
+const DEFEAT_PROC_OWNER: u32 = 0x0802_8606;
+/// The same step after it turned the HQ into a city of the defeated army and before the loop that hands that army's properties over: the routed line's HQ cell is made the captor's city here,
+/// so the loop (which takes what the defeated army owns) leaves it the captor's.
+const DEFEAT_PROC_HANDED: u32 = 0x0802_8664;
+
+/// The gauntlet line the defeat proc (its frame's `[sp]`) is routing by the capture of its HQ: the proc's army when its code is 2 and it is one of the mission's [`MissionDef::cut_off`] lines.
+fn rout_proc_army(core: &Core) -> Option<u8> {
+    let sp = core.gba().cpu().gpr(13) as u32;
+    let proc = core.raw_read_32(sp, -1);
+    let (army, code) = (core.raw_read_16(proc + 0x64, -1) as u8, core.raw_read_16(proc + 0x66, -1));
+    if code != 2 || crate::stage::stage(core) > 0 || !crate::ds_campaign::active(core) {
+        return None;
+    }
+    let cut = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.cut_off.get(crate::ds_campaign::mission(core) as usize).cloned()))?;
+    cut.iter().any(|&(a, _)| a == army).then_some(army)
+}
+
+fn rout_neutral(core: &mut Core) {
+    if rout_proc_army(core).is_some() {
+        core.gba_mut().cpu_mut().set_gpr(9, 0);
+    }
+}
+
+fn rout_keep_hq_city(core: &mut Core) {
+    let Some(army) = rout_proc_army(core) else { return };
+    let player = if crate::five::active(core) { 5u8 } else { 1 };
+    let p = core.raw_read_32(PLAYERS_PTR, -1) + PLAYER * army as u32;
+    // (the record's HQ cell: x and y in the low 7 bits of the two bytes)
+    let (x, y) = (core.raw_read_8(p + 0x2D, -1) as u32 & 0x7F, core.raw_read_8(p + 0x2E, -1) as u32 & 0x7F);
+    let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+    let tile = crate::five::tile_for(2, player);
+    core.raw_write_16(MAP + 0xA22 + 2 * (row + x), -1, tile);
+    let class = crate::two_front::class_of(core, tile) & 0x1F;
+    core.raw_write_8(MAP + 0x1432 + row + x, -1, class | player << 5);
+    // (that loop walks `gProperty` (class | owner << 5, x, y, ..: 0x03003150, ended by 0xFF) for the defeated army's entries: the HQ's entry says the player's now)
+    for i in 0..0x5C {
+        let e = 0x0300_3150 + 4 * i;
+        let c = core.raw_read_8(e, -1);
+        if c == 0xFF {
+            break;
+        }
+        if core.raw_read_8(e + 1, -1) as u32 == x && core.raw_read_8(e + 2, -1) as u32 == y {
+            core.raw_write_8(e, -1, (c & 0x1F) | player << 5);
+        }
+    }
+}
+
 /// `DefeatArmy(army, code)` (`sub_08028894`) past its prologue, and its epilogue: a sleeping army ([`MissionDef::sleepers`]) is not defeated for having no units left (AW2 asks with code 2 when the last unit dies; its HQ is held, so
 /// the HQ's own defeat never comes), so its holding units can be killed and its wave still lands and fights when it wakes.
 const DEFEAT_ARMY_BODY: u32 = 0x0802_8896;
@@ -2915,7 +2965,6 @@ fn defeat_army(core: &mut Core) {
         let cpu = core.gba().cpu();
         (cpu.gpr(4) as u32 & 0xFF, cpu.gpr(5) as u32)
     };
-    let _ = code;
     if sleeping(core, army as u8) {
         core.gba_mut().cpu_mut().set_thumb_pc(DEFEAT_ARMY_EPILOGUE);
         return;
@@ -3082,6 +3131,20 @@ fn wake_after_rout(core: &mut Core, army: u8) {
             core.raw_write_8(p + 0x1B, -1, 2);
         }
     }
+}
+
+/// `DefeatArmy(army, code)`'s entry (`sub_08028894`).
+pub const DEFEAT_ARMY: u32 = 0x0802_8894;
+
+/// The gauntlet engine's rout rule: the army whose line the player's capture of the HQ at (x, y) ends (its [`MissionDef::cut_off`] entry: every line but the last, which ends the battle), or
+/// None. Capturing it routes the army at once ([`crate::com_tower`]'s `held_hq_capture` calls `DefeatArmy`): all its units go (cargo and hidden ones too), every property it owns turns neutral.
+pub fn rout_army(core: &Core, x: u8, y: u8) -> Option<u8> {
+    if !crate::ds_campaign::active(core) || crate::stage::stage(core) > 0 {
+        return None;
+    }
+    let cut = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.cut_off.get(crate::ds_campaign::mission(core) as usize).cloned()))?;
+    cut.iter().find(|&&(_, hq)| hq == (x, y)).map(|&(a, _)| a)
 }
 
 /// Whether `army` is one of this mission's sleepers still asleep: some HQ before it is not the player's yet (stage 1 only).

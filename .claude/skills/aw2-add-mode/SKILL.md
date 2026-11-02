@@ -11,7 +11,7 @@ The first mode built this way is the Gauntlet (docs/dev/gauntlet-mode.md: read i
 3. Nothing else lists it: the map selector (`gauntlet_ui.rs`) shows every mission of `def()` with its enemies (`ArmyDef` index 1 on: `CoSpec::Fixed` CO and the **colour the map fixes**) and the best result, and the colour
    pick offers the colours those enemies do not wear (`gauntlet_mode::Entry::free`: AW2's five minus the enemies', plus Silver Nova). Fix every enemy's colour in the mission (never leave it to the player's pick); check the new map in
    `the_free_colours_are_the_five_minus_the_enemies_plus_the_skins`-style tests and the audit page (`aw2_online_text_audit.rs`, `gauntlet`) with its longest names.
-4. Tests: a row for the map in `tests/test_gauntlet_mode.py` / `aw2test/gauntlet.py` (`CINDER`: its HQs, `CINDER_FREE`), and run `aw2dev gauntlet test`, `aw2dev audit text`. Pictures: `aw2dev gauntlet start --co N`, the `gauntlet_walkthrough_pictures` sheets.
+4. Tests (the rout test too, see the Gauntlet bullet below): a row for the map in `tests/test_gauntlet_mode.py` / `aw2test/gauntlet.py` (`CINDER`: its HQs, `CINDER_FREE`), and run `aw2dev gauntlet test`, `aw2dev audit text`. Pictures: `aw2dev gauntlet start --co N`, the `gauntlet_walkthrough_pictures` sheets.
 
 ## A new wheel entry (a mode of its own on Select Mode)
 1. `mode_menu.rs`: a new item id (10, ...), an `Extra` (its OBJ palette, its small-label tiles, its data page in ROM: `GAUNTLET_AT` + 0x1000 steps below `SENTINEL`), `TABLE` and `N` (one more entry), the DivRem/wrap
@@ -25,6 +25,7 @@ The first mode built this way is the Gauntlet (docs/dev/gauntlet-mode.md: read i
 
 ## Engine pieces to reuse (all data on a `MissionDef`, mission-agnostic)
 - **Gauntlet** (docs/dev/gauntlet.md): armies off the battlefield until the line before falls. `MissionDef::hidden` (army, HQ cell, zone), `sleepers`, `cut_off`, `Cond::LineFallen`, `Action::Reveal`; put the wave (`Action::Spawn`) and its funds in the same trigger as the reveal. Worked examples: `bh2_campaign::bh2_31`, `gauntlet_mode::cinder_sea`.
+  **The rout rule (permanent, every gauntlet map):** capturing a line's HQ routes its army at once (all units destroyed, every property neutral, then the next line comes). It is the engine's: list every line but the last in `cut_off` (army, HQ) and `held_hq`/`held_more` (the last line's HQ in `held_more` only: its capture wins). Add a rout test for the new map (`tests/test_gauntlet_rout.py`, helpers `aw2test/rout.py`: plant DS-only, loaded, dived and hidden units, capture, check 0 units, 0 owned cells, next line in, control kept). Docs: docs/dev/gauntlet.md "The rout".
 - **Stages** (docs/dev/stages.md): the same battle moves on to another map (`Action::NextStage`, `MissionDef::stages`), with carry-over and suspend.
 - **Five-army suspend** (docs/dev/five-suspend.md): battles with five armies save and continue.
 - Triggers, scenes, spawns and held HQs: docs/dev/bh2-maps.md, docs/dev/campaign-scenes.md.

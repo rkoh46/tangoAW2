@@ -172,7 +172,7 @@ def gauntlet_mode_win_returns_to_select_mode_and_writes_the_record(ctx):
         ctx.log(f"after {name}'s HQ: units {counts}, controllers {ctrl}")
     ctx.eq([s[2] for s in seen], [[1, 2, 2, 0], [1, 2, 2, 2], [1, 2, 2, 2]], "each fall brings the next line (controllers: Sensei's, then Hawke's turn)")
     ctx.check(seen[0][1][3] == 12 and seen[1][1][4] == 12, f"Sensei's wave (12) and Hawke's wave (12) landed ({seen[0][1]}, {seen[1][1]})")
-    ctx.check(seen[2][1][2] > 0 or seen[2][1][3] > 0, f"Drake's and Sensei's survivors are still on the field when Hawke's HQ falls ({seen[2][1]}): the win does not need them hunted")
+    ctx.eq((seen[2][1][2], seen[2][1][3]), (0, 0), f"Drake's and Sensei's lines were routed by their HQs' capture: none of their units is left when Hawke's HQ falls ({seen[2][1]})")
     worlds = []
     result = None
     tick = 0

@@ -21,19 +21,20 @@ def checkpoint(name, scenario, ids=None, ds=False, tabitha=None):
     return harness.run_script(out / "script.txt", out, ds=ds, env_extra=env)
 
 
-def look(name, shot, ds=False, tilt=False, scale=None, wait=60.0):
+def look(name, shot, ds=False, tilt=False, scale=None, wait=60.0, graphics=True):
     """Boot the app from checkpoint `name`, wait for the battle map, save its picture to `shot` and return the armies (the AI debug state)."""
     util.check_fresh(cfg.REPO / "target" / "release" / "tango", "tango")
     ck = CKPT()
     if not (ck / f"{name}.state").exists():
         util.die(f"no checkpoint {name}: `aw2dev armyskin checkpoint {name}` first")
     ds = ds or tilt
-    prof = "skinds" if ds else "skin"
+    # (`graphics=False` with the pack: AW2's own map graphics with the pack's content, the look a Gauntlet map is played in by default)
+    prof = ("skinds" if graphics else "skinpack") if ds else "skin"
     profiles.ensure(prof, pack=ds)
     if ds:
         cj = profiles.profile_dir(prof) / "config" / "config.json"
         conf = json.loads(cj.read_text())
-        conf.update({"ds_graphics": True, "ds_tilt": bool(tilt)})
+        conf.update({"ds_graphics": bool(graphics), "ds_tilt": bool(tilt)})
         cj.write_text(json.dumps(conf, indent=2))
     data = profiles.profile_dir(prof) / "data" / "checkpoints"
     data.mkdir(parents=True, exist_ok=True)
@@ -47,7 +48,7 @@ def look(name, shot, ds=False, tilt=False, scale=None, wait=60.0):
         env["TANGOAW2_TILT"] = "1"
         env["TANGOAW2_TILT_NO_GROUNDCHECK"] = "1"
         env["TANGOAW2_TILT_SCALE"] = str(scale or 1)
-    if ds:
+    if ds and graphics:
         env["TANGOAW2_DS_GRAPHICS"] = "1"
     proc = subprocess.Popen([str(app)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=cfg.REPO)
     try:

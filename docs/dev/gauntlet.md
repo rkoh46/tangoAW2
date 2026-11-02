@@ -10,14 +10,38 @@ It is data on a mission, so a game mode of its own can reuse it: the Gauntlet mo
 | `MissionDef::sleepers: Vec<(army, Vec<hq>)>` | When each line wakes: the HQs that must have fallen first. A sleeping army is never defeated (`DefeatArmy` skipped) and is counted alive by AW2's end-of-battle check (`sub_08028BAC`, trap at `0x08028C0A`), so destroying the line on the field does not end the battle |
 | `Cond::LineFallen { x, y }` | A line has fallen: the player holds its HQ, or its army was destroyed (the HQ turned a neutral property). A plain cell (a hidden HQ not built yet) has not |
 | `Action::Reveal(army)` | The line comes: its HQ is built on its cell (under a unit standing there, if any), every property of its zone becomes its own (towers included, and the player's: a base raided before it came is taken back; HQs stay whose they are), its record gets its HQ cell, property counts and income, AW2's `RecountArmyProperties` (`0x080219AC`) runs, the screen is redrawn (`wasteland::render_map`), and it plays (the computer). Put `Spawn` (its wave) and its funds in the same trigger |
-| `MissionDef::cut_off: Vec<(army, hq)>` | A fallen line keeps fighting with what is on the field but earns nothing (`cut_funds`, at each army's turn start after its income) |
+| `MissionDef::cut_off: Vec<(army, hq)>` | The lines the player's HQ capture routes (army, HQ: every line but the last; see "The rout"). `cut_funds` still takes back a fallen line's income at its turn start (nothing is left of a routed one) |
 | Its wave (`Action::Spawn`) | A unit whose landing cell is taken lands on the nearest free cell it can enter within 4 (`landing`; every mission's spawns) |
+| **The rout rule** (permanent, every gauntlet map) | Taking a line's HQ routes its army at once: see "The rout" below. `cut_off` is its data: each entry (army, HQ) is a line that is routed when the player takes that HQ |
 | A rout | When a line's last unit dies, `DefeatArmy` turns its HQ neutral and the next line's controller is set at once (`wake_after_rout`); the wake trigger then runs after the next action |
 
 M31's wiring (`bh2_campaign::bh2_31`): `wake(hq, before, army, chest, wave, scene)` = `AfterAction` on all of `fell(..)`: the scene, `Reveal`, the war chest
 (25,000 and the savings, `war_chest`), the wave. Tests: `bh2_m31_hidden_lines_are_off_the_battlefield` (absent, the turn goes Nell -> player, the reveal),
 `bh2_m31_nell_routed_before_her_hq_falls` (a rout), `bh2_m31_gauntlet_suspend_and_resume` (byte for byte after each reveal), `bh2_m31_progression`,
 `bh2_m31_sleeping_nations_earn_nothing`. Pictures of every wave: `aw2dev campaign playthrough bh2 31 --player bot --god --waves --advance 6` (docs/dev/playthrough.md).
+
+## The rout (every gauntlet map, by default)
+
+**Rule (owner's, permanent):** when the player captures an enemy line's HQ, that army is routed on the spot: all its units are destroyed and every property it owns turns neutral; then the next line
+comes as before. It lives in the engine, so a map gets it from `MissionDef::cut_off` alone and nothing per map.
+
+How: a held HQ's capture skips AW2's "defeat the old owner at the end of the turn" mark (`com_tower::held_hq_capture`, at `0x08042822`). For an HQ in `cut_off` (`custom_campaign::rout_army`: the
+army of that entry; stage 1 only) the hook instead calls AW2's own `DefeatArmy(army, 2)` (`0x08028894`) with the return set to where a held capture goes on (`0x08042834`). That is the game's rout
+(what an HQ capture does in Versus): every unit record of the army is destroyed with the explosions (cargo, Dual Strike kinds such as the Black Boat, Carrier, Stealth, hidden Stealth and dived Sub
+too: the test plants all of them) and the history counts the HQ capture. AW2 would hand the army's properties to the captor; the rule is **neutral**, so the defeat proc's step is patched at two
+places (`custom_campaign::rout_neutral`, `rout_keep_hq_city`; only for a `cut_off` army with code 2): its captor register is 0 (as for an army defeated by losing its units) and the line's HQ cell, record
+entry and `gProperty` entry are the player's city before its handover loop runs. The units die one after another over a few seconds and the map is busy (no menu, no Save) until it is over, then the next
+line's scene plays. All state is the game's own (EWRAM), so suspend/continue, replays and netplay are the same on both peers (`SIM_VERSION` 45).
+
+- The captured HQ becomes the player's **city** (AW2's HQ-to-city conversion, kept the player's by `rout_keep_hq_city`): the player keeps exactly one HQ, and the converted cell is of city class, so nothing the computer does to it can end the player's army (only an HQ-class capture does). Tested (`rout.check_captured_hq`).
+- The next line: the `Reveal` trigger fires after the same action (the HQ is the player's: `Cond::LineFallen`), and `wake_after_rout` (the `DefeatArmy` trap) makes the next controller the computer's, as for a
+  rout by lost units; a sleeping army is never the one routed (`defeat_army` skips it).
+- **The last line is not routed**: its HQ is not in `cut_off`. Its capture wins at once (the `Win` trigger) and its army must still stand for the closing scene (an army AW2 has routed has no face for a speaker).
+  The same goes for the last line of a stage that is followed by a stage switch (Iron Crown's Rachel, M31's Eagle): not in `cut_off`, so not routed.
+- A line that falls by losing all its units is unchanged (`DefeatArmy` code 1, its HQ turns neutral; `wake_after_rout`).
+- **A new gauntlet map**: list every line but the last in `cut_off` (army, HQ) and in `held_hq` / `held_more`; the last line's HQ is `held_more` but not `cut_off`. Then the rout is on.
+- Tests: `-k gauntlet_rout` (Cinder Sea: Drake, Sensei, then Hawke wins; Iron Crown: Grit and Jess) and `bh2_m31_hq_capture_routes_the_line`: the army holds planted DS-only, loaded, dived and hidden
+  units (`aw2test/rout.py`) and after the capture has 0 units, an empty unit layer and 0 owned cells, the next line is in and the player keeps control.
 
 ## The Gauntlet mode (its maps)
 

@@ -7,6 +7,7 @@ from aw2test import bh2campaign as b2
 from aw2test import bhact2 as a2
 from aw2test import dscampaign as dc
 from aw2test import harness
+from aw2test import rout
 from aw2test.harness import test
 
 _n = len(harness.TESTS)
@@ -151,4 +152,33 @@ def bh2_m31_nell_routed_before_her_hq_falls(ctx):
     ctx.log(f"after the capture: HQ owner {bp.owner(e, 8, 8)}, Olaf units {len(g.units(army=2))}")
     ctx.eq(bp.owner(e, 8, 8), 5, "the player holds Nell's HQ")
     ctx.check(len(g.units(army=2)) <= n2, f"no second wave ({len(g.units(army=2))} units)")
+    e.close()
+
+
+@test(name="bh2_m31_hq_capture_routes_the_line", modes=("ds",))
+def bh2_m31_hq_capture_routes_the_line(ctx):
+    """The gauntlet rout rule on M31: Nell's HQ taken (her army holds DS-only, loaded, dived and hidden units too): she is routed at once (no unit, no property), Olaf's line is in and the player
+    keeps control; Olaf's HQ taken: the same, Kanbei's line is in."""
+    e, g, d = b2.enter(ctx, 31)
+    d.leave_setup()
+    a2.intro(ctx, e, d, "m31", (0,))
+    bp.to_player_turn(e, g, d)     # (Nell's first turn goes by)
+    for k in (0, 1):
+        name, cell, army, _ = bp.HQS[k]
+        planted = rout.plant_extras(e, g, k + 1)
+        own = rout.owned_cells(e, k + 1)
+        bp.capture(ctx, e, g, d, cell, 5)
+        bp.settle(e, g, d)
+        rout.wait_routed(e, g, k + 1)
+        rout.check_routed(ctx, e, g, k + 1, name, planted)
+        d.wait_control()
+        g._units_base = g._players_base = None
+        ctx.eq(g.current_army(), 5, f"after {name}: it is the player's turn")
+        ctx.check(d.in_battle() and not e.u8(dc.LAST_RESULT), f"after {name}: the battle goes on")
+        ctx.eq(bp.owner(e, *cell), 5, f"{name}'s HQ is the player's")
+        rout.check_captured_hq(ctx, e, cell, 5, name)
+        rout.check_neutral(ctx, e, own, cell, name)
+        nxt = k + 2
+        ctx.check(len(g.units(army=nxt)) >= 10, f"army {nxt}'s wave is on the field ({len(g.units(army=nxt))})")
+        ctx.eq(bp.owner(e, *bp.HQS[k + 1][1]), nxt, f"army {nxt}'s HQ is built")
     e.close()

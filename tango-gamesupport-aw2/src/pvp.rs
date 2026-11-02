@@ -626,6 +626,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 45: Gauntlet's Cinder Sea and Versus' Crystal Isles gain beach (shoal) cells on their islets so a Lander can land (RC05): the maps' terrain changed.
         // 45: an Anti-Air fires back at a Stealth that attacked it, hidden or not (CalcDamage's hidden-Stealth column, for a counterattack only): the shared console's battle results changed.
         // 45: Caulder's Cataclysm plays Hawke's Black Storm overlay and then (with the pack) Dual Strike's Urban Blight overlay, without damage (crate::co_powers::CATACLYSM_FN: a script in the game's padding at 0x08770000).
+        // 45: the gauntlet rout rule: capturing a gauntlet line's HQ routes its army at once (AW2's DefeatArmy: every unit destroyed, every property neutral) before the next line comes (crate::custom_campaign::rout_army; Gauntlet mode maps, BH2 M31).
         crate::inspect::SIM_VERSION
     }
 

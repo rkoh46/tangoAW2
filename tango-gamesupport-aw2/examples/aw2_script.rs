@@ -511,6 +511,18 @@ fn main() {
                 let s = link.core(0).save_state().expect("save state");
                 std::fs::write(parts[1], s.as_slice()).unwrap();
             }
+            // `checkpoint save NAME`: the console's state in the AI debug channel's format (AW2_CKPT_DIR, default <out>/checkpoints), which the app boots with
+            // TANGOAW2_BOOT_CHECKPOINT (`aw2dev gauntlet rout-sheet`)
+            "checkpoint" => {
+                let dir = std::env::var_os("AW2_CKPT_DIR").map(std::path::PathBuf::from).unwrap_or_else(|| std::path::PathBuf::from("checkpoints"));
+                match (parts.get(1).copied(), parts.get(2).copied()) {
+                    (Some("save"), Some(name)) => {
+                        let r = tango_gamesupport_aw2::ai_debug::checkpoint_save(link.core(0), &dir, name, true).expect("checkpoint save");
+                        println!("checkpoint {name} saved: ram hash {}", r["ram_hash"]);
+                    }
+                    _ => panic!("checkpoint save NAME"),
+                }
+            }
             "loadfile" => {
                 let bytes = std::fs::read(parts[1]).expect("state file");
                 let mut s = mgba::state::State::new_uninit();
