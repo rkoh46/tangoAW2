@@ -145,6 +145,20 @@ pub fn keep_colour(core: &mut Core, m: &crate::campaign_model::MissionInfo) {
     if core.raw_read_8(at, -1) != want {
         core.raw_write_8(at, -1, want);
     }
+    // The enemies keep the colours their map gives them: AW2's CO screen moves an army off a colour another army's CO's country claims (a player's Caulder, whose
+    // country is Black Hole's, put Cinder Sea's Hawke on Orange Star's colour, where the Silver Nova skin then sat too: Hawke's army wore Silver Nova's sun).
+    let enemies: Vec<(u32, u8)> = if five {
+        (1..=4u32).zip(m.colours.iter().copied()).collect()
+    } else {
+        (2..=4u32).zip(m.colours.iter().skip(1).copied()).collect()
+    };
+    let count = if five { (m.armies as usize).min(4) } else { (m.armies as usize).saturating_sub(1) };
+    for (army, colour) in enemies.into_iter().take(count) {
+        let at = players + 0x3C * army + 0x1A;
+        if (1..=5).contains(&colour) && core.raw_read_8(at, -1) != colour {
+            core.raw_write_8(at, -1, colour);
+        }
+    }
 }
 
 /// The colours the enemies of the map's battle (this stage's record `m`) wear: the armies but the player's.

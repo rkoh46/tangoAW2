@@ -84,7 +84,8 @@ def silver_nova_gauntlet_looks(ctx):
             e.wait(40)
             worst = max(worst, stripes(shot(ctx, e, f"{look}_map{k}")))
         ctx.check(worst < 80, f"{look}: no striped cells on Silver Nova's island (worst window {worst} flips)")
-        ctx.log(f"{look}: skin host colour {e.u8(0x0203C500)}; army colours " + " ".join(str(g.player(a)["raw"][0x1A]) for a in range(1, 5)))
+        cols = [g.player(a)["colour"] for a in range(1, 5)]
+        ctx.eq(cols, [1, 3, 4, 5], f"{look}: Silver Nova on Orange Star's colour, Drake, Sensei and Hawke on Green Earth's, Yellow Comet's and Black Hole's (Caulder's country is Black Hole's: Hawke was moved onto Orange Star's colour and wore the skin)")
         hq = hq_of(g, 1)
         ctx.check(hq is not None, f"{look}: Silver Nova's HQ found ({hq})")
         if hq:
@@ -134,3 +135,32 @@ def silver_nova_ds_graphics_switch_mid_match(ctx):
     ctx.check(not rows, f"switched off mid-match: the map palettes are an AW2-look start's (rows differing: {rows})")
     ctx.check(s < 80, f"switched off mid-match: no stray tiles (worst window {s} flips)")
 
+
+
+def selected_sprite_dark(png, cell_px):
+    """Share of near-black pixels in the selected unit's 16 x 16 cell (a black silhouette is mostly black)."""
+    im = Image.open(png).convert("RGB")
+    x0, y0 = cell_px
+    px = [im.getpixel((x, y)) for y in range(max(0, y0 - 4), min(160, y0 + 16)) for x in range(max(0, x0), min(240, x0 + 16))]
+    return sum(1 for p in px if sum(p) < 90) / max(1, len(px))
+
+
+@test(modes=("ds",))
+def silver_nova_selected_units(ctx):
+    """Each of Silver Nova's unit types picked up (its move range shown): the picked-up sprite keeps the skin's colours, in both looks."""
+    for look in LOOKS:
+        e, g = start(ctx, look)
+        seen = set()
+        for u in g.units(army=1):
+            if u["type"] in seen:
+                continue
+            seen.add(u["type"])
+            g.goto(u["x"], u["y"])
+            e.wait(20)
+            idle = shot(ctx, e, f"{look}_t{u['type']}_idle")
+            e.press("A", 6)
+            e.wait(40)
+            sel = shot(ctx, e, f"{look}_t{u['type']}_selected")
+            e.press("B", 6)
+            e.wait(30)
+            ctx.log(f"{look}: type {u['type']} at {(u['x'], u['y'])}")
