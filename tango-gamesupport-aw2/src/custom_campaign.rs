@@ -2855,11 +2855,13 @@ pub fn ai_unit(core: &mut Core) {
 /// The computer's buy (`sub_080610D0`) just after `BuyUnit` returned the new unit (r0) and its role (r1: AW2's roll or Dual Strike's order) is about to be stored at +0x0B.
 const BUY_STORES_ROLE: u32 = 0x0806_1132;
 
-/// A custom campaign's computer buys an Infantry or Mech whose role roll came out 0 (`sub_08061178` answers 0 for a foot soldier when the army's personality row has no weights): that is
+/// The computer (Dual Strike's, in Versus and the campaigns of this game; not AW2's own campaign, Survival or the War Room) buys an Infantry or Mech whose role roll came out 0 (`sub_08061178` answers 0 for a foot soldier when the army's personality row has no weights): that is
 /// AW2's hold, which [`ai_unit`] keeps (a designer's garrison stands still on purpose), so the soldier stood on the base it was built on for the rest of the mission and the base could never build
 /// again. A soldier built during the mission is nobody's garrison: it takes role 3, the enemy's properties, as Dual Strike's order for foot soldiers does ([`crate::ds_ai_build::role_of`]).
 fn built_foot_role(core: &mut Core) {
-    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
+    let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+    // (the Dual Strike Campaign's own missions keep their computer's roles)
+    if !crate::ds_ai::in_scope(core, army, crate::ds_ai::OFF_MOVE) || (crate::ds_campaign::active(core) && crate::ds_campaign::is_ds(core)) {
         return;
     }
     let unit = core.gba().cpu().gpr(0) as u32;

@@ -630,7 +630,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 46: the 45 lines above in one build (0.9.3), and Gauntlet's enemies keep their map's colours whatever CO the player picks, a Silver Nova CO picked on Versus' Teams screen takes the skin, Aria's Vengeance is 10 points weaker.
         // 46: the CPU moves its Black Boats and Landers off the ports they were parked on, repairs and follows its fleet with the boats, advances its Carriers (crate::cpu_units).
         // 46 (cont.): the CPU's Black Boats ferry its Infantry and Mechs over water (loads and drops made at the start of its turn: crate::cpu_ferry), its Carriers launch fit aircraft near enemies and take in aircraft low on fuel or hit points.
-        // 46 (cont.): a custom campaign's (and the Gauntlet's) Infantry and Mechs bought with AW2's role roll 0 get role 3 instead of the hold that kept them on the building they were built on for good (crate::custom_campaign::built_foot_role).
+        // 46 (cont.): Infantry and Mechs the computer buys in Versus and the custom campaigns (the Gauntlet's too) with AW2's role roll 0 get role 3 instead of the hold that kept them on the building they were built on for good (crate::custom_campaign::built_foot_role).
         crate::inspect::SIM_VERSION
     }
 
