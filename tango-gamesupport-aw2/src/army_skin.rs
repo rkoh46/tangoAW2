@@ -29,6 +29,8 @@ pub const STATE_LEN: u32 = 0x10;
 const HOSTS: u32 = STATE;
 const IDENT: u32 = STATE + 4;
 const SEEN: u32 = STATE + 0xF;
+/// The CO each Teams army had last frame (+9.., 5 bytes; [`teams_follow_co`]).
+const LAST_CO: u32 = STATE + 9;
 
 /// How many skins a match can have at once (each has its own colour, its own map sprite slots and its own room in free ROM).
 pub const MAX_SKINS: usize = 3;
@@ -1601,6 +1603,7 @@ pub fn teams_frame(core: &mut Core) {
     if core.raw_read_8(SEEN, -1) == 0 {
         core.raw_write_8(SEEN, -1, 1);
         core.raw_write_range(IDENT, -1, &[0u8; 5]);
+        core.raw_write_range(LAST_CO, -1, &[0xFFu8; 5]);
         for i in 0..MAX_SKINS {
             set_host_of(core, i, 0);
         }
@@ -1681,6 +1684,40 @@ pub fn teams_step(core: &mut Core, colours_at: u32, slot: u32, armies: u32, step
     }
     for (i, h) in hosts.iter().enumerate() {
         set_host_of(core, i, *h);
+    }
+}
+
+/// A Silver Nova CO picked for a Teams army that still wears a plain colour takes the skin (when no other army has it): its CO's country is Black Hole's,
+/// so the game gave the army Black Hole's colour, or Orange Star's when Black Hole's was taken, and the CO page, emblem and units showed that colour (the
+/// owner's report: Caulder against Black Hole in Orange Star's). R / L still change it afterwards; only a new pick of a CO acts.
+pub fn teams_follow_co(core: &mut Core, colours_at: u32, armies: u32) {
+    for s in 0..armies.min(5) {
+        let co = crate::tag_ui::army_main(core, s).unwrap_or(0xFF);
+        if core.raw_read_8(LAST_CO + s, -1) == co {
+            continue;
+        }
+        core.raw_write_8(LAST_CO + s, -1, co);
+        if !crate::es_co::is_es(co) || core.raw_read_8(IDENT + s, -1) != 0 {
+            continue;
+        }
+        let mut choices: Vec<u8> = (0..armies)
+            .map(|k| match core.raw_read_8(IDENT + k, -1) {
+                0 => core.raw_read_8(colours_at + k, -1),
+                c => c,
+            })
+            .collect();
+        if choices.iter().enumerate().any(|(k, &c)| k as u32 != s && c == SKIN) {
+            continue;
+        }
+        choices[s as usize] = SKIN;
+        let (values, hosts) = assign(&choices);
+        for k in 0..armies {
+            core.raw_write_8(IDENT + k, -1, if choices[k as usize] >= SKIN { choices[k as usize] } else { 0 });
+            core.raw_write_8(colours_at + k, -1, values[k as usize]);
+        }
+        for (i, h) in hosts.iter().enumerate() {
+            set_host_of(core, i, *h);
+        }
     }
 }
 

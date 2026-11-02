@@ -1033,6 +1033,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
             crate::army_skin::teams_frame(core);
             if !five {
                 first_teams_frame(core, armies);
+                crate::army_skin::teams_follow_co(core, colours_at, armies);
             }
             let pressed = keys & !prev;
             let forward = if ds { KEY_R } else { KEY_R | KEY_SELECT };

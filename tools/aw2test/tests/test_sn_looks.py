@@ -210,3 +210,17 @@ def silver_nova_hawke_arrives_in_black_hole(ctx):
         g.goto(u["x"], u["y"])
         e.wait(30)
         shot(ctx, e, "hawke_line")
+
+
+@test(modes=("ds",))
+def silver_nova_co_picks_silver_nova_on_teams(ctx):
+    """Versus: Caulder picked for army 1 against Hawke takes the Silver Nova skin on the Teams screen (his country is Black Hole's, so the game gave him Orange Star's colour
+    when Black Hole's was Hawke's: the CO page and units showed Orange Star, the owner's report)."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 6).unit(2, "tank", 20, 6)
+    g = ctx.start(m, [0x58, "hawke"])
+    e = g.e
+    host = e.u8(0x0203_C500)
+    ctx.check(host != 0, f"the Silver Nova skin is on a colour ({host})")
+    ctx.eq(g.player(1)["colour"], host, "Caulder's army wears the skin's colour")
+    ctx.check(g.player(2)["colour"] != host, f"Hawke's army is not on the skin's colour ({g.player(2)['colour']})")
