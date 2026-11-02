@@ -8,9 +8,9 @@ The first mode built this way is the Gauntlet (docs/dev/gauntlet-mode.md: read i
 ## A new map for the Gauntlet
 1. Spec and map: `five/gauntlet/spec/gauntlet_NN.py`, `aw2dev maps gen --campaign gauntlet`, `aw2dev maps lint --campaign gauntlet` (docs/dev/map-lint.md). Enemy armies on team 2 (the player's team is its own army number, 1; a team of 1 made the enemies the player's allies).
 2. A mission function in `tango-gamesupport-aw2/src/gauntlet_mode.rs` added to `def()` (copy `cinder_sea`): the player's army `CoSpec::Pick`, the enemy COs fixed, hidden lines (`MissionDef::hidden`, `sleepers`, `cut_off`, `held_hq`/`held_more`) and `arrive(..)` triggers, `rank_days`. Its key is `gauntlet_NN`.
-3. Nothing else lists it: the map selector (`gauntlet_ui.rs`) shows every mission of `def()` with its enemies (`ArmyDef` index 1 on: `CoSpec::Fixed` CO and the **colour the map fixes**) and the best result, and the colour
+3. Nothing else lists it: the map selector (`gauntlet_ui.rs`: the game's own War Room SELECT MAP, one map-table entry per mission, ids from `FIRST_ID`, 8 at most) lists every mission of `def()` with its name and picture and the faces of its first three enemies (`ArmyDef` index 1 on: `CoSpec::Fixed` CO and the **colour the map fixes**) and the best result in its record box, and the colour
    pick offers the colours those enemies do not wear (`gauntlet_mode::Entry::free`: AW2's five minus the enemies', plus Silver Nova). Fix every enemy's colour in the mission (never leave it to the player's pick); check the new map in
-   `the_free_colours_are_the_five_minus_the_enemies_plus_the_skins`-style tests and the audit page (`aw2_online_text_audit.rs`, `gauntlet`) with its longest names.
+   `the_free_colours_are_the_five_minus_the_enemies_plus_the_skins`-style tests and the audit page (`aw2_online_text_audit.rs`, `gauntlet`: the colour pick) with its longest names; look at the selector in the three looks (`-k gauntlet_pictures_selector`).
 4. Tests (the rout test too, see the Gauntlet bullet below): a row for the map in `tests/test_gauntlet_mode.py` / `aw2test/gauntlet.py` (`CINDER`: its HQs, `CINDER_FREE`), and run `aw2dev gauntlet test`, `aw2dev audit text`. Pictures: `aw2dev gauntlet start --co N`, the `gauntlet_walkthrough_pictures` sheets.
 
 ## A new wheel entry (a mode of its own on Select Mode)

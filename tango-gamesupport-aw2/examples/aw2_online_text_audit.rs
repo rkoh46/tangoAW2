@@ -854,8 +854,7 @@ fn proposals(c: &mut Ctx) {
     }
 }
 
-/// The Gauntlet's map selector and colour pick: the widest CO names as the enemies (3 to 6 lines), the longest map title, a best result with the widest CO and four-digit figures, every
-/// colour offered.
+/// The Gauntlet's colour pick: the widest CO names as the enemies (3 to 6 lines), every colour offered (the map selector is the game's own War Room screen).
 fn gauntlet(c: &mut Ctx) {
     use tango_gamesupport_aw2::gauntlet_mode::Entry;
     use tango_gamesupport_aw2::gauntlet_ui as gu;
@@ -877,19 +876,7 @@ fn gauntlet(c: &mut Ctx) {
         enemies: widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect(),
         stages: vec![colours[..n.min(6)].to_vec()],
     };
-    // a record for mission 0 (the widest CO, 999 days, a four-digit score)
-    let rec = widest[0] as u32 | 999 << 8 | 9999 << 20;
-    core.raw_write_32(tango_gamesupport_aw2::ds_campaign::RECORDS, -1, rec);
     for n in [3usize, 4, 6] {
-        let entries = [entry(n, "Cinder Sea Of Embers"), entry(n, "Second Map Name"), entry(n, "Third"), entry(n, "Fourth Map")];
-        for cursor in [0usize, 2, 3] {
-            paint(c, &format!("gauntlet_select_{n}_{cursor}"), n == 3 || n == 6, |core, rgba| gu::paint_selector(core, rgba, &entries, cursor));
-        }
-        // (no record: the other line)
-        let e = entry(n, "Cinder Sea");
-        c.link.core_mut().raw_write_32(tango_gamesupport_aw2::ds_campaign::RECORDS, -1, 0);
-        paint(c, &format!("gauntlet_select_{n}_norecord"), false, |core, rgba| gu::paint_selector(core, rgba, &[e.clone()], 0));
-        c.link.core_mut().raw_write_32(tango_gamesupport_aw2::ds_campaign::RECORDS, -1, rec);
         for (k, &co) in widest.iter().take(2).enumerate() {
             let e = entry(n, "Cinder Sea");
             paint(c, &format!("gauntlet_colour_{n}_{k}"), n == 3, |core, rgba| gu::paint_colour_pick(core, rgba, &e, 2, co));

@@ -100,7 +100,7 @@ const T_CHAMPIONS: u16 = 38; // three
 /// The literal-pool words of the War Room record table's (`id - 0x6C`
 /// rows of 0x14, `0x0200C078`: crate::ds_versus::RECORDS) readers and
 /// writer.
-const RECORD_POOLS: [u32; 5] = [0x0808_759C, 0x0808_7664, 0x0808_7B18, 0x0808_7C6C, 0x0801_77E4];
+pub(crate) const RECORD_POOLS: [u32; 5] = [0x0808_759C, 0x0808_7664, 0x0808_7B18, 0x0808_7C6C, 0x0801_77E4];
 
 // --- RAM ---------------------------------------------------------------------
 
@@ -142,7 +142,7 @@ const PICKED: u8 = 2;
 const RESUMING: u8 = 3;
 /// A zeroed block the War Room's record code reads while Survival is on:
 /// rows for ids FIRST_ID..=0xEC.
-const ROWS: u32 = STATE + 0x40;
+pub(crate) const ROWS: u32 = STATE + 0x40;
 const ROW: u32 = 0x14;
 const ROWS_LEN: u32 = ROW * 0x24;
 
@@ -810,7 +810,8 @@ fn set_map_played(core: &mut Core) {
 const DRAW_MAP_LIST: u32 = 0x0808_6A58;
 const MAP_LIST_LAST: u32 = crate::five_map::LIST_LAST;
 fn draw_map_list(core: &mut Core) {
-    if core.raw_read_8(ON, -1) != 1 {
+    // (the Gauntlet's map selector is this screen too: crate::gauntlet_ui)
+    if core.raw_read_8(ON, -1) != 1 && !crate::gauntlet_ui::selecting(core) {
         return;
     }
     let cpu = core.gba().cpu();

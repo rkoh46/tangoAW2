@@ -1,10 +1,17 @@
-//! The Gauntlet's two choosing screens, in Advance Wars 2's own look (docs/dev/gauntlet-mode.md "The flow"): the **map selector** that opens when GAUNTLET is picked on Select Mode
-//! (a list of the Gauntlet's maps, the map's picture, the enemies it brings in the order they come, the best result) and, after the CO pick, the **army colour pick** (the colours the
-//! map's enemies do not wear, as emblems in a row).
+//! The Gauntlet's two choosing screens (docs/dev/gauntlet-mode.md "The flow"): the **map selector** that opens when GAUNTLET is picked on Select Mode and, after the CO pick, the
+//! **army colour pick** (the colours the map's enemies do not wear, as emblems in a row).
 //!
-//! Both are screens of our own drawn over the finished picture ([`draw`], through `ds_coselect::apply` like the Teams cards): AW2's windows, font and portraits, the emblems of its Teams
-//! screen, all read from the ROM at run time, nothing committed. The game underneath is a proc of the Gauntlet's start script that waits ([`crate::ds_campaign`]'s `gauntlet_start_script`:
-//! a flow function that answers 1 while a step is up), so this module only owns the pad while a step is up ([`tick`] takes every key) and says which button ended it ([`ANSWER`]).
+//! The map selector is the game's own: the War Room's SELECT MAP (`ProcScr_PreviewMap`, `0x08616C54`: the map list, the map's picture, the enemy's face, the record box on R), run as a
+//! child of the Gauntlet's start proc exactly as the War Room's flow runs it ([`crate::ds_campaign`]'s `gauntlet_start_script`). Its list is a tab of the map table
+//! ([`crate::survival`]'s larger copy, as Survival's): one table entry per Gauntlet map ([`id_of`]: the mission's compiled header, its name, its tiles for the picture, its first enemy
+//! CO for the face), shown on Survival's tab while the screen is up ([`TAB`], the War Room's tab byte `0x08090EF2`) with the game mode set to the War Room's (the list builder and the
+//! screen read it) and put back when the screen ends ([`chosen`]). The record box reads War Room record rows, here a block of ours filled from the Gauntlet's records ([`rows`]).
+//! A (the game's own handler) writes the map's id into the play state, B zeroes it: [`chosen`] reads which, as the War Room's flow does (`0x0803BD6D`).
+//!
+//! The colour pick is a screen of ours drawn over the finished picture ([`draw`], through `ds_coselect::apply` like the Teams cards): AW2's windows, font and portraits, the emblems of its
+//! Teams screen, all read from the ROM at run time, nothing committed (the Teams screen's own colour choice is part of Versus' whole Teams screen and cannot be borrowed alone). The game
+//! underneath is a proc of the start script that waits (a flow function that answers 1 while the step is up), so this module owns the pad while the colour pick is up ([`tick`] takes
+//! every key) and says which button ended it ([`ANSWER`]).
 //!
 //! The maps and their enemies come from [`crate::gauntlet_mode::entries`] (a new map's mission lists itself), the colours from [`crate::gauntlet_mode::Entry::free`] (the five minus the
 //! enemies' fixed ones, plus Silver Nova). The choice is an army code of the Teams screen (1..5, or `army_skin::SKIN + i` for a skin); [`crate::gauntlet::keep_colour`] puts it on the
@@ -23,7 +30,7 @@ pub const STATE_LEN: u32 = 0x40;
 pub const STEP: u32 = STATE;
 /// How the last step ended: 1 A (on to the next), 0 B (back).
 pub const ANSWER: u32 = STATE + 1;
-/// The selector's cursor (a map).
+/// The selector's cursor: the mission under the list's cursor (read from the game's list each frame).
 const MAP_CURSOR: u32 = STATE + 2;
 /// The map picked.
 const MAP: u32 = STATE + 3;
@@ -31,9 +38,14 @@ const MAP: u32 = STATE + 3;
 const COLOUR_CURSOR: u32 = STATE + 4;
 /// 1 when the colour pick was left with B: the start script comes round again and goes to the CO screen, not to the selector.
 const BACK_TO_CO: u32 = STATE + 5;
+/// The play state's game mode as it was before the selector set the War Room's.
+const SAVED_MODE: u32 = STATE + 6;
 /// The last choice on each map (an army code, 0 none), 8 maps.
 const LAST: u32 = STATE + 8;
 const LAST_MAPS: usize = 8;
+/// The War Room record rows the record box reads: [`LAST_MAPS`] rows of [`ROW`] bytes, in Survival's block of zeroed rows (Survival and the Gauntlet are never open together).
+const ROWS: u32 = crate::survival::ROWS;
+const ROW: u32 = 0x14;
 
 /// What the step shows (for the tests, which cannot read the picture's words): +0 the maps listed, +1 how many enemies the highlighted map has, +2.. their (CO, colour) in the order they
 /// come (6 at most), +0x0E how many colours are free to wear on the map picked, +0x0F.. those army codes (8 at most).
@@ -41,6 +53,18 @@ pub const SHOWN: u32 = STATE + 0x20;
 
 /// The CO screen's picks (`gUnknown_030058D4`): the player's CO is the first.
 const CO_PICKS: u32 = 0x0300_58D4;
+
+/// The play state's game mode (the War Room's is 2) and map id.
+const PLAY_MODE: u32 = 0x0300_3FC1;
+const PLAY_MAP: u32 = 0x0300_3FC2;
+const WAR_ROOM_MODE: u8 = 2;
+/// The War Room's tab byte in the mode -> tab table ([`crate::survival`] sets it for its own list).
+const WAR_ROOM_TAB: u32 = 0x0809_0EF2;
+/// SELECT MAP's list: the first row shown, the cursor's row (words), the ids ([`crate::five_map::LIST_IDS`]).
+const LIST_FIRST: u32 = 0x0300_5900;
+const LIST_CURSOR: u32 = 0x0300_5930;
+/// The first map-table id of ours (one per mission, [`LAST_MAPS`] at most, up to 0xFD: the table walk's last id with the pack).
+pub const FIRST_ID: u8 = 0xF6;
 
 pub const SELECT: u8 = 1;
 pub const COLOUR: u8 = 2;
@@ -61,7 +85,8 @@ pub fn up(core: &Core) -> bool {
     step(core) != 0
 }
 
-/// The start script's call: the map selector opens (or, coming back from the colour pick, the CO screen follows at once).
+/// The start script's call: the map selector opens (the War Room's SELECT MAP follows as a child proc) or, coming back from the colour pick, the CO screen follows at once (the step
+/// stays 0, which the script reads as "skip the selector").
 pub fn begin_select(core: &mut Core) {
     if core.raw_read_8(BACK_TO_CO, -1) == 1 {
         core.raw_write_8(BACK_TO_CO, -1, 0);
@@ -71,6 +96,181 @@ pub fn begin_select(core: &mut Core) {
     }
     core.raw_write_8(ANSWER, -1, 0);
     core.raw_write_8(STEP, -1, SELECT);
+    core.raw_write_8(MAP_CURSOR, -1, 0);
+    // (the screen opens on the first map; it records its pick in the play state's map id, 0 until A)
+    core.raw_write_32(LIST_FIRST, -1, 0);
+    core.raw_write_32(LIST_CURSOR, -1, 0);
+    core.raw_write_8(PLAY_MAP, -1, 0);
+    core.raw_write_8(SAVED_MODE, -1, core.raw_read_8(PLAY_MODE, -1));
+    frame(core);
+}
+
+/// The map-table id of the Gauntlet's mission `m` (one entry each, past the Versus maps' and Survival's).
+pub fn id_of(mission: usize) -> u8 {
+    FIRST_ID + mission.min(LAST_MAPS - 1) as u8
+}
+
+/// The mission of a map-table id of ours.
+fn mission_of(id: u8) -> Option<usize> {
+    let m = id.checked_sub(FIRST_ID)? as usize;
+    (m < gm::entries().len().min(LAST_MAPS)).then_some(m)
+}
+
+/// Each frame the selector is up: what the game's list builder and SELECT MAP read is as the Gauntlet wants it. The game mode is the War Room's (the builder lists a tab only for Versus' and the
+/// War Room's), the War Room's tab is ours, our maps' entries are in the table on that tab, and the record rows are ours.
+fn frame(core: &mut Core) {
+    set8(core, PLAY_MODE, WAR_ROOM_MODE);
+    set8(core, WAR_ROOM_TAB, crate::survival::TAB as u8);
+    entries_in_table(core, true);
+    rows(core);
+    let rows = ROWS.wrapping_sub(ROW * (FIRST_ID as u32 - 0x6C));
+    for at in crate::survival::RECORD_POOLS.into_iter().chain([crate::ds_versus::INSERT_POOL]) {
+        if core.raw_read_32(at, -1) != rows {
+            core.raw_write_32(at, -1, rows);
+        }
+    }
+}
+
+fn set8(core: &mut Core, at: u32, v: u8) {
+    if core.raw_read_8(at, -1) != v {
+        core.raw_write_8(at, -1, v);
+    }
+}
+
+/// The picture area of the screen holds a map of 32 x 22 cells (the largest of the War Room's); a bigger map (Iron Crown, 40 x 26) is shown by its middle part: the picture's tiles (header
+/// +0x2C, the battle reads +0x00) are a cropped copy in free ROM past Survival's maps, [`PREVIEW_SIZE`] a mission. Without it the picture ran over the list.
+const PREVIEW_ROM: u32 = 0x08E2_0000;
+const PREVIEW_SIZE: u32 = 0x800;
+const PREVIEW_CELLS: (usize, usize) = (32, 22);
+
+/// The cropped picture's blob for `mission` (LZ77 of width, height, tiles), or None when the whole map fits.
+fn preview_blob(e: &Entry) -> Option<&'static Vec<u8>> {
+    static B: std::sync::OnceLock<Vec<Option<Vec<u8>>>> = std::sync::OnceLock::new();
+    B.get_or_init(|| {
+        gm::entries()
+            .iter()
+            .map(|e| {
+                let m = crate::custom_campaign::built_map(e.key)?;
+                let (w, h) = (m.width as usize, m.height as usize);
+                if w <= PREVIEW_CELLS.0 && h <= PREVIEW_CELLS.1 {
+                    return None;
+                }
+                let (cw, ch) = (w.min(PREVIEW_CELLS.0), h.min(PREVIEW_CELLS.1));
+                let (x0, y0) = ((w - cw) / 2, (h - ch) / 2);
+                let mut raw = vec![cw as u8, ch as u8];
+                for y in 0..ch {
+                    for x in 0..cw {
+                        raw.extend_from_slice(&m.tiles[(y0 + y) * w + x0 + x].to_le_bytes());
+                    }
+                }
+                let mut lz = crate::lz77::compress(&raw);
+                while lz.len() % 4 != 0 {
+                    lz.push(0);
+                }
+                assert!(lz.len() <= PREVIEW_SIZE as usize);
+                Some(lz)
+            })
+            .collect()
+    })
+    .get(e.mission)?
+    .as_ref()
+}
+
+/// The Gauntlet's map entries in the map table: each mission's compiled header with the tab the list shows ([`TAB`] while the selector is up, a tab no list shows otherwise).
+fn entries_in_table(core: &mut Core, shown: bool) {
+    let Some(table) = crate::ds_campaign::selector_table(core) else { return };
+    for e in gm::entries().iter().take(LAST_MAPS) {
+        let Some(mut h) = crate::ds_campaign::mission_header(core, e.mission) else { continue };
+        let tab = if shown { crate::survival::TAB } else { crate::five_map::HIDDEN_TAB };
+        h[0x1A..0x1C].copy_from_slice(&tab.to_le_bytes());
+        // (the list's own form of a War Room map: the player's slot, then the enemies' COs in the order they come, as many as the screen has faces for)
+        h[0x16] = 1;
+        h[0x3C] = 0xFF;
+        for k in 0..3 {
+            h[0x3D + k] = e.enemies.get(k).map_or(0, |en| en.0);
+        }
+        if let Some(blob) = preview_blob(e) {
+            let rom = PREVIEW_ROM + PREVIEW_SIZE * e.mission as u32;
+            let mut have = vec![0u8; blob.len()];
+            core.raw_read_range(rom, -1, &mut have);
+            if &have != blob {
+                core.raw_write_range(rom, -1, blob);
+            }
+            h[0x2C..0x30].copy_from_slice(&rom.to_le_bytes());
+        }
+        let at = table + crate::five_map::ENTRY * id_of(e.mission) as u32;
+        let mut now = [0u8; 0x5C];
+        core.raw_read_range(at, -1, &mut now);
+        if now != h {
+            core.raw_write_range(at, -1, &h);
+        }
+    }
+}
+
+/// The War Room's record rows for our maps (five records of four bytes, in the layout the Gauntlet's own record has: AW2's `CO | days << 8 | score << 20`), the first the Gauntlet's best on the map.
+fn rows(core: &mut Core) {
+    let mut b = vec![0u8; (ROW as usize) * LAST_MAPS];
+    for e in gm::entries().iter().take(LAST_MAPS) {
+        if crate::gauntlet::best(core, e.mission as u8).is_some() {
+            let at = ROW as usize * e.mission;
+            b[at..at + 4].copy_from_slice(&core.raw_read_32(crate::ds_campaign::RECORDS + 8 * e.mission as u32, -1).to_le_bytes());
+        }
+    }
+    let mut now = vec![0u8; b.len()];
+    core.raw_read_range(ROWS, -1, &mut now);
+    if now != b {
+        core.raw_write_range(ROWS, -1, &b);
+    }
+}
+
+/// The selector's screen has ended (the start script's call): A put a map's id in the play state, B zeroed it. The game mode is put back; a map taken becomes the session's mission.
+pub fn chosen(core: &mut Core) {
+    let id = core.raw_read_8(PLAY_MAP, -1);
+    leave(core);
+    match mission_of(id) {
+        Some(m) => {
+            core.raw_write_8(MAP, -1, m as u8);
+            // (the battle is played on the campaign's own entry, [`crate::ds_campaign::choose_gauntlet_map`] fills it)
+            core.raw_write_8(PLAY_MAP, -1, crate::campaign_model::MAP_ID);
+            crate::ds_campaign::choose_gauntlet_map(core, m);
+            core.raw_write_8(ANSWER, -1, 1);
+        }
+        None => core.raw_write_8(ANSWER, -1, 0),
+    }
+}
+
+/// The selector is over (or the session is not): the game mode as it was, our entries off every list.
+fn leave(core: &mut Core) {
+    if step(core) == SELECT {
+        let saved = core.raw_read_8(SAVED_MODE, -1);
+        core.raw_write_8(PLAY_MODE, -1, saved);
+    }
+    entries_in_table(core, false);
+    core.raw_write_8(STEP, -1, 0);
+}
+
+/// The map selector is up.
+pub fn selecting(core: &Core) -> bool {
+    step(core) == SELECT
+}
+
+/// The scroll bar's track is drawn with a sprite for every 8 pixels of a length worked out as the rows a page shows over the list's last row, a length meant for a list of dozens of
+/// maps: a list of two is a track of ~100 sprites, which overflows the sprite buffer into the registers the frame is shown with. The track is at most its own full length (`0x70`),
+/// the thumb the whole of it. (`0x0808731A`: the length, in r0 after its division.)
+const SCROLL_TRACK: u32 = 0x0808_731A;
+
+fn scroll_track(core: &mut Core) {
+    if !selecting(core) {
+        return;
+    }
+    let cpu = core.gba_mut().cpu_mut();
+    if cpu.gpr(0) as u32 > 0x70 {
+        cpu.set_gpr(0, 0x70);
+    }
+}
+
+pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
+    vec![(SCROLL_TRACK, Box::new(scroll_track))]
 }
 
 /// The start script's call after the CO pick: the colour pick opens on the colour last worn on this map. A map with one colour (or none) free has nothing to pick.
@@ -116,32 +316,23 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
         return keys;
     }
     if !on || !crate::gauntlet::session(core) {
-        core.raw_write_8(STEP, -1, 0);
+        leave(core);
         return keys;
     }
     let pressed = keys & !prev;
-    let entries = gm::entries();
-    mirror(core);
+    if s != SELECT {
+        mirror(core);
+    }
     match s {
         SELECT => {
-            let n = entries.len().max(1) as u8;
-            let mut c = core.raw_read_8(MAP_CURSOR, -1) % n;
-            if pressed & KEY_DOWN != 0 {
-                c = (c + 1) % n;
+            // The game's own screen takes the pad (A and B end it); only what it reads is kept as the Gauntlet wants it.
+            frame(core);
+            let list_at = crate::five_map::LIST_IDS + (core.raw_read_32(LIST_FIRST, -1) + core.raw_read_32(LIST_CURSOR, -1)).min(crate::five_map::LIST_CAP - 1);
+            if let Some(m) = mission_of(core.raw_read_8(list_at, -1)) {
+                core.raw_write_8(MAP_CURSOR, -1, m as u8);
             }
-            if pressed & KEY_UP != 0 {
-                c = (c + n - 1) % n;
-            }
-            core.raw_write_8(MAP_CURSOR, -1, c);
-            if pressed & KEY_A != 0 && !entries.is_empty() {
-                core.raw_write_8(MAP, -1, c);
-                crate::ds_campaign::choose_gauntlet_map(core, entries[c as usize].mission);
-                core.raw_write_8(ANSWER, -1, 1);
-                core.raw_write_8(STEP, -1, 0);
-            } else if pressed & KEY_B != 0 {
-                core.raw_write_8(ANSWER, -1, 0);
-                core.raw_write_8(STEP, -1, 0);
-            }
+            mirror(core);
+            return keys;
         }
         _ => {
             let free = picked(core).map(Entry::free).unwrap_or_default();
@@ -230,51 +421,6 @@ fn fit(core: &Core, s: &str, max: i32) -> String {
     t
 }
 
-/// The map's picture (the game's own terrain classes), `s` pixels a cell, centred in (x, y, w, h). Properties wear their owner's army colour.
-fn minimap(cv: &mut Rgba<'_>, core: &Core, e: &Entry, (x, y, w, h): (i32, i32, i32, i32)) {
-    let Some(map) = crate::custom_campaign::built_map(e.key) else { return };
-    let mut classes = vec![0u8; 0x400];
-    core.raw_read_range(0x080C_1BC4, -1, &mut classes);
-    let (mw, mh) = (map.width as i32, map.height as i32);
-    let s = (w / mw.max(1)).min(h / mh.max(1)).max(1);
-    let (ox, oy) = (x + (w - s * mw) / 2, y + (h - s * mh) / 2);
-    let army: [Rgb; 6] = [(176, 176, 184), (240, 56, 40), (56, 96, 248), (48, 192, 72), (248, 216, 40), (60, 60, 76)];
-    let colour_of = |owner: usize| -> Rgb {
-        // (army 1 is the player's: its own colour is not chosen yet, so Orange Star's; the others wear the map's fixed colours)
-        let col = match owner {
-            0 => 0,
-            1 => crate::custom_campaign::colour::ORANGE_STAR,
-            k => e.enemies.get(k - 2).map_or(0, |en| en.1),
-        };
-        army[(col as usize).min(5)]
-    };
-    for ty in 0..mh {
-        for tx in 0..mw {
-            let t = map.tiles[(ty * mw + tx) as usize] as usize;
-            let c: Rgb = match t {
-                0x1B4..=0x1B8 => army[5],
-                0x1C0..=0x1D8 => colour_of((t - 0x1C0) / 5),
-                _ => match classes.get(t).copied().unwrap_or(0) & 0x1F {
-                    1 => (152, 224, 88),
-                    2 | 13 => (240, 224, 160),
-                    3 => (160, 104, 48),
-                    4 => (56, 160, 64),
-                    5 | 12 => (176, 176, 184),
-                    7 | 19 => (92, 120, 232),
-                    15 => (112, 120, 136),
-                    6 | 8 | 10 | 11 | 14 | 20 => (232, 232, 232),
-                    _ => (176, 176, 184),
-                },
-            };
-            cv.rect(ox + s * tx, oy + s * ty, s, s, c);
-        }
-    }
-    cv.rect(ox - 1, oy - 1, s * mw + 2, 1, INK);
-    cv.rect(ox - 1, oy + s * mh, s * mw + 2, 1, INK);
-    cv.rect(ox - 1, oy - 1, 1, s * mh + 2, INK);
-    cv.rect(ox + s * mw, oy - 1, 1, s * mh + 2, INK);
-}
-
 /// The enemies you will face: a window at (4, y) with each line's face, the army's emblem and the order they come in, the CO's name under them.
 fn enemies(cv: &mut Rgba<'_>, core: &Core, e: &Entry, y: i32) {
     let (x, w, h) = (4, W as i32 - 8, 56);
@@ -295,49 +441,6 @@ fn enemies(cv: &mut Rgba<'_>, core: &Core, e: &Entry, y: i32) {
         let name = fit(core, &crate::online_teams::co_label(core, co), slot - 3);
         cv.text(core, sx, y + 42, &name, INK, SHADE);
     }
-}
-
-fn selector(cv: &mut Rgba<'_>, core: &Core, entries: &[Entry], cursor: usize) {
-    let cursor = cursor.min(entries.len().saturating_sub(1));
-    header(cv, core, "Select Map", "A: Choose  B: Back");
-    // The list: three rows, scrolled so the cursor shows.
-    let (lx, ly, lw, lh) = (4, 22, 104, 40);
-    cv.window(lx, ly, lw, lh);
-    let first = cursor.saturating_sub(2).min(entries.len().saturating_sub(3));
-    for (row, e) in entries.iter().enumerate().skip(first).take(3) {
-        let ry = ly + 3 + 12 * (row - first) as i32;
-        if row == cursor {
-            cv.rect(lx + 4, ry, lw - 8, 12, YELLOW);
-        }
-        let t = fit(core, e.title, lw - 22);
-        cv.text(core, lx + 8, ry + 1, &t, INK, SHADE);
-    }
-    if first > 0 {
-        cv.text(core, lx + lw - 12, ly + 3, "^", GRAY_INK, SHADE);
-    }
-    if first + 3 < entries.len() {
-        cv.text(core, lx + lw - 12, ly + lh - 14, "v", GRAY_INK, SHADE);
-    }
-    let Some(e) = entries.get(cursor) else { return };
-    // The best result.
-    let (bx, by, bw, bh) = (4, 64, 104, 34);
-    cv.window(bx, by, bw, bh);
-    match crate::gauntlet::best(core, e.mission as u8) {
-        Some(b) => {
-            cv.text(core, bx + 6, by + 4, &format!("Best {} pts", b.score), INK, SHADE);
-            let co = fit(core, &crate::online_teams::co_label(core, b.co), bw - 12 - online::text_width(core, &format!(", {} days", b.days)));
-            cv.text(core, bx + 6, by + 17, &format!("{co}, {} days", b.days), GRAY_INK, SHADE);
-        }
-        None => {
-            cv.text(core, bx + 6, by + 4, "Best", INK, SHADE);
-            cv.text(core, bx + 6, by + 17, "No record yet", GRAY_INK, SHADE);
-        }
-    }
-    // The map.
-    let (px, py, pw, ph) = (112, 22, W as i32 - 116, 76);
-    cv.window(px, py, pw, ph);
-    minimap(cv, core, e, (px + 4, py + 4, pw - 8, ph - 8));
-    enemies(cv, core, e, 100);
 }
 
 fn colour_pick(cv: &mut Rgba<'_>, core: &Core, e: &Entry, cursor: usize, co: u8) {
@@ -382,25 +485,17 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
     if s == 0 || !crate::gauntlet::session(core) {
         return false;
     }
+    // (the map selector is the game's own screen: nothing is drawn over it)
+    if s != COLOUR {
+        return false;
+    }
     let mut cv = Rgba(rgba);
     cv.rect(0, 0, W as i32, online::H as i32, SEA);
-    match s {
-        SELECT => selector(&mut cv, core, gm::entries(), core.raw_read_8(MAP_CURSOR, -1) as usize),
-        _ => {
-            if let Some(e) = picked(core) {
-                // (the CO screen's pick list outlives the screen: its first entry is the player's CO)
-                colour_pick(&mut cv, core, e, core.raw_read_8(COLOUR_CURSOR, -1) as usize, core.raw_read_8(CO_PICKS, -1));
-            }
-        }
+    if let Some(e) = picked(core) {
+        // (the CO screen's pick list outlives the screen: its first entry is the player's CO)
+        colour_pick(&mut cv, core, e, core.raw_read_8(COLOUR_CURSOR, -1) as usize, core.raw_read_8(CO_PICKS, -1));
     }
     true
-}
-
-/// The selector's picture of `entries` with the cursor on `cursor` (the text audit's page: any entries, whether or not a session is up).
-pub fn paint_selector(core: &Core, rgba: &mut [u8], entries: &[Entry], cursor: usize) {
-    let mut cv = Rgba(rgba);
-    cv.rect(0, 0, W as i32, online::H as i32, SEA);
-    selector(&mut cv, core, entries, cursor);
 }
 
 /// The colour pick's picture for map `e` (the text audit's page).

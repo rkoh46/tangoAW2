@@ -328,6 +328,8 @@ pub const IS_FLAG: u32 = 0x0803_CBD8;
 const SLOT_WRITER: u32 = 0x0801_A7D8;
 /// The CO select screen (War Room's, also the campaign's).
 const CO_SELECT_PROC: u32 = 0x0861_65C0;
+/// The War Room's SELECT MAP proc (the Gauntlet's map selector is this screen).
+const SELECT_MAP_PROC: u32 = 0x0861_6C54;
 /// Its lists: CO ids (u8, by group), each group's count and country (u8),
 /// the group count (u32), and each group's "may switch" flag (u32 x 5).
 const CO_LIST: u32 = 0x0300_58E0;
@@ -360,6 +362,8 @@ pub const FLOW_PICK_ANSWER: u8 = 14;
 pub const FLOW_PICK_AGAIN: u8 = 15;
 /// Narration picture n (crate::ds_story_art::NARRATION) on the map's layer.
 pub const FLOW_PICTURE: u8 = 16;
+/// The Gauntlet's map selector (the War Room's own SELECT MAP, [`crate::gauntlet_ui`]) has ended: which map, or B.
+pub const FLOW_PICK_CHOSEN: u8 = 17;
 
 /// AW2's own prologue (a child proc of its New: the PROLOGUE card over the Black Hole map, its song 425, then an event script, then the fade-out):
 /// its script, and the literal-pool word where its step `0x0808A844` takes the event script from (AW2's own prologue, Sturm and Hawke, `0x084A0D58`).
@@ -589,14 +593,19 @@ const MAIN_MENU_PROC: u32 = 0x0849_E7F8;
 /// the proc goes on); the CO screen (a child: B answers 0 and the proc comes round again, to the selector); the colour pick (B: round again, to the CO screen); the progress saved
 /// (the colour is kept for Continue), BG0 emptied, `ResetRulesAfterCampaignMap`, then AW2's mission proc (the mission card, the battle) as the campaign's world map ends in.
 #[allow(clippy::too_many_arguments)]
-fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32, save: u32, flows: [u32; 5]) -> Vec<u8> {
+fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32, save: u32, flows: [u32; 6]) -> Vec<u8> {
     const BACK: i16 = 100;
     const AGAIN: i16 = 101;
-    let [select, colour, up, answer, again] = flows;
+    const SKIP: i16 = 102;
+    let [select, colour, up, answer, again, chosen] = flows;
     [
         proc_cmd(0x1D, 0x1E, 0),
         proc_cmd(0x02, 0, select),
-        proc_cmd(0x14, 0, up),
+        // (coming back from the colour pick's B: the CO screen follows at once, no selector)
+        proc_cmd(0x28, SKIP, up),
+        proc_cmd(0x06, 1, SELECT_MAP_PROC),
+        proc_cmd(0x02, 0, chosen),
+        proc_cmd(0x0B, SKIP, 0),
         proc_cmd(0x28, BACK, answer),
         proc_cmd(0x02, 0, co_setup),
         proc_cmd(0x06, 1, CO_SELECT_PROC),
@@ -755,7 +764,7 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let ending = built.add(&ending_script(credits_start, credits_running));
             let help = DIFFICULTY_HELP.map(|t| built.add(&[t.as_bytes(), &[0]].concat()));
             let returning = built.add_magic(data::Magic::Flow(FLOW_RETURNING));
-            let flows = [FLOW_PICK_SELECT, FLOW_PICK_COLOUR, FLOW_PICK_UP, FLOW_PICK_ANSWER, FLOW_PICK_AGAIN].map(|f| built.add_magic(data::Magic::Flow(f)));
+            let flows = [FLOW_PICK_SELECT, FLOW_PICK_COLOUR, FLOW_PICK_UP, FLOW_PICK_ANSWER, FLOW_PICK_AGAIN, FLOW_PICK_CHOSEN].map(|f| built.add_magic(data::Magic::Flow(f)));
             let gauntlet_start = built.add(&gauntlet_start_script(co_setup, clear, returning, save, flows));
             let gauntlet_end = built.add(&gauntlet_end_script(save));
             assert!(built.base + (built.blob.len() as u32) < DATA_END);
@@ -939,6 +948,16 @@ pub fn write_header(core: &mut Core, header: &[u8; 0x5C]) {
     if let Some(table) = big_table(core) {
         core.raw_write_range(table + ENTRY * data::MAP_ID as u32, -1, header);
     }
+}
+
+/// The compiled header of the Gauntlet's mission `m` (what the map selector's table entry for it holds).
+pub fn mission_header(core: &Core, m: usize) -> Option<[u8; 0x5C]> {
+    campaign(core)?.model.built.headers.iter().find(|h| h.0 as usize == m).map(|h| h.1)
+}
+
+/// The table the map selector's entries are in (Survival's larger copy), when it is the one in use.
+pub fn selector_table(core: &Core) -> Option<u32> {
+    big_table(core)
 }
 
 pub fn mission(core: &Core) -> u8 {
@@ -2123,6 +2142,10 @@ fn landing(core: &mut Core) {
         }
         Some(data::Magic::Flow(FLOW_PICK_COLOUR)) => {
             crate::gauntlet_ui::begin_colour(core);
+            0
+        }
+        Some(data::Magic::Flow(FLOW_PICK_CHOSEN)) => {
+            crate::gauntlet_ui::chosen(core);
             0
         }
         Some(data::Magic::Flow(FLOW_PICK_UP)) => crate::gauntlet_ui::up(core) as u32,
