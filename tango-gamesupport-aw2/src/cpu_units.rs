@@ -287,7 +287,10 @@ pub(crate) fn drift(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> O
     }
     let gap = |i: usize| {
         let (x, y) = xy(b, i);
-        foes.iter().map(|&(fx, fy)| (fx - x).abs() + (fy - y).abs()).min().unwrap_or(0)
+        foes.iter()
+            .map(|&(fx, fy)| (fx - x).abs() + (fy - y).abs())
+            .min()
+            .unwrap_or(0)
     };
     let pick = g
         .cells
