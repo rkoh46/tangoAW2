@@ -304,6 +304,21 @@ def quantise(nat, fg, pal, match="lab"):
     return np.where(fg, idx, 0).astype(np.uint8)
 
 
+def keep_off(idx, nat, pal, rules, match="luma"):
+    """`keep_off = [[x0, y0, x1, y1, [r, g, b], ...], ...]` (native cells, inclusive): inside the box the palette colours nearest to each [r, g, b] are not used; their
+    cells take the nearest of the others (Caulder's glove: its light grey knuckle highlights fell on the coat's whites and read as background left between the fingers)."""
+    out = idx.copy()
+    P = np.array(pal, float)
+    for x0, y0, x1, y1, *cols in rules:
+        banned = {int(((P - np.array(rgb, float)) ** 2).sum(1).argmin()) + 1 for rgb in cols}
+        rest = [i for i in range(len(pal)) if i + 1 not in banned]
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if out[y, x] in banned:
+                    out[y, x] = rest[int(((P[rest] - nat[y, x]) ** 2).sum(1).argmin())] + 1
+    return out
+
+
 def ring(fg, idx, sides=(True, True, True, True), diagonal=False):
     """The outline (index 15) one native cell wide around the figure, on the sides given (left, right, top, bottom)."""
     out = idx.copy()
@@ -427,6 +442,7 @@ def styled(spec, path):
     protect = [np.mean([nat[y + P, x + P] for x, y in grp], axis=0) for grp in spec.get("protect", [])]
     pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))), protect=protect, dark_k=int(spec.get("dark_ramp", 0)), dark_l=float(spec.get("dark_ramp_l", 35.0)), dark_c=float(spec.get("dark_ramp_c", 14.0)))
     full = quantise(nat, fg, pal[:14], spec.get("match", "luma"))      # art repal hook: the framing file's `match`
+    full = keep_off(full, nat, pal[:14], [[r[0] + P, r[1] + P, r[2] + P, r[3] + P, *r[4:]] for r in spec.get("keep_off", ())], spec.get("match", "luma"))
     if spec.get("despeckle"):
         full = despeckle_dark(full, pal[:14], int(spec["despeckle"]))
     full = ring(fg, full, diagonal=bool(spec.get("outline_diagonal")))

@@ -11,3 +11,8 @@ hole_min = 20
 hole_tolerance = 8
 max_specks = 2400
 max_face_specks = 520
+# colours matched by plain RGB distance (option C of three, the owner's pick): the coat's coloured pattern keeps fewer beige blotches
+match = "rgb"
+# the raised hand's light grey knuckle highlights, which RGB matching put on the coat's near-white (they read as white left between the fingers, the owner's report):
+# inside the hand they take the nearest of the other colours
+keep_off = [[29, 14, 50, 56, [239, 239, 247], [206, 206, 230], [206, 197, 189], [165, 173, 197], [132, 132, 165]]]
