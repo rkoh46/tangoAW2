@@ -7,12 +7,15 @@ keeps occupied like that cannot build either, which is what the player saw (a na
 return the snapshots; tests/test_cpu_port_idle.py makes one test per mission and map from the real lists.
 
 What is exempt (each unit is listed with its reason in the test's log):
-- a unit that cannot move: no fuel, or every cell it could step to (the game's own movement chart, its CO's, with the move points it has) is taken by a unit
-  (detected from the snapshot, never a hand-written list);
+- a unit that cannot get off: no fuel, or every cell it could step to (the game's own movement chart, its CO's, with the move points it has) is taken by a unit or is a base, port
+  or airport of its team (moving there only moves the blocking), detected from the snapshot, never a hand-written list;
 - a unit riding in a transport (it is off the map);
 - a unit on a tile that is not its team's in both snapshots (a soldier capturing the base is on its way to owning it);
 - a damaged unit that the property healed over the turn (hit points below 100 and up since the snapshot before): the CPU leaves a unit on a property to be
   repaired, which ends when it is whole (five turns at most), so it is a stay with a reason, not an idle unit;
+- a foot soldier standing on a building that was not its team's one snapshot earlier (it finished capturing it during the turn before: AW2's soldier rests the turn after a capture);
+- a unit of an army whose HQ is under capture at the end of the turn (an enemy unit stands on it): the computer then defends the HQ with whatever it has, whatever the units' orders;
+- a unit in a fight over the turn (it lost hit points, or an enemy unit of another team stands within two cells at its end): it fires from, or holds, its building;
 - with `scripted=True` (the campaigns' missions): a unit that was on the map in the first snapshot with role byte 0, a mission's scripted hold (the deployment's AI byte 0,
   `UnitDef::stand` / `freeze`: the designer's garrisons and camps, tests/test_bh_cpuai.py's DESIGNED_CAMPS): the engine never moves it by design. A unit built or
   spawned later with role 0 is not exempt."""
@@ -60,8 +63,14 @@ def snapshot(ctx, e, g):
     return s
 
 
+def own_production(s, cell, army):
+    """A base, port or airport of the army's team (a cell that moving onto would only move the blocking)."""
+    k = s["props"].get(cell)
+    return bool(k and k[0] in PRODUCTION and k[1] and s["team"][k[1]] == s["team"][army])
+
+
 def can_move(s, u):
-    """The unit can step to some free cell now: fuel left and a cell reached by the game's own movement chart (its army's CO), enemy units blocking it, friends not."""
+    """The unit can step off to some free cell that is not itself a building of its team's: fuel left and a cell reached by the game's own movement chart (its army's CO), enemy units blocking it, friends not."""
     if u["fuel"] <= 0:
         return False
     import heapq
@@ -93,7 +102,7 @@ def can_move(s, u):
             if c + step < best.get(n, 99):
                 best[n] = c + step
                 heapq.heappush(q, (c + step, n))
-                if o is None:
+                if o is None and not own_production(s, n, u["army"]):
                     return True
     return False
 
@@ -103,12 +112,34 @@ def cpu_armies(s):
     return {a for a, c in s["ctrl"].items() if c == 2}
 
 
+def hq_under_capture(s, army):
+    """An enemy unit (another team's) stands on a headquarters of `army`'s team in snapshot `s`."""
+    foes = {(u["x"], u["y"]) for u in s["units"].values() if not u["on"] and s["team"][u["army"]] != s["team"][army]}
+    return any(kind == 8 and owner and s["team"][owner] == s["team"][army] and cell in foes for cell, (kind, owner) in s["props"].items())
+
+
+def owned_by_team(s, cell, army):
+    k = s["props"].get(cell)
+    return bool(k and k[1] and s["team"][k[1]] == s["team"][army])
+
+
+def turn_between(a, b, army):
+    """The army played between snapshots `a` and `b`: its funds changed (income, purchases) or one of its units moved or was loaded or unloaded (not hit points, a unit that vanished
+    or one that appeared: an enemy or a mission's script does those). The player's turn start does not fall between every army's turns in every mission (Silver Nova's M16 shows two turns of one army and none of the other between
+    two snapshots), so a pair of snapshots only counts for an army that played in it."""
+    if a["funds"].get(army) != b["funds"].get(army):
+        return True
+    mine = lambda s: {i: (u["x"], u["y"], u["on"]) for i, u in s["units"].items() if u["army"] == army}
+    ma, mb = mine(a), mine(b)
+    return any(i in ma and ma[i] != v for i, v in mb.items())      # (a unit that vanished may have been shot, one that appeared may be a mission's reinforcement)
+
+
 def check(snaps, scripted=False):
     """The rule on the player's turn-start snapshots: (violations, exempt). Each is a list of dicts (day, army, type, cell, kind, role, why)."""
     bad, exempt = [], []
     pairs = 0
-    for a, b in zip(snaps, snaps[1:]):
-        cpu = cpu_armies(a) & cpu_armies(b)
+    for n, (a, b) in enumerate(zip(snaps, snaps[1:])):
+        cpu = {x for x in cpu_armies(a) & cpu_armies(b) if turn_between(a, b, x)}
         for i, u in b["units"].items():
             v = a["units"].get(i)
             if v is None or u["on"] or v["on"] or u["army"] not in cpu or v["army"] != u["army"] or v["type"] != u["type"]:
@@ -130,8 +161,15 @@ def check(snaps, scripted=False):
                 exempt.append(dict(rec, why="the mission's own scripted hold (a unit deployed with role 0)"))
             elif v["hp"] < 100 and u["hp"] > v["hp"]:
                 exempt.append(dict(rec, why="being repaired (damaged, and the property healed it this turn)"))
+            elif u["type"] in (1, 2) and n > 0 and not owned_by_team(snaps[n - 1], cell, u["army"]):
+                exempt.append(dict(rec, why="a foot soldier on the building it captured before the turn: it rests the turn after its capture completes"))
+            elif hq_under_capture(b, u["army"]):
+                exempt.append(dict(rec, why="its army's HQ is under capture (an enemy unit stands on it): the army defends the HQ whatever the orders (crate::cpu_defend)"))
+            elif u["hp"] < v["hp"] or any(abs(o["x"] - u["x"]) + abs(o["y"] - u["y"]) <= 2 and not o["on"] and b["team"][o["army"]] != b["team"][u["army"]]
+                                          for o in b["units"].values()):
+                exempt.append(dict(rec, why="in a fight (it lost hit points, or an enemy stands within two cells): it holds its building"))
             elif not (can_move(a, v) and can_move(b, u)):
-                exempt.append(dict(rec, why="cannot move (no fuel or boxed in)"))
+                exempt.append(dict(rec, why="cannot get off (no fuel, boxed in, or only other buildings of its team within its move)"))
             else:
                 bad.append(rec)
     return bad, exempt
@@ -179,20 +217,24 @@ def passive(ctx, e, g, d, label, days, snap, front=None, over=None, end=None):
         d0 = e.u16(DAY)
         ok = False
         fails = 0
-        for _ in range(400):
+        for _ in range(3000):      # (a five-army map's computer turns take about ten thousand frames each)
             if e.u8(dc.LAST_RESULT) or (over and over()):
                 break
             army = e.u8(bot.CURRENT_ARMY)
             if e.u16(DAY) > d0 and army in me and d.in_battle() and not d.scripts_running():
                 try:
                     d.wait_control()
+                    g.wait_for_input()          # (idle: no AI proc running, and the cursor answers the pad: the cursor also moves by itself while a computer army plays)
                 except NavError:
-                    break
+                    e.wait(60)
+                    continue
+                if e.u8(bot.CURRENT_ARMY) not in me:
+                    continue
                 ok = True
                 break
             if e.u16(DAY) == d0 and army in me and d.in_battle() and not d.scripts_running():
                 try:
-                    (end or a2.end_turn)(e, g, d)
+                    (end or end_turn_orders)(e, g, d)
                 except NavError as ex:
                     ctx.log(f"{label}: end turn day {d0}: {ex}")
                     fails += 1
@@ -350,7 +392,61 @@ def run_gauntlet(ctx, map=0, days=DAYS):
     return e, g, passive(ctx, e, g, d, f"Gauntlet map {map}", days, snap_fn(ctx, e, g))
 
 
-AW2_CAMPAIGN_MISSIONS = 20      # AW2's mission table (0x08615194): maps 0x8A..0x9D, the order the world map opens them in
+AW2_CAMPAIGN_MISSIONS = 28      # the world map has 28 mission flags (dscampaign.WM_STATE+0x12): one test for the k-th mission played, as many as the campaign has
+
+
+def yield_win(e, g, d):
+    """A mission `force_win` cannot win (no free cell beside an enemy it can reach): every computer army yields (the player flag +0x31 the War Room's win uses) and the turn ends."""
+    base = e.u32(bot.PLAYERS_PTR)
+    for a in range(2, 5):
+        if e.u8(base + 0x3C * a + 0x1B):
+            e.w8(base + 0x3C * a + 0x31, 1)
+    end_turn_orders(e, g, d)
+    for _ in range(400):
+        e.wait(30)
+        if d.world_map_up():
+            break
+        if d.scripts_running() or not d.in_battle():
+            e.press("A", 4)
+
+
+AW2_MISSION_TABLE = 0x08615194     # AW2's mission records, 0x30 each: +6 and +8 the mission's place on the world map
+
+
+def aw2_open_next(e, d):
+    """On AW2's world map: the lowest-numbered open mission (flag 1) picked. The map's cursor roams freely (campaigns.aw2_next_mission steps it with RIGHT and loses it where
+    several missions are open at once), so the cursor is put on the mission's place by writing the map's state, as aw2test.bh2campaign does for its secret mission; A, the panel, A."""
+    from . import campaigns as cmp
+    m = None
+    for _ in range(60):            # (the story after a win may still be playing: A through it)
+        flags = d.map_flags()
+        m = next((i for i, f in enumerate(flags) if f & 1 and not f & 2), None)       # (bit 0 open, bit 1 cleared; 0x20 marks a new one)
+        if m is not None and d.world_map_up():
+            break
+        e.press("A", 4)
+        e.wait(40)
+    if m is None:
+        raise NavError(f"no open mission on AW2's world map (flags {d.map_flags()})")
+    x, y = e.u16(AW2_MISSION_TABLE + 0x30 * m + 6), e.u16(AW2_MISSION_TABLE + 0x30 * m + 8)
+    cam_x, cam_y = min(max(x - 120, 0), 16), min(max(y - 80, 0), 96)
+    e.w16(dc.WM_STATE, cam_x)
+    e.w16(dc.WM_STATE + 2, cam_y)
+    e.w16(dc.WM_STATE + 4, x - cam_x)
+    e.w16(dc.WM_STATE + 6, y - cam_y)
+    e.w32(dc.WM_STATE + 0x0C, m)
+    e.wait(60)
+    for _ in range(10):
+        e.press("A", 6)
+        if e.wait_until(lambda: d.proc_fn_running(dc.WM_INFO_LOOP), 120, step=5):
+            break
+    else:
+        raise NavError(f"AW2's panel of mission {m} did not open")
+    for _ in range(12):
+        e.wait(30)
+        e.press("A", 6)
+        if not d.proc_fn_running(dc.WM_INFO_LOOP) and not d.world_map_up():
+            break
+    cmp.to_first_battle(e, d)
 
 
 def run_aw2_campaign(ctx, k, days=DAYS):
@@ -365,39 +461,52 @@ def run_aw2_campaign(ctx, k, days=DAYS):
     d = dc.DsCampaign(g)
     cmp.aw2_new(e, d, ctx.ds)
     for _ in range(k):
-        cmp.win_here(e, d)
+        try:
+            cmp.win_here(e, d)
+        except NavError:
+            yield_win(e, g, d)
         cmp.through_to_map(e, d)
-        cmp.aw2_next_mission(e, d)
+        aw2_open_next(e, d)
     g._units_base = g._players_base = None
-    return e, g, passive(ctx, e, g, d, f"AW2 campaign mission {k + 1}", days, snap_fn(ctx, e, g), end=end_turn_aw2)
+    return e, g, passive(ctx, e, g, d, f"AW2 campaign mission {k + 1} (map {d.map_id():#x})", days, snap_fn(ctx, e, g), end=end_turn_orders)
 
 
-def end_turn_aw2(e, g, d):
-    """End turn in AW2's own campaign, whose first missions answer End with "Things will only get worse if you select End now. Please give orders to all your units": then
-    every unit of the army is given Wait and End is chosen again."""
+def dismiss(e, d, tries=12):
+    """A through the dialogue box on screen (an A with none would open the map menu: only while text is shown)."""
+    for _ in range(tries):
+        if not (d.text_shown() or ""):
+            return
+        e.press("A", 4)
+        e.wait(40)
+
+
+def end_turn_orders(e, g, d):
+    """End turn. The tutorial missions (AW2's first, Dual Strike's Jake's Trial and its next few) refuse End while a unit awaits orders ("Things will only get worse if you select End now",
+    "You still have units awaiting orders", "Jake! You haven't given orders to all of your units yet"): then every unit of the army is given Wait (a lesson's dialogue answered with A) and End is chosen again."""
     from . import bhact2 as a2
     army = g.current_army()
     a2.end_turn(e, g, d)
     e.wait(150)
     t = d.text_shown() or ""
-    if "give orders" in t or "select End" in t:
-        for _ in range(20):
-            if (d.text_shown() or "") == "":
-                break
-            e.press("A", 4)
-            e.wait(40)
-        for _ in range(4):               # (an A after the box has closed opens the map menu: B closes it)
-            if g.menu():
-                e.press("B", 4)
-                e.wait(30)
-        g.wait_for_input()
-        for u in g.units(army=army):
+    if not t or g.current_army() != army:       # (End went through: the next army has the turn)
+        return
+    dismiss(e, d)
+    for _ in range(4):               # (the map menu stays open after the box: B closes it)
+        if g.menu():
+            e.press("B", 4)
+            e.wait(30)
+    for u in g.units(army=army):
+        for attempt in range(4):
             try:
                 g.wait_unit(u["x"], u["y"])
+                break
             except NavError:
-                e.press("B", 4)
-                e.wait(20)
-        a2.end_turn(e, g, d)
+                dismiss(e, d)
+                for _ in range(2):
+                    e.press("B", 4)
+                    e.wait(30)
+    dismiss(e, d)
+    a2.end_turn(e, g, d)
 
 
 def run_warroom(ctx, row, days=DAYS):

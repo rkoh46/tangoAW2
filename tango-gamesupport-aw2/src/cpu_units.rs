@@ -39,10 +39,13 @@ pub(crate) fn plan(core: &mut Core, rec: u32) -> Option<(i32, i32)> {
     let t = core.raw_read_8(rec, -1);
     // (a foot soldier that needs the Black Boat's ferry walks to its beach, crate::cpu_ferry)
     if matches!(t, INFANTRY | MECH) {
-        return crate::cpu_ferry::plan_foot(core, rec);
+        return crate::cpu_ferry::plan_foot(core, rec).or_else(|| parked_leave(core, rec, army, t));
     }
-    if !matches!(t, BLACK_BOAT | LANDER)
-        || core.raw_read_8(rec + 1, -1) & 1 != 0
+    if !matches!(t, BLACK_BOAT | LANDER) {
+        // (the other units: AW2's moves leave one parked on its building when its enemy is far or its logic has nothing for it)
+        return (!matches!(t, STEALTH | BLACK_BOMB | OOZIUM | PIPERUNNER | APC | T_COPTER)).then(|| parked_leave(core, rec, army, t)).flatten();
+    }
+    if core.raw_read_8(rec + 1, -1) & 1 != 0
         || !in_scope(core, army, OFF_MOVE)
         || crate::custom_campaign::driven_goal(core, rec).is_some()
     {
@@ -63,11 +66,163 @@ pub(crate) fn plan(core: &mut Core, rec: u32) -> Option<(i32, i32)> {
     {
         return None;
     }
-    let (cell, note) = boat(core, &b, army, &u, roll)?;
+    let (cell, note) = boat(core, &b, army, &u, roll).or_else(|| step_off(core, &b, army, &u, roll))?;
     if logging() {
         log(&format!("dsai move day {} army {army} {note}", b.day));
     }
     ((cell.0, cell.1) != (u.x, u.y)).then_some(cell)
+}
+
+/// A unit of a type that stands on a base, port or airport of its team and is not there to be repaired (hit points under 91 on the kind of property that repairs it: a base repairs
+/// ground units, a port ships, an airport aircraft): it is parked on the building, and keeps its owner from building there.
+pub(crate) fn parked(b: &Board, army: u32, u: &Unit) -> bool {
+    let i = b.idx(u.x, u.y);
+    if !on_production(b, army, i) {
+        return false;
+    }
+    let group = stats(u.t).group;
+    let heals = match b.class[i] {
+        C_PORT => group & SEA != 0,
+        C_AIRPORT => group & AIR != 0,
+        _ => group & (SEA | AIR) == 0,
+    };
+    !(heals && u.hp < 91)
+}
+
+pub(crate) fn on_production_cell(b: &Board, army: u32, c: (i32, i32)) -> bool {
+    on_production(b, army, b.idx(c.0, c.1))
+}
+
+/// A unit AW2's own move would leave where it stands, parked on a base, port or airport of its team ([`parked`]): the move of Dual Strike's advance
+/// ([`crate::ds_ai_move::choose`], its target by its order) when that gets it off the building, else a drift towards the nearest enemy over the safe cells.
+/// (AW2's role 4 moves an indirect unit only when an enemy is near: a Battleship built in a port of a map with no enemy in reach sat in it for good.)
+pub(crate) fn leave(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll: u32) -> Option<((i32, i32), String)> {
+    let here = (u.x, u.y);
+    if let Some((c, note)) = crate::ds_ai_move::choose(core, b, army, u, role, roll) {
+        if c != here && !on_production_cell(b, army, c) {
+            return Some((c, note));
+        }
+    }
+    if let Some((c, note)) = drift(core, b, army, u, roll) {
+        if c != here && !on_production_cell(b, army, c) {
+            return Some((c, note));
+        }
+    }
+    step_off(core, b, army, u, roll)
+}
+
+/// The last resort of [`leave`] (and the way a guard of its HQ, role 7, makes room): the nearest cell the unit can reach that is safe for it and is not a base, port or airport of its team.
+pub(crate) fn step_off(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32, i32), String)> {
+    let here = b.idx(u.x, u.y);
+    let near = |i: usize| {
+        let (x, y) = xy(b, i);
+        (x - u.x).abs() + (y - u.y).abs()
+    };
+    let pick = if let Some(g) = Ground::new(core, b, army, u, roll) {
+        g.cells
+            .iter()
+            .copied()
+            .filter(|&i| i != g.here && g.safe(i) && !on_production(b, army, i))
+            .min_by_key(|&i| (near(i), g.danger(i), i))?
+    } else {
+        // (an army whose CO has no profile has no threat limits: any free cell it can reach)
+        let fuel = (core.raw_read_8(u.rec + 6, -1) & 0x7F) as i32;
+        let reach = b.flood(army, u.t, u.x, u.y, b.moves(army, u.t).min(fuel), false);
+        (0..reach.len())
+            .filter(|&i| reach[i] >= 0 && i != here && b.at[i] == 0 && !on_production(b, army, i))
+            .min_by_key(|&i| (near(i), i))?
+    };
+    let (x, y) = xy(b, pick);
+    Some((
+        (x, y),
+        format!(
+            "{} at ({},{}): ({x},{y}) steps off the building",
+            crate::bh_smart::NAMES[u.t as usize % 28],
+            u.x,
+            u.y
+        ),
+    ))
+}
+
+/// A unit on a base, port or airport of its team that AW2's own logic would leave there for the turn (a soldier built last turn waits behind the one that takes the nearest property or
+/// has no property to walk to; an indirect gun or a ship moves only when an enemy is near): it is taken off the building ([`leave`]; a guard of its HQ, role 7, only steps aside, [`step_off`]).
+/// Not when an enemy it can hurt is within its reach (AW2's attack check decides), not a garrison (role 0), a march, a unit that has acted, one being repaired.
+fn parked_leave(core: &mut Core, rec: u32, army: u32, t: u8) -> Option<(i32, i32)> {
+    let role = core.raw_read_8(rec + 0x0B, -1);
+    if !matches!(role, 1..=5 | 7)
+        || core.raw_read_8(rec + 1, -1) & 1 != 0
+        || !in_scope(core, army, OFF_MOVE)
+        || crate::custom_campaign::driven_goal(core, rec).is_some()
+        || behaviour(core, army) == DEFENSE
+    {
+        return None;
+    }
+    let b = Board::read(core);
+    let u = b.units.iter().find(|u| u.rec == rec).copied()?;
+    if u.army != army || u.carried() || !parked(&b, army, &u) {
+        return None;
+    }
+    // (an enemy it can hurt within its reach: an indirect unit fires without moving, within its range; any other moves and fires, so its move and one)
+    let reach = if attack(t) == Attack::Indirect { b.max_range(army, t) } else { b.moves(army, t) + 1 };
+    if b.units.iter().any(|e| {
+        !e.carried()
+            && !b.same_team(e.army, army)
+            && (e.x - u.x).abs() + (e.y - u.y).abs() <= reach
+            && base_damage(t, if e.t == SUB && e.flags & 0x20 != 0 { crate::roster::DIVED_SUB } else { e.t }) > 0
+    }) {
+        return None;
+    }
+    let roll = profile_roll(core, army);
+    let (cell, note) = if role == 7 {
+        step_off(core, &b, army, &u, roll)?
+    } else {
+        leave(core, &b, army, &u, if matches!(role, 1 | 3 | 4) { role } else { 4 }, roll)?
+    };
+    if logging() {
+        log(&format!("dsai move day {} army {army} {note}", b.day));
+    }
+    Some(cell)
+}
+
+/// Before the army's production (Dual Strike's state 5, [`crate::ds_ai_build`]): a unit of the army that stands parked on a base, port or airport of its team ([`parked`]) after the unit
+/// queue has had its turn with it (AW2 plays an indirect gun or a leftover unit not at all while its enemy is far, and a soldier waits behind another) steps to the nearest safe cell off
+/// the building ([`step_off`]), in emulated RAM as the ferry's loads and drops are: a unit that would idle there for good frees the building, which then builds this turn. Not a garrison
+/// (role 0), a march, a transport waiting for cargo. A Defense army's units hold their ground ([`crate::ds_ai_move`]) but still make room: a building they sit on cannot build more defenders.
+pub(crate) fn sweep(core: &mut Core, army: u32) {
+    if !in_scope(core, army, OFF_MOVE) {
+        return;
+    }
+    let b = Board::read(core);
+    let roll = profile_roll(core, army);
+    let mut taken: Vec<usize> = Vec::new();
+    let mut moves: Vec<(u32, (i32, i32), String)> = Vec::new();
+    for u in b.units.iter().filter(|u| u.army == army && !u.carried()) {
+        if matches!(u.t, STEALTH | BLACK_BOMB | OOZIUM | PIPERUNNER | APC | T_COPTER) {
+            continue;
+        }
+        let role = core.raw_read_8(u.rec + 0x0B, -1);
+        if !matches!(role, 1..=5 | 7) || crate::custom_campaign::driven_goal(core, u.rec).is_some() || !parked(&b, army, u) {
+            continue;
+        }
+        let Some((cell, note)) = step_off(core, &b, army, u, roll) else { continue };
+        let i = b.idx(cell.0, cell.1);
+        if b.at[i] != 0 || taken.contains(&i) {
+            continue;
+        }
+        taken.push(i);
+        moves.push((u.rec, cell, note));
+    }
+    for (rec, (x, y), note) in moves {
+        let id = crate::cpu_ferry::id_of(core, rec);
+        let (ox, oy) = (core.raw_read_8(rec + 2, -1) as i32, core.raw_read_8(rec + 3, -1) as i32);
+        crate::cpu_ferry::set_cell(core, ox, oy, 0);
+        crate::cpu_ferry::set_cell(core, x, y, id as u8);
+        core.raw_write_8(rec + 2, -1, x as u8);
+        core.raw_write_8(rec + 3, -1, y as u8);
+        if logging() {
+            log(&format!("dsai move day {} army {army} {note} (before production)", b.day));
+        }
+    }
 }
 
 const NEIGHBOURS: [(i32, i32); 4] = [(0, -1), (1, 0), (0, 1), (-1, 0)];

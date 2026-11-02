@@ -7,6 +7,7 @@ import os
 
 from . import gauntlet as ga
 from . import paths
+from .ram import VS_MAP
 from .emu import Emu
 from .game import MAP_TAB, SELECT_MODE_CURSOR, SELECT_MODE_VERSUS, Game, NavError
 
@@ -95,13 +96,12 @@ def select(ctx, tab, row, want):
         e.press("DOWN", 8)
         e.wait(24)
     e.wait(60)
-    ids, at = _selector(e)
-    if ids[at] != want:
-        raise NavError(f"the cursor is on map {ids[at]:#x}, not {want:#x}")
     e.press("A", 8)
     if not e.wait_until(g.on_teams, 400, step=10):
         raise NavError("Teams screen did not open")
     e.wait(40)
+    if e.u8(VS_MAP) != want:
+        raise NavError(f"the Teams screen is for map {e.u8(VS_MAP):#x}, not {want:#x}")
     return g
 
 

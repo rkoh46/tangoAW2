@@ -394,12 +394,13 @@ pub fn role_move(core: &mut Core) -> bool {
     if !special && behaviour(core, army) == DEFENSE {
         return false;
     }
-    if !special
-        && (!matches!(role, 1 | 3 | 4)
-            || t <= MECH
-            || attack(t) != Attack::Direct
-            || crate::custom_campaign::driven_goal(core, rec).is_some())
-    {
+    let advancing = matches!(role, 1 | 3 | 4);
+    let driven = crate::custom_campaign::driven_goal(core, rec).is_some();
+    let plain = advancing && t > MECH && attack(t) == Attack::Direct && !driven;
+    // (a unit AW2 moves (an indirect gun, a ship, ...) is still taken off a base, port or airport of its team when it stands on one:
+    // [`crate::cpu_units::leave`], docs/dev/cpu-unit-use.md)
+    let backstop = !special && !plain && matches!(role, 1..=5 | 7) && !driven;
+    if !special && !plain && !backstop {
         return false;
     }
     let started = std::time::Instant::now();
@@ -408,10 +409,27 @@ pub fn role_move(core: &mut Core) -> bool {
     let Some(u) = b.units.iter().find(|u| u.rec == rec).copied() else {
         return false;
     };
+    let parked = crate::cpu_units::parked(&b, army, &u);
+    if backstop && !parked {
+        return false;
+    }
     let chosen = if special {
         crate::cpu_units::choose(core, &b, army, &u, role, roll)
+    } else if backstop {
+        if role == 7 {
+            // (a guard of its HQ keeps near it: it only makes room)
+            crate::cpu_units::step_off(core, &b, army, &u, roll)
+        } else {
+            crate::cpu_units::leave(core, &b, army, &u, if advancing { role } else { 4 }, roll)
+        }
     } else {
-        choose(core, &b, army, &u, role, roll)
+        let c = choose(core, &b, army, &u, role, roll);
+        // (a combat unit on a production tile that its own move would leave there, or nowhere: it is taken off)
+        if parked && c.as_ref().map_or(true, |c| c.0 == (u.x, u.y) || crate::cpu_units::on_production_cell(&b, army, c.0)) {
+            crate::cpu_units::leave(core, &b, army, &u, role, roll).or(c)
+        } else {
+            c
+        }
     };
     let Some((cell, note)) = chosen else {
         return false;

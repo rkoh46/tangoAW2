@@ -88,7 +88,7 @@ def snapshot(e, g, me):
     funds = {a: e.u32(pl + 0x3C * a) for a in range(1, 6)}
     team = {a: e.u8(pl + 0x3C * a + 0x2A) for a in range(1, 6)}
     units = {u["id"]: dict(army=u["army"], type=u["type"], x=u["x"], y=u["y"], hp=u["hp"], role=u["raw"][11],
-                           on=bool(u["flags"] & 0x08), fuel=u["fuel"]) for u in all_units(e, g)}
+                           on=bool(u["flags"] & 0x08), fuel=u["fuel"], flags=u["flags"]) for u in all_units(e, g)}
     return dict(day=e.u16(DAYADDR), props=props, funds=funds, team=team, units=units)
 
 

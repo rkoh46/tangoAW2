@@ -45,7 +45,7 @@ pub(crate) const LAUNCH_RANGE: i32 = 14;
 const FIT: i32 = 60;
 const NEEDS_LANDING: i32 = 40;
 
-fn id_of(core: &Core, rec: u32) -> u32 {
+pub(crate) fn id_of(core: &Core, rec: u32) -> u32 {
     (rec - core.raw_read_32(UNITS_POINTER, -1)) / UNIT
 }
 
@@ -53,7 +53,7 @@ fn rec_of(core: &Core, id: u32) -> u32 {
     core.raw_read_32(UNITS_POINTER, -1) + UNIT * id
 }
 
-fn set_cell(core: &mut Core, x: i32, y: i32, id: u8) {
+pub(crate) fn set_cell(core: &mut Core, x: i32, y: i32, id: u8) {
     let row = core.raw_read_16(ROWS + 2 * y as u32, -1) as u32;
     for plane in PLANES {
         core.raw_write_8(plane + row + x as u32, -1, id);

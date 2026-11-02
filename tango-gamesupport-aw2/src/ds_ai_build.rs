@@ -1776,6 +1776,8 @@ fn start(core: &mut Core) {
     if !in_scope(core, army, OFF_BUILD) {
         return;
     }
+    // (the units AW2's queue left parked on a building make room first, so the building can build this turn)
+    crate::cpu_units::sweep(core, army);
     let started = std::time::Instant::now();
     let (builds, notes) = plan(core, army);
     let n = builds.len().min(BUILDS_MAX as usize);

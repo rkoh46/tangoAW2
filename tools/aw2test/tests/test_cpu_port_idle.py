@@ -97,7 +97,8 @@ from aw2test import versusmaps as _vm
 def _versus(tab, row, mid):
     def fn(ctx):
         e, g, (snaps, _) = cpo.run_versus(ctx, tab, row, mid)
-        cpo.report(ctx, f"Versus map {mid:#x} (tab {tab}, row {row})", snaps)
+        # (scripted: a pre-deployed unit whose map data gives it role 0 is the map's own garrison, as a mission's)
+        cpo.report(ctx, f"Versus map {mid:#x} (tab {tab}, row {row})", snaps, scripted=True)
         e.close()
     fn.__name__ = f"cpu_port_idle_versus_{mid:02x}"
     test(modes=("ds",))(fn)
@@ -130,7 +131,7 @@ _design("five_armies", True)
 def _aw2_campaign(k):
     def fn(ctx):
         e, g, (snaps, _) = cpo.run_aw2_campaign(ctx, k)
-        cpo.report(ctx, f"AW2 campaign mission {k + 1}", snaps)
+        cpo.report(ctx, f"AW2 campaign mission {k + 1} (map {g.playst()['map']:#x})", snaps)
         e.close()
     fn.__name__ = f"cpu_port_idle_aw2campaign_m{k + 1:02d}"
     test(modes=("ds",))(fn)
