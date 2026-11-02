@@ -10,7 +10,7 @@ from aw2test import paths
 from aw2test.emu import Emu
 from aw2test.game import Game
 from aw2test.harness import Skip, test
-from aw2test.stitch import hide_hud
+from aw2test.stitch import hide_hud, stitch
 
 OUT = os.environ.get("AW2TEST_LANDERS_PICS")
 LOOK = os.environ.get("AW2TEST_LANDERS_LOOK", "aw2")
@@ -18,12 +18,19 @@ CINDER = [(15, 10), (15, 3), (16, 18)]
 CRYSTAL = [(14, 3), (15, 11), (4, 16), (26, 16)]
 
 
-def shoot(g, cells, tag):
+def shoot(ctx, g, cells, tag, size):
+    """Flat looks: the whole map stitched (<look>_<tag>_full.png); tilted: each islet centred and shot (the tilt is a host-side picture that cannot be stitched)."""
+    import shutil
     e = g.e
     os.makedirs(OUT, exist_ok=True)
+    if os.environ.get("TANGOAW2_TILT") != "1":
+        path = stitch(ctx, g, f"{tag}", *size)
+        if path:
+            shutil.copy(path, os.path.join(OUT, f"{LOOK}_{tag}_full.png"))
+        return
     for n, (x, y) in enumerate(cells):
         g.goto(x, y)
-        e.wait(90)
+        e.wait(240)
         hide_hud(e)
         p = os.path.join(OUT, f"{LOOK}_{tag}_{n}")
         e.shot(p)
@@ -39,7 +46,7 @@ def landers_pictures_cinder_sea(ctx):
     g = Game(e, ctx.image)
     ctx.games.append(g)
     ga.Gauntlet(g).start(ga.ARIA)
-    shoot(g, CINDER, "cinder")
+    shoot(ctx, g, CINDER, "cinder", (32, 22))
 
 
 @test(modes=("ds",))
@@ -58,4 +65,4 @@ def landers_pictures_crystal_isles(ctx):
     dm.to_teams(g)
     dm.start(ctx, g, humans=(1,))
     g.wait_for_input()
-    shoot(g, CRYSTAL, "crystal")
+    shoot(ctx, g, CRYSTAL, "crystal", (30, 26))

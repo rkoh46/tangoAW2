@@ -622,6 +622,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 41: Silver Nova no longer patches the windows' palette row (BG 8: `0x080D4188`, `0x08183C28`, `0x085AC8BC`): every window, menu and dialogue box is AW2's own look for the colour (army_skin::TABLES).
         // 43: Silver Nova, the army and its COs: the army's colours, chrome look and orb-topped HQ (army_skin, no plume), the HQ and emblem pictures, and the three COs Tabitha, Lili and Caulder in the Roman five's slots (new numbers; Firestorm 8 HP strike, Enigma random weather for two days with the immunity, Cataclysm heal 5, Sturm's movement for Caulder; slots 89 and 90 copy Lili and Caulder; Livia's funds, Testudo, Onager and Triumph gone).
         // 44: Silver Nova reads as silver metal (the ramp's steps come down, the trim, a moved unit is mid grey) and the capture box's HQ keeps the map tower's proportions: the ROM image's palettes and the box picture changed.
+        // 45: Gauntlet's Cinder Sea and Versus' Crystal Isles gain beach (shoal) cells on their islets so a Lander can land (RC05): the maps' terrain changed.
         crate::inspect::SIM_VERSION
     }
 
