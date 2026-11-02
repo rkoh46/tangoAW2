@@ -91,7 +91,7 @@ A campaign map is the player against the mission's enemies, never mirrored, but 
   airport, a com tower, a silo).
 - **Terrain:** plain at most 53% of the land (aim 35 to 45%), woods 10-15%, mountains 6-12% (ranges, not walls), roads 12-16%.
 - **Rivers** reach the edge, the sea or a lake at both ends (RV05) and have a bridge or ford at least every 10 cells.
-- **Beaches** long on every landing coast (40% or more shoal); ports only on navigable sea (PT01).
+- **Beaches** long on every landing coast (40% or more shoal); ports only on navigable sea (PT01). **Every island of a naval map needs a beach** a Lander can reach from the main sea and unload onto (RC05, the owner's permanent rule: a ring of cliff coast means no landing).
 - **Safety:** an enemy infantry needs two or more days to reach the player's base or HQ (and no enemy foot soldier starts within a day of them).
 - **Room** (SP01): units per vehicle cell .12 or less.
 

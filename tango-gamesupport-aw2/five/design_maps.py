@@ -266,6 +266,8 @@ for x, y in [(14, 3), (4, 16), (26, 16), (15, 11)]:
                 g[y + dy][x + dx] = '.'
     g[y][x] = 'c'
 g[4][15] = 'a'
+for x, y in [(12, 3), (16, 3), (13, 11), (17, 11), (6, 16), (24, 16)]:
+    g[y][x] = ','             # a beach on each islet's lane side: a Lander lands Infantry there (RC05)
 obelisk(g, 12, 19)              # Black Hole is army 3 (colour 5)
 g[16][13] = 'X'; g[22][18] = 'X'
 g[19][19] = 'E'                 # a real minicannon, facing east

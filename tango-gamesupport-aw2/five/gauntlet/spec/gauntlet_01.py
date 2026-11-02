@@ -32,6 +32,8 @@ def build():
     m.rect(".", 13, 9, 17, 11).put("~", 13, 11).put("~", 17, 9)   # the middle islet: a city, a Com Tower, a wood
     m.rect(".", 14, 2, 16, 3)                                    # the north islet
     m.rect(".", 15, 17, 17, 19).put("~", 17, 19)                 # the south islet
+    # beaches (RC05, the owner's rule: a Lander can land on every island): shoal on the sea lanes' side of each islet, one for each army's approach
+    m.puts(",", [(13, 2), (17, 3), (13, 11), (17, 9), (15, 8), (15, 12), (14, 18), (18, 18), (17, 19), (16, 16)])
     for x, y in ((11, 7), (19, 7), (11, 14), (20, 14), (9, 10), (22, 10), (13, 16), (18, 5), (26, 11), (5, 10)):
         m.put("r", x, y)
     # --- relief: woods and hills on the islands (cover for the landing troops)
