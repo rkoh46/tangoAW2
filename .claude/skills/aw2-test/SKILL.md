@@ -10,6 +10,7 @@ description: Pick and run the right tangoAW2 checks for a change (lib tests, off
    - new/changed text or screens: `./aw2dev audit text` and view the BMPs
    - maps: `./aw2dev audit maps`
    - rules, saves, DS content: `python3 tools/aw2test/run.py`
+   - battle rules around Stealth/Anti-Air (the hidden Stealth's counter, docs/dev/stealth-counter.md): `python3 tools/aw2test/run.py -k stealth`, `-k damage`, `-k ds_units`, `./aw2dev co verify --quick`
    - online/session: skill aw2-online-debug
 3. LOOK at pictures: `./aw2dev sheet latest --around 0 --kind move --strip`. A pass on a checker is not proof; check `meta.json` build stamps match across compared runs.
 4. A small fix the user will playtest: skip suites; `./aw2dev build --release && ./aw2dev install-mac`.
