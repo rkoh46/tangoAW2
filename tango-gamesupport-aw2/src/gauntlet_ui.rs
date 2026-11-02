@@ -137,6 +137,45 @@ fn set8(core: &mut Core, at: u32, v: u8) {
     }
 }
 
+/// The picture area of the screen holds a map of 32 x 22 cells (the largest of the War Room's); a bigger map (Iron Crown, 40 x 26) is shown by its middle part: the picture's tiles (header
+/// +0x2C, the battle reads +0x00) are a cropped copy in free ROM past Survival's maps, [`PREVIEW_SIZE`] a mission. Without it the picture ran over the list.
+const PREVIEW_ROM: u32 = 0x08E2_0000;
+const PREVIEW_SIZE: u32 = 0x800;
+const PREVIEW_CELLS: (usize, usize) = (32, 22);
+
+/// The cropped picture's blob for `mission` (LZ77 of width, height, tiles), or None when the whole map fits.
+fn preview_blob(e: &Entry) -> Option<&'static Vec<u8>> {
+    static B: std::sync::OnceLock<Vec<Option<Vec<u8>>>> = std::sync::OnceLock::new();
+    B.get_or_init(|| {
+        gm::entries()
+            .iter()
+            .map(|e| {
+                let m = crate::custom_campaign::built_map(e.key)?;
+                let (w, h) = (m.width as usize, m.height as usize);
+                if w <= PREVIEW_CELLS.0 && h <= PREVIEW_CELLS.1 {
+                    return None;
+                }
+                let (cw, ch) = (w.min(PREVIEW_CELLS.0), h.min(PREVIEW_CELLS.1));
+                let (x0, y0) = ((w - cw) / 2, (h - ch) / 2);
+                let mut raw = vec![cw as u8, ch as u8];
+                for y in 0..ch {
+                    for x in 0..cw {
+                        raw.extend_from_slice(&m.tiles[(y0 + y) * w + x0 + x].to_le_bytes());
+                    }
+                }
+                let mut lz = crate::lz77::compress(&raw);
+                while lz.len() % 4 != 0 {
+                    lz.push(0);
+                }
+                assert!(lz.len() <= PREVIEW_SIZE as usize);
+                Some(lz)
+            })
+            .collect()
+    })
+    .get(e.mission)?
+    .as_ref()
+}
+
 /// The Gauntlet's map entries in the map table: each mission's compiled header with the tab the list shows ([`TAB`] while the selector is up, a tab no list shows otherwise).
 fn entries_in_table(core: &mut Core, shown: bool) {
     let Some(table) = crate::ds_campaign::selector_table(core) else { return };
@@ -149,6 +188,15 @@ fn entries_in_table(core: &mut Core, shown: bool) {
         h[0x3C] = 0xFF;
         for k in 0..3 {
             h[0x3D + k] = e.enemies.get(k).map_or(0, |en| en.0);
+        }
+        if let Some(blob) = preview_blob(e) {
+            let rom = PREVIEW_ROM + PREVIEW_SIZE * e.mission as u32;
+            let mut have = vec![0u8; blob.len()];
+            core.raw_read_range(rom, -1, &mut have);
+            if &have != blob {
+                core.raw_write_range(rom, -1, blob);
+            }
+            h[0x2C..0x30].copy_from_slice(&rom.to_le_bytes());
         }
         let at = table + crate::five_map::ENTRY * id_of(e.mission) as u32;
         let mut now = [0u8; 0x5C];
