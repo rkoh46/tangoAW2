@@ -481,6 +481,29 @@ impl Skin {
         out
     }
 
+    /// Roles 6 and 7 with the Dual Strike map graphics: Dual Strike's unit art fills its bodies with them (AW2's shades only edges), and AW2's
+    /// colours there are saturated mid reds, blues and greens (Orange Star's at about 42 and 28 lightness) where a grey ramp's two darkest
+    /// are near black: a picked-up Battle Copter drew as a black silhouette. They are lifted to the reds' lightness, the AW2 look keeping the ramp.
+    pub fn ds_body(&self) -> [u16; 2] {
+        [mix(self.ramp[4], self.ramp[3], 0.5), mix(self.ramp[4], self.ramp[3], 0.2)]
+    }
+
+    /// [`Self::unit_row`] for the Dual Strike map graphics.
+    pub fn ds_unit_row(&self, orig: &[u16; 16]) -> [u16; 16] {
+        let mut out = self.unit_row(orig);
+        out[6..8].copy_from_slice(&self.ds_body());
+        out
+    }
+
+    /// [`Self::moving_row`] for the Dual Strike map graphics.
+    pub fn ds_moving_row(&self, orig: &[u16; 16]) -> [u16; 16] {
+        let mut out = self.moving_row(orig);
+        let body = self.ds_body();
+        out[MOVE_ROLE[6]] = body[0];
+        out[MOVE_ROLE[7]] = body[1];
+        out
+    }
+
     /// The grey of a unit that has moved: AW2 tints each colour's greys with the army's hue, so every entry of the row
     /// (but the clear one) is made neutral and then given a breath of the skin's ramp at its brightness.
     pub fn moved_row(&self, orig: &[u16; 16]) -> [u16; 16] {
@@ -1343,6 +1366,7 @@ pub fn sync_ds(core: &mut Core) {
     if core.raw_read_32(DATA, -1) != MAGIC {
         return;
     }
+    sync_ds_body(core);
     for colour in 1..=5u8 {
         let want = applied_on(core, colour).map_or(0, |i| i as u8 + 1);
         let have = core.raw_read_8(ds_applied_at(colour), -1);
@@ -1358,6 +1382,34 @@ pub fn sync_ds(core: &mut Core) {
             if !patches.is_empty() {
                 apply_backup(core, ds_backup(colour), DS_BACKUP_MAX, &patches);
                 core.raw_write_8(ds_applied_at(colour), -1, want);
+            }
+        }
+    }
+}
+
+/// The unit and moving-unit rows of each skinned colour follow the Dual Strike map graphics ([`Skin::ds_body`]): their roles 6 and 7 in the patched
+/// tables are the lifted pair while the graphics are on, the ramp's own otherwise (the game loads the rows from the tables, and a switch mid-match
+/// reloads them: `ds_graphics::reload_on_switch`).
+fn sync_ds_body(core: &mut Core) {
+    let on = crate::wasteland::ds_graphics(core);
+    for colour in 1..=5u8 {
+        let Some(i) = applied_on(core, colour) else { continue };
+        if core.raw_read_8(applied_at(colour), -1) >= 0x10 {
+            continue;
+        }
+        let sk = skin(i);
+        let pair = if on { sk.ds_body() } else { [sk.ramp[4], sk.ramp[5]] };
+        for &(_, base, _, _, kind) in TABLES {
+            let at = base + 32 * (colour as u32 - 1);
+            let idx = match kind {
+                Kind::Unit => [6usize, 7],
+                Kind::Moving => [MOVE_ROLE[6], MOVE_ROLE[7]],
+                _ => continue,
+            };
+            for (k, &e) in idx.iter().enumerate() {
+                if core.raw_read_16(at + 2 * e as u32, -1) != pair[k] {
+                    core.raw_write_16(at + 2 * e as u32, -1, pair[k]);
+                }
             }
         }
     }
