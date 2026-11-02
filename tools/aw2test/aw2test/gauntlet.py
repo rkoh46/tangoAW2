@@ -29,6 +29,13 @@ ORANGE_STAR, BLUE_MOON, GREEN_EARTH, YELLOW_COMET, BLACK_HOLE, EMERALD_SUN = 1, 
 CINDER_FREE = [ORANGE_STAR, BLUE_MOON, EMERALD_SUN]   # AW2's five minus Cinder Sea's enemies (Green Earth, Yellow Comet, Black Hole), then the skin
 CINDER_ENEMY_COLOURS = [GREEN_EARTH, YELLOW_COMET, BLACK_HOLE]
 
+# the game's SELECT MAP list (crate::five_map::LIST_IDS, LIST_LAST) and its cursor words; the Gauntlet's maps are map-table ids FIRST_ID.. (crate::gauntlet_ui::FIRST_ID)
+LIST_IDS, LIST_LAST = 0x0203DC24, 0x0203DC24 + 0x6E + 1
+LIST_FIRST, LIST_CURSOR_ROW = 0x03005900, 0x03005930
+FIRST_ID = 0xF6
+PLAY_ST = 0x03003FC0                # the play state: +1 the game mode (2 while the selector is up: the War Room's), +2 the map id (0 until A)
+
+ROWS = 0x0203FA40                  # the War Room record rows the selector's record box reads (crate::survival::ROWS: Survival's zeroed block, free while Survival is closed)
 UI_SHOWN = UI + 0x20          # what the step shows: +0 maps listed, +1 enemies, +2.. (CO, colour) pairs, +0x0E free count, +0x0F.. free army codes
 HOSTS = 0x0203C500            # crate::army_skin::STATE: the colour each skin sits on (0 none)
 
@@ -70,6 +77,49 @@ class Gauntlet(BhCampaign):
         if not self.e.wait_until(lambda: self.step() == step, frames, step=10):
             raise NavError(f"the Gauntlet's step {step} did not come up (step {self.step()})")
         self.e.wait(12)
+        if step == SELECTOR:
+            self.wait_select_map()
+
+    def wait_select_map(self, frames=900):
+        """The map selector is the game's own SELECT MAP: it takes the pad once its list is in and its idle loop runs (its fade-in and list take about a hundred frames)."""
+        from . import survival as sv
+        e = self.e
+        if not e.wait_until(lambda: sv.running(e, sv.SELECT_MAP_PROC), frames, step=10):
+            raise NavError("the Gauntlet's SELECT MAP did not open")
+        e.wait(150)
+
+    def selector_ids(self):
+        """The list the screen shows: the map-table ids it holds (crate::five_map::LIST_IDS, up to the last row) and the row under the cursor."""
+        e = self.e
+        last = e.u8(LIST_LAST)
+        ids = list(e.read(LIST_IDS, last + 1))
+        return ids, e.u32(LIST_FIRST) + e.u32(LIST_CURSOR_ROW)
+
+    def table(self):
+        """The map table the game reads now (the word `0x080196EC` points at its first entry)."""
+        return self.e.u32(0x080196EC)
+
+    def entry_name(self, map_id):
+        """A map-table entry's name: its text id (+0x14) through the text table (`crate::campaign_model::TEXT_TABLE`)."""
+        e = self.e
+        text = e.u16(self.table() + 0x5C * map_id + 0x14)
+        at = e.u32(0x0861_0A38 + 4 * text)
+        out = bytearray()
+        while len(out) < 40 and e.u8(at + len(out)):
+            out.append(e.u8(at + len(out)))
+        return out.decode("latin-1")
+
+    def entry_cos(self, map_id):
+        """The COs a map-table entry names per army (header +0x3C..+0x3F, AW2's ids; 0xFF the player's pick): what the screen draws the enemies' faces from."""
+        return list(self.e.read(self.table() + 0x5C * map_id + 0x3C, 4))
+
+    def entry_tab(self, map_id):
+        return self.e.u16(self.table() + 0x5C * map_id + 0x1A)
+
+    def record_rows(self):
+        """The War Room record rows the screen reads for the Gauntlet's maps (crate::gauntlet_ui::rows): per map five (CO, score) records."""
+        b = bytes(self.e.read(ROWS, 0x14 * 8))
+        return [[(b[0x14 * m + 4 * k], int.from_bytes(b[0x14 * m + 4 * k + 1:0x14 * m + 4 * k + 4], "little")) for k in range(5)] for m in range(8)]
 
     def open(self, from_title=True, pick=True, map=0):
         """Select Mode's GAUNTLET, A: the map selector (the mode starts at once: no box, no world map); with `pick` A takes the highlighted map and the CO screen follows."""
@@ -80,9 +130,9 @@ class Gauntlet(BhCampaign):
         e.press("A", 8)
         if pick:
             self.wait_step(SELECTOR)
-            for _ in range(map):                # (the selector's list: DOWN to the map)
+            for _ in range(map):                # (the selector's list: DOWN to the map; the game's cursor takes a moment to settle before it takes A)
                 e.press("DOWN", 4)
-                e.wait(10)
+                e.wait(40)
             ctx_ok = e.u8(UI_MAP_CURSOR) == map
             if not ctx_ok:
                 raise NavError(f"the selector's cursor is on map {e.u8(UI_MAP_CURSOR)}, not {map}")
