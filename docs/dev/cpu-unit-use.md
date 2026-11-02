@@ -22,8 +22,24 @@ role 4) was moved only when an enemy aircraft was in reach, so it too waited in 
 | Missiles | The indirect Anti-Air has no ground target in AW2's role 4 and used to stay where it was built: it takes the Carrier's path (`handles`), the advance towards the nearest enemy it can hit, else the enemy HQ, by the safe cells. |
 | Stealth, Black Bomb, Oozium, Megatank, Piperunner | As before (`cpu_tactics`, `oozium`, AW2's role moves). A Piperunner without a pipe path to anything has nowhere to go: that is not a soft lock. |
 
-Not done here: the Black Boat does not plan cargo (it never carries Infantry or Mech for the CPU: AW2's foot-soldier loading looks for APCs, T Copters and Landers by type),
-and a Carrier does not plan its air cargo (launching). The Lander's cargo logic is AW2's.
+The Lander's own cargo logic is AW2's. Cargo of the Black Boat and the Carrier is `cpu_ferry.rs`:
+
+## Cargo: Black Boat ferries, Carrier launches and takes in
+
+AW2's foot-soldier logic picks transports by type (APC, T Copter, Lander) and its Lander logic wants the beaches of a campaign map, so the Black Boat and the Carrier never carried anything for the CPU.
+Loads and drops are made in emulated RAM as the game's own Load and Drop leave the records (measured with a player's: passenger flags `0x0B`, cell = the transport's, transport flags `0x10`, unit id in cargo byte +7 / +8;
+a drop gives the passenger the free cell and flags `0x01`). The unit queue lifts the unit it plays off the map, so they are made once at the start of a CPU army's turn (`cpu_tactics::cpu_unit` -> `cpu_ferry::turn_start`), and
+the units that acted carry the acted flag, which the queue passes by. Deterministic: only RAM, no host state.
+
+| | Rule |
+|---|---|
+| Who needs a ferry | the army's Infantry and Mechs with no land way (one reverse flood, `ds_ai_move::distance_to`) to any property not of their team's (enemy HQ included); campaign holders (role 0) are left. |
+| Landing | a shoal with a free, standable land neighbour from which that way is open: a drop never strands anybody. |
+| Beach | the shoal the first such soldier reaches soonest that the army's first Black Boat can sail to. The soldiers walk there (`cpu_ferry::plan_foot`, the game's planner); the boat sails there (`cpu_units::boat`, job from `cpu_ferry::mission`). |
+| Boarding / dropping | at turn start the boat on a shoal takes up to two soldiers whose walk reaches it, then sails to the nearest landing (its cargo is dropped at turn start when it stands on one). With no job it repairs as before; it never ends on a port. |
+| Carrier | aircraft (not Carriers) with fuel or hit points at 40 % or less land on a friendly Carrier they can reach with room for them (its turn-start resupply refuels them); the Carrier launches fit cargo (60 %+) onto free cells next to it when an enemy is within 14 cells: `launch` / `plan_air`. Launched aircraft have acted and fly next turn. |
+
+Not done: repairing aircraft on a Carrier (only resupply, which the game's own Cruiser rule gives), planning the Lander's cargo (AW2's).
 
 ## Dev aids
 
@@ -42,7 +58,7 @@ player passive: no enemy Black Boat sits on a port two days running) and `netpla
 `tests/test_cpu_unit_use.py` measures, for each CPU turn, how many of the CPU's units that were on the field at its start moved, lost hit points or used ammo
 (`acted_fractions`; the idle ones are logged by type) and whether the CPU closes in on the passive player (`closing_in`: the mean distance of its units to the nearest
 player unit fell by 3, or the player lost hit points). `cpu_progress_versus` (a land map with an army of every ground type: 80 % act), `cpu_progress_gauntlet_cinder_sea`
-(60 %), `cpu_progress_gauntlet_iron_crown` (60 %). Measured with this change: Versus 13..17 units, 13..16 act a turn (the idle ones: a Mech or Tank behind a jam); Cinder Sea 12..15
+(60 %), `cpu_progress_gauntlet_iron_crown` (60 %), and the cargo tests `cpu_unit_use_black_boat_ferries_infantry` (a strait only a Black Boat crosses: a soldier boards, crosses, is dropped on the far shore within six days), `cpu_unit_use_low_fuel_fighters_land_on_a_carrier`, `cpu_unit_use_carrier_launches_its_fighters`; `cpu_progress_gauntlet_cinder_sea` also needs a Black Boat to take soldiers aboard and drop them. Measured with this change: Versus 13..17 units, 13..16 act a turn (the idle ones: a Mech or Tank behind a jam); Cinder Sea 12..15
 units, 7..12 act (the rest: Infantry waiting on an island for the Lander's next trip, which AW2's own loading logic ferries one at a time, and ships that hold because nothing nearer is safe,
 Dual Strike's own rule); Iron Crown 29..35 units, 25..29 act.
 

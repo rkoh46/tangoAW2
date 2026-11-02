@@ -48,6 +48,7 @@ pub mod com_tower;
 pub mod cpu_defend;
 pub mod cpu_inventions;
 pub mod cpu_tactics;
+pub mod cpu_ferry;
 pub mod cpu_units;
 pub mod crumb;
 pub mod crumb_art;

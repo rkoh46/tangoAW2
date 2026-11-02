@@ -623,6 +623,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 43: Silver Nova, the army and its COs: the army's colours, chrome look and orb-topped HQ (army_skin, no plume), the HQ and emblem pictures, and the three COs Tabitha, Lili and Caulder in the Roman five's slots (new numbers; Firestorm 8 HP strike, Enigma random weather for two days with the immunity, Cataclysm heal 5, Sturm's movement for Caulder; slots 89 and 90 copy Lili and Caulder; Livia's funds, Testudo, Onager and Triumph gone).
         // 44: Silver Nova reads as silver metal (the ramp's steps come down, the trim, a moved unit is mid grey) and the capture box's HQ keeps the map tower's proportions: the ROM image's palettes and the box picture changed.
         // 46: the CPU moves its Black Boats and Landers off the ports they were parked on, repairs and follows its fleet with the boats, advances its Carriers (crate::cpu_units).
+        // 46 (cont.): the CPU's Black Boats ferry its Infantry and Mechs over water (loads and drops made at the start of its turn: crate::cpu_ferry), its Carriers launch fit aircraft near enemies and take in aircraft low on fuel or hit points.
         crate::inspect::SIM_VERSION
     }
 
