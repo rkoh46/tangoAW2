@@ -147,7 +147,8 @@ def bh_campaign_human_black_hole_laser_and_minicannon_fire(ctx):
 def bh_campaign_volcano_hazard(ctx):
     """A mission's volcano (MissionDef::volcano): from day 3, every second day,
     three cells erupt for 3 HP on every army's units there (never below 1 HP);
-    the cells are marked the day before; nothing on the days between."""
+    nothing is drawn on the cells the day before (the original game shows no
+    warning); nothing on the days between."""
     e, g, d = boot_features(ctx)
     d.picks = {15: 0}
     d.start_at(won_mask=0x7FFF & ~(1 << 5), unlocked_mask=1)
@@ -183,7 +184,11 @@ def bh_campaign_volcano_hazard(ctx):
     e.wait(600)
     next_day(2)
     ctx.eq(hp_now(), {i: v[1] for i, v in start.items()}, "day 2: nothing erupted (the first eruption is day 3)")
-    shot(ctx, e, "volcano_marked")
+    shot(ctx, e, "volcano_day_before")
+    import struct
+    oam = e.read(0x07000000, 0x400)
+    marks = [k for k in range(128) if (struct.unpack_from("<3H", oam, 8 * k)[2] & 0x3FF) == 772 and struct.unpack_from("<3H", oam, 8 * k)[2] >> 12 == 4 and (struct.unpack_from("<3H", oam, 8 * k)[0] & 0x300) != 0x200]
+    ctx.eq(marks, [], "the day before an eruption: no marker sprites (OBJ tile 772, palette bank 4) on the cells")
     ctx.log(f"cursor {g.cursor()} size {d.size()} units {[(u['id'], u['x'], u['y']) for u in g.units()]}")
     next_day(3)
     shot(ctx, e, "volcano_erupted")
