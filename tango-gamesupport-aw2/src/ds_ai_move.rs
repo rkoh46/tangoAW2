@@ -45,7 +45,7 @@ const GOAL_UNIT: u32 = STATE + 0xD4;
 const TERRAIN_INFO: u32 = 0x085D_583C;
 const FAR: i32 = 999;
 
-fn stars(core: &Core, class: u8) -> i32 {
+pub(crate) fn stars(core: &Core, class: u8) -> i32 {
     core.raw_read_32(TERRAIN_INFO + 0x14 * (class as u32 & 0x1F) + 0x10, -1) as i32
 }
 
@@ -169,7 +169,7 @@ pub(crate) fn threat_maps(core: &Core, b: &Board, army: u32, t: u8, x: i32, y: i
 
 /// The move cost from every cell to the nearest of `targets` for `army`'s `t` (a reverse flood: the cost of a
 /// step is the cost of entering the cell stepped into), enemy units in the way.
-fn distance_to(b: &Board, army: u32, t: u8, targets: &[usize]) -> Vec<i32> {
+pub(crate) fn distance_to(b: &Board, army: u32, t: u8, targets: &[usize]) -> Vec<i32> {
     use std::cmp::Reverse;
     use std::collections::BinaryHeap;
     let mut d = vec![-1i32; b.class.len()];
@@ -286,6 +286,16 @@ fn target_cells(b: &Board, army: u32, u: &Unit, role: u8, sight: &[bool]) -> Opt
     }
 }
 
+/// The threat limits of a unit type: its profile row, or a Cruiser's where the pack's tables have none for it.
+pub(crate) fn limits_of(prof: &Profile, t: u8) -> UnitProfile {
+    let up = prof.unit(t);
+    if up.threat_max == (0, 0) && up.threat_sum == (0, 0) {
+        prof.unit(CRUISER)
+    } else {
+        up
+    }
+}
+
 /// The cell unit `u` of `army` goes to this turn, and why.
 pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll: u32) -> Option<((i32, i32), String)> {
     let sight = seen(b, army);
@@ -295,7 +305,7 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
     let moves = b.moves(army, u.t).min(fuel);
     let reach = b.flood(army, u.t, u.x, u.y, moves, false);
     let prof = profile(army_co(core, army).0)?;
-    let up = prof.unit(u.t);
+    let up = limits_of(&prof, u.t);
     let (max_limit, sum_limit) = (
         randomise(up.threat_max.0, up.threat_max.1, roll),
         randomise(up.threat_sum.0, up.threat_sum.1, roll),
@@ -326,6 +336,10 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
                 to[here],
                 cells.len()
             ));
+        }
+        // (a ship or aircraft whose target the sea or its fuel does not reach does not sit: it drifts towards the enemy)
+        if to[here] < 0 && stats(u.t).group & (SEA | AIR) != 0 {
+            return crate::cpu_units::drift(core, b, army, u, roll);
         }
         return None;
     }
@@ -361,7 +375,7 @@ pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll
 pub fn role_move(core: &mut Core) -> bool {
     core.raw_write_8(GOAL, -1, 0);
     let army = current_army(core);
-    if !in_scope(core, army, OFF_MOVE) || behaviour(core, army) == DEFENSE {
+    if !in_scope(core, army, OFF_MOVE) {
         return false;
     }
     let rec = core.raw_read_32(CURRENT_UNIT, -1);
@@ -372,10 +386,19 @@ pub fn role_move(core: &mut Core) -> bool {
     // (the army's behaviour's role where it has one: Strike the nearest enemy units, Assault the properties)
     let own = core.raw_read_8(rec + 0x0B, -1);
     let role = crate::ally_posture::role(behaviour(core, army)).map_or(own, |r| r as u8);
-    if !matches!(role, 1 | 3 | 4)
-        || t <= MECH
-        || attack(t) != Attack::Direct
-        || crate::custom_campaign::driven_goal(core, rec).is_some()
+    // (the units AW2's role moves leave where they stand, crate::cpu_units: a Carrier whatever its order; the others
+    // where their order advances, so a held gun of a mission stays)
+    let special = crate::cpu_units::handles(t)
+        && crate::custom_campaign::driven_goal(core, rec).is_none()
+        && (t == crate::roster::CARRIER || (matches!(role, 1 | 3 | 4) && behaviour(core, army) != DEFENSE));
+    if !special && behaviour(core, army) == DEFENSE {
+        return false;
+    }
+    if !special
+        && (!matches!(role, 1 | 3 | 4)
+            || t <= MECH
+            || attack(t) != Attack::Direct
+            || crate::custom_campaign::driven_goal(core, rec).is_some())
     {
         return false;
     }
@@ -385,7 +408,12 @@ pub fn role_move(core: &mut Core) -> bool {
     let Some(u) = b.units.iter().find(|u| u.rec == rec).copied() else {
         return false;
     };
-    let Some((cell, note)) = choose(core, &b, army, &u, role, roll) else {
+    let chosen = if special {
+        crate::cpu_units::choose(core, &b, army, &u, role, roll)
+    } else {
+        choose(core, &b, army, &u, role, roll)
+    };
+    let Some((cell, note)) = chosen else {
         return false;
     };
     if logging() {

@@ -268,12 +268,18 @@ pub fn check(core: &mut Core) {
     if u < 0x0200_0000 {
         return;
     }
-    let Some(p) = plan(core, u) else { return };
-    let (x, y, kind, target) = match p {
-        Plan::Attack { x, y, target } => (x, y, KIND_ATTACK, target),
-        Plan::Close { x, y } => (x, y, KIND_WAIT, 0),
+    let (x, y, kind, target) = if let Some(p) = plan(core, u) {
+        crate::ds_ai::log(&format!("cpu defend: unit {u:#x} {p:?}"));
+        match p {
+            Plan::Attack { x, y, target } => (x, y, KIND_ATTACK, target),
+            Plan::Close { x, y } => (x, y, KIND_WAIT, 0),
+        }
+    } else if let Some((x, y)) = crate::cpu_units::plan(core, u) {
+        // (a Black Boat's move, crate::cpu_units: the planner moves it and it waits)
+        (x, y, KIND_WAIT, 0)
+    } else {
+        return;
     };
-    crate::ds_ai::log(&format!("cpu defend: unit {u:#x} {p:?}"));
     core.raw_write_8(CALLED, -1, 1);
     let cpu = core.gba().cpu();
     let sp = cpu.gpr(13) as u32 - 4;
