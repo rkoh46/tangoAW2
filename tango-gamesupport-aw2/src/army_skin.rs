@@ -111,6 +111,12 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("table 8104264", 0x0810_4264, 5, 1, Kind::Hue),
     ("table 8106984", 0x0810_6984, 5, 1, Kind::Hue),
     ("power colours", 0x084F_2BC8, 5, 2, Kind::Power),
+    // the battle scenes' other unit palettes (two rows a colour, as the soldiers' above; the scene's pointer tables `0x0849E000` and `0x08555D30..` name them by unit and
+    // colour): copters and other vehicles, ships, aircraft. Without them a Silver Nova Battleship or B Copter fought in its host colour's (Orange Star's orange)
+    ("battle units (2)", 0x084F_2D08, 5, 2, Kind::Hue),
+    ("battle units (3)", 0x084F_2E48, 4, 2, Kind::Hue),
+    ("battle units (4)", 0x084F_2F88, 5, 2, Kind::Hue),
+    ("battle units (5)", 0x084F_30C8, 5, 2, Kind::Hue),
     ("buildings (second set)", 0x080D_3E04, 5, 1, Kind::Building),
     ("battle gauge", 0x0816_D498, 5, 1, Kind::Hue),
     ("table 85A9BBC", 0x085A_9BBC, 5, 1, Kind::Hue),

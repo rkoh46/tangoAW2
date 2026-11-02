@@ -164,3 +164,29 @@ def silver_nova_selected_units(ctx):
             e.press("B", 6)
             e.wait(30)
             ctx.log(f"{look}: type {u['type']} at {(u['x'], u['y'])}")
+
+
+def orange_share(png, box):
+    im = Image.open(png).convert("RGB").crop(box)
+    px = list(im.getdata())
+    return sum(1 for r, g, b in px if r > 200 and 60 < g < 170 and b < 90) / len(px)
+
+
+@test(modes=("ds",))
+def silver_nova_battle_scene_colours(ctx):
+    """Silver Nova's Cruiser fires at one of Drake's ships: its half of the battle scene is silver, never its host colour's (Orange Star's) orange (the owner's 0.9.2 report)."""
+    for look in LOOKS:
+        e, g = start(ctx, look)
+        d = ga.Gauntlet(g)
+        mine = next(u for u in g.units(army=1) if u["type"] == 22)
+        foe = next(u for u in g.units(army=2) if u["type"] in (21, 22, 23, 24))
+        d.place_unit(foe, mine["x"] + 1, mine["y"])
+        e.wait(10)
+        g.select(mine["x"], mine["y"])
+        g.move_to(mine["x"], mine["y"])
+        g.choose("Fire", g.ACTION_MENU)
+        g.pick_target(mine["x"] + 1, mine["y"])
+        e.wait(160)
+        p = shot(ctx, e, f"{look}_battle")
+        o = orange_share(p, (0, 40, 120, 160))
+        ctx.check(o < 0.005, f"{look}: Silver Nova's ship has no orange ({o:.1%} of its half)")

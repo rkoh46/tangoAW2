@@ -104,7 +104,7 @@ def battle():
     )
 
 
-TERRAIN = {"plains": 1, "mountain": 3, "wood": 4, "city": 6}
+TERRAIN = {"plains": 1, "mountain": 3, "wood": 4, "city": 6, "sea": 7}
 
 
 def _battle_pair(att, dfn, att_terrain, dfn_terrain):
@@ -134,6 +134,16 @@ for _who, _ids in (("es", [6, 5]), ("bh", [5, 6])):
         scenario(_name, _ids, _text, ["scene1", "scene2", "scene3"], no_plume=True, crest={"scene2": 40, "scene3": 40})(
             lambda a=_att, d=_dfn, ta=_ta, td=_td: _battle_pair(a, d, ta, td)
         )
+
+
+# the vehicles', ships' and aircraft's battle scenes: their palettes are other rows of the battle tables than the soldiers' (the owner's 0.9.2 report: a Silver Nova Cruiser in Orange Star's orange)
+VEHICLE_BATTLES = []
+for _att, _dfn, _ta, _td in (("tank", "tank", "plains", "plains"), ("sub", "cruiser", "sea", "sea"), ("cruiser", "sub", "sea", "sea"), ("fighter", "fighter", "plains", "plains"), ("bcopter", "tank", "plains", "plains")):
+    _name = f"bt_es_{_att}_{_dfn}"
+    VEHICLE_BATTLES.append(_name)
+    scenario(_name, [6, 2], f"a battle scene, the skin's {_att} attacks Blue Moon's {_dfn}: both sides in their own army's colours (the skin's never its host colour's)", ["scene1", "scene2", "scene3"])(
+        lambda a=_att, d=_dfn, ta=_ta, td=_td: _battle_pair(a, d, ta, td)
+    )
 
 
 @scenario("battle_mech", [6, 2], "a Mech attacking a Tank: the bazooka frames of the battle scene", ["scene1", "scene2", "scene3"], crest={"scene1": 15, "scene2": 80, "scene3": 80})
