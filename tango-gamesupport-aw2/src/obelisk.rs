@@ -77,8 +77,8 @@ const DATA_MAGIC: u32 = 0x424B_4C42; // "BLKB" (bump when the data changes)
 pub const OBELISK_OBJ_TILE: u32 = 0x176;
 pub const CRYSTAL_OBJ_TILE: u32 = 0x19A;
 /// The Black Factory's own 48 OBJ tiles when the map also stands a Volcano
-/// (see [`factory_with_volcano`]): 832..879, above the Hazard's marks
-/// (772..799, [`crate::hazard`]) and the Survival menu's label (800..831,
+/// (see [`factory_with_volcano`]): 832..879, above the tiles the Hazard's marks
+/// once used (772..799, free now) and the Survival menu's label (800..831,
 /// [`crate::mode_menu`]), below the battle scenes' effect tiles (880..).
 /// Nothing loads or writes them on the battle map (checked by watching the
 /// OBJ tiles the map's load writes and the ones play touches), so a map with
