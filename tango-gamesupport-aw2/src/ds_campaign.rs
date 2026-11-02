@@ -1418,6 +1418,15 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
             Box::new(crate::ds_campaign_rules::eruption),
         ),
         (
+            crate::hazard::SHOW_CALL,
+            Box::new(|core: &mut Core| {
+                // (a custom campaign's volcano: the show lands its boulders on the cells that take the damage)
+                if active(core) && !is_ds(core) {
+                    crate::hazard::show(core)
+                }
+            }),
+        ),
+        (
             crate::ds_credits::ROLL_SONG_CALL,
             Box::new(|core: &mut Core| {
                 let s = active(core);
