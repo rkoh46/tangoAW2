@@ -88,6 +88,10 @@ pub enum Kind {
     Moving,
     /// Any palette whose army-coloured entries share the army's hue: recoloured by brightness.
     Hue,
+    /// As `Hue`, but each army-coloured entry takes the ramp's colour of the same perceived lightness (CIE L*) rather than its brightness rank: for art
+    /// whose bodies are filled with the army's saturated mid tones (the capture box's soldier, Orange Star's reds at 50..60 L*), which the rank map
+    /// sent to the ramp's near-black end.
+    HueLight,
     /// The buildings' OBJ palettes: as `Hue`, and entry 14 (magenta in every colour's row: no building uses it) is the skin's gold,
     /// which the skin's HQ uses for its trim.
     Building,
@@ -122,7 +126,7 @@ pub const TABLES: &[(&str, u32, usize, usize, Kind)] = &[
     ("table 85A9BBC", 0x085A_9BBC, 5, 1, Kind::Hue),
     ("turn banner", 0x080A_1238, 4, 1, Kind::Banner),
     // the capture box's soldier and building (`sub_08041128`, `sub_0804103c`: palette row `0x081213F4 + 32 * colour`, the army's colour)
-    ("capture box", 0x0812_1414, 5, 1, Kind::Hue),
+    ("capture box", 0x0812_1414, 5, 1, Kind::HueLight),
 ];
 
 /// Black Hole's own copies where the game's table has four (see `crate::five`, `crate::co_new`): (name, address, rows,
@@ -423,6 +427,17 @@ fn lum(c: u16) -> f32 {
     (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0
 }
 
+/// CIE L* (0..100) of a BGR555 colour.
+fn lstar(c: u16) -> f32 {
+    let (r, g, b) = rgb_of(c);
+    let lin = |v: u8| {
+        let v = v as f32 / 255.0;
+        if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
+    };
+    let y = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    if y > 0.008856 { 116.0 * y.cbrt() - 16.0 } else { 903.3 * y }
+}
+
 fn hsv(c: u16) -> (f32, f32, f32) {
     let (r, g, b) = rgb_of(c);
     let (r, g, b) = (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
@@ -537,6 +552,25 @@ impl Skin {
         self.rank_map(orig, rows, &self.ramp)
     }
 
+    /// [`Kind::HueLight`]: the army's entries (those the colours' rows differ in) take the ramp read at their own CIE lightness.
+    pub fn light_row(&self, orig: &[u16; 16], rows: &[[u16; 16]]) -> [u16; 16] {
+        let mut out = *orig;
+        let mut pts: Vec<(f32, u16)> = self.ramp.iter().map(|&c| (lstar(c), c)).collect();
+        pts.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        for i in 1..16 {
+            if orig[i] == 0 || !rows.iter().any(|r| r[i] != rows[0][i]) {
+                continue;
+            }
+            let l = lstar(orig[i]);
+            out[i] = match pts.windows(2).find(|w| l <= w[1].0) {
+                _ if l <= pts[0].0 => pts[0].1,
+                Some(w) => mix(w[0].1, w[1].1, (l - w[0].0) / (w[1].0 - w[0].0).max(1e-6)),
+                None => pts[pts.len() - 1].1,
+            };
+        }
+        out
+    }
+
     /// [`Self::hue_row`] with another ramp (light to dark, any length).
     pub fn rank_map(&self, orig: &[u16; 16], rows: &[[u16; 16]], ramp: &[u16]) -> [u16; 16] {
         let mut out = *orig;
@@ -628,6 +662,7 @@ pub fn plan(rom: &dyn Rom, skin: &Skin, idx: usize, host: u8) -> Vec<Patch> {
         Kind::Moved => skin.moved_row(orig),
         Kind::Moving => skin.moving_row(orig),
         Kind::Hue => skin.hue_row(orig, siblings),
+        Kind::HueLight => skin.light_row(orig, siblings),
         Kind::Power => {
             let mut row = skin.hue_row(orig, siblings);
             if r == 0 {
