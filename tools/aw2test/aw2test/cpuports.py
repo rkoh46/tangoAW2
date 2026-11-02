@@ -392,7 +392,7 @@ def run_gauntlet(ctx, map=0, days=DAYS):
     return e, g, passive(ctx, e, g, d, f"Gauntlet map {map}", days, snap_fn(ctx, e, g))
 
 
-AW2_CAMPAIGN_MISSIONS = 28      # the world map has 28 mission flags (dscampaign.WM_STATE+0x12): one test for the k-th mission played, as many as the campaign has
+AW2_CAMPAIGN_MISSIONS = 12      # maps 0x8A..0x95 of AW2's mission table, in the order the world map opens them; the 12th (0x95) does not register as won through `force_win` or a yield, so the campaign cannot be driven past it
 
 
 def yield_win(e, g, d):
@@ -485,6 +485,9 @@ def end_turn_orders(e, g, d):
     "You still have units awaiting orders", "Jake! You haven't given orders to all of your units yet"): then every unit of the army is given Wait (a lesson's dialogue answered with A) and End is chosen again."""
     from . import bhact2 as a2
     army = g.current_army()
+    for _ in range(2):                  # (a lesson may leave a unit selected: B puts it down)
+        e.press("B", 4)
+        e.wait(20)
     a2.end_turn(e, g, d)
     e.wait(150)
     t = d.text_shown() or ""
