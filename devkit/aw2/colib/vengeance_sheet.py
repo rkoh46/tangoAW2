@@ -1,4 +1,4 @@
-"""`aw2dev co sheet vengeance`: Aria's Vengeance (units with 8 HP or less attack and defend harder: +25% at 8 HP .. +85% at 1) in the game's own damage forecasts: runs tools/aw2test/tests/test_aria_compare.py (the forecast box's number of 7 matchups at 10, 8 and 5
+"""`aw2dev co sheet vengeance`: Aria's Vengeance (units with 8 HP or less attack and defend harder: +15% at 8 HP .. +75% at 1) in the game's own damage forecasts: runs tools/aw2test/tests/test_aria_compare.py (the forecast box's number of 7 matchups at 10, 8 and 5
 displayed HP for Andy, Aria and Aria in Build Anew, each checked against the damage formula) and writes the table (.md) and a picture sheet of the forecast boxes (.png)."""
 import json, subprocess, sys
 from pathlib import Path
@@ -35,7 +35,7 @@ def build(png, md):
             "(Aria 9-10 HP is Andy's number: she has no other bonus, so the column for 'Aria without Vengeance' is the 10 HP one.)\n\n"
             f"At 8 HP Aria's Tank hits a Tank for {rows['Aria|tank|tank|8']['box']}% against Andy's {rows['Andy|tank|tank|8']['box']}%, at 5 HP {rows['Aria|tank|tank|5']['box']}% against {rows['Andy|tank|tank|5']['box']}%: "
             f"{ratio('Aria', 'tank', 'tank', 8):.2f}x and {ratio('Aria', 'tank', 'tank', 5):.2f}x.\n\n"
-            "**Why it matters:** a damaged unit normally hits weaker in proportion to its HP (an 8 HP Tank does 80% of a healthy one's damage, a 5 HP Tank 50%); Vengeance's +25% on top makes Aria's wounded units hit nearly like healthy ones "
+            "**Why it matters:** a damaged unit normally hits weaker in proportion to its HP (an 8 HP Tank does 80% of a healthy one's damage, a 5 HP Tank 50%); Vengeance's +15% on top makes Aria's wounded units hit nearly like healthy ones "
             "(an 8 HP Tank of hers does about as much as an Andy Tank at 10 HP: "
             f"{rows['Aria|tank|tank|8']['box']}% against {rows['Andy|tank|tank|10']['box']}%).\n")
     Path(md).write_text(text)

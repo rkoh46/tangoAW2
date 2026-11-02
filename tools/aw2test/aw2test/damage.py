@@ -54,7 +54,7 @@ def crumb_bonus(mode, unit_type, which):
 ARIA = 93
 
 
-ARIA_VENGEANCE = [85, 61, 55, 49, 43, 37, 31, 25]     # crate::aria::VENGEANCE: 1..8 displayed HP
+ARIA_VENGEANCE = [75, 51, 45, 39, 33, 27, 21, 15]     # crate::aria::VENGEANCE: 1..8 displayed HP
 
 
 def aria_vengeance(hp, unit_type=None):

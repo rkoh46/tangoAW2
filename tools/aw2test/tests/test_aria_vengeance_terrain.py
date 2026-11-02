@@ -70,7 +70,8 @@ def check_kind(ctx, kind):
         v = damage.aria_vengeance(hp)
         ctx.check(out.defence <= 200, f"{kind} on {ter} ({r['stars']} stars) at {h} HP: defence {out.defence} is under AW2's cap")
         ctx.check(r["shown"] == min(out.losses), f"{kind} on {ter} ({r['stars']} stars) at {h} HP (+{damage.ARIA_FLAT + v}%): forecast {r['shown']}% = the calculator's {min(out.losses)}% (defence {out.defence})")
-        ctx.check(r["loss"] in out.losses, f"{kind} on {ter} at {h} HP: real loss {r['loss']} inside {sorted(out.losses)}")
+        capped = {min(l, hp) for l in out.losses}      # (a strike that takes more than the unit has destroys it)
+        ctx.check(r["loss"] in capped, f"{kind} on {ter} at {h} HP: real loss {r['loss']} inside {sorted(capped)}")
         ctx.check(r["shown"] < tw["shown"] or tw["shown"] == 0, f"{kind} on {ter} at {h} HP: {r['shown']}% against Andy's {tw['shown']}%")
         ctx.log(f"{kind} on {ter} ({r['stars']}*) {h} HP: Aria {r['shown']}% / Andy {tw['shown']}% (defence {out.defence})")
 

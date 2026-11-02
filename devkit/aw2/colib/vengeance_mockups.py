@@ -141,7 +141,7 @@ def lettering(frames):
 # "+" and "%" in the window digits' style (2-pixel strokes, the digits' 6 rows), drawn: the window has neither
 PLUS_ROWS = ["..##..", "..##..", "######", "######", "..##..", "..##.."]
 PERCENT_ROWS = ["##...#", "##..#.", "...#..", "..#...", ".#..##", "#...##"]
-VENGEANCE_PCT = {8: 32, 7: 38, 6: 44, 5: 50, 4: 56, 3: 62, 2: 68, 1: 92}      # (in all: the flat 7% and Vengeance)
+VENGEANCE_PCT = {8: 22, 7: 28, 6: 34, 5: 40, 4: 46, 3: 52, 2: 58, 1: 82}      # (in all: the flat 7% and Vengeance)
 
 
 def digits(frames):
