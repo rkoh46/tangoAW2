@@ -58,6 +58,23 @@ const FIRESTORM_FN: u32 = DATA + 0x370;
 const SENTINEL: u32 = DATA + 0x3FC;
 const MAGIC: u32 = 0x3843_5344; // "DSC8"
 
+// Caulder's Cataclysm (`crate::es_co`), its map picture: Hawke's Black Storm overlay ([`BLACK_STORM_PAL`]), then, with the pack, Dual Strike's Urban Blight overlay; neither deals damage
+// (the overlay is called with a carrier of 1 HP that [`mass_unit`] skips). Its own room in the game's free padding.
+const CATACLYSM: u32 = 0x0877_0000;
+const CATACLYSM_FN: u32 = CATACLYSM;
+const STORM_FN: u32 = CATACLYSM + 0x40;
+const BLUR_FN: u32 = CATACLYSM + 0x90;
+const HEAL_FN: u32 = CATACLYSM + 0xE0;
+const CATACLYSM_SCRIPT: u32 = CATACLYSM + 0x100;
+const CATACLYSM_SENTINEL: u32 = CATACLYSM + 0x1FC;
+const CATACLYSM_MAGIC: u32 = 0x4341_5431; // "1TAC"
+/// Hawke's Black Storm palette (the yellow lightning and stars); its picture is Black Wave's ([`BLACK_WAVE_GFX`]).
+const BLACK_STORM_PAL: u32 = 0x0811_3BC0;
+/// AW2's usual power procedure (the unit effect of the presentation row for each unit: Cataclysm's 5 HP and its sparkle), Thumb.
+const DEFAULT_POWER: u32 = 0x0804_43D9;
+const OP_CALL: u16 = 2;
+const OP_SLEEP: u16 = 0x0E;
+
 pub(crate) const METEOR_SCRIPT: u32 = 0x084A_0858;
 /// The meteor script's commands: 3 to start, 7 for one strike (pick the
 /// target, move there, draw, animate, hit, redraw), 5 to end.
@@ -111,6 +128,12 @@ pub(crate) fn strike_fn(script: u32, damage: u16) -> Vec<u8> {
 /// `sub_08044D70(script, gfx, pal, army, 3, 0, -1, 0, proc)`, with the
 /// overlay's map and palette `gfx`, `pal`.
 fn urban_blight_fn(gfx: u32, pal: u32) -> Vec<u8> {
+    overlay_fn(gfx, pal, 3)
+}
+
+/// The mass damage procedure with an overlay (`gfx` its map, `pal` its palette) and `damage` HP for the enemy's units, no healing, weather and fuel unchanged: Urban Blight's
+/// 3 HP, and Cataclysm's carrier (1 HP, which [`mass_unit`] never deals: only the overlay plays).
+fn overlay_fn(gfx: u32, pal: u32, damage: u8) -> Vec<u8> {
     let mut b = halfwords(&[
         0xB530, // push {r4, r5, lr}
         0xB085, // sub sp, #0x14
@@ -119,7 +142,7 @@ fn urban_blight_fn(gfx: u32, pal: u32) -> Vec<u8> {
         0x4A0C, // ldr r2, =pal
         0x4B0D, // ldr r3, =current army
         0x881B, // ldrh r3, [r3]
-        0x2403, // movs r4, #3 (HP)
+        0x2400 | damage as u16, // movs r4, #damage (HP)
         0x9400, // str r4, [sp]
         0x2400, // movs r4, #0 (no healing)
         0x9401, // str r4, [sp, #4]
@@ -221,6 +244,7 @@ pub fn power_assembly(co: u8, mode: u8) -> Option<u32> {
         (KINDLE, COP) => Some(URBAN_BLIGHT_FN | 1),
         (crate::es_co::TABITHA, SCOP) => Some(FIRESTORM_FN | 1),
         (crate::es_co::LILI, COP) => Some(crate::es_co::ENIGMA | 1),
+        (crate::es_co::CAULDER, SCOP) => Some(CATACLYSM_FN | 1),
         (crate::co_new::ASUKA, COP) => Some(ASUKA_COP_FN | 1),
         (crate::co_new::ASUKA, SCOP) => Some(ASUKA_SCOP_FN | 1),
         _ => None,
@@ -252,6 +276,57 @@ pub fn install(core: &mut Core) {
     core.raw_write_range(ASUKA_COP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[1].max(1), crate::asuka::HP_OWN[1], 0x0811_3BA0));
     core.raw_write_range(ASUKA_SCOP_FN, -1, &asuka_fn(crate::asuka::HP_ENEMY[2], crate::asuka::HP_OWN[2], 0x0811_3BC0));
     core.raw_write_32(SENTINEL, -1, MAGIC);
+    install_cataclysm(core, gfx != BLACK_WAVE_GFX);
+}
+
+/// Cataclysm's function, its script (storm, then with the pack the pink overlay, a frame's sleep after each so the blocked script waits for the overlay's procedure) and the two overlay
+/// calls. Written once, the same bytes on every peer.
+fn install_cataclysm(core: &mut Core, pack: bool) {
+    if core.raw_read_32(CATACLYSM_SENTINEL, -1) == CATACLYSM_MAGIC {
+        return;
+    }
+    // (the function: Proc_StartBlocking(script, parent), as `strike_fn` without a damage)
+    let mut f = halfwords(&[
+        0xB500, // push {lr}
+        0x1C01, // adds r1, r0, #0
+        0x4803, // ldr r0, =script
+        0x4A04, // ldr r2, =Proc_StartBlocking
+        0x467B, // mov r3, pc
+        0x3305, // adds r3, #5 (return below, Thumb)
+        0x469E, // mov lr, r3
+        0x4710, // bx r2
+        0xBC01, // pop {r0}
+        0x4700, // bx r0 (the pool follows at 0x14, word aligned)
+    ]);
+    f.extend_from_slice(&CATACLYSM_SCRIPT.to_le_bytes());
+    f.extend_from_slice(&PROC_START_BLOCKING.to_le_bytes());
+    core.raw_write_range(CATACLYSM_FN, -1, &f);
+    core.raw_write_range(STORM_FN, -1, &overlay_fn(BLACK_WAVE_GFX, BLACK_STORM_PAL, 1));
+    // (the heal: AW2's usual power procedure with the script's procedure as the one it blocks, after the pictures)
+    let mut h = halfwords(&[
+        0xB500, // push {lr}
+        0x4903, // ldr r1, =DEFAULT_POWER
+        0x467B, // mov r3, pc
+        0x3305, // adds r3, #5 (return below, Thumb)
+        0x469E, // mov lr, r3
+        0x4708, // bx r1
+        0xBC01, // pop {r0}
+        0x4700, // bx r0
+    ]);
+    h.extend_from_slice(&DEFAULT_POWER.to_le_bytes());
+    core.raw_write_range(HEAL_FN, -1, &h);
+    let mut script: Vec<(u16, u16, u32)> = vec![(OP_CALL, 0, STORM_FN | 1), (OP_SLEEP, 1, 0)];
+    if pack {
+        core.raw_write_range(BLUR_FN, -1, &overlay_fn(crate::power_anim::URBAN_MAP, crate::power_anim::URBAN_PALETTE, 1));
+        script.extend([(OP_CALL, 0, BLUR_FN | 1), (OP_SLEEP, 1, 0)]);
+    }
+    script.extend([(OP_CALL, 0, HEAL_FN | 1), (OP_SLEEP, 1, 0), (0, 0, 0)]);
+    let bytes: Vec<u8> = script
+        .iter()
+        .flat_map(|&(op, arg, ptr)| [op.to_le_bytes().as_slice(), arg.to_le_bytes().as_slice(), ptr.to_le_bytes().as_slice()].concat())
+        .collect();
+    core.raw_write_range(CATACLYSM_SCRIPT, -1, &bytes);
+    core.raw_write_32(CATACLYSM_SENTINEL, -1, CATACLYSM_MAGIC);
 }
 
 /// With the pack, the presentation row of Eagle's COP takes his SCOP's
@@ -781,6 +856,15 @@ fn strike_hit(core: &mut Core) {
 const MASS_UNIT: u32 = 0x0804_4FFC;
 const MASS_NEXT: u32 = 0x0804_505E;
 fn mass_unit(core: &mut Core) {
+    // Cataclysm's overlays only play: no unit is touched, whichever rules the room has.
+    {
+        let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
+        let (co, level) = activating(core, army);
+        if crate::es_co::canon(co) == crate::es_co::CAULDER && level == SCOP {
+            core.gba_mut().cpu_mut().set_thumb_pc(MASS_NEXT);
+            return;
+        }
+    }
     if !is_on(core) {
         return;
     }
@@ -1130,5 +1214,6 @@ mod tests {
         );
         assert!(COVERING_FIRE_SCRIPT + 8 * 29 <= EX_MACHINA_FN);
         assert!(URBAN_BLIGHT_FN + 72 <= SENTINEL);
+        assert!(CATACLYSM_FN + 0x20 <= STORM_FN && STORM_FN + 0x48 <= BLUR_FN && BLUR_FN + 0x48 <= HEAL_FN && HEAL_FN + 0x18 <= CATACLYSM_SCRIPT && CATACLYSM_SCRIPT + 8 * 8 <= CATACLYSM_SENTINEL);
     }
 }
