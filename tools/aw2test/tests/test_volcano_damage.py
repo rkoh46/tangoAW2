@@ -87,3 +87,60 @@ def volcano_damage_bh_m11_ashfall_pass(ctx):
     vo.check(ctx, e, g, d, vo.ring(11, 6, 18, 13), 3, 1, 5, 3, "BH M11")
     e.close()
 
+
+
+def art_check(ctx, env, label):
+    """The Volcano structure's picture (OBJ tiles 0x130..0x16F) and its palette (sprite palette 2) are what a fresh start has after the days, the eruptions and
+    the computer's battles (the lava's own animation excluded: the tiles that move between two looks at the same moment)."""
+    e = Emu(save=paths.base_save(), ds=True, env=env)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = ga.Gauntlet(g)
+    d.start(ga.CAULDER, colour=ga.EMERALD_SUN)
+
+    def snap():
+        g.goto(24, 3)
+        e.wait(90)
+        tiles = e.read(0x0601_0000 + 32 * 0x130, 32 * 64)
+        pal = e.read(0x0500_0000 + 0x200 + 64, 32)
+        return [tiles[32 * i:32 * i + 32] for i in range(64)], pal
+
+    base = snap()
+    moving = set()
+    for k in range(60):                        # (the lava's frames: every tile that moves in a second)
+        e.wait(5)
+        t = e.read(0x0601_0000 + 32 * 0x130, 32 * 64)
+        moving |= {i for i in range(64) if t[32 * i:32 * i + 32] != base[0][i]}
+    ctx.log(f"{label}: animated tiles {sorted(moving)}")
+    for n in (3, 5):
+        while e.u16(0x03004080) < n:
+            day = e.u16(0x03004080)
+            d.end_turn()
+            for _ in range(900):
+                if e.u16(0x03004080) == day + 1 and not d.scripts_running():
+                    break
+                if d.scripts_running():
+                    e.press("A", 4)
+                e.wait(10)
+            e.wait(1200)
+            d.settle()
+        tiles, pal = snap()
+        bad = [i for i in range(64) if i not in moving and tiles[i] != base[0][i]]
+        ctx.check(not bad, f"{label}: day {n}: the Volcano's picture tiles are as at the start (differing: {bad})")
+        ctx.check(pal == base[1], f"{label}: day {n}: the Volcano's palette is as at the start")
+    e.close()
+
+
+@test(modes=("ds",))
+def volcano_art_survives_days_and_eruptions_aw2_graphics(ctx):
+    art_check(ctx, {}, "AW2 graphics")
+
+
+@test(modes=("ds",))
+def volcano_art_survives_days_and_eruptions_ds_graphics(ctx):
+    art_check(ctx, {"TANGOAW2_DS_GRAPHICS": "1"}, "DS graphics")
+
+
+@test(modes=("ds",))
+def volcano_art_survives_days_and_eruptions_ds_tilt(ctx):
+    art_check(ctx, {"TANGOAW2_DS_GRAPHICS": "1", "TANGOAW2_TILT": "1", "TANGOAW2_TILT_SCALE": "2"}, "DS graphics and tilt")
