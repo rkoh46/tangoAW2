@@ -434,10 +434,12 @@ def styled(spec, path):
     P = 64
     nat = np.pad(nat, ((P, P), (P, P), (0, 0)), mode="edge")
     fg = np.pad(fg, P, constant_values=False)
+    # `palette_before_seeds`: the palette is chosen from the figure as cut before `bg_seeds` (pockets of background found later must not reshuffle the colours)
+    fgp = np.pad(keep_main(fg0), P, constant_values=False) if spec.get("palette_before_seeds") else fg
     fr = (slice(y0 + P, y0 + P + fh), slice(x0 + P, x0 + P + fw))
     mu = (slice(my0 + P, my0 + P + ms), slice(mx0 + P, mx0 + P + ms))
-    px = np.concatenate([nat[fr][fg[fr]], nat[mu][fg[mu]]])
-    wt = np.concatenate([np.ones(fg[fr].sum()), np.full(fg[mu].sum(), spec.get("face_weight", 3.0))])
+    px = np.concatenate([nat[fr][fgp[fr]], nat[mu][fgp[mu]]])
+    wt = np.concatenate([np.ones(fgp[fr].sum()), np.full(fgp[mu].sum(), spec.get("face_weight", 3.0))])
     # colours guaranteed a palette entry: groups of native cells (`protect = [[[x, y], ...], ...]`, in the cells of the grid after `flip`), each group's mean colour
     protect = [np.mean([nat[y + P, x + P] for x, y in grp], axis=0) for grp in spec.get("protect", [])]
     pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))), protect=protect, dark_k=int(spec.get("dark_ramp", 0)), dark_l=float(spec.get("dark_ramp_l", 35.0)), dark_c=float(spec.get("dark_ramp_c", 14.0)))

@@ -17,3 +17,14 @@ protect = [
   [[162, 58], [163, 58], [147, 59], [148, 59], [143, 52], [157, 53], [157, 54], [173, 57], [172, 58]],
   [[145, 45], [154, 45], [156, 45], [157, 45], [158, 45], [145, 46], [146, 46], [154, 46], [155, 46], [156, 46]],
 ]
+# her hair's light highlights, which matching put on the blouse's white and the skirt's lavender (they read as white specks round her hair, the owner's report): inside the
+# top of the hair and the two pigtails (boxes kept off her shoulders) those colours and the skin's are not used (native cells; the face, eyes, collar and blouse lie outside the boxes)
+keep_off = [
+  [124, 18, 199, 40, [247, 247, 247], [197, 181, 222], [255, 214, 181], [206, 148, 107]],
+  [114, 40, 140, 72, [247, 247, 247], [197, 181, 222], [255, 214, 181], [206, 148, 107]],
+  [182, 40, 226, 80, [247, 247, 247], [197, 181, 222], [255, 214, 181], [206, 148, 107]],
+  [201, 80, 226, 104, [247, 247, 247], [197, 181, 222], [255, 214, 181], [206, 148, 107]],
+]
+# the pockets of background enclosed between each arm and her body and between her left pigtail and her neck (white left inside them, the owner's reports): each flooded from a native cell inside it
+bg_seeds = [[129, 118], [174, 123], [130, 79], [129, 81], [146, 72], [134, 76], [144, 70], [148, 75]]
+palette_before_seeds = true
