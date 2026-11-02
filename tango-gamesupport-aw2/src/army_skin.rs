@@ -509,8 +509,8 @@ impl Skin {
     pub fn moved_row(&self, orig: &[u16; 16]) -> [u16; 16] {
         let mut out = *orig;
         for i in 1..16 {
-            // (the darker entries, from 6 but the outline, are lifted: the three body tones the check compares keep their place)
-            let lift = if (6..15).contains(&i) { self.moved_lift } else { 0.0 };
+            // (the darker entries from 6, the outline too, are lifted: AW2's own done greys have no near-black entry, its outline among them)
+            let lift = if (6..16).contains(&i) { self.moved_lift } else { 0.0 };
             let l = lift + (1.0 - lift) * lum(orig[i]);
             let g = (l * 255.0).round().clamp(0.0, 255.0) as u8;
             let c = mix(bgr555((g, g, g)), self.ramp_at(l), self.moved_tint);

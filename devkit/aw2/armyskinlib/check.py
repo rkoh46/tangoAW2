@@ -38,7 +38,7 @@ MIN_DONE = 10.0      # the skin's own done unit against its live unit
 MAX_CHROMA = 0.4     # the skin's body chroma as a share of Green Earth's: a stone, not a leaf green
 MAX_CONTRAST = 1.75  # the HQ's value contrast (std. dev. of brightness) as a multiple of the strongest of AW2's five (it is asked to be stronger than theirs, not wilder)
 MAX_BOX_ASPECT_GAP = 0.10  # the capture box's HQ (as drawn) against the map HQ: width over height within this share
-MIN_DONE_OWN = 6.0   # the skin's done ramp against the other armies' done greys (a done skin unit is still the skin's)
+MIN_DONE_OWN = 4.5   # the skin's done ramp against the other armies' done greys (AW2's own armies' done greys are near each other too; a lifted done ramp, with no near-black body, is worth more than this margin)
 # The terrain's colours under fog (rendered with fog on, Bean Island: grass, road, forest, mountain, sea ...): what a unit stands on in the fog of war.
 FOG_TERRAIN = [(131, 156, 148), (148, 164, 148), (98, 98, 123), (106, 131, 148), (57, 123, 123), (82, 131, 106), (115, 90, 139), (74, 74, 197), (82, 57, 172)]
 
