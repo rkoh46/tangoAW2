@@ -65,3 +65,8 @@ Each CO has her/his own full theme from the music branch: `music/sn/{tabitha,lil
 | BH2 M32 (secret; enemy pair, waves) | Klaus + Aurelia (waves by Cassius, Aurelia, Livia) | Caulder + Tabitha (waves by the vanguard, Lili, Lili) |
 | Gauntlet roster (the free pick) | Klaus, Aurelia, Cassius, Livia (not Varro) | Tabitha, Lili, Caulder |
 The Gauntlet's Iron Crown has no deleted CO among its enemies (the Emerald Sun *army* there is the other branch's). Asuka stays out of the Silver Nova Campaign.
+
+## Cataclysm's map picture (`co_powers::CATACLYSM_FN`)
+Caulder's Super Power plays Hawke's Black Storm overlay (Black Wave's map, palette `0x08113BC0`), then, with the pack, Kindle's Urban Blight overlay (`power_anim::URBAN_MAP`), then AW2's usual power procedure (his 5 HP and the sparkle).
+A small proc script in the game's padding at `0x08770000` runs the three in turn; each overlay is AW2's mass damage called with a 1 HP carrier that `co_powers::mass_unit` never deals for Caulder, so only the pictures play (CPU and netplay alike: all in emulated RAM). Hawke's and Kindle's own powers are untouched.
+Tests: `run.py -k cataclysm --mode ds` (`tests/test_cataclysm.py`: overlay order by BG palette 8, heal, no damage, the controls, and `cataclysm_sheet.png` in the three looks).

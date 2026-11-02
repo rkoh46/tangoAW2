@@ -625,6 +625,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 45: a custom campaign's volcano drops its eruption's boulders on the cells that take the damage (the show read AW2's own mission's list: the camera and rocks went elsewhere, and the show's length changed with the list).
         // 45: Gauntlet's Cinder Sea and Versus' Crystal Isles gain beach (shoal) cells on their islets so a Lander can land (RC05): the maps' terrain changed.
         // 45: an Anti-Air fires back at a Stealth that attacked it, hidden or not (CalcDamage's hidden-Stealth column, for a counterattack only): the shared console's battle results changed.
+        // 45: Caulder's Cataclysm plays Hawke's Black Storm overlay and then (with the pack) Dual Strike's Urban Blight overlay, without damage (crate::co_powers::CATACLYSM_FN: a script in the game's padding at 0x08770000).
         crate::inspect::SIM_VERSION
     }
 
