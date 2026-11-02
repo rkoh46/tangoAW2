@@ -651,6 +651,34 @@ const RANGE_ARROW: usize = 193;
 
 /// Dual Strike's red star (Orange Star) .. grey box icons by country (the grey box is Black Hole's).
 const ICON_FIRST: usize = 10;
+/// The header tab's country code of a Silver Nova CO (the CO screen's own numbering ends at 4, Black Hole's grey box): its own sun, not Black Hole's box.
+const TAB_SILVER_NOVA: u8 = 5;
+
+/// A CO's tab code: its country, 5 for a Silver Nova CO.
+fn tab_country(co: u8) -> u8 {
+    if crate::es_co::is_es(co) {
+        TAB_SILVER_NOVA
+    } else {
+        crate::custom_campaign::country(co)
+    }
+}
+
+/// The Silver Nova sun as a 16 x 16 header tab: the skin file's emblem in the nearest colours of the tabs' palette.
+fn sun_tab(pal: &[u16; 16]) -> [Option<u8>; 256] {
+    let rgb = |c: u16| [(c & 31) as i32 * 255 / 31, ((c >> 5) & 31) as i32 * 255 / 31, ((c >> 10) & 31) as i32 * 255 / 31];
+    let mut out = [None; 256];
+    for (i, px) in crate::army_skin::emblem_pixels(0).into_iter().enumerate().take(256) {
+        out[i] = px.map(|(r, g, b)| {
+            (1..16u8)
+                .min_by_key(|&j| {
+                    let c = rgb(pal[j as usize]);
+                    (c[0] - r as i32).pow(2) + (c[1] - g as i32).pow(2) + (c[2] - b as i32).pow(2)
+                })
+                .unwrap()
+        });
+    }
+    out
+}
 const ICON_NONE: usize = 14;
 
 // --- Composing the pages --------------------------------------------------------------
@@ -734,7 +762,15 @@ fn frame(cv: &mut Canvas, a: &Art, v: &View, page: usize) {
     for (k, pair) in v.tabs.iter().enumerate() {
         for (j, c) in pair.iter().enumerate() {
             if let Some(c) = c {
-                cv.tiles(x0 + pitch * k as i32 + 16 * j as i32, 8, a.icon(icon(*c)), 16, 16, TAB);
+                if *c == TAB_SILVER_NOVA {
+                    // (a white tab as Dual Strike's flags have, the sun on it)
+                    let (tx, ty) = (x0 + pitch * k as i32 + 16 * j as i32, 8);
+                    for (n, px) in sun_tab(&a.icon_pal).into_iter().enumerate() {
+                        cv.put(tx + (n % 16) as i32, ty + (n / 16) as i32, TAB, px.unwrap_or(1));
+                    }
+                } else {
+                    cv.tiles(x0 + pitch * k as i32 + 16 * j as i32, 8, a.icon(icon(*c)), 16, 16, TAB);
+                }
             }
         }
     }
@@ -1338,7 +1374,7 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
     }
     // The tabs: a pair for each army of the battle, the page's own army's showing which of its COs the page is on (on the
     // partner's page the army's two COs are swapped: the tabs stay in the pair's order).
-    let mut tabs = vec![[Some(crate::custom_campaign::country(co)), None]];
+    let mut tabs = vec![[Some(tab_country(co)), None]];
     let mut tab = 0;
     if let (Some(c), Some(army)) = (core, army) {
         tabs.clear();
@@ -1346,8 +1382,8 @@ pub fn view_for(core: Option<&Core>, army: Option<u32>, co: u8) -> View {
         for k in 1..=battle_armies(c) {
             let (active, partner) = (crate::tag::army_co_of(c, k), crate::tag::partner(c, k));
             let mut pair = [
-                Some(crate::custom_campaign::country(active)),
-                partner.map(crate::custom_campaign::country),
+                Some(tab_country(active)),
+                partner.map(tab_country),
             ];
             if k == army {
                 if on_partner && partner.is_some() {

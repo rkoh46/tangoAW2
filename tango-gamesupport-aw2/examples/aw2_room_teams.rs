@@ -1191,6 +1191,10 @@ fn main() {
                     .collect();
                 link.poke(parse(p[1]), &bytes);
             }
+            // dsgfx on|off: the Dual Strike map graphics setting, switched in the middle of the match as the Settings page does
+            "dsgfx" => {
+                tango_gamesupport_aw2::ds_graphics::set_enabled(p[1] == "on");
+            }
             "terrain" => {
                 // terrain X Y CLASS: the cell's terrain class (low 5 bits; AW2: 1 plains, 3 mountain, 4 wood, 5 road, 6 city), its owner bits kept
                 let (x, y, class): (u32, u32, u8) = (p[1].parse().unwrap(), p[2].parse().unwrap(), p[3].parse().unwrap());

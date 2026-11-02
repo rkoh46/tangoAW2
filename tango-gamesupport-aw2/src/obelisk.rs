@@ -67,6 +67,8 @@ const BLOCKED_NAME_AT: u32 = DATA + 0x700;
 pub const OBELISK_NAME_AT: u32 = DATA + 0x200;
 const CRYSTAL_PICTURE_AT: u32 = DATA + 0x300;
 const OBELISK_PICTURE_AT: u32 = DATA + 0x400;
+/// The terrain panel's picture of a Silver Nova HQ ([`crate::army_skin::panel_hq`], rewritten each time the panel asks).
+const HQ_PICTURE_AT: u32 = DATA + 0x800;
 const DATA_SENTINEL: u32 = DATA + 0xFFC;
 const DATA_MAGIC: u32 = 0x424B_4C42; // "BLKB" (bump when the data changes)
 
@@ -692,10 +694,16 @@ fn panel_name(core: &mut Core) {
         Some(Structure::Part) => (4, PART_NAME_AT),
         None if crate::grand_bolt::cell_at(core, x, y).is_some() => (5, BLOCKED_NAME_AT),
         None if crate::com_tower::tower_at(core, x, y) => (3, crate::com_tower::NAME_AT),
-        None => (0, 0),
+        None => match skin_hq_at(core, x, y) {
+            Some(pic) => {
+                core.raw_write_range(HQ_PICTURE_AT, -1, &pic);
+                (6, 0)
+            }
+            None => (0, 0),
+        },
     };
     core.raw_write_8(PANEL, -1, which);
-    if which != 0 {
+    if which != 0 && which != 6 {
         core.gba_mut().cpu_mut().set_gpr(0, name as i32);
     }
     // The Grand Bolt's cells: Dual Strike's picture of the cell.
@@ -705,12 +713,23 @@ fn panel_name(core: &mut Core) {
     }
 }
 
+/// An HQ (terrain class 8) at (x, y) whose owner wears a skin's HQ: that picture for the panel.
+fn skin_hq_at(core: &Core, x: u32, y: u32) -> Option<[u8; 256]> {
+    let row = core.raw_read_16(MAP + 0x417A + 2 * y, -1) as u32;
+    let b = core.raw_read_8(MAP + 0x1432 + row + x, -1);
+    if b & 0x1F != 8 {
+        return None;
+    }
+    crate::army_skin::panel_hq(core, (b >> 5) as u32)
+}
+
 fn panel_picture(core: &mut Core) {
     let picture = match core.raw_read_8(PANEL, -1) {
         1 => CRYSTAL_PICTURE_AT,
         2 => OBELISK_PICTURE_AT,
         3 => crate::com_tower::PICTURE_AT,
         4 | 5 => PART_PICTURE_AT,
+        6 => HQ_PICTURE_AT,
         _ => return,
     };
     core.gba_mut().cpu_mut().set_gpr(0, picture as i32);

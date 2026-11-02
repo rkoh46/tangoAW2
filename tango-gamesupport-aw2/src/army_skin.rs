@@ -2401,9 +2401,15 @@ pub fn sync_map_art(core: &mut Core) {
     let mut now = vec![0u8; FRAME as usize];
     core.raw_read_range(SHEET_VRAM, -1, &mut now);
     let mut frame = None;
+    // (with the Dual Strike map graphics the game copies its frames from the converted sheet the idle getters point at: matching AW2's own sheet found no frame,
+    // so the skin's Infantry and Mech slots were never written and their cells drew whatever the tiles held: black and white stripes)
+    let sheet = match core.raw_read_32(crate::ds_graphics::UNIT_POOLS[0], -1) {
+        s if s == crate::ds_graphics::UNIT_NEW => s,
+        _ => UNIT_SHEET,
+    };
     for f in 0..3u32 {
         let mut b = vec![0u8; FRAME as usize];
-        core.raw_read_range(UNIT_SHEET + FRAME_BYTES * f, -1, &mut b);
+        core.raw_read_range(sheet + FRAME_BYTES * f, -1, &mut b);
         if b == now {
             frame = Some(f);
             break;
@@ -2490,6 +2496,39 @@ fn hq_loaded(core: &mut Core) {
         } & 0x3FF;
         core.raw_write_range(0x0601_0000 + tile * 32, -1, &art);
     }
+}
+
+/// The terrain panel's picture of the HQ army `army` owns, when that army wears a skin's HQ (its CO's data file names it): the skin's map HQ picture
+/// (building palette indices) in the panel's own palette indices, nearest colour of the army's colour row (the panel draws it with the info box's palette
+/// `0x08106984`, one row a colour). Without it the panel took the picture of the CO's country: Black Hole's tower for a Silver Nova CO.
+pub fn panel_hq(core: &Core, army: u32) -> Option<[u8; 256]> {
+    let skin = hq_skin(core, army)?;
+    let colour = core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1);
+    if !(1..=5).contains(&colour) {
+        return None;
+    }
+    let row = |base: u32| -> [u16; 16] {
+        let mut p = [0u16; 16];
+        for (i, c) in p.iter_mut().enumerate() {
+            *c = core.raw_read_16(base + 32 * (colour as u32 - 1) + 2 * i as u32, -1);
+        }
+        p
+    };
+    let (building, panel) = (row(0x080D_3F04), row(0x0810_6984));
+    let rgb = |c: u16| [(c & 31) as i32, ((c >> 5) & 31) as i32, ((c >> 10) & 31) as i32];
+    let mut map = [0u8; 16];
+    for (i, m) in map.iter_mut().enumerate().skip(1) {
+        let c = rgb(building[i]);
+        *m = (1..16)
+            .min_by_key(|&j| (0..3).map(|k| (c[k] - rgb(panel[j])[k]).pow(2)).sum::<i32>())
+            .unwrap() as u8;
+    }
+    let mut art = [0u8; 256];
+    core.raw_read_range(hq_art(skin, 0), -1, &mut art);
+    for b in art.iter_mut() {
+        *b = map[(*b & 15) as usize] | map[(*b >> 4) as usize] << 4;
+    }
+    Some(art)
 }
 
 // ---------- test aids ----------

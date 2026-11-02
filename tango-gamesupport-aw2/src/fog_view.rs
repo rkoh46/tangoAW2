@@ -660,6 +660,27 @@ pub fn call_program(scratch: Scratch, calls: &[(u32, i32, i32)]) -> Result<(), &
     r
 }
 
+/// Asks the console itself (not a scratch copy) to run `calls` (function, r0, r1) at its next sprite flush: used by presentation settings that must make the game
+/// redo what it loads once (the Dual Strike map graphics switched while a match is on the map). False when a call is still running.
+pub fn start_program(core: &mut Core, calls: &[(u32, i32, i32)]) -> bool {
+    if matches!(core.raw_read_8(CALL, -1), 1 | 2) {
+        return false;
+    }
+    *PROGRAM.lock().unwrap() = calls.to_vec();
+    core.raw_write_8(CALL, -1, 1);
+    true
+}
+
+/// A program started by [`start_program`] has returned (the state byte goes back to idle).
+pub fn program_done(core: &mut Core) -> bool {
+    if core.raw_read_8(CALL, -1) == 3 {
+        core.raw_write_8(CALL, -1, 0);
+        true
+    } else {
+        false
+    }
+}
+
 /// The waiting seat's picture, on the scratch console: B closes whatever the mover has open (build, command and map
 /// menus, a selected unit's range, an attack ring, info panels: it never sees them); with fog the game is told that
 /// the waiting army is the current one and refreshes the map for it (the vision of its own units, the mover's units

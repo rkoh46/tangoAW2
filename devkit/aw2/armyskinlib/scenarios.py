@@ -286,6 +286,15 @@ def hqs():
     return body
 
 
+@scenario("hq_box", [1, 6, 3, 4, 5], "the cursor on each army's HQ: the terrain box's HQ picture is that army's (Silver Nova's orb tower on the skin's, Black Hole's own tower on Black Hole's)",
+          ["hqbox_os", "hqbox_es", "hqbox_bh", "hqbox_ge", "hqbox_yc"], seats_five=True)
+def hq_box():
+    body = ""
+    for shot_name, y in (("hqbox_os", 2), ("hqbox_es", 10), ("hqbox_bh", 19), ("hqbox_ge", 29), ("hqbox_yc", 37)):
+        body += f"goto 0 9 {y}\nwait 50\nshot {shot_name} 0\n"
+    return body
+
+
 @scenario("tilt", [6, 2], "the Dual Strike tilted map (pack; the app's own picture through the AI debug channel): the skin's idle and done units, properties and HQ in the tilt",
           ["tilt"], ds=True, look=True)
 def tilt():
@@ -301,6 +310,18 @@ def tilt():
 @scenario("tilt5p", [1, 6, 3, 4, 5], "the Dual Strike tilted map on the five-army map: the skin beside Green Earth and Black Hole (for the sheet)", ["tilt5p"], seats_five=True, ds=True, look=True, sheet_only=True)
 def tilt5p():
     return "aid unit 2 inf 8 17\naid unit 2 mech 10 17\naid unit 3 inf 12 17\naid unit 5 inf 9 17\naid unit 5 mech 11 17\n" + redraw((9, 19))
+
+
+BUILDING_ROW = [("city", 6), ("base", 14), ("airport", 10), ("port", 11), ("lab", 20), ("hq", 8)]
+
+
+@scenario("tilt_buildings", [6, 2], "every Silver Nova building type (city, base, airport, port, lab, HQ) next to Black Hole's own, on the map: with the Dual Strike graphics (flat or tilted) every tile must be the building's picture, not stripes",
+          ["tilt_buildings"], ds=True, look=True)
+def tilt_buildings():
+    body = "aid unit 1 inf 7 3\naid unit 2 inf 7 8\n"
+    for k, (name, cls) in enumerate(BUILDING_ROW):
+        body += f"terrain {4 + k} 5 {cls} 1\nterrain {4 + k} 7 {cls} 2\n"
+    return body + redraw((7, 3)) + "goto 0 7 6\nwait 40\n"
 
 
 def script(name, identities=None, fog=None, vram=False, checkpoint=None, ds=False, tabitha=None):

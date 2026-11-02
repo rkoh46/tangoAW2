@@ -583,6 +583,33 @@ fn preview_env() -> bool {
     *ENV.get_or_init(|| std::env::var("TANGOAW2_DS_GRAPHICS").map(|v| v == "1").unwrap_or(false))
 }
 
+/// 0 unknown (not on the map), 1 the map has been drawn with the mode off, 2 on.
+static MAP_DRAWN_WITH: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+/// The game's own map reload (the steps it takes when the CO page closes): `LoadGameplayGraphics` (palettes, terrain, buildings, HUD tiles, units) and the
+/// map refresh. Switching the mode only moves the pointers the loaders read, so the VRAM and palettes of the other look stayed (washed-out palette, stray tiles).
+const RELOAD: [(u32, i32, i32); 2] = [(0x0804_1DD8, 0, 0), (0x0804_1DE8, 0, 0)];
+/// Set while a reload waits for the map to be up.
+static RELOAD_PENDING: AtomicBool = AtomicBool::new(false);
+
+fn reload_on_switch(core: &mut Core, on: bool) {
+    if crate::fog_view::program_done(core) {
+        return;
+    }
+    if !crate::ds_battle::on_map(core) {
+        // (a switch is only noticed while the map stays up: a map that loads now draws in the look the mode has)
+        MAP_DRAWN_WITH.store(0, Ordering::Relaxed);
+        RELOAD_PENDING.store(false, Ordering::Relaxed);
+        return;
+    }
+    let was = MAP_DRAWN_WITH.swap(if on { 2 } else { 1 }, Ordering::Relaxed);
+    if was != 0 && was != if on { 2 } else { 1 } {
+        RELOAD_PENDING.store(true, Ordering::Relaxed);
+    }
+    if RELOAD_PENDING.load(Ordering::Relaxed) && crate::fog_view::start_program(core, &RELOAD) {
+        RELOAD_PENDING.store(false, Ordering::Relaxed);
+    }
+}
+
 /// Every frame with the pack on.
 pub fn tick(core: &mut Core, pack: bool, allow_setting: bool) {
     if !pack {
@@ -601,6 +628,7 @@ pub fn tick(core: &mut Core, pack: bool, allow_setting: bool) {
         core.raw_write_8(crate::wasteland::DS_GRAPHICS, -1, 0);
     }
     let on = ds_graphics(core);
+    reload_on_switch(core, on);
     if on {
         crate::wasteland::restore_front(core);
     } else {
