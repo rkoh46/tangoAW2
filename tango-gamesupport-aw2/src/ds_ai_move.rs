@@ -383,16 +383,17 @@ pub fn role_move(core: &mut Core) -> bool {
         return false;
     }
     let t = core.raw_read_8(rec, -1);
-    // (the units AW2's role moves leave where they stand, crate::cpu_units: any army behaviour, any role)
-    let special = crate::cpu_units::handles(t)
-        && crate::custom_campaign::driven_goal(core, rec).is_none()
-        && (t == crate::roster::CARRIER || behaviour(core, army) != DEFENSE);
-    if !special && behaviour(core, army) == DEFENSE {
-        return false;
-    }
     // (the army's behaviour's role where it has one: Strike the nearest enemy units, Assault the properties)
     let own = core.raw_read_8(rec + 0x0B, -1);
     let role = crate::ally_posture::role(behaviour(core, army)).map_or(own, |r| r as u8);
+    // (the units AW2's role moves leave where they stand, crate::cpu_units: a Carrier whatever its order; the others
+    // where their order advances, so a held gun of a mission stays)
+    let special = crate::cpu_units::handles(t)
+        && crate::custom_campaign::driven_goal(core, rec).is_none()
+        && (t == crate::roster::CARRIER || (matches!(role, 1 | 3 | 4) && behaviour(core, army) != DEFENSE));
+    if !special && behaviour(core, army) == DEFENSE {
+        return false;
+    }
     if !special
         && (!matches!(role, 1 | 3 | 4)
             || t <= MECH
