@@ -34,6 +34,7 @@ use crate::ds_weather::is_on;
 pub const MEGATANK: u8 = 4;
 pub const PIPERUNNER: u8 = 9;
 pub const STEALTH: u8 = 12;
+pub const ANTI_AIR: u8 = 14;
 pub const BLACK_BOMB: u8 = 13;
 pub const BLACK_BOAT: u8 = 18;
 pub const CARRIER: u8 = 26;
@@ -308,7 +309,7 @@ const STRINGS: [&str; 10] = [
 const DESCRIPTIONS_TEXT: [&[u8]; 7] = [
     b"\x82Megatank\x80: the strongest\rground unit, but short\ron fuel and ammo.",
     b"\x82Piperunner\x80: moves only\ron pipes and bases.\rFires at range 2-5.",
-    b"\x82Stealth\x80: can hide. Hidden,\ronly Fighters and\rStealths can hit it.",
+    b"\x82Stealth\x80: can hide. Hidden,\ronly Fighters, Stealths\rhit it; AA fires back.",
     b"\x82Black Bomb\x80: explodes,\rdamaging all units\rwithin 3 spaces.",
     b"\x82Black Boat\x80: carries two\rfoot soldiers and\rrepairs units nearby.",
     b"\x82Carrier\x80: carries two\rair units. Attacks air\runits at range 3-8.",
@@ -569,21 +570,34 @@ fn scaled_loaded(core: &mut Core) {
     }
 }
 
-/// `CalcDamage` puts AW2's dived-Sub column (`movs r3, #0x19`) where the
-/// defender is dived (the defender unit still in r3): a hidden Stealth has
-/// its own.
+/// `CalcDamage(attacker, defender, distance, is_attacker)` puts AW2's
+/// dived-Sub column (`movs r3, #0x19`) where the defender is dived (the
+/// defender unit still in r3, the attacking unit's type in r2, `is_attacker`
+/// at sp + 4): a hidden Stealth has its own. tangoAW2's rule, not Dual
+/// Strike's: an Anti-Air whose attack on it is a *counterattack* (the
+/// Stealth, hidden or not, attacked the Anti-Air; `is_attacker` 0) uses the
+/// Stealth's ordinary column, so it fires back at a hidden Stealth. An Anti-Air
+/// still cannot start an attack on one (`is_attacker` 1, the [`chart`] row of
+/// the hidden column is 0), and no other unit counters it.
 const DIVED_COLUMN: [u32; 2] = [0x0802_4B90, 0x0802_4BF6];
 fn dived_column(core: &mut Core) {
     if !is_on(core) {
         return;
     }
     let cpu = core.gba().cpu();
-    let (unit, pc) = (cpu.gpr(3) as u32, cpu.thumb_pc());
+    let (unit, pc, att, sp) = (cpu.gpr(3) as u32, cpu.thumb_pc(), cpu.gpr(2) as u8, cpu.gpr(13) as u32);
     if core.raw_read_8(unit, -1) == STEALTH {
+        let counter = core.raw_read_8(sp + 4, -1) == 0;
+        let column = if counter && counters_hidden(att) { STEALTH } else { HIDDEN_STEALTH };
         let cpu = core.gba_mut().cpu_mut();
-        cpu.set_gpr(3, HIDDEN_STEALTH as i32);
+        cpu.set_gpr(3, column as i32);
         cpu.set_thumb_pc(pc + 2);
     }
+}
+
+/// The unit types that fire back at a hidden Stealth that attacked them.
+pub fn counters_hidden(t: u8) -> bool {
+    t == ANTI_AIR
 }
 
 // --- Movement ---------------------------------------------------------------

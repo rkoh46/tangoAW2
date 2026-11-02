@@ -624,6 +624,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 44: Silver Nova reads as silver metal (the ramp's steps come down, the trim, a moved unit is mid grey) and the capture box's HQ keeps the map tower's proportions: the ROM image's palettes and the box picture changed.
         // 45: a custom campaign's volcano drops its eruption's boulders on the cells that take the damage (the show read AW2's own mission's list: the camera and rocks went elsewhere, and the show's length changed with the list).
         // 45: Gauntlet's Cinder Sea and Versus' Crystal Isles gain beach (shoal) cells on their islets so a Lander can land (RC05): the maps' terrain changed.
+        // 45: an Anti-Air fires back at a Stealth that attacked it, hidden or not (CalcDamage's hidden-Stealth column, for a counterattack only): the shared console's battle results changed.
         crate::inspect::SIM_VERSION
     }
 
