@@ -166,6 +166,7 @@ def bh2_m31_hq_capture_routes_the_line(ctx):
     for k in (0, 1):
         name, cell, army, _ = bp.HQS[k]
         planted = rout.plant_extras(e, g, k + 1)
+        own = rout.owned_cells(e, k + 1)
         bp.capture(ctx, e, g, d, cell, 5)
         bp.settle(e, g, d)
         rout.wait_routed(e, g, k + 1)
@@ -176,6 +177,7 @@ def bh2_m31_hq_capture_routes_the_line(ctx):
         ctx.check(d.in_battle() and not e.u8(dc.LAST_RESULT), f"after {name}: the battle goes on")
         ctx.eq(bp.owner(e, *cell), 5, f"{name}'s HQ is the player's")
         rout.check_captured_hq(ctx, e, cell, 5, name)
+        rout.check_neutral(ctx, e, own, cell, name)
         nxt = k + 2
         ctx.check(len(g.units(army=nxt)) >= 10, f"army {nxt}'s wave is on the field ({len(g.units(army=nxt))})")
         ctx.eq(bp.owner(e, *bp.HQS[k + 1][1]), nxt, f"army {nxt}'s HQ is built")

@@ -28,10 +28,12 @@ comes as before. It lives in the engine, so a map gets it from `MissionDef::cut_
 How: a held HQ's capture skips AW2's "defeat the old owner at the end of the turn" mark (`com_tower::held_hq_capture`, at `0x08042822`). For an HQ in `cut_off` (`custom_campaign::rout_army`: the
 army of that entry; stage 1 only) the hook instead calls AW2's own `DefeatArmy(army, 2)` (`0x08028894`) with the return set to where a held capture goes on (`0x08042834`). That is the game's rout
 (what an HQ capture does in Versus): every unit record of the army is destroyed with the explosions (cargo, Dual Strike kinds such as the Black Boat, Carrier, Stealth, hidden Stealth and dived Sub
-too: the test plants all of them), the history's rout and HQ counts are added, the properties are handed over to neutral. The units die one after another over a few seconds; the player has control
-meanwhile. All state is the game's own (EWRAM), so suspend/continue, replays and netplay are the same on both peers (`SIM_VERSION` 45).
+too: the test plants all of them) and the history counts the HQ capture. AW2 would hand the army's properties to the captor; the rule is **neutral**, so the defeat proc's step is patched at two
+places (`custom_campaign::rout_neutral`, `rout_keep_hq_city`; only for a `cut_off` army with code 2): its captor register is 0 (as for an army defeated by losing its units) and the line's HQ cell, record
+entry and `gProperty` entry are the player's city before its handover loop runs. The units die one after another over a few seconds and the map is busy (no menu, no Save) until it is over, then the next
+line's scene plays. All state is the game's own (EWRAM), so suspend/continue, replays and netplay are the same on both peers (`SIM_VERSION` 45).
 
-- The captured HQ becomes the player's **city** (AW2's own `sub_0802419C`, before the hook): the player keeps exactly one HQ, and the converted cell is of city class, so nothing the computer does to it can end the player's army (only an HQ-class capture does). Tested (`rout.check_captured_hq`).
+- The captured HQ becomes the player's **city** (AW2's HQ-to-city conversion, kept the player's by `rout_keep_hq_city`): the player keeps exactly one HQ, and the converted cell is of city class, so nothing the computer does to it can end the player's army (only an HQ-class capture does). Tested (`rout.check_captured_hq`).
 - The next line: the `Reveal` trigger fires after the same action (the HQ is the player's: `Cond::LineFallen`), and `wake_after_rout` (the `DefeatArmy` trap) makes the next controller the computer's, as for a
   rout by lost units; a sleeping army is never the one routed (`defeat_army` skips it).
 - **The last line is not routed**: its HQ is not in `cut_off`. Its capture wins at once (the `Win` trigger) and its army must still stand for the closing scene (an army AW2 has routed has no face for a speaker).

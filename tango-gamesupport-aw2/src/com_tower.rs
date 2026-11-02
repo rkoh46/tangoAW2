@@ -219,7 +219,7 @@ fn key_property(core: &mut Core) {
 /// player +0x32). Here r0 is the captured terrain, just tested against the
 /// HQ: a tower skips the mark (0x08042834 is past it).
 const CAPTURED: u32 = 0x0804_281E;
-const CAPTURED_DONE: u32 = 0x0804_2834;
+pub const CAPTURED_DONE: u32 = 0x0804_2834;
 /// The cell being captured (`gUnknown_03003100`: x, y as s16).
 const CAPTURE_CELL: u32 = 0x0300_3100;
 /// The same completion for an HQ (class 8 jumps past the Lab test to here, `0x08042822`, where the previous

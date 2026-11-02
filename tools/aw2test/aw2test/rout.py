@@ -130,3 +130,10 @@ def check_captured_hq(ctx, e, cell, player, name):
     ctx.eq(tile_kind(tile), 2, f"{name}'s captured HQ cell is a city (tile {tile:#x})")
     mine = hq_cells(e, player)
     ctx.eq(len(mine), 1, f"the player owns exactly one HQ after taking {name}'s ({mine})")
+
+
+def check_neutral(ctx, e, before, hq, name):
+    """Every property the routed army owned (`before`: `owned_cells` taken before the capture) is neutral now, but its HQ cell (the player's city): none went to the captor."""
+    left = [(c, cell_class_tile(e, *c)[1]) for c in before if c != tuple(hq)]
+    ctx.check(len(left) > 2, f"{name} owned properties before the capture ({len(before)})")
+    ctx.eq([c for c, o in left if o != 0], [], f"{name}'s other {len(left)} properties are all neutral (none went to the captor)")
