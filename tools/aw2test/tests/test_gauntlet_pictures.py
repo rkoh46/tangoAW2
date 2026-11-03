@@ -70,7 +70,7 @@ LOOKS = (
 @test(modes=("ds",))
 def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
     """The map selector (the War Room's own SELECT MAP: both maps) and the colour pick in AW2's graphics, the DS map graphics with the tilt and without it (the owner's standing rule: every
-    visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns the top of the list, the R box on a map with five records, the fourth row, the last row (Iron Crown), the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
+    visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns the top of the list, the R box on a map with five records, the fourth row, the last row (Iron Crown, the list scrolled to its end: twelve maps), the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
     from PIL import Image
     rows = []
     for look, env in LOOKS:
@@ -95,11 +95,12 @@ def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
             e.press("DOWN", 4)
             e.wait(40)
         row.append(shot(ctx, e, f"{look}_selector_4"))
-        for _ in range(3):
+        for _ in range(8):
             e.press("DOWN", 4)
             e.wait(40)
-        row.append(shot(ctx, e, f"{look}_selector_7"))
-        for _ in range(6):
+        ctx.eq(d.selector_ids()[1], len(ga.SELECTOR_ORDER) - 1, f"{look}: DOWN scrolls the list to its last row")
+        row.append(shot(ctx, e, f"{look}_selector_last"))
+        for _ in range(len(ga.SELECTOR_ORDER) - 1):
             e.press("UP", 4)
             e.wait(40)
         e.press("A", 6)

@@ -34,13 +34,13 @@ def build():
                 continue
             street = any(m.get(x + a, y + b) == "R" for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)))
             r = rnd.random()
-            if street and r < 0.40:
+            if street and r < 0.27:
                 m.g[y][x] = "C"
-            elif not street and r < 0.30:
+            elif not street and r < 0.40:
                 m.g[y][x] = "f"
-            elif not street and r < 0.52:
+            elif not street and r < 0.74:
                 m.g[y][x] = "^"
-            elif street and r < 0.50:
+            elif street and r < 0.55:
                 m.g[y][x] = "f"
     m.header(armies=4, colours=(OS, BM, BH, BH), team=(1, 2, 2, 2), objective=[1], hidden=[3, 4], comment=(
         "Gauntlet 10 Neon Row (normal look, no fog, 32 x 22, four armies): the player (army 1, HQ (4,16), the south-west blocks, a free CO) against Colin (Blue Moon, army 2, HQ (22,9), the east-centre blocks), then Kindle (Black Hole, "

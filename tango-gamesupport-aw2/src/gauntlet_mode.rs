@@ -1186,7 +1186,7 @@ pub const BASTION_COLIN: (u8, u8) = (27, 7);
 pub const BASTION_SASHA: (u8, u8) = (27, 18);
 pub const BASTION_PLAYER: (u8, u8) = (3, 20);
 
-/// Grit's wave: artillery and rockets in the north-west ward, Md Tanks and foot soldiers.
+/// Grit's wave: artillery and rockets in the north-west ward, Md Tanks, a Tank and foot soldiers.
 const GRIT_WAVE: [(u8, (u8, u8)); 17] = [
     (unit::ARTILLERY, (20, 7)),
     (unit::ARTILLERY, (16, 9)),
@@ -1204,7 +1204,7 @@ const GRIT_WAVE: [(u8, (u8, u8)); 17] = [
     (unit::MECH, (18, 11)),
     (unit::MECH, (17, 7)),
     (unit::ANTI_AIR, (19, 11)),
-    (unit::RECON, (16, 11)),
+    (unit::TANK, (16, 11)),
 ];
 
 /// Colin's wave: cheap tanks and a crowd of infantry in the north-east ward, copters.

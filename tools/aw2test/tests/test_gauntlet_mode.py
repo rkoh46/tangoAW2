@@ -442,11 +442,7 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
 def gauntlet_mode_a_long_list_borrows_survivals_map_entries_and_gives_them_back(ctx):
     """The list of a full house (the test aid TANGOAW2_GAUNTLET_SLOTS=32 lays the ids out for 32 maps, so today's twelve take ids 0xDC.., Survival's entries): the selector lists every map in order with its own
     name, scrolls to the last row, the record box reads the rows of those ids, and when the selector is left every borrowed entry is Survival's again, byte for byte (crate::survival::restore_entry)."""
-    os.environ["TANGOAW2_GAUNTLET_SLOTS"] = "32"           # (the driver's own id arithmetic follows the aid too: ga.list_ids)
-    try:
-        _long_list(ctx)
-    finally:
-        os.environ.pop("TANGOAW2_GAUNTLET_SLOTS", None)
+    _long_list(ctx)
 
 
 def _long_list(ctx):
@@ -459,7 +455,7 @@ def _long_list(ctx):
     d.open(pick=False, from_title=False)
     d.wait_step(ga.SELECTOR)
     ids, row = d.selector_ids()
-    ctx.eq(ids, ga.list_ids(), "the list is the twelve maps on the borrowed ids")
+    ctx.eq(ids, ga.list_ids(32), "the list is the twelve maps on the borrowed ids")
     ctx.check(ids[0] < 0xE0, f"the first map's id is a Survival entry's ({ids[0]:#x})")
     ctx.eq([d.entry_name(i) for i in ids], ga.SELECTOR_TITLES, "every map has its own name, in the order of the enemy counts")
     for _ in range(len(ids) - 1):
@@ -469,7 +465,7 @@ def _long_list(ctx):
     ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (len(ids) - 1, 1), "DOWN scrolls the list to the last map, Iron Crown")
     d.put_results(2, [(ga.MAX, 20, 400)])
     e.wait(10)
-    ctx.eq(d.record_rows()[-1][0], (ga.MAX, 20 | 400 << 12), "the box's row of the last id holds Iron Crown's best")
+    ctx.eq(d.record_rows(32)[-1][0], (ga.MAX, 20 | 400 << 12), "the box's row of the last id holds Iron Crown's best")
     e.press("B", 6)
     e.wait(120)
     after = {i: entry(i) for i in borrowed}

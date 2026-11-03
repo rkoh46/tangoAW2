@@ -2,7 +2,7 @@
 
 Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick one CO (any CO the game has, no partner), then fight a map's enemy COs one after another in a single battle (the gauntlet engine,
 [gauntlet.md](gauntlet.md): hidden lines that arrive when the lines before them fall), AW2's results, back on Select Mode. The maps are the content (`crate::gauntlet_mode`: `def()` returns a
-`CampaignDef` whose missions are the maps, `ROSTER` every CO, `SOURCE` 4; Cinder Sea is `gauntlet_01`, seven maps today: the table in gauntlet.md); this page is how the mode is wired. Code: `gauntlet.rs`, `gauntlet_ui.rs` (the map selector and the colour pick), `mode_menu.rs`, `ds_campaign.rs`
+`CampaignDef` whose missions are the maps, `ROSTER` every CO, `SOURCE` 4; Cinder Sea is `gauntlet_01`, twelve maps today, room for 32: the table in gauntlet.md); this page is how the mode is wired. Code: `gauntlet.rs`, `gauntlet_ui.rs` (the map selector and the colour pick), `mode_menu.rs`, `ds_campaign.rs`
 (`start_gauntlet`, `gauntlet_start_script`, `gauntlet_end_script`, `after_map`, `end_of_battle`), `campaign_model.rs` (the source), tests `tools/aw2test/tests/test_gauntlet_mode.py`.
 
 ## The flow, screen by screen
@@ -13,12 +13,12 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick one CO (an
    section is last): fade, then
    - **the map selector** (`gauntlet_ui.rs`, step 1) is **the game's own War Room map-select screen** (`ProcScr_PreviewMap`, `0x08616C54`: the "SELECT MAP" title and wallpaper, the map list, the
      map's picture, the faces of the enemies, the R record box), run as a blocking child of the start proc exactly as the War Room's flow runs it (`06 1 SELECT_MAP`; after it the script calls
-     `FLOW_PICK_CHOSEN`). Nothing is drawn by us. What makes the game list our maps: one **map-table entry per mission** (`gauntlet_ui::id_of`: ids `0xF6..0xFD`, **in the selector's order**: the list shows the ids in order and the maps are sorted by the number of enemy COs, fewest first, `gauntlet_mode::order`; a map's identity everywhere else is its mission index, past Survival's `0xC9..0xEF`, the
+     `FLOW_PICK_CHOSEN`). Nothing is drawn by us. What makes the game list our maps: one **map-table entry per mission** (`gauntlet_ui::id_of`: the last n of `gauntlet_ui::SLOT_IDS` (0xC9..=0xEF, 0xF2..=0xFD), **in the selector's order**: the list shows the ids in order and the maps are sorted by the number of enemy COs, fewest first, `gauntlet_mode::order`; a map's identity everywhere else is its mission index, an id is a slot in the list, never the map's identity; the
      campaign's battle entry `0xF0` and the vault `0xF1`; the table is Survival's larger copy, `five_map::table`) holding the mission's compiled header (`ds_campaign::mission_header`: name, tiles for the
      picture) with the list's tab (`survival::TAB`, the War Room's tab byte `0x08090EF2`) while the screen is up and a tab no list shows otherwise, the player's CO slot `0xFF` and the **first three enemy
      COs in the order they come** in the CO bytes (+0x3C..: the screen draws a face for each; a map with more lines, as Iron Crown with Asuka's stage, shows the first three). While it is up the play
      state's game mode is the War Room's (the list builder lists a tab for Versus and the War Room only; `SAVED_MODE` keeps the campaign's, put back by `chosen`). The **record box** reads War Room
-     record rows (five records of four bytes): the five `RECORD_POOLS` words are pointed at Survival's block of zeroed rows (`survival::ROWS`; the two modes are never open together) whose rows are the maps' **top five** (one row a map, by list position, built each frame from the records table, `gauntlet_ui::rows`; a result is one word `CO | days << 8 |
+     record rows (five records of four bytes): the five `RECORD_POOLS` words are pointed at the Gauntlet's own record block (`gauntlet::BLOCK`, see "Records and saves") whose rows are the maps' **top five** (one row a map, by its map-table id, built each frame from the records table, `gauntlet_ui::rows`; a result is one word `CO | days << 8 |
      score << 20`): the box shows 1st..5th with CO face, days and points, as the War Room's own box does. Two things the game's screen assumed of a War Room list (always dozens of maps) are patched for a list
      of two: `DrawMapList` draws only the rows there are (`survival::draw_map_list`, shared with Survival) and the scroll bar's track is at most its own length (`gauntlet_ui::scroll_track`, a trap at
      `0x0808731A`: a track of a hundred sprites overflowed the sprite buffer into the BG0 control shadow and garbled the screen). The game's own handler takes the pad: UP/DOWN browse, **A writes the
@@ -58,12 +58,11 @@ game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of 
   the older one; the fifth falls off, a result below all five is dropped. `gauntlet::insert` / `place` do the same on the Gauntlet's table (the harness has its own copy, `ga.war_room_insert`, written
   from the disassembly). **A win only** inserts (`best_score` is called for a loss too, with the winner's score; a loss writes nothing).
 - **Keyed by the map's id, not its place in the list.** `gauntlet::record_id(key)`: `gauntlet_NN` is NN (1..255; the stage keys such as `gauntlet_02b` are not maps; a test checks every listed map has a
-  distinct id). Re-ordering or adding maps never moves a record. The table has 16 slots (`SLOTS`), one per map with a record, a free slot has id 0.
-- **Where it lives.** Flash slot 13 at +0x240, magic "AWGA", **format version 2** (the progress record's byte +5): `+0x00` the progress (0x20 bytes), `+0x20` the table, 16 slots of 0x18 bytes (`+0` the
-  map id, `+1..3` 0, `+4..` five result words, best first): `RECORD_LEN` 0x1A0, ending at +0x3E0 (the sector's payload is 0xFAE bytes; BH's 0..0x120 and BH2's 0x120..0x240 are never touched, a record is
+  distinct id). Re-ordering or adding maps never moves a record. The table has 32 slots (`SLOTS`), one per map with a record, a free slot has id 0.
+- **Where it lives.** Flash slot 13 at +0x240, magic "AWGA", **format version 2** (the progress record's byte +5): `+0x00` the progress (0x20 bytes), `+0x20` the table, 32 slots of 0x18 bytes (`+0` the
+  map id, `+1..3` 0, `+4..` five result words, best first): `RECORD_LEN` 0x320, ending at +0x560 (a record saved by the first top-five build, 16 slots and 0x1A0 bytes, is a prefix of it: it loads whole and the other slots are free, so no version bump) (the sector's payload is 0xFAE bytes; BH's 0..0x120 and BH2's 0x120..0x240 are never touched, a record is
   written by replacing only its own region, `merge_record`; tests `gauntlet_mode_leaves_the_other_campaigns_saves_byte_identical` and, in Rust, `the_gauntlet_record_sits_after_bh_and_bh2_in_slot_13_and_touches_neither`).
-  In RAM the table is the end of Survival's block of rows (`survival::ROWS` + 0x150, `gauntlet::TABLE`; the selector's record rows are the first 16 rows of the block, so a map list of up to 16 fits;
-  `ram_map` has no separate region: Survival and the Gauntlet are never open together and the Gauntlet reloads the table from Flash whenever it starts). `ds_campaign::start_gauntlet` loads it
+  In RAM the Gauntlet has a block of its own (`gauntlet::BLOCK` = 0x0203E800, `ram_map`): the selector's record rows (one 0x14-byte row per map-table id from `gauntlet_ui::ROW_BASE` 0xDC to 0xFD: 34 rows), then the table (`gauntlet::TABLE`, 32 slots). Its bytes are time-shared with the Teams screen's borrowed tiles, the two-front store and the War Room's rows on Dual Strike's maps (listed in `ram_map::TIME_SHARED` with the reasons: a Versus screen, a two-front battle and the DS table's War Room are never part of the Gauntlet's flow). Survival's block of rows is no longer used by the Gauntlet. `ds_campaign::start_gauntlet` loads it
   (`gauntlet::load_record`), `stage_custom` saves it (`gauntlet::region`). `ds_campaign::RECORDS` (by list position) still holds each map's first place, rebuilt by `gauntlet::mirror`: `battle_points` reads
   it as the best before a battle and `Gauntlet.best()` reads it in the tests.
 - **Migration from 0.9.4.** Version 0 (0.9.4: one word per list position, 8 bytes each from +0x20; Cinder Sea 0, Iron Crown 1) is converted on load: each position's best becomes the first place of its map's
@@ -74,10 +73,29 @@ game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of 
 - **Online.** Offline only: `mode_menu::tick` is called with `ds && ds_features && mode.is_none()` (as Survival's), the wheel is AW2's own six in a netplay room, and nothing of the battle's
   simulation is changed (no `SIM_VERSION` bump).
 
+## The map list's room (how many maps, and what limits it)
+The list takes **up to 32 maps** (`gauntlet_ui::MAX_MAPS`). Three things set that number, and all three allow 32:
+- **Missions:** each map is a mission of the Gauntlet's campaign; the campaign engine allows 32 (`campaign_model::MAX_MISSIONS`: the record words by mission in `ds_campaign::RECORDS`, one 0x800-byte cropped picture each in free ROM at `PREVIEW_ROM` 0x08E20000..0x08E30000).
+- **Map-table ids:** the game's list walks ids 0..=0xFD (0xFE is the Dual Strike battle's, the walk's counter is a byte). `gauntlet_ui::SLOT_IDS` has 51 ids, ascending: Survival's entries 0xC9..=0xEF, then the free 0xF2..=0xFD (0xF0 is the campaigns' battle entry, 0xF1 the Colonel's Vault). A list of n maps takes the **last n** of them, so the first twelve maps use only
+  0xF2..0xFD and never touch Survival; map 13 and on borrow Survival's entries from the top down (0xEF, 0xEE, ...) and give them back **whole** when the selector closes (`survival::restore_entry`, which rewrites the header of the build; Survival's per-frame list is held off while the selector is up). Survival and the Gauntlet are never open together.
+  The ids move when a map is added (the list is sorted by enemy count), so an id means nothing outside the selector; a map's identity is its mission and its record key `gauntlet_NN`.
+- **Records:** 32 slots in Flash and RAM (see above), rows for 34 ids.
+To go past 32: raise `MAX_MISSIONS` (and `RECORDS` / the `ds_campaign` regions that depend on it), `PREVIEW_ROM`'s room, `gauntlet::SLOTS`, `gauntlet_ui::MAX_MAPS` and `ram_map`'s block, and find more ids (there are none left below 0xFD without taking the Vault's or Versus' pool).
+The unit tests `a_full_list_has_ids_rows_records_and_order_that_work` (32 maps' ids, rows, records and order) and, in the harness, `-k gauntlet_mode_a_long_list` (the aid `TANGOAW2_GAUNTLET_SLOTS=32` lays the ids out for a full house, so today's twelve borrow Survival's entries: every map is listed with its name, the list scrolls to the last, the record box reads the borrowed ids' rows, Survival's entries come back byte for byte) cover it.
+
 ## The rout rule
 Capturing a line's HQ routes that army at once (all its units destroyed by AW2's own `DefeatArmy`, every property it owns neutral), then the next line comes; the last line's HQ wins as before. It is the shared engine's, so every map has it by default: list every line but the last in `cut_off` ([gauntlet.md](gauntlet.md), "The rout"). Tests `-k gauntlet_rout`.
 
 ## Adding a map
+The steps to add `gauntlet_NN` (NN = the next number; its record key, never reused):
+1. Spec `five/gauntlet/spec/gauntlet_NN.py`; `aw2dev maps gen --campaign gauntlet` (writes `five/gauntlet/gauntlet_NN.txt` and `gauntlet_map_data.rs`); `aw2dev maps lint --source gauntlet` clean. Keep a map to about 110 properties (Neon Row with 150 stalled the computer's turn on day 1, with 210 some properties stayed owned after a rout; 108 is clean).
+2. Waves: `aw2dev maps wave gauntlet_NN --zone x0,y0,x1,y1 --kinds ...` (ships and landers on a sea map by hand: the tool does not know water).
+3. A mission function in `gauntlet_mode.rs` (`wire`, `arrival`, `chest`) and its name in `def()`'s missions (the next mission index; a map's mission index is its identity for the colour memory and the records' mirror). Its enemy COs must be ones no other map uses (the test `no_two_maps_share_an_enemy_co_but_the_named_exceptions`).
+4. `text_of` in the Rust tests, `aw2test/gauntlet_maps.py` (mission, lines, HQs, waves, chests) and `SELECTOR_ORDER` / `SELECTOR_TITLES` in `aw2test/gauntlet.py` (the order is by enemy count, ties by mission).
+5. Check `-k gauntlet`, `cpu_port_idle_gauntlet`, `cpu_progress`, and look at the pictures (`aw2dev gauntlet maps-pictures`).
+**The limit is 32 maps** (see "The map list's room"): the 33rd needs `MAX_MISSIONS`, the cropped pictures' ROM and more map-table ids first. Nothing else is keyed by the map's place in the list.
+
+(Older notes:)
 The selector sorts the maps itself (fewest enemy COs first, ties in `def()`'s order): add the mission to `def()` and it lands in its place; nothing is keyed by the list position. Use `wire`, `arrival` and `chest` (gauntlet.md, "How to add a map") and the harness registry `aw2test/gauntlet_maps.py`.
 A function in `gauntlet_mode.rs` added to `def()`'s missions (its key `gauntlet_NN` is its record id: records follow the key, not the list position) (every line but the last in `cut_off`: that is the rout rule) (spec `five/gauntlet/spec/gauntlet_NN.py`, `aw2dev maps gen --campaign gauntlet`): the selector lists it, with its enemies, and the colour pick
 offers what its enemies leave, from the mission alone. **The enemies' colours are the map's data**: each enemy `ArmyDef::new(colour::.., CoSpec::Fixed(co))` in `armies` (index 1 on, in the order they

@@ -60,10 +60,11 @@ SELECTOR_ORDER = [2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
 SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown"]
 
 
-def list_ids():
-    """The map-table ids the selector lists, in its order: the last n of SLOT_IDS (more with the test aid TANGOAW2_GAUNTLET_SLOTS=<span>, which lays the ids out for that many maps and so borrows Survival's)."""
+def list_ids(span=0):
+    """The map-table ids the selector lists, in its order: the last n of SLOT_IDS (with `span` more than n, the ids laid out for that many maps, as the app does under the test aid TANGOAW2_GAUNTLET_SLOTS=<span>:
+    it borrows Survival's entries)."""
     n = len(SELECTOR_ORDER)
-    span = max(n, min(MAX_MAPS, int(os.environ.get("TANGOAW2_GAUNTLET_SLOTS") or 0)))
+    span = max(n, min(MAX_MAPS, span))
     return SLOT_IDS[len(SLOT_IDS) - span:][:n]
 
 def row_of(mission):
@@ -71,7 +72,7 @@ def row_of(mission):
     return SELECTOR_ORDER.index(mission)
 
 
-SELECTOR_ENEMIES = [2, 2, 3, 3, 4, 4, 5]       # the number of enemy COs of each row (never decreasing: fewest first)
+SELECTOR_ENEMIES = [2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5]       # the number of enemy COs of each row (never decreasing: fewest first)
 
 # crate::gauntlet_mode (Cinder Sea): the HQs and the enemy COs in order
 CINDER = {"player": (3, 18), "drake": (27, 18), "sensei": (3, 3), "hawke": (29, 3)}
@@ -143,10 +144,10 @@ class Gauntlet(BhCampaign):
     def entry_tab(self, map_id):
         return self.e.u16(self.table() + 0x5C * map_id + 0x1A)
 
-    def record_rows(self):
+    def record_rows(self, span=0):
         """The War Room record rows the screen reads for the Gauntlet's maps (crate::gauntlet_ui::rows): per map five (CO, score) records."""
         b = bytes(self.e.read(ROWS, 0x14 * ROW_COUNT))
-        rows = [0x14 * (i - ROW_BASE) for i in list_ids()]       # (the game reads the row of the map-table id it lists a map by)
+        rows = [0x14 * (i - ROW_BASE) for i in list_ids(span)]       # (the game reads the row of the map-table id it lists a map by)
         return [[(b[o + 4 * k], int.from_bytes(b[o + 4 * k + 1:o + 4 * k + 4], "little")) for k in range(5)] for o in rows]
 
     def open(self, from_title=True, pick=True, map=0):
