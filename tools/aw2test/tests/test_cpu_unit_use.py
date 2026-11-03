@@ -127,12 +127,10 @@ def gauntlet_days(ctx, days, map=0, me=1, armies=(2, 3, 4)):
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    if map:
-        from tests.test_gauntlet_map2 import to_player_turn
-        d.start(ga.ANDY, map=map)
-        to_player_turn(e, g, d)
-    else:
-        d.start(ga.ANDY)
+    from aw2test import gauntlet_maps as gm
+    from tests.test_gauntlet_map2 import to_player_turn
+    d.start(ga.ANDY, map=map)
+    to_player_turn(e, g, d, army=gm.player_army(map))
 
     def snap():
         g._units_base = g._players_base = None
@@ -227,6 +225,25 @@ def cpu_progress_gauntlet_iron_crown(ctx):
     g, days, mine = gauntlet_days(ctx, 5, map=1, me=5, armies=(1, 2, 3, 4))
     check_share(ctx, acted_fractions(ctx, days, "iron crown"), 0.6, "Iron Crown")
     closing_in(ctx, days, mine, "Iron Crown")
+
+
+def _cpu_progress_new_map(info):
+    def fn(ctx):
+        # (only the first line is on the field: the later lines' armies are asleep; the CPU's units are the first line's)
+        g, days, mine = gauntlet_days(ctx, 5, map=info.mission, me=info.player, armies=info.armies[:1])
+        check_share(ctx, acted_fractions(ctx, days, info.title.lower()), 0.6, info.title)
+        closing_in(ctx, days, mine, info.title)
+    fn.__name__ = f"cpu_progress_gauntlet_{info.title.lower().replace(' ', '_')}"
+    test(modes=DS)(fn)
+
+
+def _register_new_gauntlet_maps():
+    from aw2test import gauntlet_maps as gm
+    for info in gm.MAPS.values():
+        _cpu_progress_new_map(info)
+
+
+_register_new_gauntlet_maps()
 
 
 def land_map(ctx):

@@ -46,6 +46,12 @@ def shown(e):
     return b[0], [(b[2 + 2 * k], b[3 + 2 * k]) for k in range(b[1])], list(b[0x0F:0x0F + b[0x0E]])
 
 
+# The selector lists the maps by their number of enemy COs, fewest first (crate::gauntlet_mode::order; ties in the definition's order): the missions by row and their names. A map's identity is its
+# mission (the record, `Gauntlet.open(map=<mission>)`), never its row.
+SELECTOR_ORDER = [2, 3, 0, 4, 5, 6, 1]
+SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Cinder Sea", "Granite Spine", "Harvest Run", "Chrome Meridian", "Iron Crown"]
+SELECTOR_ENEMIES = [2, 2, 3, 3, 4, 4, 5]       # the number of enemy COs of each row (never decreasing: fewest first)
+
 # crate::gauntlet_mode (Cinder Sea): the HQs and the enemy COs in order
 CINDER = {"player": (3, 18), "drake": (27, 18), "sensei": (3, 3), "hawke": (29, 3)}
 ENEMIES = ["Drake", "Sensei", "Hawke"]
@@ -130,11 +136,14 @@ class Gauntlet(BhCampaign):
         e.press("A", 8)
         if pick:
             self.wait_step(SELECTOR)
-            for _ in range(map):                # (the selector's list: DOWN to the map; the game's cursor takes a moment to settle before it takes A)
+            # (the selector lists the maps by their number of enemy COs, fewest first, crate::gauntlet_mode::order: DOWN until the cursor is on the mission `map`;
+            # the cursor's move takes a moment to settle before it takes A)
+            for _ in range(8):
+                if e.u8(UI_MAP_CURSOR) == map:
+                    break
                 e.press("DOWN", 4)
                 e.wait(40)
-            ctx_ok = e.u8(UI_MAP_CURSOR) == map
-            if not ctx_ok:
+            if e.u8(UI_MAP_CURSOR) != map:
                 raise NavError(f"the selector's cursor is on map {e.u8(UI_MAP_CURSOR)}, not {map}")
             e.press("A", 6)
 

@@ -70,7 +70,7 @@ LOOKS = (
 @test(modes=("ds",))
 def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
     """The map selector (the War Room's own SELECT MAP: both maps) and the colour pick in AW2's graphics, the DS map graphics with the tilt and without it (the owner's standing rule: every
-    visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns Cinder Sea, Iron Crown, the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
+    visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns the top of the list, the fourth row, the last row (Iron Crown), the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
     from PIL import Image
     rows = []
     for look, env in LOOKS:
@@ -81,12 +81,18 @@ def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
         d.open(pick=False)
         d.wait_step(ga.SELECTOR)
         row = [shot(ctx, e, f"{look}_selector_1")]
-        ctx.check(d.selector_ids()[0] == [ga.FIRST_ID, ga.FIRST_ID + 1], f"{look}: both maps are listed")
-        e.press("DOWN", 4)
-        e.wait(40)
-        row.append(shot(ctx, e, f"{look}_selector_2"))
-        e.press("UP", 4)
-        e.wait(40)
+        ctx.check(d.selector_ids()[0] == [ga.FIRST_ID + r for r in range(len(ga.SELECTOR_ORDER))], f"{look}: every map is listed, fewest enemies first")
+        for _ in range(3):
+            e.press("DOWN", 4)
+            e.wait(40)
+        row.append(shot(ctx, e, f"{look}_selector_4"))
+        for _ in range(3):
+            e.press("DOWN", 4)
+            e.wait(40)
+        row.append(shot(ctx, e, f"{look}_selector_7"))
+        for _ in range(6):
+            e.press("UP", 4)
+            e.wait(40)
         e.press("A", 6)
         d.wait_co_screen()
         d.choose_cos(1, prefs=[ga.ANDY])
@@ -96,7 +102,7 @@ def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
         rows.append(row)
         e.close()
     ims = [[Image.open(p).convert("RGB") for p in r] for r in rows]
-    sheet = Image.new("RGB", (240 * 3, 160 * len(ims)))
+    sheet = Image.new("RGB", (240 * 4, 160 * len(ims)))
     for y, r in enumerate(ims):
         for x, im in enumerate(r):
             sheet.paste(im, (240 * x, 160 * y))

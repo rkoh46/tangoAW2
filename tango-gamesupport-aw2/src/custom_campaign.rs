@@ -2254,7 +2254,8 @@ fn compile_mission(
                 }
                 Action::Win => {
                     cmds.extend(cx.scene_cmds(&m.victory, SceneEnd::Fade)?);
-                    cmds.push(cmd(0x40, 0, 1, 0, 0));
+                    // (the winner is the player's army: 1, or the fifth of a five-army mission, whose gauntlet maps win by their last line's HQ)
+                    cmds.push(cmd(0x40, 0, player as u16, 0, 0));
                     ends = true;
                 }
                 Action::Lose => {

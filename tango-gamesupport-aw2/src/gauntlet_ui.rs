@@ -105,15 +105,16 @@ pub fn begin_select(core: &mut Core) {
     frame(core);
 }
 
-/// The map-table id of the Gauntlet's mission `m` (one entry each, past the Versus maps' and Survival's).
+/// The map-table id of the Gauntlet's mission `m` (one entry each, past the Versus maps' and Survival's): the list shows the ids in order, so a map's id is the first plus its place in the
+/// selector's order ([`gm::order`]: by the number of enemy COs); the mission stays the map's identity everywhere else.
 pub fn id_of(mission: usize) -> u8 {
-    FIRST_ID + mission.min(LAST_MAPS - 1) as u8
+    FIRST_ID + gm::rank_of(mission).min(LAST_MAPS - 1) as u8
 }
 
 /// The mission of a map-table id of ours.
 fn mission_of(id: u8) -> Option<usize> {
-    let m = id.checked_sub(FIRST_ID)? as usize;
-    (m < gm::entries().len().min(LAST_MAPS)).then_some(m)
+    let rank = id.checked_sub(FIRST_ID)? as usize;
+    (rank < gm::entries().len().min(LAST_MAPS)).then(|| gm::order()[rank])
 }
 
 /// Each frame the selector is up: what the game's list builder and SELECT MAP read is as the Gauntlet wants it. The game mode is the War Room's (the builder lists a tab only for Versus' and the

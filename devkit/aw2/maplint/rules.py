@@ -987,7 +987,15 @@ def armies(G):
     cols = list(G.m.meta.get("colours") or [])
     n = int(G.m.meta.get("armies") or len(cols) or 0)
     cols = cols[:n]
+    team = list(G.m.meta.get("team") or [])
+    player = 4 if n == 5 else 0
+    if G.m.source == "gauntlet" and n == 5:
+        cols = cols[:4]        # (a five-army game's fifth army is the player's, always written as Black Hole's: the colour it wears is the player's pick, not the map's)
     for c in sorted({c for c in cols if cols.count(c) > 1}):
+        # (a Gauntlet map may line up one whole army's COs one after another, as Orange Star's Andy, Max, Sami and Nell: armies of one colour on one enemy team, only their slots differ; the player's own colour is never shared)
+        who = [i for i, k in enumerate(cols) if k == c]
+        if G.m.source == "gauntlet" and len(team) > player and len({team[i] for i in who}) == 1 and team[who[0]] != team[player] and player not in who:
+            continue
         out.append(Problem("AR01", -1, -1, f"{cols.count(c)} armies wear colour {c} (colours {cols})"))
     hq = {}
     for y in range(G.h):

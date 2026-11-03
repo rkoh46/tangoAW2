@@ -290,6 +290,17 @@ class Lint(unittest.TestCase):
         self.assertIn("AR01", ids(m))
         m.meta["colours"] = [1, 2]
         self.assertNotIn("AR01", ids(m))
+        # a Gauntlet map's lines of one army: the same colour on one (enemy) team is fine, the same colour as the player's is not
+        m.source = "gauntlet"
+        m.meta.update({"colours": [5, 1, 1], "armies": 3, "team": [1, 2, 2]})
+        self.assertNotIn("AR01", ids(m))
+        m.meta.update({"colours": [1, 1, 3], "team": [1, 2, 2]})
+        self.assertIn("AR01", ids(m))
+        m.meta.update({"colours": [5, 1, 1], "team": [1, 2, 1]})
+        self.assertIn("AR01", ids(m))
+        m.meta.update({"colours": [5, 3, 3, 3, 1], "armies": 5, "team": [2, 2, 2, 2, 1]})     # (a Black Hole line, then three lines of one skin's colour: the five-army player is the last)
+        self.assertNotIn("AR01", ids(m))
+        m.source = "bh"
         rows = list(FLAT)
         rows[4] = rows[4][:5] + "1" + rows[4][6:]              # a second HQ of army 1
         self.assertIn("AR02", ids(build(rows)))

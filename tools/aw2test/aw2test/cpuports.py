@@ -373,7 +373,7 @@ def run_design(ctx, m, cos, days=DAYS):
 
 
 def run_gauntlet(ctx, map=0, days=DAYS):
-    """The Gauntlet's map `map` (the selector's entry: 0 Cinder Sea, 1 Iron Crown) with the player passive."""
+    """The Gauntlet's map `map` (the mission's index in crate::gauntlet_mode::def, whatever its place in the selector: 0 Cinder Sea, 1 Iron Crown, 2.. aw2test/gauntlet_maps.py) with the player passive."""
     from . import gauntlet as ga
     from . import paths
     from .emu import Emu
@@ -382,12 +382,11 @@ def run_gauntlet(ctx, map=0, days=DAYS):
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    if map:
-        from tests.test_gauntlet_map2 import to_player_turn
-        d.start(ga.ANDY, map=map)
-        to_player_turn(e, g, d)
-    else:
-        d.start(ga.ANDY)
+    from . import gauntlet_maps as gm
+    from tests.test_gauntlet_map2 import to_player_turn
+    d.start(ga.ANDY, map=map)
+    # (the player is the first army, or the fifth of a five-army map and then moves last: the computer's lines go by first)
+    to_player_turn(e, g, d, army=gm.player_army(map))
     g._units_base = g._players_base = None
     return e, g, passive(ctx, e, g, d, f"Gauntlet map {map}", days, snap_fn(ctx, e, g))
 

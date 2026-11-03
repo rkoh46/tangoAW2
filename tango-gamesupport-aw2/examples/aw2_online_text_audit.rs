@@ -875,6 +875,7 @@ fn gauntlet(c: &mut Ctx) {
         title,
         enemies: widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect(),
         stages: vec![colours[..n.min(6)].to_vec()],
+        enemy_skin: false,
     };
     for n in [3usize, 4, 6] {
         for (k, &co) in widest.iter().take(2).enumerate() {

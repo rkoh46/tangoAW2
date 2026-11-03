@@ -923,6 +923,24 @@ def fix_rungs(m):
     return m
 
 
+def clean_river_roads(m):
+    """A routed road that wanders up to a river bank it has no bridge on ends at the water (lint RV04): such a road cell goes back to plain, until none is left (a bridge `=` is kept)."""
+    for _ in range(40):
+        done = True
+        for y in range(m.h):
+            for x in range(m.w):
+                if m.g[y][x] != "R":
+                    continue
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    if m.get(x + dx, y + dy) == "-" and m.get(x - dx, y - dy) in "R=":
+                        m.g[y][x] = "."
+                        done = False
+                        break
+        if done:
+            break
+    return m
+
+
 def neutralize(m, near=14, keep=()):
     """Properties (B C A P) farther than `near` cells (Manhattan) from the HQ they would belong to (the nearest HQ digit) become neutral (lower case): an army starts with its own
     district, the villages out in the field are there to be taken."""

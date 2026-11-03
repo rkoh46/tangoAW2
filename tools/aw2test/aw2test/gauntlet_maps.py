@@ -1,0 +1,83 @@
+"""The Gauntlet mode's maps added after Cinder Sea and Iron Crown, as the generic live tests (`tests/test_gauntlet_lines.py`, `-k gauntlet_lines`) and the cpu tests see them: per map the
+mission (its index in crate::gauntlet_mode::def, its identity: the selector's position is another thing, crate::gauntlet_mode::order), the player's army, and per line (in the order it comes)
+the CO, its army slot, its HQ, the size of its wave and its war chest (crate::gauntlet_mode). Add a map here with its Rust."""
+
+from dataclasses import dataclass, field
+
+from . import gauntlet as ga
+
+
+@dataclass
+class Line:
+    name: str
+    co: int
+    army: int
+    hq: tuple
+    wave: int = 0                 # the number of units of its wave (0: on the field from the start)
+    chest: tuple = (0, 0)         # (base, rate) of its war chest
+
+
+@dataclass
+class MapInfo:
+    mission: int
+    key: str
+    title: str
+    player: int                    # the player's army slot (1, or 5 on a five-army map)
+    player_hq: tuple
+    lines: list = field(default_factory=list)
+    skin_enemies: bool = False     # an enemy line wears Silver Nova (the skin is no choice for the player)
+
+    @property
+    def five(self):
+        return self.player == 5
+
+    @property
+    def armies(self):
+        return tuple(l.army for l in self.lines)
+
+
+CO = {"koal": 73, "lash": 12}
+
+MAPS = {}
+
+
+def add(info):
+    MAPS[info.mission] = info
+    return info
+
+
+add(MapInfo(2, "gauntlet_03", "Dustwind Basin", 1, (3, 16), [
+    Line("koal", 73, 2, (25, 10)),
+    Line("lash", 12, 3, (6, 3), wave=18, chest=(15000, 1000)),
+]))
+add(MapInfo(3, "gauntlet_04", "Brass Canal", 1, (3, 18), [
+    Line("sasha", 78, 2, (5, 4)),
+    Line("javier", 77, 3, (25, 17), wave=20, chest=(15000, 1000)),
+]))
+add(MapInfo(4, "gauntlet_05", "Granite Spine", 1, (3, 18), [
+    Line("jake", 79, 2, (28, 12)),
+    Line("grimm", 76, 3, (6, 4), wave=17, chest=(15000, 1000)),
+    Line("von_bolt", 75, 4, (27, 4), wave=17, chest=(20000, 1500)),
+]))
+add(MapInfo(5, "gauntlet_06", "Harvest Run", 5, (4, 20), [
+    Line("andy", 0, 1, (11, 8)),
+    Line("max", 2, 2, (29, 5), wave=20, chest=(15000, 1000)),
+    Line("sami", 1, 3, (30, 19), wave=22, chest=(20000, 1500)),
+    Line("nell", 0, 4, (6, 4), wave=20, chest=(25000, 2000)),
+]))
+add(MapInfo(6, "gauntlet_07", "Chrome Meridian", 5, (4, 22), [
+    Line("flak", 11, 1, (11, 14)),
+    Line("caulder", 88, 2, (7, 5), wave=19, chest=(15000, 1000)),
+    Line("lili", 87, 3, (31, 5), wave=20, chest=(20000, 1500)),
+    Line("tabitha", 86, 4, (32, 20), wave=20, chest=(25000, 2000)),
+], skin_enemies=True))
+
+
+def player_army(mission):
+    """The player's army slot on the Gauntlet map of this mission: 1 (Cinder Sea, the maps of two and three armies), 5 on a five-army map (Iron Crown and the maps added here)."""
+    return MAPS[mission].player if mission in MAPS else 5 if mission == 1 else 1
+
+
+def enemy_armies(mission):
+    """The armies of the map's lines in the order they come (Cinder Sea's three, Iron Crown's four)."""
+    return MAPS[mission].armies if mission in MAPS else (1, 2, 3, 4) if mission == 1 else (2, 3, 4)

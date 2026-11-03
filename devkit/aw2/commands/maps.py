@@ -35,6 +35,13 @@ def register(sub):
     a.add_argument("--check", action="store_true", help="fail if a text map differs from what its spec makes (nothing written)")
     a.add_argument("--principles", action="store_true", help="print each map's design measures and MD findings (docs/dev/map-design.md; no ROM needed)")
     a.set_defaults(fn=gen)
+    a = ms.add_parser("wave", help="propose a gauntlet line's wave: Rust (kind, (x, y)) cells for kinds placed in a zone of a gauntlet map's spec, in a loose formation on ground their kind can stand on")
+    a.add_argument("map", help="the spec's name (gauntlet_03)")
+    a.add_argument("--zone", required=True, help="x0,y0,x1,y1 (inclusive): where the line arrives")
+    a.add_argument("--kinds", required=True, help="KIND=count,... with the Rust names of custom_campaign::unit (INFANTRY=4,TANK=3,B_COPTER=2)")
+    a.add_argument("--seed", type=int, default=1)
+    a.add_argument("--name", default="WAVE", help="the const's name")
+    a.set_defaults(fn=wave)
     a = ms.add_parser("rules", help="the rules and what the games' own maps do under each")
     a.add_argument("--md", action="store_true")
     a.set_defaults(fn=rules_table)
@@ -129,6 +136,34 @@ def lint(a):
     else:
         util.say(f"maps lint {a.source}: {len(maps)} maps, {bad} errors in tangoAW2's maps" + (f"; pictures in {out}" if out else ""))
     return 1 if bad else 0
+
+
+RUST_KIND = {"INFANTRY": 1, "MECH": 2, "MD_TANK": 3, "MEGATANK": 4, "TANK": 5, "RECON": 6, "APC": 7, "NEOTANK": 8, "PIPERUNNER": 9, "ARTILLERY": 10, "ROCKETS": 11, "STEALTH": 12,
+             "BLACK_BOMB": 13, "ANTI_AIR": 14, "MISSILES": 15, "FIGHTER": 16, "BOMBER": 17, "BLACK_BOAT": 18, "B_COPTER": 19, "T_COPTER": 20, "BATTLESHIP": 21, "CRUISER": 22, "LANDER": 23,
+             "SUB": 24, "CARRIER": 26}
+
+
+def wave(a):
+    """A proposal for a gauntlet line's wave (the cells `Action::Spawn` lands the units on): `spread` in the zone, away from every unit on the map, properties, HQs and the reserved
+    cells; air units may stand on any land. Prints the Rust const ready to paste (check it in the picture: `maps lint --png`)."""
+    sys.path.insert(0, str(cfg.DEVKIT))
+    from ..esmaplib import load_spec, specs
+    p = next(q for q in specs("gauntlet") if q.stem == a.map)
+    m = load_spec(p)
+    box = tuple(int(v) for v in a.zone.split(","))
+    kinds = {}
+    for part in a.kinds.split(","):
+        k, n = part.split("=")
+        kinds[RUST_KIND[k.strip()]] = int(n)
+    before = len(m.u)
+    m.spread(9, kinds, box, seed=a.seed, gap=0, avoid="~r=-^IZ#X12345QBCPTbcpt")
+    names = {v: k for k, v in RUST_KIND.items()}
+    cells = [(names[u["kind"]], u["x"], u["y"]) for u in m.u[before:]]
+    print(f"const {a.name}: [(u8, (u8, u8)); {len(cells)}] = [")
+    for k, x, y in cells:
+        print(f"    (unit::{k}, ({x}, {y})),")
+    print("];")
+    return 0
 
 
 def gen(a):

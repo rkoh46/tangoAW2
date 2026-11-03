@@ -400,6 +400,550 @@ fn keep_victory() -> Scene {
     ])
 }
 
+// --- The maps added after the first two (Dustwind Basin, Brass Canal, ...): the shared wiring ---------------------------------------------------------------
+
+/// A war chest paid when `army` arrives: `BASE` and `RATE` for each day before today (`war_chest`), as a function pointer the arrival trigger can hold.
+fn chest<const ARMY: u8, const BASE: u32, const RATE: u32>(core: &mut Core) {
+    war_chest(core, ARMY, BASE, RATE);
+}
+
+/// One line of a gauntlet: its army (1-based slot), its HQ and the zone its properties are taken from on arrival.
+#[derive(Clone, Copy)]
+struct Wire {
+    army: u8,
+    hq: (u8, u8),
+    zone: Rect,
+}
+
+/// Wires a gauntlet's lines into `m` (the engine's data, docs/dev/gauntlet.md "A new gauntlet map"): the first line is on the field with its HQ held, every later line is hidden and
+/// sleeps until the lines before it have fallen, every line but the last is routed when its HQ is taken (`cut_off`), the last line's HQ wins. `arrivals` are the later lines'
+/// `arrive` triggers (their scene, wave and war chest, in order). The armies of two lines may be the same colour (a whole army's COs one after another): only the slots differ.
+fn wire(m: &mut MissionDef, lines: &[Wire], arrivals: Vec<Trigger>) {
+    m.held_hq = Some(lines[0].hq);
+    m.held_more = lines[1..].iter().map(|l| l.hq).collect();
+    m.sleepers = (1..lines.len()).map(|i| (lines[i].army, lines[..i].iter().map(|l| l.hq).collect())).collect();
+    m.cut_off = lines[..lines.len() - 1].iter().map(|l| (l.army, l.hq)).collect();
+    m.hidden = lines[1..].iter().map(|l| Hidden { army: l.army, hq: l.hq, zone: l.zone }).collect();
+    m.triggers = arrivals;
+    m.triggers.push(Trigger::new(When::AfterAction, Cond::All(lines.iter().map(|l| fell(l.hq)).collect()), vec![Action::Win]));
+    m.setup = false;
+    m.stars = 3;
+}
+
+/// The arrival trigger of line `k` (1..) of `lines`: it comes when every line before it has fallen.
+fn arrival(lines: &[Wire], k: usize, chest: fn(&mut Core), wave: &[(u8, (u8, u8))], scene: Scene) -> Trigger {
+    let before: Vec<(u8, u8)> = lines[..k].iter().map(|l| l.hq).collect();
+    arrive(before[k - 1], &before[..k - 1], lines[k].army, chest, wave, scene)
+}
+
+// --- Gauntlet 03, Dustwind Basin ----------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_03.py): the player's, Koal's (on the field), Lash's (hidden).
+pub const DUST_PLAYER: (u8, u8) = (3, 16);
+pub const DUST_KOAL: (u8, u8) = (25, 10);
+pub const DUST_LASH: (u8, u8) = (6, 3);
+
+/// Lash's wave: the badlands' ground troops, artillery and Md Tanks, a recon and two copters.
+const LASH_WAVE: [(u8, (u8, u8)); 18] = [
+    (unit::INFANTRY, (4, 3)),
+    (unit::INFANTRY, (10, 6)),
+    (unit::INFANTRY, (6, 5)),
+    (unit::INFANTRY, (11, 8)),
+    (unit::MECH, (7, 4)),
+    (unit::MECH, (8, 1)),
+    (unit::MECH, (10, 9)),
+    (unit::ARTILLERY, (7, 6)),
+    (unit::ARTILLERY, (12, 9)),
+    (unit::ARTILLERY, (12, 4)),
+    (unit::MD_TANK, (6, 8)),
+    (unit::MD_TANK, (8, 4)),
+    (unit::MD_TANK, (11, 5)),
+    (unit::ROCKETS, (6, 2)),
+    (unit::ANTI_AIR, (12, 7)),
+    (unit::RECON, (9, 5)),
+    (unit::B_COPTER, (8, 6)),
+    (unit::B_COPTER, (1, 4)),
+];
+
+
+/// Dustwind Basin: the player (a free CO) against Koal (Yellow Comet) on his mesa, then Lash (Black Hole) out of the north-west badlands. Two lines, three armies.
+fn dustwind_basin() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_03", "Dustwind Basin");
+    m.objective = "Take Koal's mesa, then Lash's badlands.";
+    m.map = MapSrc::Built("gauntlet_03");
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(12000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::KOAL)).team(2).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::LASH)).team(2).funds(0),
+    ];
+    m.units = crate::es_campaign::deployment("gauntlet_03");
+    m.rank_days = 22;
+    let lines = [Wire { army: 2, hq: DUST_KOAL, zone: Rect::new(20, 3, 29, 17) }, Wire { army: 3, hq: DUST_LASH, zone: Rect::new(0, 0, 12, 9) }];
+    wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &LASH_WAVE, lash_arrives())]);
+    m.intro = Scene::new(vec![
+        Line::say(co::KOAL, "Welcome to Dustwind Basin! The roads up here are the best money can buy."),
+        Line::say(co::KOAL, "My tanks are fast, my mesa is high and my patience is short. Let's go!"),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::LASH, "Hmph. You read the ground better than I did. Don't count on it twice.")]);
+    m
+}
+
+fn lash_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::KOAL, Mood::Sad, "Aw, shucks! My mesa's lost. Lash, it's all yours."),
+        Line::say(co::LASH, "Dunes, gullies, broken rock. Fine ground for my kind of fight."),
+        Line::say(co::LASH, "You have to cross it first. Let me show you how it feels."),
+    ])
+}
+
+// --- Gauntlet 04, Brass Canal -----------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_04.py): the player's, Sasha's (on the field), Javier's (hidden).
+pub const CANAL_PLAYER: (u8, u8) = (3, 18);
+pub const CANAL_SASHA: (u8, u8) = (5, 4);
+pub const CANAL_JAVIER: (u8, u8) = (25, 17);
+
+/// Javier's wave: Md Tanks and Tanks round his Com Towers, artillery behind the south canal, foot soldiers and a copter.
+const JAVIER_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::TANK, (24, 17)),
+    (unit::TANK, (22, 18)),
+    (unit::TANK, (26, 15)),
+    (unit::TANK, (29, 16)),
+    (unit::MD_TANK, (26, 17)),
+    (unit::MD_TANK, (25, 13)),
+    (unit::MD_TANK, (20, 14)),
+    (unit::ARTILLERY, (21, 13)),
+    (unit::ARTILLERY, (26, 13)),
+    (unit::ARTILLERY, (23, 14)),
+    (unit::ROCKETS, (22, 14)),
+    (unit::INFANTRY, (19, 18)),
+    (unit::INFANTRY, (28, 20)),
+    (unit::INFANTRY, (19, 15)),
+    (unit::INFANTRY, (28, 21)),
+    (unit::MECH, (20, 16)),
+    (unit::MECH, (27, 19)),
+    (unit::ANTI_AIR, (21, 18)),
+    (unit::RECON, (28, 17)),
+    (unit::B_COPTER, (18, 14)),
+];
+
+/// Brass Canal: the player (a free CO) against Sasha (Blue Moon) in the Brass Works, then Javier (Green Earth) in the south-east quarter. Two lines, three armies.
+fn brass_canal() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_04", "Brass Canal");
+    m.objective = "Take the Brass Works from Sasha, then Javier's south-east quarter.";
+    m.map = MapSrc::Built("gauntlet_04");
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(12000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(2).funds(10000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(0),
+    ];
+    m.units = crate::es_campaign::deployment("gauntlet_04");
+    m.rank_days = 22;
+    let lines = [Wire { army: 2, hq: CANAL_SASHA, zone: Rect::new(0, 0, 13, 9) }, Wire { army: 3, hq: CANAL_JAVIER, zone: Rect::new(17, 12, 29, 21) }];
+    wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &JAVIER_WAVE, javier_arrives())]);
+    m.intro = Scene::new(vec![
+        Line::say(co::SASHA, "Welcome to Brass Canal. Every bridge in this town has a price, and I own the toll."),
+        Line::say(co::SASHA, "A good commander wins with funds and timing. Let me show you both."),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::JAVIER, "The canals are yours. A fine campaign. Do tell the Com Towers I said so.")]);
+    m
+}
+
+fn javier_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::SASHA, Mood::Sad, "Well! That was an expensive loss. Javier, the south is yours."),
+        Line::say(co::JAVIER, "Thank you, Sasha. The Com Towers are humming, and my troops stand taller for it."),
+        Line::say(co::JAVIER, "Come, friend. Let us see how you fare against the whole south bank."),
+    ])
+}
+
+// --- Gauntlet 05, Granite Spine ---------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_05.py): the player's, Jake's (on the field), Grimm's and Von Bolt's (hidden).
+pub const SPINE_PLAYER: (u8, u8) = (3, 18);
+pub const SPINE_JAKE: (u8, u8) = (28, 12);
+pub const SPINE_GRIMM: (u8, u8) = (6, 4);
+pub const SPINE_VON_BOLT: (u8, u8) = (27, 4);
+
+/// Grimm's wave: heavy armour and artillery on the north-west shelf, copters over the spine.
+const GRIMM_WAVE: [(u8, (u8, u8)); 17] = [
+    (unit::MD_TANK, (10, 5)),
+    (unit::MD_TANK, (12, 3)),
+    (unit::MD_TANK, (5, 9)),
+    (unit::MEGATANK, (12, 5)),
+    (unit::ARTILLERY, (5, 8)),
+    (unit::ARTILLERY, (7, 8)),
+    (unit::ARTILLERY, (5, 5)),
+    (unit::ROCKETS, (1, 1)),
+    (unit::INFANTRY, (12, 9)),
+    (unit::INFANTRY, (1, 4)),
+    (unit::INFANTRY, (2, 8)),
+    (unit::MECH, (8, 8)),
+    (unit::MECH, (1, 6)),
+    (unit::ANTI_AIR, (9, 5)),
+    (unit::B_COPTER, (7, 1)),
+    (unit::B_COPTER, (11, 3)),
+    (unit::T_COPTER, (4, 3)),
+];
+
+/// Von Bolt's wave: the north-east valley's armour, a Neo Tank, missiles, a Bomber and a Fighter.
+const VON_BOLT_WAVE: [(u8, (u8, u8)); 17] = [
+    (unit::MD_TANK, (29, 3)),
+    (unit::MD_TANK, (24, 1)),
+    (unit::MD_TANK, (27, 4)),
+    (unit::TANK, (19, 4)),
+    (unit::TANK, (23, 4)),
+    (unit::NEOTANK, (24, 4)),
+    (unit::ARTILLERY, (29, 1)),
+    (unit::ARTILLERY, (19, 0)),
+    (unit::MISSILES, (30, 7)),
+    (unit::INFANTRY, (21, 2)),
+    (unit::INFANTRY, (26, 6)),
+    (unit::INFANTRY, (20, 7)),
+    (unit::MECH, (21, 3)),
+    (unit::MECH, (20, 3)),
+    (unit::FIGHTER, (23, 0)),
+    (unit::BOMBER, (24, 2)),
+    (unit::ANTI_AIR, (19, 1)),
+];
+
+/// Granite Spine: the player (a free CO) against Jake (Orange Star) on the east slopes, then Grimm (Yellow Comet) on the north-west shelf, then Von Bolt (Black Hole) in the north-east valley.
+fn granite_spine() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_05", "Granite Spine");
+    m.objective = "Cross the spine and take Jake's slopes, Grimm's shelf and Von Bolt's valley.";
+    m.map = MapSrc::Built("gauntlet_05");
+    m.armies = vec![
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Pick).funds(12000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::JAKE)).team(2).funds(8000),
+        ArmyDef::new(colour::YELLOW_COMET, CoSpec::Fixed(co::GRIMM)).team(2).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::VON_BOLT)).team(2).funds(0),
+    ];
+    m.units = crate::es_campaign::deployment("gauntlet_05");
+    m.rank_days = 26;
+    let lines = [
+        Wire { army: 2, hq: SPINE_JAKE, zone: Rect::new(19, 8, 31, 21) },
+        Wire { army: 3, hq: SPINE_GRIMM, zone: Rect::new(0, 0, 12, 10) },
+        Wire { army: 4, hq: SPINE_VON_BOLT, zone: Rect::new(19, 0, 31, 7) },
+    ];
+    wire(
+        &mut m,
+        &lines,
+        vec![
+            arrival(&lines, 1, chest::<3, 15000, 1000>, &GRIMM_WAVE, grimm_arrives()),
+            arrival(&lines, 2, chest::<4, 20000, 1500>, &VON_BOLT_WAVE, von_bolt_arrives()),
+        ],
+    );
+    m.intro = Scene::new(vec![
+        Line::say(co::JAKE, "Hey, welcome to the Granite Spine! Rough country, and I love it."),
+        Line::say(co::JAKE, "Offroad is my kind of road. Try to keep up!"),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::VON_BOLT, "The spine is broken. The machine will remember this, and so will I.")]);
+    m
+}
+
+fn grimm_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::JAKE, Mood::Sad, "Whoa, they got over the ridge! Grimm, you're up!"),
+        Line::say(co::GRIMM, "Do not worry, kid. I have the high ground, and a very large gun."),
+        Line::say(co::GRIMM, "Come up and say hello. I do not mind the wait."),
+    ])
+}
+
+fn von_bolt_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::GRIMM, Mood::Sad, "Hmph. They climbed the shelf. Von Bolt, it is your valley now."),
+        Line::say(co::VON_BOLT, "A pity. I had hoped for a longer test of the machine."),
+        Line::say(co::VON_BOLT, "No matter. The valley will end the experiment."),
+    ])
+}
+
+// --- Gauntlet 06, Harvest Run: all of Orange Star -----------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_06.py): Andy's (on the field), Max's, Sami's and Nell's (hidden), the player's (the fifth army).
+pub const HARVEST_ANDY: (u8, u8) = (11, 8);
+pub const HARVEST_MAX: (u8, u8) = (29, 5);
+pub const HARVEST_SAMI: (u8, u8) = (30, 19);
+pub const HARVEST_NELL: (u8, u8) = (6, 4);
+pub const HARVEST_PLAYER: (u8, u8) = (4, 20);
+
+/// Max's wave: heavy direct-fire tanks and recons on the high road, foot soldiers behind them.
+const MAX_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::MD_TANK, (25, 5)),
+    (unit::MD_TANK, (27, 9)),
+    (unit::MD_TANK, (33, 3)),
+    (unit::MD_TANK, (24, 2)),
+    (unit::TANK, (29, 2)),
+    (unit::TANK, (27, 5)),
+    (unit::TANK, (26, 5)),
+    (unit::RECON, (27, 1)),
+    (unit::RECON, (23, 1)),
+    (unit::MEGATANK, (28, 8)),
+    (unit::INFANTRY, (26, 8)),
+    (unit::INFANTRY, (31, 4)),
+    (unit::INFANTRY, (33, 7)),
+    (unit::MECH, (28, 2)),
+    (unit::MECH, (22, 1)),
+    (unit::MECH, (25, 7)),
+    (unit::ARTILLERY, (33, 4)),
+    (unit::ARTILLERY, (31, 7)),
+    (unit::ANTI_AIR, (23, 6)),
+    (unit::B_COPTER, (32, 7)),
+];
+
+/// Sami's wave: foot soldiers and carriers, a few tanks behind them.
+const SAMI_WAVE: [(u8, (u8, u8)); 22] = [
+    (unit::INFANTRY, (35, 16)),
+    (unit::INFANTRY, (30, 22)),
+    (unit::INFANTRY, (32, 15)),
+    (unit::INFANTRY, (35, 14)),
+    (unit::INFANTRY, (24, 15)),
+    (unit::INFANTRY, (30, 17)),
+    (unit::MECH, (27, 17)),
+    (unit::MECH, (30, 14)),
+    (unit::MECH, (28, 14)),
+    (unit::APC, (26, 22)),
+    (unit::APC, (34, 20)),
+    (unit::TANK, (23, 18)),
+    (unit::TANK, (33, 19)),
+    (unit::TANK, (28, 16)),
+    (unit::MD_TANK, (26, 14)),
+    (unit::MD_TANK, (31, 19)),
+    (unit::ROCKETS, (25, 19)),
+    (unit::ARTILLERY, (25, 21)),
+    (unit::ARTILLERY, (32, 19)),
+    (unit::ANTI_AIR, (34, 19)),
+    (unit::T_COPTER, (24, 21)),
+    (unit::B_COPTER, (29, 15)),
+];
+
+/// Nell's wave: a balanced line from the north-west meadows, with a Fighter and a Bomber.
+const NELL_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::INFANTRY, (14, 2)),
+    (unit::INFANTRY, (13, 6)),
+    (unit::INFANTRY, (14, 1)),
+    (unit::INFANTRY, (8, 1)),
+    (unit::MECH, (11, 1)),
+    (unit::MECH, (4, 3)),
+    (unit::MECH, (2, 3)),
+    (unit::TANK, (3, 1)),
+    (unit::TANK, (1, 1)),
+    (unit::TANK, (7, 6)),
+    (unit::MD_TANK, (1, 5)),
+    (unit::MD_TANK, (5, 2)),
+    (unit::MD_TANK, (8, 3)),
+    (unit::ARTILLERY, (7, 1)),
+    (unit::ARTILLERY, (2, 1)),
+    (unit::ROCKETS, (1, 3)),
+    (unit::RECON, (8, 2)),
+    (unit::ANTI_AIR, (8, 5)),
+    (unit::FIGHTER, (10, 4)),
+    (unit::BOMBER, (7, 4)),
+];
+
+/// Harvest Run: the whole of Orange Star, one CO after another (Andy, Max, Sami, Nell), every line in Orange Star's colour and with Orange Star's HQ: only the army slots differ (1..4).
+fn harvest_run() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_06", "Harvest Run");
+    m.objective = "Beat all of Orange Star: Andy, then Max, Sami and Nell.";
+    m.map = MapSrc::Built("gauntlet_06");
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::ANDY)).team(1).funds(9000),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::MAX)).team(1).funds(0),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::SAMI)).team(1).funds(0),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(co::NELL)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
+    ];
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_06"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.rank_days = 40;
+    let lines = [
+        Wire { army: 1, hq: HARVEST_ANDY, zone: Rect::new(0, 0, 16, 12) },
+        Wire { army: 2, hq: HARVEST_MAX, zone: Rect::new(20, 0, 35, 9) },
+        Wire { army: 3, hq: HARVEST_SAMI, zone: Rect::new(21, 13, 35, 23) },
+        Wire { army: 4, hq: HARVEST_NELL, zone: Rect::new(0, 0, 16, 6) },
+    ];
+    wire(
+        &mut m,
+        &lines,
+        vec![
+            arrival(&lines, 1, chest::<2, 15000, 1000>, &MAX_WAVE, max_arrives()),
+            arrival(&lines, 2, chest::<3, 20000, 1500>, &SAMI_WAVE, sami_arrives()),
+            arrival(&lines, 3, chest::<4, 25000, 2000>, &NELL_WAVE, nell_arrives()),
+        ],
+    );
+    m.intro = Scene::new(vec![
+        Line::say(co::ANDY, "Hey there! Welcome to Harvest Run. All of Orange Star's out here today."),
+        Line::say(co::ANDY, "I'll start things off. Don't worry, I'll fix my tanks if you break them!"),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::NELL, "Oh my! Orange Star beaten, all of us at once? Well done.")]);
+    m
+}
+
+fn max_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::ANDY, Mood::Sad, "Aw, shucks! Max, I could use some muscle here!"),
+        Line::say(co::MAX, "Leave it to me, Andy! Nothing beats a good tank rush!"),
+    ])
+}
+
+fn sami_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::MAX, Mood::Sad, "Argh! My tanks got stuck in the mud! Sami, you take it!"),
+        Line::say(co::SAMI, "Infantry, move out! We'll take this field one soldier at a time."),
+    ])
+}
+
+fn nell_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::SAMI, Mood::Sad, "Roger that. They broke through. Nell, we're counting on you!"),
+        Line::say(co::NELL, "Oh, I'm so nervous! But luck is on my side, so let's give it a try!"),
+    ])
+}
+
+// --- Gauntlet 07, Chrome Meridian: Flak, then the Silver Nova corps -----------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_07.py): Flak's (on the field), Caulder's, Lili's and Tabitha's (hidden), the player's.
+pub const CHROME_FLAK: (u8, u8) = (11, 14);
+pub const CHROME_CAULDER: (u8, u8) = (7, 5);
+pub const CHROME_LILI: (u8, u8) = (31, 5);
+pub const CHROME_TABITHA: (u8, u8) = (32, 20);
+pub const CHROME_PLAYER: (u8, u8) = (4, 22);
+
+/// Caulder's wave: the corps' siege engines behind the citadel's ring (artillery, rockets, missiles), armour and foot soldiers in front of them.
+const CAULDER_WAVE: [(u8, (u8, u8)); 19] = [
+    (unit::ARTILLERY, (8, 8)),
+    (unit::ARTILLERY, (3, 5)),
+    (unit::ARTILLERY, (14, 6)),
+    (unit::ARTILLERY, (3, 6)),
+    (unit::ROCKETS, (17, 3)),
+    (unit::ROCKETS, (17, 8)),
+    (unit::MISSILES, (14, 1)),
+    (unit::MD_TANK, (4, 5)),
+    (unit::MD_TANK, (9, 5)),
+    (unit::MD_TANK, (11, 5)),
+    (unit::TANK, (4, 2)),
+    (unit::TANK, (14, 2)),
+    (unit::INFANTRY, (12, 8)),
+    (unit::INFANTRY, (4, 7)),
+    (unit::INFANTRY, (14, 3)),
+    (unit::MECH, (8, 7)),
+    (unit::MECH, (10, 6)),
+    (unit::ANTI_AIR, (6, 5)),
+    (unit::APC, (9, 8)),
+];
+
+/// Lili's wave: fast armour (recons, tanks) and copters over the Meridian.
+const LILI_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::RECON, (34, 8)),
+    (unit::RECON, (33, 4)),
+    (unit::RECON, (30, 6)),
+    (unit::TANK, (23, 6)),
+    (unit::TANK, (22, 3)),
+    (unit::TANK, (33, 10)),
+    (unit::TANK, (22, 1)),
+    (unit::MD_TANK, (32, 4)),
+    (unit::MD_TANK, (26, 5)),
+    (unit::MD_TANK, (28, 5)),
+    (unit::B_COPTER, (22, 2)),
+    (unit::B_COPTER, (31, 2)),
+    (unit::B_COPTER, (32, 10)),
+    (unit::FIGHTER, (24, 9)),
+    (unit::INFANTRY, (26, 4)),
+    (unit::INFANTRY, (29, 9)),
+    (unit::INFANTRY, (30, 8)),
+    (unit::MECH, (33, 5)),
+    (unit::MECH, (36, 9)),
+    (unit::ANTI_AIR, (25, 5)),
+];
+
+/// Tabitha's wave: the corps' heavy armour, a Mega Tank and Neo Tanks, bombers and fighters.
+const TABITHA_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::MEGATANK, (29, 22)),
+    (unit::NEOTANK, (35, 17)),
+    (unit::NEOTANK, (30, 20)),
+    (unit::MD_TANK, (27, 20)),
+    (unit::MD_TANK, (28, 17)),
+    (unit::MD_TANK, (36, 24)),
+    (unit::TANK, (22, 15)),
+    (unit::TANK, (22, 18)),
+    (unit::ARTILLERY, (34, 18)),
+    (unit::ARTILLERY, (34, 19)),
+    (unit::INFANTRY, (28, 15)),
+    (unit::INFANTRY, (26, 16)),
+    (unit::INFANTRY, (32, 24)),
+    (unit::MECH, (34, 22)),
+    (unit::MECH, (27, 19)),
+    (unit::BOMBER, (28, 22)),
+    (unit::FIGHTER, (23, 21)),
+    (unit::ANTI_AIR, (31, 18)),
+    (unit::ANTI_AIR, (22, 23)),
+    (unit::B_COPTER, (23, 20)),
+];
+
+/// The skin's army slot on Chrome Meridian (Caulder's: the three Silver Nova lines are the armies 2, 3 and 4 and share Green Earth's colour, which wears the skin).
+pub const CHROME_SKIN_ARMY: u8 = 2;
+
+/// Chrome Meridian: Flak (Black Hole), then the Silver Nova corps in turn: Caulder, Lili and Tabitha, whose three armies share one colour (the skin sits on it, so every one of them wears
+/// Silver Nova's chrome, its orb-tower HQ and its figures). Black Hole stays Black Hole: the skin is on armies 2..4 only.
+fn chrome_meridian() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_07", "Chrome Meridian");
+    m.objective = "Break Flak's depot, then the Silver Nova corps: Caulder, Lili and Tabitha.";
+    m.map = MapSrc::Built("gauntlet_07");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::FLAK)).team(1).funds(9000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(crate::es_co::CAULDER)).team(1).funds(0),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(crate::es_co::LILI)).team(1).funds(0),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(crate::es_co::TABITHA)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
+    ];
+    m.skin = Some((CHROME_SKIN_ARMY, 0));
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_07"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.rank_days = 40;
+    let lines = [
+        Wire { army: 1, hq: CHROME_FLAK, zone: Rect::new(2, 9, 18, 18) },
+        Wire { army: 2, hq: CHROME_CAULDER, zone: Rect::new(0, 0, 18, 9) },
+        Wire { army: 3, hq: CHROME_LILI, zone: Rect::new(21, 0, 37, 11) },
+        Wire { army: 4, hq: CHROME_TABITHA, zone: Rect::new(21, 14, 37, 25) },
+    ];
+    wire(
+        &mut m,
+        &lines,
+        vec![
+            arrival(&lines, 1, chest::<2, 15000, 1000>, &CAULDER_WAVE, caulder_arrives()),
+            arrival(&lines, 2, chest::<3, 20000, 1500>, &LILI_WAVE, lili_arrives()),
+            arrival(&lines, 3, chest::<4, 25000, 2000>, &TABITHA_WAVE, tabitha_arrives()),
+        ],
+    );
+    m.intro = Scene::new(vec![
+        Line::say(co::FLAK, "Hah! Welcome to the Meridian! Cheap tanks, loud guns, and no plan!"),
+        Line::say(co::FLAK, "I am the plan. Come on, let's make some noise!"),
+    ]);
+    m.victory = Scene::new(vec![Line::say(crate::es_co::TABITHA, "The Meridian is yours. The corps will remember the one who broke it.")]);
+    m
+}
+
+fn caulder_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::FLAK, Mood::Sad, "What?! Nobody told me I'd lose! Somebody else take over!"),
+        Line::say(crate::es_co::CAULDER, "A shame. The depot was not built to hold. The citadel is."),
+        Line::say(crate::es_co::CAULDER, "Every gate, every tower, measured. Do come in."),
+    ])
+}
+
+fn lili_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(crate::es_co::CAULDER, Mood::Sad, "The citadel has fallen. It was measured, but not by you."),
+        Line::say(crate::es_co::LILI, "Caulder always did take too long. The plains are mine now."),
+        Line::say(crate::es_co::LILI, "Fast, light and everywhere at once. Let us see you keep up."),
+    ])
+}
+
+fn tabitha_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(crate::es_co::LILI, Mood::Sad, "They crossed the Meridian faster than I thought. Tabitha, the rest is yours."),
+        Line::say(crate::es_co::TABITHA, "Thank you, Lili. The corps ends here, then."),
+        Line::say(crate::es_co::TABITHA, "Come to the south-east. I will show you what silver is made of."),
+    ])
+}
+
 // --- What the map selector shows (crate::gauntlet_ui) ---------------------------------------------------------------------------------------------------
 
 /// One of the Gauntlet's maps as the selector lists it: read from the map's mission, so a new map is listed by adding its mission to [`def`] (nothing else).
@@ -413,12 +957,18 @@ pub struct Entry {
     pub enemies: Vec<(u8, u8)>,
     /// The enemies' colours stage by stage (the player's army must have a colour free in every stage; a skin's host moves between stages).
     pub stages: Vec<Vec<u8>>,
+    /// An enemy line wears a skin (Silver Nova's Caulder, Lili and Tabitha): the skin is on the battlefield already, so the player cannot wear it too (a skin sits on one colour).
+    pub enemy_skin: bool,
 }
 
 impl Entry {
     /// What the player may wear on this map: every army colour the enemies of no stage wear, and the skins when every stage leaves a colour to host them ([`free_colours_staged`]).
     pub fn free(&self) -> Vec<u8> {
-        free_colours_staged(&self.stages)
+        let mut v = free_colours_staged(&self.stages);
+        if self.enemy_skin {
+            v.retain(|c| *c < crate::army_skin::SKIN);
+        }
+        v
     }
 
     /// The enemy colours of the stage the battle is on (0: the mission's own map).
@@ -464,15 +1014,33 @@ pub fn entries() -> &'static [Entry] {
                     title: m.title,
                     enemies: stages.iter().flatten().copied().collect(),
                     stages: stages.iter().map(|v| v.iter().map(|e| e.1).collect()).collect(),
+                    enemy_skin: m.skin.is_some(),
                 }
             })
             .collect()
     })
 }
 
+/// The maps in the order the selector lists them: by the number of enemy COs, fewest first (a map's later stages count: Iron Crown's four lines and Asuka are five), ties in [`def`]'s order.
+/// Each item is the map's **mission** (its stable identity: the record, the colour memory and the harness all key by it, never by the position in this list), so a new map lands in its
+/// place by being added to [`def`] and nothing else.
+pub fn order() -> &'static [usize] {
+    static O: std::sync::OnceLock<Vec<usize>> = std::sync::OnceLock::new();
+    O.get_or_init(|| {
+        let mut v: Vec<usize> = (0..entries().len()).collect();
+        v.sort_by_key(|&m| (entries()[m].enemies.len(), m));
+        v
+    })
+}
+
+/// A map's place in the selector's list (0 the top): the map-table id the list shows it by is the first one plus this.
+pub fn rank_of(mission: usize) -> usize {
+    order().iter().position(|&m| m == mission).unwrap_or(mission)
+}
+
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
-    let mut missions = vec![cinder_sea(), iron_crown()];
+    let mut missions = vec![cinder_sea(), iron_crown(), dustwind_basin(), brass_canal(), granite_spine(), harvest_run(), chrome_meridian()];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
         source: SOURCE,
@@ -554,7 +1122,7 @@ mod tests {
     #[test]
     fn iron_crown_is_a_gauntlet_of_four_in_five_armies() {
         let d = def();
-        assert_eq!(d.missions.len(), 2, "Cinder Sea and Iron Crown");
+        assert!(d.missions.len() >= 2, "Cinder Sea and Iron Crown, then the maps added after them");
         let m = &d.missions[1];
         assert_eq!(m.key, "gauntlet_02");
         let cos: Vec<_> = m.armies.iter().map(|a| a.co).collect();
@@ -643,5 +1211,128 @@ mod tests {
         assert_eq!(host(1), colour::ORANGE_STAR);
         // Cinder Sea is unchanged by the stages
         assert_eq!(entries()[0].free(), free_colours(&[colour::GREEN_EARTH, colour::YELLOW_COMET, colour::BLACK_HOLE]));
+    }
+
+    // --- every map, whatever its number (the generic checks a new map gets by being added to `def`) -----------------------------------------------------------
+
+    fn text_of(key: &str) -> &'static str {
+        match key {
+            "gauntlet_01" => include_str!("../five/gauntlet/gauntlet_01.txt"),
+            "gauntlet_02" => include_str!("../five/gauntlet/gauntlet_02.txt"),
+            "gauntlet_03" => include_str!("../five/gauntlet/gauntlet_03.txt"),
+            "gauntlet_04" => include_str!("../five/gauntlet/gauntlet_04.txt"),
+            "gauntlet_05" => include_str!("../five/gauntlet/gauntlet_05.txt"),
+            "gauntlet_06" => include_str!("../five/gauntlet/gauntlet_06.txt"),
+            "gauntlet_07" => include_str!("../five/gauntlet/gauntlet_07.txt"),
+            other => panic!("no text map for {other}: add it to text_of"),
+        }
+    }
+
+    #[test]
+    fn every_map_is_wired_as_a_gauntlet_by_the_rout_rule() {
+        for m in def().missions.iter() {
+            let n = m.hidden.len();
+            assert!(n >= 1, "{}: at least two lines", m.key);
+            let first = m.held_hq.unwrap_or_else(|| panic!("{}: the first line's HQ is held", m.key));
+            // the lines in order: the first, then the hidden ones; every line but the last is routed by an HQ capture (cut_off), the last is not
+            let mut hqs = vec![first];
+            hqs.extend(m.hidden.iter().map(|h| h.hq));
+            assert_eq!(m.held_more, hqs[1..].to_vec(), "{}: every later HQ is held", m.key);
+            assert_eq!(m.cut_off.len(), hqs.len() - 1, "{}: every line but the last is cut off", m.key);
+            for (k, (army, hq)) in m.cut_off.iter().enumerate() {
+                assert_eq!(*hq, hqs[k], "{}: cut_off line {k}", m.key);
+                if k > 0 {
+                    assert_eq!(*army, m.hidden[k - 1].army);
+                }
+            }
+            assert!(m.cut_off.iter().all(|(_, hq)| *hq != *hqs.last().unwrap()), "{}: the last line's HQ is not routed (it wins)", m.key);
+            assert_eq!(m.sleepers.len(), n, "{}: each hidden line sleeps until the lines before it fall", m.key);
+            for (k, (army, before)) in m.sleepers.iter().enumerate() {
+                assert_eq!(*army, m.hidden[k].army);
+                assert_eq!(before, &hqs[..k + 1].to_vec());
+            }
+            // an arrival trigger for each hidden line, then the win
+            assert_eq!(m.triggers.len(), n + if m.stages.is_empty() { 1 } else { 1 }, "{}: one arrival per hidden line and the closing trigger", m.key);
+        }
+    }
+
+    #[test]
+    fn every_map_wave_lands_on_ground_inside_its_zone() {
+        let skip = ["gauntlet_01"]; // (Cinder Sea is a sea map: its waves stand on water and shore)
+        for m in def().missions.iter().filter(|m| !skip.contains(&m.key)) {
+            let map = crate::custom_campaign::built_map(m.key).unwrap_or_else(|| panic!("{}: the map is built (aw2dev maps gen --campaign gauntlet)", m.key));
+            let r = rows(text_of(m.key), map.width as usize);
+            assert_eq!(r.len(), map.height as usize, "{}", m.key);
+            for h in &m.hidden {
+                assert!(".R".contains(r[h.hq.1 as usize].as_bytes()[h.hq.0 as usize] as char), "{}: hidden HQ {:?} is plain ground until its line comes", m.key, h.hq);
+                let mut spawned = 0;
+                for t in m.triggers.iter() {
+                    for a in &t.then {
+                        if let Action::Spawn(v) = a {
+                            for u in v.iter().filter(|u| u.army == h.army) {
+                                spawned += 1;
+                                let c = r[u.y as usize].as_bytes()[u.x as usize] as char;
+                                let air = matches!(u.kind, unit::FIGHTER | unit::BOMBER | unit::B_COPTER | unit::T_COPTER | unit::STEALTH);
+                                assert!(".Rf=,Aa".contains(c) || air && c != '~', "{}: army {} kind {} at ({}, {}) stands on {c:?}", m.key, h.army, u.kind, u.x, u.y);
+                                assert!(u.x >= h.zone.x0 && u.x <= h.zone.x1 && u.y >= h.zone.y0 && u.y <= h.zone.y1, "{}: army {} unit at ({}, {}) is outside its zone", m.key, h.army, u.x, u.y);
+                            }
+                        }
+                    }
+                }
+                assert!(spawned >= 12, "{}: army {} has a wave ({spawned} units)", m.key, h.army);
+            }
+        }
+    }
+
+    #[test]
+    fn the_selector_orders_the_maps_by_their_enemy_count_fewest_first() {
+        let e = entries();
+        let order = order();
+        assert_eq!(order.len(), e.len());
+        let counts: Vec<usize> = order.iter().map(|&m| e[m].enemies.len()).collect();
+        assert!(counts.windows(2).all(|w| w[0] <= w[1]), "fewest enemies first: {counts:?}");
+        // ties keep the definition's order (the older, easier map first), a permutation of the missions, and rank_of is its inverse
+        for w in order.windows(2) {
+            if e[w[0]].enemies.len() == e[w[1]].enemies.len() {
+                assert!(w[0] < w[1]);
+            }
+        }
+        let mut sorted = order.to_vec();
+        sorted.sort();
+        assert_eq!(sorted, (0..e.len()).collect::<Vec<_>>());
+        for (rank, &m) in order.iter().enumerate() {
+            assert_eq!(rank_of(m), rank);
+        }
+        // Iron Crown (four lines and Asuka's stage) is last; the maps with two enemies are first
+        let keys: Vec<&str> = order.iter().map(|&m| e[m].key).collect();
+        assert_eq!(keys.last(), Some(&"gauntlet_02"));
+        assert!(e[order[0]].enemies.len() == 2);
+    }
+
+    #[test]
+    fn the_new_maps_have_the_enemy_counts_and_lines_the_design_asks_for() {
+        let e = entries();
+        let by = |k: &str| e.iter().find(|x| x.key == k).unwrap();
+        assert_eq!(by("gauntlet_03").enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::KOAL, co::LASH]);
+        assert_eq!(by("gauntlet_04").enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::SASHA, co::JAVIER]);
+        assert_eq!(by("gauntlet_05").enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::JAKE, co::GRIMM, co::VON_BOLT]);
+        // Harvest Run: all of Orange Star, four slots, one colour: the player can never wear Orange Star, and the colour pick still offers the other four and the skin
+        let h = by("gauntlet_06");
+        assert_eq!(h.enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::ANDY, co::MAX, co::SAMI, co::NELL]);
+        assert!(h.enemies.iter().all(|x| x.1 == colour::ORANGE_STAR));
+        assert_eq!(h.free(), vec![colour::BLUE_MOON, colour::YELLOW_COMET, colour::GREEN_EARTH, colour::BLACK_HOLE, crate::army_skin::SKIN]);
+        // Chrome Meridian: Flak, then the three Silver Nova COs on one colour; the skin is on the field already, so the player may wear plain colours only, never the host's or Black Hole's
+        let c = by("gauntlet_07");
+        assert_eq!(c.enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::FLAK, crate::es_co::CAULDER, crate::es_co::LILI, crate::es_co::TABITHA]);
+        assert!(c.enemy_skin);
+        assert_eq!(c.enemies.iter().map(|x| x.1).collect::<Vec<_>>(), vec![colour::BLACK_HOLE, colour::GREEN_EARTH, colour::GREEN_EARTH, colour::GREEN_EARTH]);
+        assert_eq!(c.free(), vec![colour::ORANGE_STAR, colour::BLUE_MOON, colour::YELLOW_COMET]);
+        let m = &def().missions[c.mission];
+        assert_eq!(m.skin, Some((CHROME_SKIN_ARMY, 0)));
+        // the skin's lines are the armies that wear the host colour, and Black Hole's line does not
+        assert_eq!(m.armies[0].colour, colour::BLACK_HOLE);
+        assert!(m.armies[1..4].iter().all(|a| a.colour == m.armies[CHROME_SKIN_ARMY as usize - 1].colour));
+        // the other maps' skins are the player's choice only
+        assert!(!by("gauntlet_01").enemy_skin && !by("gauntlet_02").enemy_skin);
     }
 }
