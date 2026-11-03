@@ -1,10 +1,11 @@
-# Caulder, imported directly from caulder_v1.jpg (the owner's pixel art, 1152 x 1728: native cells of about 6.6 px, 172 x 267). Coordinates are native cells of the picture as supplied (he faces left: kept).
+# Caulder, imported directly from caulder_v1.jpg (the owner's pixel art, 1152 x 1728: native cells of about 6.6 px, 172 x 267). Mirrored (flip = true) so he faces the same way as Lili, Tabitha and AW2's COs (the owner's report: he faced the wrong way); coordinates are native cells of the mirrored grid (x' = 171 - x).
 pixelart = true
+flip = true
 large_scale = 1
-frame = [21, 8]
+frame = [23, 8]
 mug_scale = 1
-mug = [66, 6]
-eyes = [74, 25, 90, 33]
+mug = [58, 6]
+eyes = [81, 25, 97, 33]
 bg_tolerance = 30
 # the white background is cut by a flood fill from the border and from every pocket it fills (between the arm and the coat); no `fringe` (it would eat the white hair and coat, which touch the empty side)
 hole_min = 20
@@ -15,4 +16,4 @@ max_face_specks = 520
 match = "rgb"
 # the raised hand's light grey knuckle highlights, which RGB matching put on the coat's near-white (they read as white left between the fingers, the owner's report):
 # inside the hand they take the nearest of the other colours
-keep_off = [[29, 14, 50, 56, [239, 239, 247], [206, 206, 230], [206, 197, 189], [165, 173, 197], [132, 132, 165]]]
+keep_off = [[121, 14, 142, 56, [239, 239, 247], [206, 206, 230], [206, 197, 189], [165, 173, 197], [132, 132, 165]]]
