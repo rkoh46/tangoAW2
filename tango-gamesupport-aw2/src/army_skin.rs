@@ -1131,7 +1131,7 @@ fn nation_skin(co: u8) -> Option<usize> {
 /// The skin a campaign forces on an army regardless of its CO (the Silver Nova Campaign's player, a custom mission's skinned army).
 fn forced_skin(core: &Core, army: u32) -> Option<usize> {
     let forced = crate::es_campaign::skin_colour(core).is_some()
-        || (crate::ds_campaign::mission_skin(core).is_some() && crate::pvp::in_battle(core));
+        || crate::ds_campaign::mission_skin(core).is_some();
     if forced {
         skin_of_army(core, army)
     } else {
@@ -1179,7 +1179,7 @@ pub fn sync(core: &mut Core) {
         set_host_of(core, 0, c);
     }
     // A custom campaign's mission may name a skin for one of its armies (BH2's M26: the Silver Nova legion is the enemy): it takes that army's colour.
-    let enemy = crate::ds_campaign::mission_skin(core).filter(|_| crate::pvp::in_battle(core)).and_then(|(army, skin)| {
+    let enemy = crate::ds_campaign::mission_skin(core).and_then(|(army, skin)| {
         let c = core.raw_read_8(crate::five::players(core) + 0x3C * army as u32 + 0x1A, -1);
         (1..=5).contains(&c).then_some((skin, c))
     });

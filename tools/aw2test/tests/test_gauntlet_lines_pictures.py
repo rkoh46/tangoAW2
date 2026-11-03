@@ -37,7 +37,7 @@ def scene_pics(ctx, e, d, tag, most=4):
     return pics
 
 
-def pictures(info):
+def pictures(info, battles=True):
     def fn(ctx):
         out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
         os.makedirs(out, exist_ok=True)
@@ -68,7 +68,13 @@ def pictures(info):
                 e.wait(60)
                 frames.append((png(ctx, e, f"{look}_{nxt.name}_arrived"), {"title": f"{nxt.name}'s line is on the map", "plain": True,
                                                                           "lines": [f"{len(g.units(army=nxt.army))} units landed, HQ {nxt.hq} built."]}))
-                bs = battle_scene(ctx, e, g, d, me=info.player, them=nxt.army, tag=f"{look}_battle_{nxt.name}")
+                try:
+                    if not battles:
+                        raise RuntimeError("(a five-army map's battle scenes are taken in their own runs: `battle_pictures`)")
+                    bs = battle_scene(ctx, e, g, d, me=info.player, them=nxt.army, tag=f"{look}_battle_{nxt.name}")
+                except Exception as ex:          # (a picture aid: a stuck cursor after a battle scene must not lose the sheet)
+                    ctx.log(f"battle scene against {nxt.name}: {ex}")
+                    bs = None
                 if bs:
                     frames.append((bs, {"title": f"Battle scene: the player against {nxt.name}'s army", "plain": True, "lines": ["Animations on; the foe was placed next to the player's Tank for the picture."]}))
             e.close()
@@ -78,5 +84,83 @@ def pictures(info):
     test(modes=("ds",))(fn)
 
 
+def battle_pictures(info, k):
+    """The battle scene of line k's army (one run: the first k lines are taken, then the player's Tank fires on a unit of the line placed next to it), in the three looks side by side."""
+    line = info.lines[k]
+
+    def fn(ctx):
+        from PIL import Image
+        out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
+        os.makedirs(out, exist_ok=True)
+        frames = []
+        for look, env in LOOKS:
+            e, g, d = start(ctx, info, env=env)
+            for prev in info.lines[:k]:
+                d.capture(ctx, prev.hq, army=info.player)
+                d.settle()
+            g.goto(*line.hq)
+            e.wait(60)
+            hq = png(ctx, e, f"{look}_hq_{line.name}")
+            bs = battle_scene(ctx, e, g, d, me=info.player, them=line.army, tag=f"{look}_battle_{line.name}")
+            ctx.check(bs is not None, f"{look}: a battle scene against {line.name}")
+            frames.append((hq, {"title": f"{line.name}'s HQ ({look})", "plain": True, "lines": [f"army {line.army}"]}))
+            if bs:
+                frames.append((bs, {"title": f"Battle scene: the player against {line.name}'s army ({look})", "plain": True, "lines": ["Animations on."]}))
+            e.close()
+        sheet(frames, os.path.join(out, f"{info.key}_battle_{line.name}_sheet.png"), f"Gauntlet {info.title}: {line.name}'s army, HQ and battle scene in the three looks")
+    fn.__name__ = f"gauntlet_lines_pictures_battle_{info.key}_{line.name}"
+    test(modes=("ds",))(fn)
+
+
 for _info in gm.MAPS.values():
-    pictures(_info)
+    pictures(_info, battles=not _info.five)
+    if _info.five:
+        for _k in range(1, len(_info.lines)):
+            battle_pictures(_info, _k)
+
+
+@test(name="gauntlet_lines_pictures_chrome_extras", modes=("ds",))
+def gauntlet_lines_pictures_chrome_extras(ctx):
+    """Chrome Meridian's Silver Nova lines on the screens besides the map and the battle scene, in the three looks: the capture box while the player takes Caulder's orb-tower HQ (the property in the
+    skin's chrome, the old owner's), the terrain/CO panel and the CO page of Caulder's army (map menu > CO, RIGHT to his army: the page's colours and the unit chart). The skin sits on the corps' host
+    colour: none of these may show it as Yellow Comet's."""
+    info = gm.MAPS[6]
+    out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
+    os.makedirs(out, exist_ok=True)
+    frames = []
+    for look, env in LOOKS:
+        e, g, d = start(ctx, info, env=env)
+        d.capture(ctx, info.lines[0].hq, army=info.player)
+        d.settle()
+        cau = info.lines[1]
+        g.goto(*cau.hq)
+        e.wait(50)
+        frames.append((png(ctx, e, f"{look}_panel_on_caulders_hq"), {"title": f"The cursor on Caulder's HQ ({look}): the orb tower and the terrain panel", "plain": True, "lines": ["The panel's small HQ icon is the game's own (documented limit)."]}))
+        shots = []
+        d.capture(ctx, cau.hq, army=info.player, snap=lambda k: shots.append(png(ctx, e, f"{look}_capture_{k:02d}")) if k % 2 == 0 else None)
+        from PIL import Image
+        best = max(shots, key=lambda p: len(set(Image.open(p).convert("RGB").getdata())))
+        frames.append((best, {"title": f"Capture box, the player taking Caulder's HQ ({look})", "plain": True, "lines": ["The property and the old owner in the skin's chrome (Silver Nova), not Yellow Comet's."]}))
+        e.close()
+    for look, env in LOOKS:
+        e, g, d = start(ctx, info, env=env)
+        d.capture(ctx, info.lines[0].hq, army=info.player)
+        d.settle()
+        try:
+            g.open_map_menu()
+            g.choose("CO", g.MAP_MENU)
+            e.wait(90)
+            pages = [png(ctx, e, f"{look}_co_own")]
+            for k in range(1, 3):
+                e.press("RIGHT", 6)
+                e.wait(60)
+                pages.append(png(ctx, e, f"{look}_co_next{k}"))
+            e.press("DOWN", 6)
+            e.wait(60)
+            pages.append(png(ctx, e, f"{look}_co_next2_chart"))
+            for i, p in enumerate(pages):
+                frames.append((p, {"title": f"CO page {i + 1} ({look})", "plain": True, "lines": ["map menu > CO, RIGHT through the armies: Caulder's page is one of them (white hair)."]}))
+        except Exception as ex:
+            ctx.log(f"CO page ({look}): {ex}")
+        e.close()
+    sheet(frames, os.path.join(out, "gauntlet_07_extras_sheet.png"), "Chrome Meridian: capture box, panel and CO pages of the Silver Nova lines (three looks)")

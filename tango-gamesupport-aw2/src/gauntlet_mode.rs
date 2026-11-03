@@ -567,20 +567,20 @@ pub const SPINE_VON_BOLT: (u8, u8) = (27, 4);
 
 /// Grimm's wave: heavy armour and artillery on the north-west shelf, copters over the spine.
 const GRIMM_WAVE: [(u8, (u8, u8)); 17] = [
-    (unit::MD_TANK, (10, 5)),
-    (unit::MD_TANK, (12, 3)),
+    (unit::MD_TANK, (9, 5)),
+    (unit::MD_TANK, (10, 3)),
     (unit::MD_TANK, (5, 9)),
     (unit::MEGATANK, (12, 5)),
+    (unit::ARTILLERY, (12, 7)),
     (unit::ARTILLERY, (5, 8)),
-    (unit::ARTILLERY, (7, 8)),
-    (unit::ARTILLERY, (5, 5)),
+    (unit::ARTILLERY, (6, 5)),
     (unit::ROCKETS, (1, 1)),
     (unit::INFANTRY, (12, 9)),
     (unit::INFANTRY, (1, 4)),
     (unit::INFANTRY, (2, 8)),
-    (unit::MECH, (8, 8)),
-    (unit::MECH, (1, 6)),
-    (unit::ANTI_AIR, (9, 5)),
+    (unit::MECH, (7, 8)),
+    (unit::MECH, (10, 5)),
+    (unit::ANTI_AIR, (8, 5)),
     (unit::B_COPTER, (7, 1)),
     (unit::B_COPTER, (11, 3)),
     (unit::T_COPTER, (4, 3)),
@@ -692,28 +692,28 @@ const MAX_WAVE: [(u8, (u8, u8)); 20] = [
 
 /// Sami's wave: foot soldiers and carriers, a few tanks behind them.
 const SAMI_WAVE: [(u8, (u8, u8)); 22] = [
-    (unit::INFANTRY, (35, 16)),
+    (unit::INFANTRY, (23, 17)),
     (unit::INFANTRY, (30, 22)),
     (unit::INFANTRY, (32, 15)),
     (unit::INFANTRY, (35, 14)),
     (unit::INFANTRY, (24, 15)),
-    (unit::INFANTRY, (30, 17)),
-    (unit::MECH, (27, 17)),
+    (unit::INFANTRY, (32, 17)),
+    (unit::MECH, (29, 17)),
     (unit::MECH, (30, 14)),
     (unit::MECH, (28, 14)),
-    (unit::APC, (26, 22)),
-    (unit::APC, (34, 20)),
-    (unit::TANK, (23, 18)),
-    (unit::TANK, (33, 19)),
+    (unit::APC, (25, 22)),
+    (unit::APC, (22, 21)),
+    (unit::TANK, (29, 18)),
+    (unit::TANK, (25, 20)),
     (unit::TANK, (28, 16)),
     (unit::MD_TANK, (26, 14)),
-    (unit::MD_TANK, (31, 19)),
-    (unit::ROCKETS, (25, 19)),
-    (unit::ARTILLERY, (25, 21)),
-    (unit::ARTILLERY, (32, 19)),
-    (unit::ANTI_AIR, (34, 19)),
-    (unit::T_COPTER, (24, 21)),
-    (unit::B_COPTER, (29, 15)),
+    (unit::MD_TANK, (34, 19)),
+    (unit::ROCKETS, (28, 19)),
+    (unit::ARTILLERY, (26, 21)),
+    (unit::ARTILLERY, (35, 19)),
+    (unit::ANTI_AIR, (26, 20)),
+    (unit::T_COPTER, (25, 21)),
+    (unit::B_COPTER, (30, 15)),
 ];
 
 /// Nell's wave: a balanced line from the north-west meadows, with a Fighter and a Bomber.
@@ -878,8 +878,10 @@ const TABITHA_WAVE: [(u8, (u8, u8)); 20] = [
     (unit::B_COPTER, (23, 20)),
 ];
 
-/// The skin's army slot on Chrome Meridian (Caulder's: the three Silver Nova lines are the armies 2, 3 and 4 and share Green Earth's colour, which wears the skin).
+/// The skin's army slot on Chrome Meridian (Caulder's: the three Silver Nova lines are the armies 2, 3 and 4 and share Yellow Comet's colour, which wears the skin).
 pub const CHROME_SKIN_ARMY: u8 = 2;
+/// The colour the Silver Nova skin sits on for the corps' three armies.
+pub const CHROME_HOST: u8 = colour::YELLOW_COMET;
 
 /// Chrome Meridian: Flak (Black Hole), then the Silver Nova corps in turn: Caulder, Lili and Tabitha, whose three armies share one colour (the skin sits on it, so every one of them wears
 /// Silver Nova's chrome, its orb-tower HQ and its figures). Black Hole stays Black Hole: the skin is on armies 2..4 only.
@@ -889,9 +891,9 @@ fn chrome_meridian() -> MissionDef {
     m.map = MapSrc::Built("gauntlet_07");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::FLAK)).team(1).funds(9000),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(crate::es_co::CAULDER)).team(1).funds(0),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(crate::es_co::LILI)).team(1).funds(0),
-        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(crate::es_co::TABITHA)).team(1).funds(0),
+        ArmyDef::new(CHROME_HOST, CoSpec::Fixed(crate::es_co::CAULDER)).team(1).funds(0),
+        ArmyDef::new(CHROME_HOST, CoSpec::Fixed(crate::es_co::LILI)).team(1).funds(0),
+        ArmyDef::new(CHROME_HOST, CoSpec::Fixed(crate::es_co::TABITHA)).team(1).funds(0),
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
     ];
     m.skin = Some((CHROME_SKIN_ARMY, 0));
@@ -1325,8 +1327,8 @@ mod tests {
         let c = by("gauntlet_07");
         assert_eq!(c.enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::FLAK, crate::es_co::CAULDER, crate::es_co::LILI, crate::es_co::TABITHA]);
         assert!(c.enemy_skin);
-        assert_eq!(c.enemies.iter().map(|x| x.1).collect::<Vec<_>>(), vec![colour::BLACK_HOLE, colour::GREEN_EARTH, colour::GREEN_EARTH, colour::GREEN_EARTH]);
-        assert_eq!(c.free(), vec![colour::ORANGE_STAR, colour::BLUE_MOON, colour::YELLOW_COMET]);
+        assert_eq!(c.enemies.iter().map(|x| x.1).collect::<Vec<_>>(), vec![colour::BLACK_HOLE, CHROME_HOST, CHROME_HOST, CHROME_HOST]);
+        assert_eq!(c.free(), crate::army_skin::order().into_iter().filter(|c| *c < crate::army_skin::SKIN && *c != colour::BLACK_HOLE && *c != CHROME_HOST).collect::<Vec<_>>());
         let m = &def().missions[c.mission];
         assert_eq!(m.skin, Some((CHROME_SKIN_ARMY, 0)));
         // the skin's lines are the armies that wear the host colour, and Black Hole's line does not

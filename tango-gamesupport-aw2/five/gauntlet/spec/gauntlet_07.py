@@ -1,5 +1,5 @@
 """Gauntlet 07, Chrome Meridian (docs/dev/gauntlet.md): a Black Hole line and then the Silver Nova corps, four lines, 38 x 26 = 988 cells, five armies (the player is army 5). Every Silver Nova line wears the
-skin (docs/dev/army-packs.md) on one host colour (Green Earth's: armies 2, 3 and 4 share it, only their slots differ); the Black Hole line keeps Black Hole's colour and the player may wear neither, nor the skin.
+skin (docs/dev/army-packs.md) on one host colour (Yellow Comet's: armies 2, 3 and 4 share it, only their slots differ); the Black Hole line keeps Black Hole's colour and the player may wear neither, nor the skin.
   1. Flak (Black Hole, army 1) holds the centre-west from the start: cheap bulk, a reckless advance.
   2. Caulder (Silver Nova, army 2) arrives in the north-west citadel when Flak falls: the corps' siege engines behind a ring of orb towers.
   3. Lili (Silver Nova, army 3) arrives in the north-east when Caulder falls: fast armour and copters across the Meridian.
@@ -38,10 +38,10 @@ def build():
         m.cluster("f", cx, cy, n * 3, seed=10 + i)
     for i, pts in enumerate([[(1, 12), (5, 11)], [(23, 11), (27, 12)], [(30, 15), (35, 16)], [(22, 18), (26, 17)], [(15, 22), (17, 24)], [(33, 1), (36, 3)], [(24, 24), (28, 25)]]):
         belt(m, "^", pts, width=1, seed=20 + i, p=0.95)
-    m.header(armies=5, colours=(BH, GE, GE, GE, BH), team=(2, 2, 2, 2, 1), objective=[5], zones=[(5, 0, 17, 12, 25)], hidden=[2, 3, 4], comment=(
+    m.header(armies=5, colours=(BH, YC, YC, YC, BH), team=(2, 2, 2, 2, 1), objective=[5], zones=[(5, 0, 17, 12, 25)], hidden=[2, 3, 4], comment=(
         "Gauntlet 07 Chrome Meridian (normal look, no fog, 38 x 26, five armies): the player (army 5, HQ 5 (4,22), south-west, a free CO) against Flak (Black Hole, army 1, HQ (11,14), the centre-west), then the Silver Nova "
         "corps: Caulder (army 2, HQ (7,5), the north-west citadel), Lili (army 3, HQ (31,5), the north-east) and Tabitha (army 4, HQ (32,20), the south-east), who come onto the battlefield in turn. The three Silver Nova "
-        "lines wear the skin on Green Earth's colour (armies 2..4 share it). The Meridian (x 19..20) has bridges (19,3) (19,6) (20,10) (20,15) (19,21). Com Towers (16,10) (25,12) (26,19). No inventions."))
+        "lines wear the skin on Yellow Comet's colour (armies 2..4 share it). The Meridian (x 19..20) has bridges (19,3) (19,6) (20,10) (20,15) (19,21). Com Towers (16,10) (25,12) (26,19). No inventions."))
     m.put("1", *HQS["1"]).put("5", *HQS["5"]).put(".", *HQS["2"]).put(".", *HQS["3"]).put(".", *HQS["4"])
     for x, y in ((16, 10), (25, 12), (26, 19)):
         m.put("t", x, y)

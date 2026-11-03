@@ -207,7 +207,7 @@ class Gauntlet(BhCampaign):
     def counts(self, armies=(1, 2, 3, 4)):
         return {a: len(self.g.units(army=a)) for a in armies}
 
-    def capture(self, ctx, cell, army=1):
+    def capture(self, ctx, cell, army=1, snap=None):
         """A fresh Infantry of the player's army on `cell` with one capture point left: the game's own Capture."""
         e, g = self.e, self.g
         g._units_base = g._players_base = None
@@ -226,6 +226,10 @@ class Gauntlet(BhCampaign):
         self.dialogue()
         ctx.require(any(n.lower().startswith("capt") for n in menu["names"]), f"Capture offered at {cell} ({menu['names']})")
         g.choose("Capt", g.ACTION_MENU)
+        if snap:                        # (the capture box's frames: `snap(k)` every few frames while it plays)
+            for k in range(24):
+                snap(k)
+                e.wait(6)
         e.wait(120)
 
     def settle(self, frames=6000):

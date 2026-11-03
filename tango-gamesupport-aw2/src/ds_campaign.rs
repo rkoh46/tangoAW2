@@ -219,7 +219,9 @@ pub fn held_hq(core: &Core) -> Option<(u8, u8)> {
 
 /// The skin an army of the battle on now wears: (army 1-based, skin index), for a custom campaign's mission that names one.
 pub fn mission_skin(core: &Core) -> Option<(u8, usize)> {
-    if !active(core) || is_ds(core) || !in_battle(core) {
+    // (a battle scene (the animation) and the screens between the map's turns clear the map's main loop, which `in_battle` reads: the mission's battle is on while an army has the
+    // turn, so the skin stays on through the scenes; it went off for every battle animation, and the enemy's tanks fought in the host colour's own)
+    if !active(core) || is_ds(core) || !(in_battle(core) || crate::pvp::current_army(core) != 0) {
         return None;
     }
     campaign(core)?

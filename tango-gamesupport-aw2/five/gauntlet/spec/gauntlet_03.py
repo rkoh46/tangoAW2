@@ -1,4 +1,4 @@
-"""Gauntlet 03, Dustwind Basin (docs/dev/gauntlet.md): a desert gauntlet of two lines on a 30 x 20 map, three armies. The player (army 1, a free CO pick) holds the south-west camp:
+"""Gauntlet 03, Dustwind Basin (docs/dev/gauntlet.md): a dry-badlands gauntlet of two lines on a 30 x 20 map, three armies. The player (army 1, a free CO pick) holds the south-west camp:
   1. Koal (Yellow Comet, army 2) holds the east mesa from the start: highways and fast tanks, a pair of rocket batteries on the rim.
   2. Lash (Black Hole, army 3) arrives in the north-west dunes when Koal falls (his HQ taken or his line routed): artillery, Md Tanks and foot soldiers who live off the broken ground.
 No Black Hole inventions.

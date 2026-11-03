@@ -32,12 +32,11 @@ def build():
     m.river([(0, 13), (6, 13), (6, 14), (16, 14)])
     for x, y in BR:
         m.put("=", x, y)
-    # --- orchards (woods) in clusters, ridges and a pond
+    # --- orchards (woods) in clusters and ridges
     for i, (cx, cy, n) in enumerate([(14, 7, 3), (8, 7, 3), (3, 9, 2), (24, 8, 3), (33, 9, 3), (23, 3, 3), (13, 18, 3), (8, 17, 3), (25, 16, 3), (32, 15, 3), (23, 21, 3), (3, 3, 2), (12, 3, 3), (30, 22, 2), (16, 21, 2), (28, 12, 2), (21, 6, 2), (30, 13, 2)]):
         m.cluster("f", cx, cy, n * 3, seed=10 + i)
     for i, pts in enumerate([[(2, 17), (6, 17)], [(21, 13), (25, 13)], [(27, 11), (32, 12)], [(12, 12), (15, 11)], [(21, 19), (24, 19)], [(1, 7), (4, 6)], [(14, 1), (17, 2)]]):
         belt(m, "^", pts, width=1, seed=20 + i, p=0.95)
-    m.blob("~", 27, 21, 1, 1, seed=3, wobble=0.3)
     m.header(armies=5, colours=(OS, OS, OS, OS, BH), team=(2, 2, 2, 2, 1), objective=[5], zones=[(5, 0, 16, 12, 23)], hidden=[2, 3, 4], comment=(
         "Gauntlet 06 Harvest Run (normal look, no fog, 36 x 24, five armies): the player (army 5, HQ 5 (4,20), south-west, a free CO) against all of Orange Star: Andy (army 1, HQ (11,8), the centre-west farmland), "
         "then Max (army 2, HQ (29,5), the north-east orchards), Sami (army 3, HQ (30,19), the south-east fields) and Nell (army 4, HQ (6,4), the north-west meadows), who come onto the battlefield in turn: every line wears "

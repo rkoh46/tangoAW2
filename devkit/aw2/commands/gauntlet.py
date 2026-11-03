@@ -4,6 +4,8 @@
                                         1_wheel, 2_co_screen, 3_setup, 4_first_turn (PNG, in DIR or the run's folder); N is an AW2 CO id (default 1 Andy; 93 Aria, 92 Asuka)
   gauntlet rout-sheet [--out FILE]      Cinder Sea's first rout (before, during, after) in the real app in the three looks (AW2 graphics, Dual Strike graphics, the tilted map): `gauntlet_rout_pictures`
                                         saves three console checkpoints, the app boots each (needs `cargo build --release -p tango`) and a sheet is composed (rows: looks, columns: moments)
+  gauntlet maps-pictures [--out DIR]    every map added after Cinder Sea and Iron Crown played with real captures, per look (AW2, DS + tilt, DS flat): `gauntlet_lines_pictures` sheets in DIR
+  gauntlet order                        the maps in the selector's order (fewest enemy COs first), from `aw2test/gauntlet_maps.py` and `crate::gauntlet_mode::order`
   gauntlet test                         the Gauntlet's regression tests (`run.py -k gauntlet_mode --mode ds`)
 """
 import os, subprocess, sys, tempfile
@@ -20,6 +22,11 @@ def register(sub):
     a.set_defaults(fn=start)
     a = gs.add_parser("test", help="run the Gauntlet mode's tests")
     a.set_defaults(fn=test)
+    a = gs.add_parser("maps-pictures", help="the new maps' picture sheets in the three looks")
+    a.add_argument("--out", help="folder for the sheets (default: devkit/work/gauntlet/maps)")
+    a.set_defaults(fn=maps_pictures)
+    a = gs.add_parser("order", help="the maps in the selector's order")
+    a.set_defaults(fn=order)
     a = gs.add_parser("rout-sheet", help="the rout's before/during/after in the real app, in all three looks, as one sheet")
     a.add_argument("--out", help="the sheet's PNG (default: devkit/work/gauntlet/rout_sheet.png)")
     a.set_defaults(fn=rout_sheet)
@@ -37,6 +44,23 @@ def start(a):
     names = sorted(f for f in os.listdir(out)) if os.path.isdir(out) else []
     util.say("pictures:", out, names)
     return r.returncode
+
+
+def maps_pictures(a):
+    out = a.out or str(cfg.work("gauntlet") / "maps")
+    os.makedirs(out, exist_ok=True)
+    r = _run({"AW2TEST_REVIEW_DIR": out}, ["-k", "gauntlet_lines_pictures", "--mode", "ds", "-j", "4"])
+    util.say("sheets:", out)
+    return r.returncode
+
+
+def order(a):
+    """The selector's order: by the number of enemy COs (a later stage's too), ties in the missions' order: the keys of the text maps and the harness registry tell it."""
+    sys.path.insert(0, str(cfg.REPO / "tools" / "aw2test"))
+    from aw2test import gauntlet as ga
+    for row, title in enumerate(ga.SELECTOR_TITLES):
+        util.say(f"{row + 1}. {title}: mission {ga.SELECTOR_ORDER[row]}, {ga.SELECTOR_ENEMIES[row]} enemy COs")
+    return 0
 
 
 def test(a):

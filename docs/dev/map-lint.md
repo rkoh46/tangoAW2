@@ -179,7 +179,7 @@ The BH2 Campaign's maps (docs/dev/bh2-maps.md) are held to the integrity rules, 
 `aw2dev maps features --campaign bh2` lists the properties, terrain and inventions each map uses. `render-check --source bh2` is wired for the game's pictures once the missions are in the game.
 
 ## Armies and reachability (AR01 to AR03)
-- **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Silver Nova and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.
+- **AR01** two armies of a map wear the same colour; **AR02** an army has more than one HQ. Errors for the BH Campaign, Silver Nova and Versus (0 hits in AW2's and Dual Strike's own maps; the BH Campaign has `bh30`, two HQs for one army, kept in `rules.KNOWN`; Versus none). A Gauntlet map may line up one whole army's COs (several armies on one colour, one enemy team, never the player's): AR01 is waived for those (`maplint.rules.armies`). The mission side is checked by `aw2dev campaign check` and the Rust test `no_two_armies_share_a_colour`.
 - **AR03** a missile silo or an airport must be reachable on foot from some HQ (a port or a Lander lets infantry cross water and land on any shore). AW2 breaks it in 12 of 179 maps, Dual Strike in 24 of 256, BH, Versus and Silver Nova in none. A silo is AW2's own terrain (tile 0x180), so ES01 no longer counts it as a Black Hole invention.
 
 ## Landings (RC05, the owner's permanent rule)

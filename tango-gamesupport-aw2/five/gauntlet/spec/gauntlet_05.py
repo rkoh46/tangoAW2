@@ -27,7 +27,7 @@ def build():
             if m.get(x, y) == "^":
                 m.put(".", x, y)
     # --- tarns and a creek (the highlands' water): north-west shelf, south-east valley
-    m.blob("~", 10, 2, 2, 1, seed=3, wobble=0.3)
+    m.rect("~", 9, 1, 11, 2)
     m.blob("~", 23, 18, 2, 2, seed=5, wobble=0.3)
     # --- woods and outcrops
     for i, (cx, cy, n) in enumerate([(3, 8, 3), (9, 8, 3), (11, 14, 2), (6, 14, 2), (21, 8, 3), (25, 8, 2), (28, 16, 3), (20, 13, 2), (22, 3, 3), (3, 3, 2), (9, 19, 2), (29, 8, 2)]):
