@@ -28,9 +28,12 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
    - **the army screen** (step 2, one screen for the CO and the colour; the game's CO screen is not used): Versus' Teams screen laid out for one player against the map's CPUs, drawn by us over
      the finished frame (`gauntlet_ui::draw`) from the pieces the Teams screens use, nothing new of our own: `army_cards::draw`, the cards, windows and pink help plate of AW2's Teams
      screen, the page online rooms and offline Versus share (with the pack Versus' Teams screen is this page in every look, DS map graphics or not, so the Gauntlet's is too: Dual Strike's
-     NORMAL BATTLE cards, `ds_coselect::draw_versus`, are only drawn when that page is not, which never happens with the pack). The ground is the sea of the game's Teams and SELECT MAP
-     pictures with a title window naming the map (the game's own TEAMS banner and wallpaper belong to the Versus flow's screen, which is not run), and the cards carry their 1P / CP tags
-     as text (`Seat::tag`; Versus' are sampled from the game's frame). The first card is the player's (tag 1P, the window cream),
+     NORMAL BATTLE cards, `ds_coselect::draw_versus`, are only drawn when that page is not, which never happens with the pack). The frame is the Teams screen's own, drawn by `army_cards::teams_frame` from the
+     cartridge (read once): the ground (BG3, the world map: tiles `0x0822FEF0`, map `0x0822F9AC`, palettes `0x082344AC`, the screen's scroll) and the title banner, which is the title font
+     (`online_art::TitleFont`, the mission card's letters, banner palette `0x080F6164`) so it says GAUNTLET where Versus' says TEAMS; the map's name leads the help plate. The cards carry the
+     game's own 1P and CP tag sprites (ids 74 and 78, `Seat::tag`; Versus' are sampled from the game's frame). A screen with tagged seats also centres three cards and shows every CO name
+     whole: with arrows when they fit, else without, on two lines on a narrow card (Clone Andy on five cards). `aw2dev audit text` (with the Dual Strike ROM, which it uses when it is there)
+     paints the screen at two to four enemies with the six widest names of the roster and reports a name that does not fit (`audit::cut`). The first card is the player's (tag 1P, the window cream),
      then the map's enemies in the order they come, as CPU cards with their CO and the colour the map gives them (a line that wears Silver Nova shows its sun, `Entry::shown_colour`; at most four: the screen has five cards, so Iron Crown's Asuka stage is not shown).
      **Keys:** UP / DOWN choose the CO (all 35 of `gauntlet_mode::ROSTER`, round again, a held key repeating as AW2's cursors do; the cursor keeps its place between visits), R / L the colour
      (round the colours the map leaves free, `Entry::free`, Silver Nova among them where the map allows it; a map with one free colour shows it and R changes nothing; the cursor starts

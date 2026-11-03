@@ -2278,9 +2278,19 @@ pub mod audit {
         }
     }
 
+    static CUTS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+    /// A name drawn whole needs `width` pixels and its box has `max`: it is cut off (reported by [`finish`]).
+    pub(crate) fn cut(width: i32, max: i32, s: &str) {
+        if ON.load(Ordering::Relaxed) && width > max {
+            CUTS.lock().unwrap().push(format!("cut off: {s:?} needs {width} px on a card with {max}"));
+        }
+    }
+
     /// Starts recording (and forgets what was).
     pub fn start() {
         *LOG.lock().unwrap() = (Vec::new(), Vec::new());
+        CUTS.lock().unwrap().clear();
         ON.store(true, Ordering::Relaxed);
     }
 
@@ -2289,7 +2299,7 @@ pub mod audit {
     pub fn finish() -> Vec<String> {
         ON.store(false, Ordering::Relaxed);
         let (wins, texts) = std::mem::take(&mut *LOG.lock().unwrap());
-        let mut bad = Vec::new();
+        let mut bad = std::mem::take(&mut *CUTS.lock().unwrap());
         let texts_kept: Vec<_> = texts.iter().filter(|t| !t.3.trim().is_empty()).cloned().collect();
         for (x, y, w, s) in texts {
             if s.trim().is_empty() {

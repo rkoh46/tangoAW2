@@ -1,5 +1,5 @@
-"""The Gauntlet's army screen in the three looks (AW2 graphics, the Dual Strike map graphics with the tilt, and without it) on four maps: Dustwind Basin (two enemies), Harvest Run (all Orange Star,
-four enemies), Chrome Meridian (Silver Nova enemies) and Iron Crown (five lines, Asuka's stage not shown). Per map and look three pictures: the screen as it opens, after UP / DOWN changed the CO, after R
+"""The Gauntlet's army screen in the three looks (AW2 graphics, the Dual Strike map graphics with the tilt, and without it) on six maps: Dustwind Basin (two enemies), Harvest Run (all Orange Star,
+four enemies), Chrome Meridian (Silver Nova enemies), Iron Crown (five lines, Asuka's stage not shown), Blue Bastion and Last Eclipse. Per map and look three pictures: the screen as it opens, after UP / DOWN changed the CO, after R
 changed the colour. Versus' own Teams screen in the same looks (two and four armies) for comparison. `-k gauntlet_army_pictures`; `AW2TEST_ARMY_PICS` is where the pictures and the two sheets
 (`army_screen_sheet.png`, `versus_teams_sheet.png`) go (default: the test's folder). Looked at by a person: the checks only count what the screens must hold."""
 
@@ -19,7 +19,7 @@ LOOKS = (
     ("ds_flat", {"TANGOAW2_DS_GRAPHICS": "1"}),
 )
 # (title, mission, the CO the second picture changes to: its face is nobody else's on the screen)
-MAPS = (("Dustwind Basin", 2, ga.ARIA), ("Harvest Run", 5, ga.ASUKA), ("Chrome Meridian", 6, ga.TABITHA), ("Iron Crown", 1, ga.JAVIER))
+MAPS = (("Dustwind Basin", 2, ga.ARIA), ("Harvest Run", 5, ga.ASUKA), ("Chrome Meridian", 6, ga.TABITHA), ("Iron Crown", 1, ga.JAVIER), ("Blue Bastion", 10, ga.CLONE_ANDY), ("Last Eclipse", 11, ga.CAULDER))
 STATES = ("default", "co_changed", "colour_changed")
 
 

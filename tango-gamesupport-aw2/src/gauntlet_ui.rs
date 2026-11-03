@@ -23,7 +23,7 @@
 use mgba::core::Core;
 
 use crate::gauntlet_mode::{self as gm, Entry};
-use crate::online::{self, Rgb, Rgba, GRAY_INK, INK, SHADE, W};
+use crate::online::{self, Rgba, W};
 
 pub const STATE: u32 = 0x0203_D080;
 pub const STATE_LEN: u32 = 0x60;
@@ -468,9 +468,6 @@ fn mirror(core: &mut Core) {
 
 // --- Drawing ------------------------------------------------------------------------------------------------------------------------------------------
 
-/// The sea behind the windows (the game's own Teams and SELECT MAP pictures lie on one).
-const SEA: Rgb = (152, 224, 232);
-
 /// The most enemy cards the screen shows: Versus' Teams screen has five armies, the player's the first. A map with more lines (Iron Crown's Asuka stage) shows the first four.
 const MAX_ENEMIES: usize = 4;
 
@@ -479,21 +476,12 @@ fn cards(e: &Entry, co: u8, colour: u8) -> Vec<(u8, u8)> {
     std::iter::once((co, colour)).chain(e.enemies.iter().take(MAX_ENEMIES).map(|&(co, c)| (co, e.shown_colour(c)))).collect()
 }
 
-/// The title window and the keys it names.
-fn header(cv: &mut Rgba<'_>, core: &Core, what: &str) {
-    cv.window(4, 3, W as i32 - 8, 16);
-    cv.text(core, 10, 7, "GAUNTLET", INK, SHADE);
-    let x = 10 + online::text_width(core, "GAUNTLET") + 8;
-    cv.text(core, x, 7, what, GRAY_INK, SHADE);
-}
-
-/// The army screen's picture for map `e` with CO `co` in army colour `colour` (also the text audit's page): the cards, windows and help plate of AW2's Teams screen
-/// ([`crate::army_cards`]) on the sea, the map's name in a title window.
+/// The army screen's picture for map `e` with CO `co` in army colour `colour` (also the text audit's page): the Teams screen's own frame (its ground, GAUNTLET in its title banner), the
+/// cards, windows and help plate of AW2's Teams screen ([`crate::army_cards`]); the map's name leads the help plate.
 pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
     use crate::army_cards::{Field, Help, Seat};
     let cv = &mut Rgba(rgba);
-    cv.rect(0, 0, W as i32, online::H as i32, SEA);
-    header(cv, core, e.title);
+    crate::army_cards::teams_frame(core, cv, "GAUNTLET");
     let seats: Vec<Seat> = cards(e, co, colour)
         .into_iter()
         .enumerate()
@@ -509,7 +497,9 @@ pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
             tag: Some(if k == 0 { "1P" } else { "CP" }),
         })
         .collect();
-    let lines = vec!["Choose your CO and army colour.".to_string(), "Up Down: CO  R: Colour  A: Start  B: Back".to_string()];
+    let full = format!("{}: choose your CO and colour.", e.title);
+    let first = if online::text_width(core, &full) <= 228 { full } else { e.title.to_string() };
+    let lines = vec![first, "Up Down: CO  R: Colour  A: Start  B: Back".to_string()];
     crate::army_cards::draw(core, cv.0, &seats, false, &Help { lines }, false);
 }
 

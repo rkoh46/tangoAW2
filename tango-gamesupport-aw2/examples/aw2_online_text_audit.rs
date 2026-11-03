@@ -674,9 +674,15 @@ fn main() {
             wait(&mut c, 150);
         }
     }
-    armies(&mut c);
+    // (the Gauntlet's roster has tangoAW2's and Dual Strike's COs, whose faces and names come with the Dual Strike ROM: its page runs with `--ds`, and the army page's Versus list is the
+    // plain game's)
+    if std::env::var_os("TANGOAW2_DS_ROM").is_none() {
+        armies(&mut c);
+    }
     proposals(&mut c);
-    gauntlet(&mut c);
+    if std::env::var_os("TANGOAW2_DS_ROM").is_some() {
+        gauntlet(&mut c);
+    }
     println!("done: {} problems", c.problems);
 }
 
@@ -860,7 +866,8 @@ fn gauntlet(c: &mut Ctx) {
     use tango_gamesupport_aw2::gauntlet_ui as gu;
     use tango_gamesupport_aw2::online_teams as ot;
     let core = c.link.core_mut();
-    let list = tango_gamesupport_aw2::tag_ui::teams_list(core);
+    // (the Gauntlet's own roster, all 35: the tangoAW2 COs are not in the game's Teams list)
+    let list: Vec<u8> = tango_gamesupport_aw2::gauntlet_mode::ROSTER.iter().map(|r| r.0).collect();
     let mut by_width: Vec<(i32, u8)> = list
         .iter()
         .map(|&co| (tango_gamesupport_aw2::online::text_width(core, &ot::co_label(core, co)), co))
@@ -877,10 +884,11 @@ fn gauntlet(c: &mut Ctx) {
         stages: vec![colours[..n.min(6)].to_vec()],
         enemy_skin: None,
     };
-    for n in [3usize, 4, 6] {
-        for (k, &co) in widest.iter().take(2).enumerate() {
-            let e = entry(n, "Cinder Sea");
-            paint(c, &format!("gauntlet_army_{n}_{k}"), n == 3, |core, rgba| gu::paint_army(core, rgba, &e, co, 1));
+    // (every card count a map gives, two to four enemies: the six widest names as the player's CO and as the enemies', each name whole on its card)
+    for n in [2usize, 3, 4] {
+        for (k, &co) in widest.iter().enumerate() {
+            let e = entry(n, "Chrome Meridian");
+            paint(c, &format!("gauntlet_army_{n}_{k}"), k < 2, |core, rgba| gu::paint_army(core, rgba, &e, co, 1));
         }
     }
 }

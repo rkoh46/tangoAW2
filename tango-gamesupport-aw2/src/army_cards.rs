@@ -43,8 +43,9 @@ pub struct Seat {
     /// The seat of the player looking (its window is cream).
     pub mine: bool,
     pub field: Option<Field>,
-    /// The card's tag ("1P", "CP") drawn by us, for a screen whose frame is not the game's own Teams screen (the Gauntlet's: no tag to sample from it). `None`: the game's tag is
-    /// taken from the frame as before.
+    /// The card's tag ("1P", "CP"): the game's own tag sprite drawn by us, for a screen whose frame is not the game's own Teams screen (the Gauntlet's: [`teams_frame`] and no tag to sample
+    /// from it). Such a screen (every seat tagged) also centres three cards and shows every CO name whole (two lines, no arrows, when the card is narrow). `None`: the game's tag is taken
+    /// from the frame as before.
     pub tag: Option<&'static str>,
 }
 
@@ -166,6 +167,102 @@ pub(crate) fn emblem(core: &Core, cv: &mut Rgba<'_>, colour: u8, x: i32, y: i32)
             cv.put(x + (i % w) as i32, y + (i / w) as i32, *c);
         }
     }
+}
+
+/// The Teams screen's ground (BG3: the world map the missions are played over, its tiles, map and palettes are the cartridge's: read once, as seen through the screen's scroll) and its title
+/// banner (the title font's glyphs as 16 x 32 sprites in the banner's palette), for a screen of ours that has the Teams look without the game's own Teams screen under it.
+const GROUND_TILES: u32 = 0x0822_FEF0;
+const GROUND_MAP: u32 = 0x0822_F9AC;
+const GROUND_PALETTES: u32 = 0x0823_44AC;
+/// BG3's scroll on the Teams screen.
+const GROUND_SCROLL: (usize, usize) = (281 % 256, 231);
+const BANNER_PALETTE: u32 = 0x080F_6164;
+/// The sprite ids of the card tags (the game's 1P and CP) and their place from the card's left edge (the tag is 16 wide: it stands out of a card that has room beside it).
+const TAG_1P: u32 = 74;
+const TAG_CP: u32 = 78;
+
+fn ground_picture(core: &Core) -> Option<&'static Vec<Rgb>> {
+    static G: OnceLock<Option<Vec<Rgb>>> = OnceLock::new();
+    G.get_or_init(|| {
+        let rd = |at: u32, n: usize| {
+            let mut b = vec![0u8; n];
+            core.raw_read_range(at, -1, &mut b);
+            b
+        };
+        let tiles = crate::ds_art::lz10(&rd(GROUND_TILES, 0x6000))?;
+        let map = crate::ds_art::lz10(&rd(GROUND_MAP, 0x900))?;
+        let pal = rd(GROUND_PALETTES, 0xC0);
+        if tiles.len() < 0x5800 || map.len() < 0x800 {
+            return None;
+        }
+        let mut full = vec![(0u8, 0u8, 0u8); 256 * 256];
+        for ty in 0..32usize {
+            for tx in 0..32usize {
+                let e = u16::from_le_bytes([map[2 * (ty * 32 + tx)], map[2 * (ty * 32 + tx) + 1]]) as usize;
+                let (t, hf, vf, bank) = (e & 0x3FF, e >> 10 & 1 == 1, e >> 11 & 1 == 1, e >> 12);
+                for y in 0..8usize {
+                    for x in 0..8usize {
+                        let (sx, sy) = (if hf { 7 - x } else { x }, if vf { 7 - y } else { y });
+                        let at = t * 32 + sy * 4 + sx / 2;
+                        let v = tiles.get(at).map_or(0, |b| (b >> (4 * (sx & 1))) & 15) as usize;
+                        if v != 0 && bank < 6 {
+                            let c = u16::from_le_bytes([pal[32 * bank + 2 * v], pal[32 * bank + 2 * v + 1]]);
+                            full[(ty * 8 + y) * 256 + tx * 8 + x] = online::bgr(c);
+                        }
+                    }
+                }
+            }
+        }
+        Some(
+            (0..online::W * online::H)
+                .map(|i| full[((i / online::W + GROUND_SCROLL.1) % 256) * 256 + (i % online::W + GROUND_SCROLL.0) % 256])
+                .collect(),
+        )
+    })
+    .as_ref()
+}
+
+/// The Teams screen's frame with `word` in the banner: the ground and the title, nothing else (the cards, windows and plate are [`draw`]'s). The sea alone if the ground cannot be read.
+pub(crate) fn teams_frame(core: &Core, cv: &mut Rgba<'_>, word: &str) {
+    match ground_picture(core) {
+        Some(g) => {
+            for (i, c) in g.iter().enumerate() {
+                cv.put((i % online::W) as i32, (i / online::W) as i32, *c);
+            }
+        }
+        None => cv.rect(0, 0, online::W as i32, online::H as i32, (152, 224, 232)),
+    }
+    static F: OnceLock<Option<crate::online_art::TitleFont>> = OnceLock::new();
+    let Some(font) = F.get_or_init(|| crate::online_art::TitleFont::load(core)).as_ref() else { return };
+    let mut b = [0u8; 32];
+    core.raw_read_range(BANNER_PALETTE, -1, &mut b);
+    let pal: Vec<Rgb> = (0..16).map(|i| online::bgr(u16::from_le_bytes([b[2 * i], b[2 * i + 1]]))).collect();
+    for (c, x) in font.layout(word, 4) {
+        let Some(g) = crate::online_art::TitleFont::index(c) else { continue };
+        let px = &font.px[g];
+        for y in 0..px.h {
+            for xx in 0..px.w {
+                let v = px.get(xx, y) as usize;
+                if v != 0 {
+                    cv.put(x + xx as i32, y as i32, pal[v]);
+                }
+            }
+        }
+    }
+}
+
+/// A CO's name on `max` pixels: one line, or two broken at the space that leaves the shorter longest line (a single word stays whole).
+fn name_lines(core: &Core, name: &str, max: i32) -> Vec<String> {
+    let w = |t: &str| online::text_width(core, t);
+    if w(name) <= max {
+        return vec![name.to_string()];
+    }
+    let spaces: Vec<usize> = name.match_indices(' ').map(|(i, _)| i).collect();
+    spaces
+        .into_iter()
+        .map(|i| vec![name[..i].to_string(), name[i + 1..].to_string()])
+        .min_by_key(|l| l.iter().map(|t| w(t)).max().unwrap_or(0))
+        .unwrap_or_else(|| vec![name.to_string()])
 }
 
 fn yellow_frame(cv: &mut Rgba<'_>, x: i32, y: i32, w: i32, h: i32) {
@@ -349,6 +446,8 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
     let cv = &mut canvas;
     cv.rect(0, CARD_Y - 3, online::W as i32, plate_y - 1 - (CARD_Y - 3), ground);
     let (first, pitch) = layout(n);
+    // (a screen of ours centres three cards: the game's own 3-army page sits two pixels to the left)
+    let first = if labelled && n == 3 { first + 2 } else { first };
     for (s, seat) in seats.iter().take(n).enumerate() {
         let left = first + pitch * s as i32;
         let partner_on = tag_pairs && seat.field == Some(Field::Partner);
@@ -377,12 +476,16 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
             }
         }
         if let Some(label) = seat.tag {
-            // (on the card's frame colour, at its upper right corner, as the game's own tag sits)
-            let ink = if label == "CP" { WHITE } else { YELLOW };
-            let w = online::text_width(core, label);
-            let x = left + CARD - 5 - w;
-            cv.rect(x - 2, CARD_Y + 1, w + 4, 12, FRAME);
-            cv.text(core, x, CARD_Y + 2, label, ink, FRAME);
+            // (the game's tag sprite, at the card's upper right as its page puts it: a card with room beside it lets it stand out)
+            let id = if label == "CP" { TAG_CP } else { TAG_1P };
+            if let Some((tw, _, px)) = team_sprite(core, id) {
+                let (tx, ty) = (left + if n >= 5 { 32 } else { 40 }, CARD_Y);
+                for (i, c) in px.iter().enumerate() {
+                    if let Some(c) = c {
+                        cv.put(tx + (i % tw) as i32, ty + (i / tw) as i32, *c);
+                    }
+                }
+            }
         } else if let Some(t) = tags.get(s) {
             let ox = tag_x(n, left);
             if seat.field == Some(Field::Controller) {
@@ -428,12 +531,27 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
             cv.text(core, wx + (w - lw) / 2, wy + 13, l, WHITE, BLUE);
         } else {
             let on = seat.field == Some(Field::Co);
-            let text = fit_arrows(core, &co_name, on, w - 9);
-            let tw = online::text_width(core, &text);
-            if on {
-                yellow_frame(cv, wx + 2, wy + 13, tw + 3, 11);
+            if labelled {
+                // every name whole: with arrows when they fit beside it, else without, on two lines if the card is narrow
+                let tw = |t: &str| online::text_width(core, t);
+                let arrowed = format!("< {co_name} >");
+                let lines = if on && tw(&arrowed) <= w - 9 { vec![arrowed] } else { name_lines(core, &co_name, w - 6) };
+                let widest = lines.iter().map(|l| tw(l)).max().unwrap_or(0);
+                online::audit::cut(widest, w - 6, &co_name);
+                if on {
+                    yellow_frame(cv, wx + 2, wy + 13, widest + 3, 11 * lines.len() as i32);
+                }
+                for (i, l) in lines.iter().enumerate() {
+                    cv.text(core, wx + 3, wy + 13 + 11 * i as i32, l, INK, SHADE);
+                }
+            } else {
+                let text = fit_arrows(core, &co_name, on, w - 9);
+                let tw = online::text_width(core, &text);
+                if on {
+                    yellow_frame(cv, wx + 2, wy + 13, tw + 3, 11);
+                }
+                cv.text(core, wx + 3, wy + 13, &text, INK, SHADE);
             }
-            cv.text(core, wx + 3, wy + 13, &text, INK, SHADE);
         }
         // The partner, in the window.
         let ry = wy + 24;
