@@ -74,8 +74,8 @@ def build():
     av = "~r=-^IZ#X12345QBCPTbcpt"
     m.spread(5, {INF: 5, MECH: 2, TANK: 4, MDT: 2, ART: 2, ROCK: 1, RECON: 1, AA: 2, APC: 1}, (1, 19, 10, 25), seed=1, gap=0, avoid=av)
     m.spread(5, {FTR: 1, BCO: 1}, (1, 19, 10, 25), seed=2, gap=1, avoid=av)
-    m.spread(1, {INF: 8, MECH: 3, TANK: 6, MDT: 3, ART: 3, ROCK: 2, RECON: 2, AA: 2, APC: 1}, (4, 10, 17, 17), seed=3, gap=0, avoid=av)
-    m.spread(1, {BCO: 2, FTR: 1}, (4, 10, 17, 17), seed=4, gap=1, avoid=av)
+    m.spread(1, {INF: 6, MECH: 2, TANK: 4, MDT: 2, ART: 3, ROCK: 1, RECON: 2, AA: 2, APC: 1}, (4, 10, 17, 17), seed=3, gap=0, avoid=av)
+    m.spread(1, {BCO: 1, FTR: 1}, (4, 10, 17, 17), seed=4, gap=1, avoid=av)
     for k, t in {"1": "Flak's HQ (Black Hole): the first line, on the field from the start", "2": "Caulder's HQ (Silver Nova, hidden until Flak falls)", "3": "Lili's HQ (Silver Nova, hidden until Caulder falls)",
                  "4": "Tabitha's HQ (Silver Nova, hidden until Lili falls): the last", "5": "the player's HQ"}.items():
         m.note(f"hq{k}", *HQS[k], t)

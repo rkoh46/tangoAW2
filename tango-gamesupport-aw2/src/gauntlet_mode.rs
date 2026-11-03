@@ -542,7 +542,7 @@ fn brass_canal() -> MissionDef {
     let lines = [Wire { army: 2, hq: CANAL_SASHA, zone: Rect::new(0, 0, 13, 9) }, Wire { army: 3, hq: CANAL_JAVIER, zone: Rect::new(17, 12, 29, 21) }];
     wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &JAVIER_WAVE, javier_arrives())]);
     m.intro = Scene::new(vec![
-        Line::say(co::SASHA, "Welcome to Brass Canal. Every bridge in this town has a price, and I own the toll."),
+        Line::say(co::SASHA, "Welcome to Brass Canal. Every bridge here has a price, and I own the toll."),
         Line::say(co::SASHA, "A good commander wins with funds and timing. Let me show you both."),
     ]);
     m.victory = Scene::new(vec![Line::say(co::JAVIER, "The canals are yours. A fine campaign. Do tell the Com Towers I said so.")]);
@@ -552,7 +552,7 @@ fn brass_canal() -> MissionDef {
 fn javier_arrives() -> Scene {
     Scene::new(vec![
         Line::feel(co::SASHA, Mood::Sad, "Well! That was an expensive loss. Javier, the south is yours."),
-        Line::say(co::JAVIER, "Thank you, Sasha. The Com Towers are humming, and my troops stand taller for it."),
+        Line::say(co::JAVIER, "Thank you, Sasha. The Com Towers are humming, and my troops stand tall."),
         Line::say(co::JAVIER, "Come, friend. Let us see how you fare against the whole south bank."),
     ])
 }

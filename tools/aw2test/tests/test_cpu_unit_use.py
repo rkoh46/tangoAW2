@@ -140,16 +140,23 @@ def gauntlet_days(ctx, days, map=0, me=1, armies=(2, 3, 4)):
     mine0 = [(u["x"], u["y"], u["hp"]) for u in g.units(army=me) if not u["flags"] & 8]
     for day in range(days):
         out.append(snap())
+        over = False
         for attempt in range(4):
             try:
                 d.wait_control()
                 d.end_turn()
                 break
             except NavError as ex:
+                if "mission is over" in str(ex):          # (a passive player can lose to a strong line: the days so far are the sample)
+                    ctx.log(f"day {day}: the mission is over (the passive player's army fell)")
+                    over = True
+                    break
                 ctx.log(f"end turn, try {attempt}: {ex}")
                 for _ in range(20):
                     e.press("B" if attempt % 2 else "A", 4)
                     e.wait(20)
+        if over:
+            break
         left = False
         for _ in range(3000):
             left = left or g.current_army() != me
@@ -158,7 +165,14 @@ def gauntlet_days(ctx, days, map=0, me=1, armies=(2, 3, 4)):
             if d.scripts_running():
                 e.press("A", 4)
             e.wait(10)
-        d.wait_control()
+        try:
+            d.wait_control()
+        except NavError as ex:
+            if "mission is over" not in str(ex):
+                raise
+            from aw2test import dscampaign as _dc
+            ctx.log(f"day {day}: the mission is over after the computer's turn (result {e.u8(_dc.LAST_RESULT)}; the player's units {len(g.units(army=me))}, the line's {len(g.units(army=armies[0]))})")
+            break
     out.append(snap())
     mine1 = [(u["x"], u["y"], u["hp"]) for u in g.units(army=me) if not u["flags"] & 8]
     return g, out, (mine0, mine1)

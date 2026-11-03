@@ -67,6 +67,12 @@ def gauntlet_walkthrough_pictures(ctx):
     e.press("A", 8)
     w.watch("GAUNTLET picked: to the map selector", 200, every=15, until=lambda: d.step() == ga.SELECTOR)
     d.wait_step(ga.SELECTOR)
+    w.shot("Map selector: the maps by number of enemies, fewest first", force=True)
+    for _ in range(8):                        # (Cinder Sea is mission 0, the third row: DOWN to it)
+        if e.u8(ga.UI_MAP_CURSOR) == 0:
+            break
+        e.press("DOWN", 4)
+        e.wait(40)
     w.shot("Map selector: Cinder Sea, the enemies you will face", force=True)
     e.press("A", 6)
     w.watch("Map picked: to the CO screen", 200, every=15, until=d.on_co_screen)

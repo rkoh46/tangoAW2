@@ -408,9 +408,9 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq(ga.shown(e)[1], [(5, ga.BLUE_MOON), (17, ga.GREEN_EARTH), (6, ga.YELLOW_COMET), (80, ga.ORANGE_STAR), (92, ga.BLACK_HOLE)], "Iron Crown lists all five enemies in order, Asuka of stage two last")
     ctx.eq(ga.shown(e)[2], [ga.EMERALD_SUN], "Iron Crown offers Silver Nova only (every plain colour is an enemy's in some stage)")
     png(pic(ctx, e, "selector_iron_crown"))
-    # (the colours the pick will offer: Chrome Meridian has the Silver Nova corps on the enemy side, so no skin and neither Black Hole's nor Green Earth's colour; Harvest Run is all of Orange Star, so
+    # (the colours the pick will offer: Chrome Meridian has the Silver Nova corps on the enemy side, so no skin and neither Black Hole's nor Yellow Comet's (the skin's host) colour; Harvest Run is all of Orange Star, so
     # never Orange Star's colour)
-    for row, want in ((5, [ga.ORANGE_STAR, ga.BLUE_MOON, ga.YELLOW_COMET]), (4, [ga.BLUE_MOON, ga.YELLOW_COMET, ga.GREEN_EARTH, ga.BLACK_HOLE, ga.EMERALD_SUN])):
+    for row, want in ((5, [ga.ORANGE_STAR, ga.BLUE_MOON, ga.GREEN_EARTH]), (4, [ga.BLUE_MOON, ga.YELLOW_COMET, ga.GREEN_EARTH, ga.BLACK_HOLE, ga.EMERALD_SUN])):
         e.press("UP", 4)
         e.wait(40)
         ctx.eq((d.selector_ids()[1], ga.shown(e)[2]), (row, want), f"row {row} offers {want}")
