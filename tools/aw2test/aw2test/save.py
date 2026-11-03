@@ -42,7 +42,12 @@ def sectors(buf):
 def write_design_map(save, record, slot=1):
     """Return a copy of `save` whose design slot `slot` (1..3) holds `record`."""
     assert len(record) == RECORD_LEN
-    tag = slot + 4
+    return write_slot(save, slot + 4, record)
+
+
+def write_slot(save, tag, record):
+    """Return a copy of `save` whose slot `tag` holds `record` as its payload (one sector: at most 0xFAE bytes), a sector of its own made when the slot has none."""
+    assert len(record) <= 0xFAE
     buf = bytearray(save)
     best = None
     for s, t, gen in sectors(buf):
@@ -78,8 +83,8 @@ def write_design_map(save, record, slot=1):
     base = s * SECTOR
     gen = struct.unpack_from("<I", buf, base + 8)[0]
     struct.pack_into("<I", buf, base + 0x10 + 4 * s, gen)
-    struct.pack_into("<H", buf, base + 0x50, RECORD_LEN)
-    buf[base + 0x52:base + 0x52 + RECORD_LEN] = record
+    struct.pack_into("<H", buf, base + 0x50, len(record))
+    buf[base + 0x52:base + 0x52 + len(record)] = record
     _fix_checksum(buf, s)
     # The sector directory (tag per sector at +0xFEF, generations at +0x10) is
     # read from the newest main save (tag 0) (sub_0801B2FC): list this sector there.
