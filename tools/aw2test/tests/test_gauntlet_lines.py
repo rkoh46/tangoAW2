@@ -139,6 +139,19 @@ def _scene_state(e):
     return text, face, vofs, rows
 
 
+def face_palette_of(e):
+    """The face's palette as the screen has it: BG palette 9 (colours 1..15; colour 0 is transparent)."""
+    return bytes(e.read(0x05000000 + 9 * 32 + 2, 30))
+
+
+def own_face_palettes(e, co):
+    """A CO's own face palettes: its presentation row's palette (+0x08), one of its eight colour schemes (the one `GetLoadedCoPalette` names is the player's choice, not the army's): the table the game reads is
+    the pool word at 0x08039B7C."""
+    row = e.u32(0x08039B7C) + 0x44 * co
+    base = e.u32(row + 8)
+    return [bytes(e.read(base + 32 * k + 2, 30)) for k in range(8)]
+
+
 def arrival_boxes(info):
     def fn(ctx):
         """Every arrival scene shows every speaker's box, one after the other, and a box's text tiles are its own: none is also a tile of the face beside it (a tile two pictures draw into is how the first box's
@@ -155,18 +168,21 @@ def arrival_boxes(info):
                     break
                 e.wait(90)
                 text, face, vofs, rows = _scene_state(e)
-                px = Image.open(png(ctx, e, f"{info.key}_{nxt.name}_box{len(seen)}")).convert("RGB")
-                w, h = px.size
-                pink = sum(1 for y in range(6, 36, 3) for x in range(60, w - 4, 6) if px.getpixel((x, y))[0] > 235 and 225 < px.getpixel((x, y))[1] < 250) + \
-                    sum(1 for y in range(h - 36, h - 6, 3) for x in range(60, w - 4, 6) if px.getpixel((x, y))[0] > 235 and 225 < px.getpixel((x, y))[1] < 250)
-                if pink > 40:
-                    seen.append((sorted(text & face), pink))
-                    e.press("A", 4)
-                    e.wait(30)
-                else:
-                    e.press("A", 4)
+                up = any(f == 0x08014401 for _, _, f in g.procs())          # (the dialogue box's own proc)
+                if up:
+                    png(ctx, e, f"{info.key}_{nxt.name}_box{len(seen)}")
+                    seen.append((sorted(text & face), 0, face_palette_of(e)))
+                e.press("A", 4)
+                e.wait(30)
             ctx.check(len(seen) >= 2, f"{info.title}: {nxt.name}'s arrival shows {len(seen)} boxes (the departing CO's and {nxt.name}'s)")
             ctx.eq([s[0] for s in seen], [[]] * len(seen), f"{info.title}: no text tile of a box is a tile of the face")
+            if seen:
+                # the face is drawn with BG palette 9: it holds the speaker's own palette (the departing CO's in the first box, the arriving CO's in the last), never the current army's moved-unit grey
+                # that a five-army battle keeps in that bank
+                want = (own_face_palettes(e, l.co), own_face_palettes(e, nxt.co))
+                ctx.check(seen[0][2] in want[0], f"{info.title}: the first box's face has {l.name}'s own palette")
+                ctx.check(seen[-1][2] in want[1], f"{info.title}: the last box's face has {nxt.name}'s own palette")
+                ctx.check(all(s[2] in want[0] + want[1] for s in seen), f"{info.title}: every box's face has its speaker's own palette ({[('own' if s[2] in want[0] + want[1] else 'WRONG') for s in seen]})")
             d.settle()
         e.close()
     fn.__name__ = f"gauntlet_lines_{info.key}_arrival_boxes_are_all_shown_and_clean"
@@ -180,3 +196,71 @@ for _info in gm.MAPS.values():
 # (the first two maps are not in the registry: their lines and HQs, for the same check)
 arrival_boxes(gm.MapInfo(0, "gauntlet_01", "Cinder Sea", 1, (3, 18), [gm.Line("drake", 9, 2, (27, 18)), gm.Line("sensei", 18, 3, (3, 3)), gm.Line("hawke", 14, 4, (29, 3))]))
 arrival_boxes(gm.MapInfo(1, "gauntlet_02", "Iron Crown", 5, (4, 22), [gm.Line("grit", 5, 1, (8, 9)), gm.Line("jess", 17, 2, (24, 5)), gm.Line("kanbei", 6, 3, (34, 6)), gm.Line("rachel", 80, 4, (30, 20))]))
+
+
+def intro_and_victory_faces(info):
+    def fn(ctx):
+        """The first line's face has its own palette in the intro, and the last line's in the winning scene (a five-army battle keeps the current army's moved-unit grey in BG palette 9, the bank the
+        face is drawn with: it waited for no scene)."""
+        from aw2test import paths
+        from aw2test.emu import Emu
+        from aw2test.game import Game
+        from tests.test_gauntlet_map2 import to_player_turn
+        e = Emu(save=paths.base_save(), ds=ctx.ds)
+        g = Game(e, ctx.image)
+        ctx.games.append(g)
+        d = ga.Gauntlet(g)
+        d.open(True, map=info.mission)
+        d.choose_cos(1, prefs=[ga.ANDY])
+        d.pick_colour(None)
+        first = info.lines[0]
+        faces = []
+        for _ in range(600):
+            if d.in_battle() and e.u32(0x0849_9598) != 0:
+                break
+            if d.scripts_running():
+                e.wait(60)
+                if any(f == 0x08014401 for _, _, f in g.procs()):
+                    faces.append(face_palette_of(e))
+                e.press("A", 4)
+            e.wait(10)
+        d.leave_setup()
+        for _ in range(300):
+            if d.scripts_running():
+                e.wait(90)
+                if any(f == 0x08014401 for _, _, f in g.procs()):
+                    faces.append(face_palette_of(e))
+                e.press("A", 4)
+            elif faces:
+                break
+            e.wait(10)
+        ctx.check(faces, f"{info.title}: the intro shows a box")
+        ctx.check(all(f in own_face_palettes(e, first.co) for f in faces), f"{info.title}: the intro's face has {first.name}'s own palette")
+        d.wait_control()
+        g._units_base = g._players_base = None
+        to_player_turn(e, g, d, army=info.player)
+        for k, l in enumerate(info.lines[:-1]):
+            d.capture(ctx, l.hq, army=info.player)
+            for _ in range(200):
+                if not d.scripts_running():
+                    break
+                e.press("A", 4)
+                e.wait(30)
+            d.settle()
+        last = info.lines[-1]
+        d.capture(ctx, last.hq, army=info.player)
+        shown = []
+        for _ in range(40):
+            e.wait(90)
+            if any(f == 0x08014401 for _, _, f in g.procs()):
+                shown.append(face_palette_of(e))
+                break
+        ctx.check(shown, f"{info.title}: the winning scene shows a box")
+        ctx.check(all(f in own_face_palettes(e, last.co) for f in shown), f"{info.title}: the winning scene's face has {last.name}'s own palette")
+        e.close()
+    fn.__name__ = f"gauntlet_lines_{info.key}_intro_and_victory_faces_have_their_own_palette"
+    test(modes=("ds",))(fn)
+
+
+for _info in gm.MAPS.values():
+    intro_and_victory_faces(_info)

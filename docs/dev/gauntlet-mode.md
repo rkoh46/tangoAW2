@@ -91,6 +91,13 @@ change of speaker closes the box and opens one for the new face; the boxes then 
 It is script data of the offline campaigns (no netplay, no `SIM_VERSION`). Test `-k arrival_boxes_are_all_shown` (every map's arrival scenes, Cinder Sea and Iron Crown included): at least two boxes are shown for a departing and an arriving CO, and no text tile of a box is a tile of the face
 beside it (the garbled box shared 38 of them); it fails without the change. `settled_png` in `test_gauntlet_lines_pictures.py` waits out the white flashes of a reveal so a sheet never holds a blank capture.
 
+## Faces in the boxes of a five-army battle (`five::moved_palette`)
+A speaker's face is drawn with BG palette 9, and in a five-army battle (every map whose player is army 5: Harvest Run, Chrome Meridian, Blue Bastion, Last Eclipse, Iron Crown, BH2's five-army missions) the same bank holds the current army's moved-unit grey
+(`five::moved_palette` writes it before every moved unit is drawn: the fifth army needed a bank for it). Written over the face's palette on every frame, it turned each face of a scene to the washed-out colour of the player's army (Von Bolt, Aria and Asuka blue, Andy and Max
+in the player's blue, green or yellow). The grey now waits while an event script runs or the dialogue box's proc (`0x08014401`) is up, and is put back at the next moved unit drawn once the scene is over. Tests (`-k gauntlet_lines`): `arrival_boxes_are_all_shown_and_clean` also asks that the first
+box's face palette is the departing CO's own (its presentation row's palette, one of its eight schemes: row `+0x08` of the table at the pool word `0x08039B7C`), the last box's the arriving CO's and every box's one of the two, on every map; `intro_and_victory_faces_have_their_own_palette` the same for the intro and
+the winning scene (those scenes were not hit: the grey is written only while moved units are drawn). The arrival test fails without the change on Harvest Run and Last Eclipse (every box 'WRONG'). Not simulation state a released build has (the palette buffer of an unreleased build): `SIM_VERSION` stays 48.
+
 ## The rout rule
 Capturing a line's HQ routes that army at once (all its units destroyed by AW2's own `DefeatArmy`, every property it owns neutral), then the next line comes; the last line's HQ wins as before. It is the shared engine's, so every map has it by default: list every line but the last in `cut_off` ([gauntlet.md](gauntlet.md), "The rout"). Tests `-k gauntlet_rout`.
 

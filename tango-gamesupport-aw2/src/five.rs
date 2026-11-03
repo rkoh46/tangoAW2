@@ -60,6 +60,8 @@ const TRAP: u16 = 0xBEEF;
 /// palette; the moved units' grey goes to BG 9 (see `five/patches.txt`).
 const UNIT_BANK: u16 = 11;
 const MOVED_BANK: u16 = 9;
+/// The dialogue box's own proc function (`crate::fog_view`'s `DIALOG_PROC` runs it for the game's messages; a scene's boxes run it too).
+const TEXT_BOX_PROC: u32 = 0x0801_4401;
 /// Unit palettes by colour (1..5), then their moved greys (colour + 5).
 const UNIT_PALETTES: u32 = 0x0810_E6E0;
 const PAL_BUFFER: u32 = 0x0300_20C0;
@@ -652,6 +654,11 @@ fn outline_colour(core: &Core, army: u32) -> u16 {
     }
 }
 
+/// An event script is running (the slots from `0x0200C510`, as the tests read them): a scene is on or about to open a box, and the face palette it loads into BG 9 must stay.
+fn event_script_running(core: &Core) -> bool {
+    (0..11).any(|i| core.raw_read_32(0x0200_C510 + 0x18 * i, -1) != 0)
+}
+
 /// Before a moved unit is drawn: BG palette 9 gets the current army's grey
 /// where it holds something else (the turn banner's colours, loaded after
 /// the turn start's grey). Palette RAM is written only where it shows the
@@ -668,6 +675,12 @@ fn moved_palette(core: &mut Core) {
     let mut buf = [0u8; 0x20];
     core.raw_read_range(PAL_BUFFER + at, -1, &mut buf);
     if buf == grey {
+        return;
+    }
+    // A scene runs or a dialogue box is up: its speaker's face is drawn with BG palette 9 (the bank the fifth army's moved greys borrow), so the grey waits: written over it every frame, it turned
+    // every face of a five-army battle to the current army's washed-out colour (a Von Bolt or an Aria in the player's blue, an Andy in the player's green). The greys are put back
+    // at the next moved unit drawn after the box has closed.
+    if event_script_running(core) || crate::fog_view::procs(core).contains(&TEXT_BOX_PROC) {
         return;
     }
     let mut ram = [0u8; 0x20];

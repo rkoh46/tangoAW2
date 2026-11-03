@@ -30,7 +30,8 @@ def settled_png(ctx, e, name):
         p = png(ctx, e, name)
         px = list(Image.open(p).convert("RGB").getdata())
         white = sum(1 for r, g, b in px if r > 245 and g > 245 and b > 245) / len(px)
-        if white < 0.6:
+        bright = sum(r + g + b for r, g, b in px) / (3 * len(px))
+        if white < 0.6 and bright < 205:         # (a half-faded frame is washed out too: its mean brightness is high)
             return p
         e.wait(6)
     return p

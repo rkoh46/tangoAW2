@@ -61,9 +61,9 @@ add(MapInfo(4, "gauntlet_05", "Granite Spine", 1, (3, 18), [
     Line("von_bolt", 75, 4, (27, 4), wave=17, chest=(20000, 1500)),
 ]))
 add(MapInfo(5, "gauntlet_06", "Harvest Run", 5, (4, 20), [
-    Line("andy", 0, 1, (11, 8)),
+    Line("andy", 1, 1, (11, 8)),
     Line("max", 2, 2, (29, 5), wave=20, chest=(15000, 1000)),
-    Line("sami", 1, 3, (30, 19), wave=22, chest=(20000, 1500)),
+    Line("sami", 4, 3, (30, 19), wave=22, chest=(20000, 1500)),
     Line("nell", 0, 4, (6, 4), wave=20, chest=(25000, 2000)),
 ]))
 add(MapInfo(6, "gauntlet_07", "Chrome Meridian", 5, (4, 22), [
