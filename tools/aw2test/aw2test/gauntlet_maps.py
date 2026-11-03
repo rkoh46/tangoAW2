@@ -67,9 +67,9 @@ add(MapInfo(5, "gauntlet_06", "Harvest Run", 5, (4, 20), [
 ]))
 add(MapInfo(6, "gauntlet_07", "Chrome Meridian", 5, (4, 22), [
     Line("flak", 11, 1, (11, 14)),
-    Line("caulder", 88, 2, (7, 5), wave=19, chest=(15000, 1000)),
-    Line("lili", 87, 3, (31, 5), wave=20, chest=(20000, 1500)),
-    Line("tabitha", 86, 4, (32, 20), wave=20, chest=(25000, 2000)),
+    Line("caulder", 88, 2, (30, 5), wave=19, chest=(15000, 1000)),
+    Line("lili", 87, 3, (30, 12), wave=20, chest=(20000, 1500)),
+    Line("tabitha", 86, 4, (30, 20), wave=20, chest=(25000, 2000)),
 ], skin_enemies=True))
 
 

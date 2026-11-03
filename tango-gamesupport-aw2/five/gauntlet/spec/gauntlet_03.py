@@ -1,4 +1,4 @@
-"""Gauntlet 03, Dustwind Basin (docs/dev/gauntlet.md): a dry-badlands gauntlet of two lines on a 30 x 20 map, three armies. The player (army 1, a free CO pick) holds the south-west camp:
+"""Gauntlet 03, Dustwind Basin (docs/dev/gauntlet.md): a desert gauntlet (the Desert look: `MissionDef::look` 2) of two lines on a 30 x 20 map, three armies. The player (army 1, a free CO pick) holds the south-west camp:
   1. Koal (Yellow Comet, army 2) holds the east mesa from the start: highways and fast tanks, a pair of rocket batteries on the rim.
   2. Lash (Black Hole, army 3) arrives in the north-west dunes when Koal falls (his HQ taken or his line routed): artillery, Md Tanks and foot soldiers who live off the broken ground.
 No Black Hole inventions.
@@ -10,7 +10,7 @@ a forward base on each bank. The order zigzags: east over the Wadi (Koal), then 
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads, prune_road_stubs
 
 W, H = 30, 20
 HQS = {"1": (3, 16), "2": (25, 10), "3": (6, 3)}
@@ -24,19 +24,16 @@ def build():
     m.river([(14, 0), (14, 7), (15, 7), (15, 13), (14, 13), (14, 19)])
     for x, y in BR:
         m.put("=", x, y)
-    # --- Koal's mesa: a plateau (x 22..28, y 6..14) ringed by rock with two ramps (west (21,10) and south (25,15)), woods inside
-    m.rect("^", 21, 6, 28, 15); m.rect(".", 22, 7, 27, 14)
-    m.put("f", 28, 10).put(".", 21, 10).put(".", 25, 15).put(".", 21, 9).put(".", 24, 15)
-    m.puts("f", [(23, 8), (26, 8), (24, 13), (27, 12)])
-    # --- rock outcrops and scrub: the badlands of the north-west, dunes (woods) in the camp, ridges in the basin
-    for i, pts in enumerate([[(1, 6), (5, 7)], [(9, 1), (12, 3)], [(2, 10), (4, 12)], [(16, 2), (19, 3)], [(17, 17), (20, 18)], [(10, 11), (12, 13)], [(17, 11), (19, 13)]]):
+    # --- Koal's mesa: a plateau (x 22..27, y 7..13) inside a wall of rock two cells thick (x 20..29, y 5..15) with two ramps (west (20..21, 9..10) and south (24..25, 14..15))
+    m.rect("^", 20, 5, 29, 15); m.rect(".", 22, 7, 27, 13)
+    m.rect(".", 20, 9, 21, 10); m.rect(".", 24, 14, 25, 15)
+    m.puts(".", [(29, 7), (29, 11), (29, 14), (20, 6), (20, 13), (28, 9), (28, 13), (24, 5), (27, 5), (24, 6)])      # (the rim is ragged, not a drawn line)
+    # --- the badlands: long rock ridges and outcrops, very few trees (the Desert look draws the mountains as rock and canyon wall)
+    for i, pts in enumerate([[(1, 6), (6, 7)], [(8, 1), (12, 3)], [(1, 10), (4, 13)], [(16, 1), (20, 2)], [(16, 17), (21, 18)], [(9, 11), (12, 13)], [(17, 11), (19, 13)], [(23, 17), (26, 18)], [(23, 1), (26, 2)], [(2, 17), (5, 18)]]):
         belt(m, "^", pts, width=1, seed=10 + i, p=0.95)
-    for i, (cx, cy, n) in enumerate([(8, 7, 2), (4, 4, 2), (11, 8, 2), (7, 13, 2), (17, 7, 2), (18, 15, 2), (10, 17, 2)]):
-        m.cluster("f", cx, cy, n * 2, seed=20 + i)
-    for i, (cx, cy, n) in enumerate([(25, 2, 3), (21, 17, 2), (28, 17, 2), (1, 18, 2)]):
-        m.cluster("^" if i % 2 == 0 else "f", cx, cy, n * 3, seed=40 + i)
+    m.puts("f", [(8, 7), (4, 4), (11, 9), (7, 14), (18, 8), (24, 9), (26, 12), (10, 17), (27, 4)])
     m.header(armies=3, colours=(OS, YC, BH), team=(1, 2, 2), objective=[1], hidden=[3], comment=(
-        "Gauntlet 03 Dustwind Basin (normal look, no fog, 30 x 20, three armies): the player (army 1, HQ (3,16), south-west, a free CO) against Koal (Yellow Comet, army 2, HQ (25,10), the east mesa), then Lash "
+        "Gauntlet 03 Dustwind Basin (Desert look, no fog, 30 x 20, three armies): the player (army 1, HQ (3,16), south-west, a free CO) against Koal (Yellow Comet, army 2, HQ (25,10), the east mesa), then Lash "
         "(Black Hole, army 3, HQ (6,3), the north-west badlands) who comes onto the battlefield when Koal's line falls. The Wadi (x 14) has bridges at (14,5), (15,10), (14,16). Com Tower (13,9). No inventions."))
     m.put("1", *HQS["1"]).put("2", *HQS["2"]).put(".", *HQS["3"])
     m.put("t", 13, 9)
@@ -57,6 +54,7 @@ def build():
         except ValueError:
             pass
     neutralize(m, 6)
+    prune_road_stubs(m)
     m.tidy()
     av = "~r=-^IZ#X12345QBCPTbcpt"
     m.spread(1, {INF: 5, MECH: 2, TANK: 4, MDT: 2, ART: 2, ROCK: 1, RECON: 1, AA: 2, APC: 1}, (1, 12, 9, 19), seed=1, gap=0, avoid=av)

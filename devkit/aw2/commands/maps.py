@@ -108,7 +108,7 @@ def lint(a):
     report = {}
     for m in maps:
         probs = rules.lint(m, set(a.rule) if a.rule else None)
-        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source in ("es", "bh2", "gauntlet") and (p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04")))]
+        shown = [p for p in probs if a.warn or p.level == "error" or m.source in ("aw2", "ds") or (m.source in ("es", "bh2", "gauntlet") and (p.rule.startswith(("DQ", "SP", "MD")) or p.rule in ("PP03", "PP04", "RD03")))]
         report[m.name] = [str(p) for p in probs]
         if not a.json:
             if probs:

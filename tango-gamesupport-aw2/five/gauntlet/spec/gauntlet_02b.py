@@ -69,4 +69,6 @@ def build():
     m.spread(2, {FTR: 2, BMB: 2, BCO: 1}, (16, 2, 26, 8), seed=4, gap=1, avoid=av)
     n = clear_fire_lines(m)
     m.note("hq1", *HQS["1"], "the player's HQ (the landing)"); m.note("hq2", *HQS["2"], "Asuka's HQ (the objective; held: the Win trigger ends the battle)")
+    from aw2.esmaplib import prune_road_stubs
+    prune_road_stubs(m)          # (lint RD03: a road that leads nowhere goes: the only change to the map's layout since it was drawn)
     return m

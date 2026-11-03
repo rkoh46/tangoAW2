@@ -164,3 +164,41 @@ def gauntlet_lines_pictures_chrome_extras(ctx):
             ctx.log(f"CO page ({look}): {ex}")
         e.close()
     sheet(frames, os.path.join(out, "gauntlet_07_extras_sheet.png"), "Chrome Meridian: capture box, panel and CO pages of the Silver Nova lines (three looks)")
+
+
+@test(name="gauntlet_lines_pictures_sn_units", modes=("ds",))
+def gauntlet_lines_pictures_sn_units(ctx):
+    """Silver Nova's units on the map as an *enemy* (Chrome Meridian: Caulder's corps at the start of the player's turn, unmoved, none greyed: every unit's flags are 0) in the three looks, beside the
+    player's Silver Nova (`silver_nova_gauntlet_looks`' aw2_map0) and the Versus skin (`armyskin scenario units`), when those pictures exist: they must show the same palette (light
+    helmets and trim, dark charcoal tanks with white highlights: the skin's design, not a greyed-out unit). One sheet `gauntlet_07_sn_units_sheet.png`."""
+    from PIL import Image, ImageDraw
+    info = gm.MAPS[6]
+    out = os.environ.get("AW2TEST_REVIEW_DIR") or ctx.out
+    os.makedirs(out, exist_ok=True)
+    tiles = []
+    for look, env in LOOKS:
+        e, g, d = start(ctx, info, env=env)
+        d.capture(ctx, info.lines[0].hq, army=info.player)
+        d.settle()
+        ctx.check(all(not (u["flags"] & 1) for u in g.units(army=2)), f"{look}: Caulder's units are all unmoved (none is greyed by a done flag)")
+        g.goto(*info.lines[1].hq)
+        e.wait(60)
+        tiles.append((f"Caulder's corps, enemy skin ({look})", png(ctx, e, f"{look}_caulder_units")))
+        e.close()
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    for label, rel in (("Silver Nova as the player (released Gauntlet look, aw2)", "tools/aw2test/out/ds/silver_nova_gauntlet_looks/aw2_map0.png"),
+                       ("Silver Nova in Versus (armyskin scenario units)", "devkit/work/armyskin/scenario_units/units_s0.png")):
+        p = os.path.join(repo, rel)
+        if not os.path.exists(p) and os.path.exists(p[:-4] + ".bmp"):
+            Image.open(p[:-4] + ".bmp").convert("RGB").save(p)
+        if os.path.exists(p):
+            tiles.append((label, p))
+    ims = [(t, Image.open(p).convert("RGB")) for t, p in tiles]
+    w, h = 480, 320
+    sheet = Image.new("RGB", (w * 3, (h + 24) * ((len(ims) + 2) // 3)), (18, 20, 28))
+    dr = ImageDraw.Draw(sheet)
+    for i, (t, im) in enumerate(ims):
+        x, y = (i % 3) * w, (i // 3) * (h + 24)
+        sheet.paste(im.resize((w, h), Image.NEAREST), (x, y + 24))
+        dr.text((x + 6, y + 6), t, fill=(255, 255, 255))
+    sheet.save(os.path.join(out, "gauntlet_07_sn_units_sheet.png"))

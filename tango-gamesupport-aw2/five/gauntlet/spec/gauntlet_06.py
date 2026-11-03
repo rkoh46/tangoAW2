@@ -14,7 +14,7 @@ every quarter and a road grid. The order is round the lake: centre-west (Andy), 
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads, prune_road_stubs
 
 W, H = 36, 24
 # the HQs: army 1 Andy, 2 Max, 3 Sami, 4 Nell, 5 the player
@@ -33,7 +33,7 @@ def build():
     for x, y in BR:
         m.put("=", x, y)
     # --- orchards (woods) in clusters and ridges
-    for i, (cx, cy, n) in enumerate([(14, 7, 3), (8, 7, 3), (3, 9, 2), (24, 8, 3), (33, 9, 3), (23, 3, 3), (13, 18, 3), (8, 17, 3), (25, 16, 3), (32, 15, 3), (23, 21, 3), (3, 3, 2), (12, 3, 3), (30, 22, 2), (16, 21, 2), (28, 12, 2), (21, 6, 2), (30, 13, 2)]):
+    for i, (cx, cy, n) in enumerate([(14, 7, 3), (8, 7, 3), (3, 9, 2), (24, 8, 3), (33, 9, 3), (23, 3, 3), (13, 18, 3), (8, 17, 3), (25, 16, 3), (32, 15, 3), (23, 21, 3), (3, 3, 2), (12, 3, 3), (30, 22, 2), (16, 21, 2), (28, 12, 2), (21, 6, 2), (30, 13, 2), (33, 5, 2), (24, 19, 2), (35, 12, 2), (26, 3, 2)]):
         m.cluster("f", cx, cy, n * 3, seed=10 + i)
     for i, pts in enumerate([[(2, 17), (6, 17)], [(21, 13), (25, 13)], [(27, 11), (32, 12)], [(12, 12), (15, 11)], [(21, 19), (24, 19)], [(1, 7), (4, 6)], [(14, 1), (17, 2)]]):
         belt(m, "^", pts, width=1, seed=20 + i, p=0.95)
@@ -65,6 +65,7 @@ def build():
         except ValueError:
             pass
     neutralize(m, 6)
+    prune_road_stubs(m)
     for y in range(16, 24):
         for x in range(0, 14):
             if m.g[y][x] in "bcap":

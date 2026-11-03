@@ -68,4 +68,6 @@ def build():
     for k, (x, y) in HQS.items():
         m.note(f"hq{k}", x, y, {"1": "the player's HQ", "2": "Drake's HQ: the first line", "3": "Sensei's HQ (hidden until Drake falls)", "4": "Hawke's HQ (hidden until Sensei falls): the last"}[k])
     m.note("volcano", 24, 4, "Hawke's volcano (anchor; footprint x 23..26, y 2..5)")
+    from aw2.esmaplib import prune_road_stubs
+    prune_road_stubs(m)          # (lint RD03: a road that leads nowhere goes: the only change to the map's layout since it was drawn)
     return m

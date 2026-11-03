@@ -102,4 +102,6 @@ def build():
     m.note("hq3", *HQS["3"], "Kanbei's HQ (Yellow Comet, hidden until Jess falls)")
     m.note("hq4", *HQS["4"], "Rachel's HQ (Orange Star, hidden until Kanbei falls): the last of stage one")
     m.note("hq5", *HQS["5"], "the player's HQ")
+    from aw2.esmaplib import prune_road_stubs
+    prune_road_stubs(m)          # (lint RD03: a road that leads nowhere goes: the only change to the map's layout since it was drawn)
     return m

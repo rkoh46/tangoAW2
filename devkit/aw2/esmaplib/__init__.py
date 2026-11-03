@@ -941,6 +941,28 @@ def clean_river_roads(m):
     return m
 
 
+def prune_road_stubs(m):
+    """Lint RD03: a road that leads nowhere goes. A road cell with at most one road neighbour (road or bridge: an isolated tile too), no property beside it and not on the map's edge goes back to plain, again and again, so a dead-end
+    road shrinks to the junction (or to the property or bridge) it came from. Call it last: it changes nothing a random choice reads. Returns the number of cells removed."""
+    prop = set("12345BCAPTbcaptQ")
+    n = 0
+    for _ in range(60):
+        gone = []
+        for y in range(m.h):
+            for x in range(m.w):
+                if m.g[y][x] != "R" or x in (0, m.w - 1) or y in (0, m.h - 1):
+                    continue
+                nb = [m.get(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+                if sum(1 for c in nb if c in "R=") <= 1 and not any(c in prop for c in nb):
+                    gone.append((x, y))
+        for x, y in gone:
+            m.g[y][x] = "."
+        n += len(gone)
+        if not gone:
+            break
+    return n
+
+
 def neutralize(m, near=14, keep=()):
     """Properties (B C A P) farther than `near` cells (Manhattan) from the HQ they would belong to (the nearest HQ digit) become neutral (lower case): an army starts with its own
     district, the villages out in the field are there to be taken."""

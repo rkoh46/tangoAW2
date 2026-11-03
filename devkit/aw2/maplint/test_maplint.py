@@ -128,6 +128,13 @@ class Lint(unittest.TestCase):
         rows = list(FLAT)
         rows[4] = rows[4][:5] + "R" + rows[4][6:]
         self.assertIn("RD01", ids(build(rows)))
+        # a road that dead-ends in the field is a stub (RD03); one that runs from the map's edge to a property is not
+        rows = list(FLAT)
+        rows[5] = "." + "RRR" + rows[5][4:]
+        self.assertIn("RD03", ids(build(rows)))
+        rows[5] = "RRRC" + rows[5][4:]
+        self.assertNotIn("RD03", ids(build(rows)))
+        rows = list(FLAT)
         rows[4] = "RRRR.RRRR.."
         self.assertIn("RD02", ids(build(rows)))
 

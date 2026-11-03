@@ -11,7 +11,7 @@ the highlands from being a plain with hills on it. The order zigzags over the sp
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads, prune_road_stubs
 
 W, H = 32, 22
 HQS = {"1": (3, 18), "2": (28, 12), "3": (6, 4), "4": (27, 4)}
@@ -20,12 +20,23 @@ HQS = {"1": (3, 18), "2": (28, 12), "3": (6, 4), "4": (27, 4)}
 def build():
     m = Canvas("gauntlet_05", W, H, campaign="gauntlet")
     S = lambda x, y: snap(m, x, y)
-    # --- the spine: a ragged range of mountains x 14..17 with three passes (y 4..5, 10..11, 16..17)
-    belt(m, "^", [(15, 0), (16, 3), (15, 7), (16, 9), (15, 13), (16, 15), (15, 18), (16, 21)], width=2, seed=3, p=1.0, gaps=[(15, 4), (15, 10), (15, 16)])
-    for y in (4, 5, 10, 11, 16, 17):
-        for x in range(13, 19):
-            if m.get(x, y) == "^":
-                m.put(".", x, y)
+    # --- the spine: one unbroken ridge of mountains, 2 to 3 cells wide, from the north edge to the south edge (x 13..17, a wobble of one cell a row), cut by three passes two cells wide
+    # (y 4..5, 10..11, 16..17): a wall at a glance, with the roads through its gaps
+    import random
+    rnd = random.Random("gauntlet_05/ridge")
+    x0 = 14
+    for y in range(H):
+        if y in (4, 5, 10, 11, 16, 17):
+            continue
+        x0 = max(13, min(15, x0 + rnd.choice((-1, 0, 1))))
+        w = 2 + (y % 3 == 0)
+        for x in range(x0, x0 + w + 1):
+            m.put("^", x, y)
+    # the ridge's slopes: forest on both flanks of every stretch
+    for y in range(H):
+        for x in (11, 12, 18, 19, 20):
+            if m.get(x, y) == "." and (y not in (4, 5, 10, 11, 16, 17)) and rnd.random() < 0.55:
+                m.put("f", x, y)
     # --- tarns and a creek (the highlands' water): north-west shelf, south-east valley
     m.rect("~", 9, 1, 11, 2)
     m.blob("~", 23, 18, 2, 2, seed=5, wobble=0.3)
@@ -60,6 +71,7 @@ def build():
         except ValueError:
             pass
     neutralize(m, 6)
+    prune_road_stubs(m)
     m.tidy()
     av = "~r=-^IZ#X12345QBCPTbcpt"
     m.spread(1, {INF: 5, MECH: 2, TANK: 4, MDT: 2, ART: 2, ROCK: 1, RECON: 1, AA: 2, APC: 1}, (1, 13, 12, 21), seed=1, gap=0, avoid=av)

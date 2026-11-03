@@ -11,7 +11,7 @@ south-east, two canals from Sasha's ruins: the order sends the army round the la
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[4] / "devkit"))
 from aw2.esmaplib import *
-from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads
+from aw2.esmaplib import route, belt, town, thin_roads, neutralize, snap, fix_rungs, clean_river_roads, prune_road_stubs
 
 W, H = 30, 22
 HQS = {"1": (3, 18), "2": (5, 4), "3": (25, 17)}
@@ -58,6 +58,7 @@ def build():
         except ValueError:
             pass
     neutralize(m, 6)
+    prune_road_stubs(m)
     m.tidy()
     av = "~r=-^IZ#X12345QBCPTbcpt"
     m.spread(1, {INF: 5, MECH: 2, TANK: 4, MDT: 2, ART: 2, ROCK: 1, RECON: 1, AA: 2, APC: 1}, (1, 14, 12, 21), seed=1, gap=0, avoid=av)
