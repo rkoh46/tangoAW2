@@ -212,9 +212,11 @@ fn entries_in_table(core: &mut Core, shown: bool) {
 fn rows(core: &mut Core) {
     let mut b = vec![0u8; (ROW as usize) * LAST_MAPS];
     for e in gm::entries().iter().take(LAST_MAPS) {
-        if crate::gauntlet::best(core, e.mission as u8).is_some() {
-            let at = ROW as usize * e.mission;
-            b[at..at + 4].copy_from_slice(&core.raw_read_32(crate::ds_campaign::RECORDS + 8 * e.mission as u32, -1).to_le_bytes());
+        // (the map's five results as the War Room keeps them: best first, one word each)
+        // (the game reads the row of the map-table id it lists the map by: the map's place in the selector's order, not its mission; the results themselves are the map's record id's)
+        let at = ROW as usize * gm::rank_of(e.mission);
+        for (k, w) in crate::gauntlet::results_of(core, e.mission).iter().enumerate() {
+            b[at + 4 * k..at + 4 * k + 4].copy_from_slice(&w.to_le_bytes());
         }
     }
     let mut now = vec![0u8; b.len()];

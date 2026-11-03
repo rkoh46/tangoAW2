@@ -638,6 +638,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // 46 (cont.): a custom campaign's (and the Gauntlet's) Infantry and Mechs bought with AW2's role roll 0 get role 3 instead of the hold that kept them on the building they were built on for good (crate::custom_campaign::built_foot_role).
         // 47: the War Room is played by Dual Strike's CPU like Versus (crate::ds_ai::in_scope: AW2's campaign and Survival keep AW2's), with the parked-unit fixes below; everything in the 46 (cont.) lines of portidle changed the simulation after 0.9.3: bought soldiers take role 3 in Versus and the custom campaigns (crate::custom_campaign::built_foot_role), and a unit parked on a base, port or airport of its team leaves it (crate::cpu_units::parked_leave, leave, step_off, sweep).
         // 46 (cont.): a unit parked on a base, port or airport of its team that AW2's own move leaves there (an indirect gun or a ship whose enemy is far, a guard, a soldier that waits) is taken off it: Dual Strike's advance, else a drift, else a step aside (crate::cpu_units::leave, step_off, foot_leave).
+        // 48: a skin a custom campaign's mission gives an enemy army stays on through the battle scenes (`ds_campaign::mission_skin` reads the turn, `pvp::current_army`, not the map's main loop that a scene clears): the ROM image's palette patches no longer come off for every battle animation (BH2's M32 and the Gauntlet's Chrome Meridian); `Action::Win` names the player's army (the fifth of a five-army mission) as the winner.
         crate::inspect::SIM_VERSION
     }
 

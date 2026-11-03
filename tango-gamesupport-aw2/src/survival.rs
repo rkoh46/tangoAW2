@@ -144,7 +144,7 @@ const RESUMING: u8 = 3;
 /// rows for ids FIRST_ID..=0xEC.
 pub(crate) const ROWS: u32 = STATE + 0x40;
 const ROW: u32 = 0x14;
-const ROWS_LEN: u32 = ROW * 0x24;
+pub(crate) const ROWS_LEN: u32 = ROW * 0x24;
 
 /// PHASE: choosing a kind; between maps; in a battle; cleared; lost.
 pub(crate) const CHOOSING: u8 = 0;

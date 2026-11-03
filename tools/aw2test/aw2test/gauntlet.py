@@ -14,7 +14,9 @@ GAUNTLET = 4
 PICKED, CONTINUING = 0x0203FD54, 0x0203FD55   # crate::gauntlet
 MAGIC = b"AWGA"
 SLOT, OFFSET, MID_SLOT = 13, 0x240, 12      # the record follows BH's (0) and BH2's (0x120) in slot 13; a run saved halfway shares slot 12 (tag 4 << 5)
-RECORD_LEN = 0x120
+SLOTS, SLOT_LEN, TOP = 16, 0x18, 5          # crate::gauntlet: the top five of up to 16 maps, keyed by the map's id (gauntlet_NN is NN)
+TABLE_LEN = SLOTS * SLOT_LEN
+RECORD_LEN = 0x20 + TABLE_LEN              # the progress record (version byte at +5: 2), then the table
 WHEEL_LAST = 0x03005934           # the wheel's remembered position
 ITEM_TABLE_POOL = 0x080814F0       # a word of the wheel's code that points at its item table
 GAME_TABLE, PACK_TABLE = 0x0861696C, 0x08E40000   # AW2's six-item table; tangoAW2's eight-item one (crate::mode_menu)
@@ -35,6 +37,7 @@ LIST_FIRST, LIST_CURSOR_ROW = 0x03005900, 0x03005930
 FIRST_ID = 0xF6
 PLAY_ST = 0x03003FC0                # the play state: +1 the game mode (2 while the selector is up: the War Room's), +2 the map id (0 until A)
 
+TABLE = 0x0203FA40 + 0x2D0 - 0x180   # crate::gauntlet::TABLE: the table in RAM (the end of Survival's block of rows)
 ROWS = 0x0203FA40                  # the War Room record rows the selector's record box reads (crate::survival::ROWS: Survival's zeroed block, free while Survival is closed)
 UI_SHOWN = UI + 0x20          # what the step shows: +0 maps listed, +1 enemies, +2.. (CO, colour) pairs, +0x0E free count, +0x0F.. free army codes
 HOSTS = 0x0203C500            # crate::army_skin::STATE: the colour each skin sits on (0 none)
@@ -50,6 +53,11 @@ def shown(e):
 # mission (the record, `Gauntlet.open(map=<mission>)`), never its row.
 SELECTOR_ORDER = [2, 3, 0, 4, 5, 6, 1]
 SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Cinder Sea", "Granite Spine", "Harvest Run", "Chrome Meridian", "Iron Crown"]
+def row_of(mission):
+    """The selector's row (and the record row the game reads for it) of the map of this mission."""
+    return SELECTOR_ORDER.index(mission)
+
+
 SELECTOR_ENEMIES = [2, 2, 3, 3, 4, 4, 5]       # the number of enemy COs of each row (never decreasing: fewest first)
 
 # crate::gauntlet_mode (Cinder Sea): the HQs and the enemy COs in order
@@ -292,6 +300,20 @@ class Gauntlet(BhCampaign):
         w = self.e.u32(dc.RECORDS + 8 * mission)
         return None if w == 0 else (w & 0xFF, (w >> 8) & 0xFFF, w >> 20)
 
+    def results(self, map_id=1):
+        """The map's five results as the session's table holds them, best first: [(co, days, score)] (empty places left out)."""
+        return table_results(bytes(self.e.read(TABLE, TABLE_LEN)), map_id)
+
+    def put_results(self, map_id, results):
+        """Writes the map's results [(co, days, score)] (best first) into the session's table, as a record made earlier (for the selector's pictures)."""
+        t = bytearray(self.e.read(TABLE, TABLE_LEN))
+        s = next((k for k in range(SLOTS) if t[k * SLOT_LEN] == map_id), next((k for k in range(SLOTS) if t[k * SLOT_LEN] == 0), None))
+        t[s * SLOT_LEN] = map_id
+        for k in range(TOP):
+            w = encode(*results[k]) if k < len(results) else 0
+            struct.pack_into("<I", t, s * SLOT_LEN + 4 + 4 * k, w)
+        self.e.write(TABLE, bytes(t))
+
 
 def saved_record(img):
     """The Gauntlet's region of slot 13 in a Flash image (bytes, or None)."""
@@ -299,10 +321,77 @@ def saved_record(img):
     return s[OFFSET:OFFSET + RECORD_LEN] if s[OFFSET:OFFSET + 4] == MAGIC else None
 
 
-def record_best(rec, mission=0):
-    """(co, days, score) of a record region's mission word, or None (the progress is 0x20 bytes, then 8 bytes a mission)."""
-    w = struct.unpack_from("<I", rec, 0x20 + 8 * mission)[0]
+def encode(co, days, score):
+    return co | days << 8 | score << 20
+
+
+def decode(w):
     return None if w == 0 else (w & 0xFF, (w >> 8) & 0xFFF, w >> 20)
+
+
+def table_results(t, map_id):
+    """A map's results in a table (the saved one, or RAM's): [(co, days, score)] best first, empty places left out."""
+    for k in range(SLOTS):
+        if t[k * SLOT_LEN] == map_id:
+            ws = struct.unpack_from("<5I", t, k * SLOT_LEN + 4)
+            return [decode(w) for w in ws if w]
+    return []
+
+
+def record_results(rec, map_id=1):
+    """A saved record region's results of a map (id 1 is Cinder Sea): best first."""
+    return table_results(rec[0x20:], map_id)
+
+
+def record_best(rec, map_id=1):
+    """(co, days, score) of a map's first place in a saved record region, or None."""
+    r = record_results(rec, map_id)
+    return r[0] if r else None
+
+
+def war_room_place(results, days, score):
+    """Where the War Room puts a new result among a map's five (read from `InsertBestScoreRecord` at 0x08017760, written again here from the code, not from crate::gauntlet): past every record
+    with a higher score, and past those with the same score and no more days. 5: below all five."""
+    for k, (co, d, sc) in enumerate(results):
+        if sc < score or (sc == score and d > days):
+            return k
+    return len(results)
+
+
+def war_room_insert(results, entry):
+    """The map's results [(co, days, score)] with `entry` inserted the War Room's way (at most five kept)."""
+    k = war_room_place(results, entry[1], entry[2])
+    return (list(results[:k]) + [entry] + list(results[k:]))[:TOP]
+
+
+def region_bytes(by_map, legacy=None):
+    """A Gauntlet record region as the game saves it: {map id: [(co, days, score)]} in the top-five format, or (`legacy`: a list of (co, days, score) or None per list position) in 0.9.4's."""
+    r = bytearray(RECORD_LEN if legacy is None else 0x120)
+    r[:4] = MAGIC
+    if legacy is None:
+        r[5] = 2
+        for slot, (mid, results) in enumerate(sorted(by_map.items())):
+            r[0x20 + slot * SLOT_LEN] = mid
+            for k, e in enumerate(results[:TOP]):
+                struct.pack_into("<I", r, 0x20 + slot * SLOT_LEN + 4 + 4 * k, encode(*e))
+    else:
+        for k, e in enumerate(legacy):
+            if e:
+                struct.pack_into("<I", r, 0x20 + 8 * k, encode(*e))
+    return bytes(r)
+
+
+def with_record(save_path, out_path, region):
+    """A copy of a save whose slot 13 holds `region` at the Gauntlet's offset (the rest of the slot as it was, zero-filled up to there). Returns the path."""
+    from . import save as savelib, saveimg
+    img = saveimg.Image(save_path)
+    s13 = bytes(img.slot(SLOT) or b"")
+    s13 = s13.ljust(OFFSET, b"\0")[:OFFSET] + region
+    with open(save_path, "rb") as f:
+        data = f.read()
+    with open(out_path, "wb") as f:
+        f.write(savelib.write_slot(data, SLOT, s13))
+    return out_path
 
 
 def wheel_items(e):

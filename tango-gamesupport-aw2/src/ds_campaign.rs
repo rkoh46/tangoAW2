@@ -103,7 +103,7 @@ const SCRIPT_END_MATCH: u32 = 0x0801_8FB4;
 pub(crate) const FLAGS: u32 = 0x0203_FD20;
 /// The progress record saved to Flash ([`SAVE_SIZE`] bytes).
 pub const PROGRESS: u32 = 0x0203_FD30;
-const SAVE_SIZE: u32 = 0x20;
+pub(crate) const SAVE_SIZE: u32 = 0x20;
 #[cfg(test)]
 const RAM_END: u32 = 0x0203_FD60;
 /// Progress layout: magic, version, next mission, missions won (bits), the
@@ -515,9 +515,15 @@ pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
 /// Campaigns that share a slot (the BH Campaign's slot 13 also holds the BH2 Campaign's record, [`crate::campaign_model::Source::save_offset`]) each keep their own
 /// region of the payload: this campaign's region is replaced, the others' stay as the slot has them.
 pub fn stage_custom(core: &mut Core) -> (u8, u32, u32) {
-    let mut own = vec![0u8; RECORD_LEN];
-    core.raw_read_range(PROGRESS, -1, &mut own[..SAVE_SIZE as usize]);
-    core.raw_read_range(RECORDS, -1, &mut own[SAVE_SIZE as usize..]);
+    let own = if source(core) == crate::gauntlet::SOURCE {
+        // (the Gauntlet keeps the top five of each map instead of the mission records)
+        crate::gauntlet::region(core)
+    } else {
+        let mut own = vec![0u8; RECORD_LEN];
+        core.raw_read_range(PROGRESS, -1, &mut own[..SAVE_SIZE as usize]);
+        core.raw_read_range(RECORDS, -1, &mut own[SAVE_SIZE as usize..]);
+        own
+    };
     let spec = spec(core);
     let b = merge_record(read_slot(core, spec.save_slot).unwrap_or_default(), spec.save_offset as usize, &own);
     core.raw_write_range(STAGING, -1, &b);
@@ -536,7 +542,12 @@ pub fn merge_record(mut slot: Vec<u8>, offset: usize, own: &[u8]) -> Vec<u8> {
 
 /// The record at `offset` of a slot's payload when it opens with the campaign's magic (progress, then the mission records; a record saved before the records existed has none).
 pub fn extract_record(slot: &[u8], offset: usize, magic: u32) -> Option<Vec<u8>> {
-    let end = slot.len().min(offset + RECORD_LEN);
+    extract_record_len(slot, offset, magic, RECORD_LEN)
+}
+
+/// [`extract_record`] for a record of another length (the Gauntlet's, [`crate::gauntlet::RECORD_LEN`]).
+pub fn extract_record_len(slot: &[u8], offset: usize, magic: u32, len: usize) -> Option<Vec<u8>> {
+    let end = slot.len().min(offset + len);
     if slot.len() < offset + 4 || u32::from_le_bytes(slot[offset..offset + 4].try_into().unwrap()) != magic {
         return None;
     }
@@ -1371,7 +1382,13 @@ fn load_from_flash(core: &mut Core) {
     let Some(b) = read_slot(core, spec(core).save_slot) else {
         return;
     };
-    if let Some(b) = extract_record(&b, spec(core).save_offset as usize, spec(core).progress_magic) {
+    let len = if source(core) == crate::gauntlet::SOURCE { crate::gauntlet::RECORD_LEN } else { RECORD_LEN };
+    if let Some(b) = extract_record_len(&b, spec(core).save_offset as usize, spec(core).progress_magic, len) {
+        if source(core) == crate::gauntlet::SOURCE {
+            // (the Gauntlet's: progress, then the top five of each map, or 0.9.4's single bests converted)
+            crate::gauntlet::load_record(core, &b);
+            return;
+        }
         // (the other campaign's records in RAM are not this one's)
         core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
         core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
@@ -1564,11 +1581,13 @@ fn start_gauntlet(core: &mut Core, req: u8) {
     // The record: this source's region of its Flash slot, or a new empty one.
     core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
     core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
+    crate::gauntlet::fresh(core);
     load_from_flash(core);
     if !progress_valid(core) {
         core.raw_write_range(PROGRESS, -1, &[0u8; SAVE_SIZE as usize]);
         core.raw_write_32(P_MAGIC, -1, spec(core).progress_magic);
         core.raw_write_range(RECORDS, -1, &[0u8; RECORDS_SIZE as usize]);
+        crate::gauntlet::fresh(core);
     }
     // Every run is a first play: nothing won, no flag set, no Hard.
     core.raw_write_32(P_WON, -1, 0);
@@ -1782,7 +1801,14 @@ fn best_score(core: &mut Core) {
         let index = core.raw_read_8(MISSION, -1) as u32;
         // (the Gauntlet records a win only: AW2 calls this for a loss too, with the winner's score)
         let result_counts = source(core) != crate::gauntlet::SOURCE || battle_won(core);
-        if result_counts && (index as usize) < campaign(core).map_or(0, |c| c.model.missions) && !won(core, index as u8) {
+        if source(core) == crate::gauntlet::SOURCE {
+            // The Gauntlet keeps the top five of each map as the War Room does ([`crate::gauntlet::record`]).
+            if result_counts && !won(core, index as u8) {
+                if let Some(at) = crate::gauntlet::record(core, index as usize, co as u8, days, score) {
+                    log::info!("gauntlet: map {} result {score} points in {days} days takes place {}", index + 1, at + 1);
+                }
+            }
+        } else if result_counts && (index as usize) < campaign(core).map_or(0, |c| c.model.missions) && !won(core, index as u8) {
             let at = RECORDS + 8 * index + 4 * hard(core) as u32;
             let old = core.raw_read_32(at, -1);
             if score >= old >> 20 {
@@ -2251,7 +2277,8 @@ mod save_tests {
         }
         fn load(&self, src: usize) -> Option<Vec<u8>> {
             let s = &SOURCES[src];
-            extract_record(self.0.get(&s.save_slot)?, s.save_offset as usize, s.progress_magic)
+            let len = if src == crate::gauntlet::SOURCE { crate::gauntlet::RECORD_LEN } else { RECORD_LEN };
+            extract_record_len(self.0.get(&s.save_slot)?, s.save_offset as usize, s.progress_magic, len)
         }
     }
 
@@ -2316,14 +2343,16 @@ mod save_tests {
         assert_eq!(G, 4);
         assert_eq!(SOURCES[G].save_slot, SOURCES[BH].save_slot);
         assert_eq!(SOURCES[G].save_offset as usize, 2 * RECORD_LEN, "right after the BH2 record");
-        assert!(SOURCES[G].save_offset as usize + RECORD_LEN <= 0x1000 - 0x52, "all three records fit one sector's payload");
+        assert!(SOURCES[G].save_offset as usize + crate::gauntlet::RECORD_LEN <= 0xFAE, "all three records fit one sector's payload (0xFAE bytes)");
+        assert_eq!(SOURCES[BH2].save_offset as usize + RECORD_LEN, SOURCES[G].save_offset as usize, "BH2's region ends where the Gauntlet's starts");
         assert_eq!(SOURCES[G].mid_slot, SOURCES[BH].mid_slot, "a run saved halfway shares the BH Campaigns' slot, told apart by the source tag");
         let mut f = Flash(Default::default());
         let (bh, bh2) = (record(SOURCES[BH].progress_magic, 0x11), record(SOURCES[BH2].progress_magic, 0x33));
         f.save(BH, &bh);
         f.save(BH2, &bh2);
         let slot_before = f.0[&13].clone();
-        let g = record(SOURCES[G].progress_magic, 0x77);
+        let mut g = vec![0x77u8; crate::gauntlet::RECORD_LEN];
+        g[..4].copy_from_slice(&SOURCES[G].progress_magic.to_le_bytes());
         f.save(G, &g);
         assert_eq!(f.load(G).unwrap(), g);
         assert_eq!(&f.0[&13][..2 * RECORD_LEN], &slot_before[..], "BH's and BH2's bytes are untouched by a Gauntlet save");

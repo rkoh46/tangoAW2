@@ -203,6 +203,7 @@ def gauntlet_mode_win_returns_to_select_mode_and_writes_the_record(ctx):
     rec = ga.saved_record(img)
     ctx.require(rec is not None, "the Gauntlet's record 'AWGA' is in slot 13 at +0x240")
     ctx.eq(ga.record_best(rec), best, "the saved record is the run's best (CO, days, score)")
+    ctx.eq((rec[5], ga.record_results(rec)), (2, [best]), "the record is in the top-five format (version 2) and holds the run alone, under Cinder Sea's id 1")
     saves.expect_slots(ctx, base, img, [13], "a Gauntlet win", profile_allow=list(POINTS) + list(saves.OPTIONS) + [saves.MODE_BYTE])
     ctx.eq(sorted(img.tags()), [0, 13], "only the profile and slot 13 are in the image")
     e.close()
@@ -433,21 +434,117 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
 
 
 @test(modes=("ds",))
-def gauntlet_mode_selector_shows_the_best_result_in_the_record_box(ctx):
-    """The screen's record box (R) reads War Room rows: here the Gauntlet's best on each map (its CO and score), the first record of the row; a map with none has an empty row. The best result
-    is drawn by the game's own box (a picture of it is taken)."""
+def gauntlet_mode_selector_shows_the_top_five_in_the_record_box(ctx):
+    """The screen's record box (R) reads War Room rows: here each map's five results (CO, days, score; 1st..5th, best first), as the War Room's own box shows its five; a map with none has an empty
+    row. The box is drawn by the game (a picture of it is taken; the three looks are in test_gauntlet_pictures)."""
     e, g, d = boot(ctx)
     d.open(pick=False)
     d.wait_step(ga.SELECTOR)
-    # (a record on Cinder Sea: Andy, 12 days, 345 points, in AW2's layout: CO | days << 8 | score << 20; the session's records are loaded when the mode starts)
-    e.w32(dc.RECORDS, ga.ANDY | 12 << 8 | 345 << 20)
+    five = [(ga.ANDY, 12, 345), (ga.MAX, 14, 310), (ga.SAMI, 9, 280), (ga.KANBEI, 20, 250), (ga.JAVIER, 31, 120)]
+    d.put_results(1, five)
     e.wait(10)
     rows = d.record_rows()
-    ctx.eq(rows[0][0], (ga.ANDY, 12 | 345 << 12), "Cinder Sea's row (the record rows are by mission, not by the selector's row) holds Andy 12 days and 345 points first")
-    ctx.eq(rows[1][0], (0, 0), "Iron Crown has no record yet")
+    cinder, iron = ga.SELECTOR_ORDER.index(0), ga.SELECTOR_ORDER.index(1)       # (the game reads the row of the id it lists a map by: the selector's row)
+    ctx.eq(rows[cinder], [(co, days | score << 12) for co, days, score in five], "Cinder Sea's row (the third in the selector) holds the five results, best first")
+    ctx.eq(rows[iron], [(0, 0)] * 5, "Iron Crown has no record yet")
+    ctx.eq([r for k, r in enumerate(rows[:len(ga.SELECTOR_ORDER)]) if k != cinder], [[(0, 0)] * 5] * (len(ga.SELECTOR_ORDER) - 1), "no other map shows Cinder Sea's results")
     e.press("R", 6)
     e.wait(60)
     png(pic(ctx, e, "selector_records"))
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_records_are_kept_by_the_maps_id_not_its_place_in_the_list(ctx):
+    """A record region with results under map ids 2 and 1 (Iron Crown's and Cinder Sea's) shows each on its own row whatever order the region lists them; an id no map has is kept untouched."""
+    save = ga.with_record(paths.base_save(), os.path.join(ctx.out, "ids.sav"), ga.region_bytes({
+        2: [(ga.MAX, 20, 400), (ga.ANDY, 22, 300)], 1: [(ga.SAMI, 9, 280)], 9: [(ga.KANBEI, 5, 500)]}))
+    e, g, d = boot(ctx, save=save)
+    d.open(pick=False)
+    d.wait_step(ga.SELECTOR)
+    e.wait(10)
+    rows = d.record_rows()
+    ctx.eq(rows[ga.row_of(0)][:2], [(ga.SAMI, 9 | 280 << 12), (0, 0)], "Cinder Sea (id 1) shows its own result")
+    ctx.eq(rows[ga.row_of(1)][:3], [(ga.MAX, 20 | 400 << 12), (ga.ANDY, 22 | 300 << 12), (0, 0)], "Iron Crown (id 2) shows its two")
+    ctx.eq(d.results(9), [(ga.KANBEI, 5, 500)], "the record of an id no map has now is loaded and kept")
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_a_094_record_is_converted_to_the_top_five(ctx):
+    """0.9.4 kept one best word per list position (Cinder Sea, Iron Crown). Its save loads as each map's first place under the map's id, the region is rewritten in the new format on the next save
+    (version 2), and BH's and BH2's regions are as they were."""
+    base = paths.base_save()
+    old = ga.region_bytes({}, legacy=[(ga.ANDY, 12, 345), (ga.CAULDER, 40, 222)])
+    save = ga.with_record(base, os.path.join(ctx.out, "legacy.sav"), old)
+    e, g, d = boot(ctx, save=save)
+    d.open(pick=False)
+    d.wait_step(ga.SELECTOR)
+    e.wait(10)
+    ctx.eq(d.results(1), [(ga.ANDY, 12, 345)], "Cinder Sea: the old best is first place")
+    ctx.eq(d.results(2), [(ga.CAULDER, 40, 222)], "Iron Crown: the old best is first place")
+    ctx.eq(d.best(0), (ga.ANDY, 12, 345), "the session's best word is the same")
+    rows = d.record_rows()
+    cinder, iron = rows[ga.row_of(0)], rows[ga.row_of(1)]
+    ctx.eq((cinder[0], cinder[1], iron[0]), ((ga.ANDY, 12 | 345 << 12), (0, 0), (ga.CAULDER, 40 | 222 << 12)), "the box shows them as 1st")
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_wins_keep_the_top_five_sorted_like_the_war_room(ctx):
+    """Real wins on Cinder Sea (the lines' HQs captured), the record in Flash each time: the first win is first place; a second equal result goes after it (the War Room's tie rule: the same score in
+    the same days is placed after the older); a win better than the fifth of a full row pushes it out and takes its place; one worse than all five changes nothing; a loss writes nothing."""
+    e, g, d = boot(ctx)
+    d.start(ga.ANDY)
+    ctx.eq(d.win(ctx), 1, "win 1")
+    e.wait(60)
+    first = d.results(1)
+    ctx.eq(len(first), 1, f"one result after the first win ({first})")
+    r1 = first[0]
+    img = flash_after(ctx, e, "win1")
+    ctx.eq(ga.record_results(ga.saved_record(img)), first, "saved after the first win")
+    # a second win with the same play: the same result, after the first
+    d.start(ga.ANDY, from_title=False)
+    ctx.eq(d.win(ctx), 1, "win 2")
+    e.wait(60)
+    second = d.results(1)
+    ctx.eq(len(second), 2, "two results after the second win")
+    ctx.eq(ga.war_room_insert([r1], second[1] if second[0] == r1 else second[0]), second, "sorted as the War Room sorts")
+    ctx.check(second[1][2] == r1[2] and second[1][1] == r1[1], f"the same play is the same result ({second})")
+    img = flash_after(ctx, e, "win2")
+    ctx.eq(ga.record_results(ga.saved_record(img)), second, "saved after the second win")
+    e.close()
+    s, days = r1[2], r1[1]
+    # (a full row whose fifth is a worse result than a win: the win comes in at 5th and pushes the old fifth out)
+    worse = s - 10 if s >= 10 else 0
+    full = [(ga.MAX, 5, s + 40), (ga.SAMI, 6, s + 30), (ga.KANBEI, 7, s + 20), (ga.JAVIER, 8, s + 10), (ga.CRUMB, 9, worse)]
+    save = ga.with_record(img.path, os.path.join(ctx.out, "full.sav"), ga.region_bytes({1: full}))
+    e, g, d = boot(ctx, save=save)
+    d.start(ga.ANDY)
+    ctx.eq(d.win(ctx), 1, "win 3")
+    e.wait(60)
+    got = d.results(1)
+    want = ga.war_room_insert(full, (ga.ANDY, r1[1], r1[2]))
+    ctx.eq(got, want, "the win took its place and the old fifth fell off")
+    ctx.eq(got[:4], full[:4], "the four better results are as they were")
+    ctx.eq(got[4][0], ga.ANDY, "the win is fifth")
+    img = flash_after(ctx, e, "win3")
+    ctx.eq(ga.record_results(ga.saved_record(img)), want, "saved")
+    e.close()
+    # (a full row of results that all beat the win: it ranks sixth and nothing changes in the record, the loss writes nothing either)
+    better = [(ga.MAX, 5, s + 50), (ga.SAMI, 6, s + 40), (ga.KANBEI, 7, s + 30), (ga.JAVIER, 8, s + 20), (ga.CRUMB, 9, s + 10)]
+    save = ga.with_record(img.path, os.path.join(ctx.out, "better.sav"), ga.region_bytes({1: better}))
+    e, g, d = boot(ctx, save=save)
+    d.start(ga.ANDY)
+    ctx.eq(d.win(ctx), 1, "win 4")
+    e.wait(60)
+    ctx.eq(d.results(1), better, "a sixth place is dropped: the five are as they were")
+    d.start(ga.MAX, from_title=False)
+    ctx.eq(d.lose(ctx), 2, "a loss")
+    e.wait(60)
+    ctx.eq(d.results(1), better, "a loss writes nothing")
+    img = flash_after(ctx, e, "after_loss")
+    ctx.eq(ga.record_results(ga.saved_record(img)), better, "saved: the same five")
     e.close()
 
 

@@ -222,7 +222,7 @@ def gauntlet_map2_stage_two_suspend_and_resume(ctx):
     e.wait(60)
     done = saves.flash(e, os.path.join(ctx.out, "finished"))
     rec = ga.saved_record(done)
-    ctx.check(rec is not None and ga.record_best(rec, ga.MAP2) is not None, "the win wrote the map's record")
+    ctx.check(rec is not None and ga.record_best(rec, 2) is not None, "the win wrote the map's record (Iron Crown's id is 2)")
     e.close()
 
 
