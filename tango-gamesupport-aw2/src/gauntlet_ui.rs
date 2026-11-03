@@ -1,5 +1,5 @@
-//! The Gauntlet's two choosing screens (docs/dev/gauntlet-mode.md "The flow"): the **map selector** that opens when GAUNTLET is picked on Select Mode and, after the CO pick, the
-//! **army colour pick** (the colours the map's enemies do not wear, as emblems in a row).
+//! The Gauntlet's two choosing screens (docs/dev/gauntlet-mode.md "The flow"): the **map selector** that opens when GAUNTLET is picked on Select Mode and, after it, the one **army
+//! screen**: the player's card (any CO, a colour the map leaves free) and the enemies' cards.
 //!
 //! The map selector is the game's own: the War Room's SELECT MAP (`ProcScr_PreviewMap`, `0x08616C54`: the map list, the map's picture, the enemy's face, the record box on R), run as a
 //! child of the Gauntlet's start proc exactly as the War Room's flow runs it ([`crate::ds_campaign`]'s `gauntlet_start_script`). Its list is a tab of the map table
@@ -8,25 +8,26 @@
 //! screen read it) and put back when the screen ends ([`chosen`]). The record box reads War Room record rows, here a block of ours filled from the Gauntlet's records ([`rows`]).
 //! A (the game's own handler) writes the map's id into the play state, B zeroes it: [`chosen`] reads which, as the War Room's flow does (`0x0803BD6D`).
 //!
-//! The colour pick is a screen of ours drawn over the finished picture ([`draw`], through `ds_coselect::apply` like the Teams cards): AW2's windows, font and portraits, the emblems of its
-//! Teams screen, all read from the ROM at run time, nothing committed (the Teams screen's own colour choice is part of Versus' whole Teams screen and cannot be borrowed alone). The game
-//! underneath is a proc of the start script that waits (a flow function that answers 1 while the step is up), so this module owns the pad while the colour pick is up ([`tick`] takes
-//! every key) and says which button ended it ([`ANSWER`]).
+//! The army screen is Versus' Teams screen laid out for one player against the map's CPUs, drawn over the finished picture ([`draw`], through `ds_coselect::apply` like the Teams cards):
+//! the cards, windows and help plate of AW2's Teams screen ([`crate::army_cards`], the page online and offline Versus share, in every look: with the pack Versus' Teams screen is this page
+//! whatever the map graphics), read from the ROM at run time, nothing committed. The game's own Teams screen is a whole Versus flow (rules, the map's players) and is not run: the game underneath is a proc of the start script that waits (a flow function that answers 1 while the step is up), so this
+//! module owns the pad while the screen is up ([`tick`] takes every key) and says which button ended it ([`ANSWER`]). UP and DOWN choose the CO, R and L the colour, A starts, B goes back;
+//! the enemies' cards are not editable (LEFT and RIGHT do nothing: there is no other army to move to).
 //!
 //! The maps and their enemies come from [`crate::gauntlet_mode::entries`] (a new map's mission lists itself), the colours from [`crate::gauntlet_mode::Entry::free`] (the five minus the
-//! enemies' fixed ones, plus Silver Nova). The choice is an army code of the Teams screen (1..5, or `army_skin::SKIN + i` for a skin); [`crate::gauntlet::keep_colour`] puts it on the
-//! player's army when the battle starts.
+//! enemies' fixed ones, plus Silver Nova), the COs from [`crate::gauntlet_mode::ROSTER`] (all 35). The colour is an army code of the Teams screen (1..5, or `army_skin::SKIN + i` for a
+//! skin); [`crate::gauntlet::keep_colour`] puts it on the player's army when the battle starts, and the CO goes to the armies as AW2's CO screen gives it ([`apply`]).
 //!
 //! State: [`STATE`] in EWRAM (`ram_map`): the step, the answer, the cursors, and the last colour worn on each map.
 
 use mgba::core::Core;
 
 use crate::gauntlet_mode::{self as gm, Entry};
-use crate::online::{self, Rgb, Rgba, GRAY_INK, INK, SHADE, W, WHITE, YELLOW};
+use crate::online::{self, Rgb, Rgba, GRAY_INK, INK, SHADE, W};
 
 pub const STATE: u32 = 0x0203_D080;
 pub const STATE_LEN: u32 = 0x60;
-/// 0 nothing up, 1 the map selector, 2 the colour pick.
+/// 0 nothing up, 1 the map selector, 2 the army screen.
 pub const STEP: u32 = STATE;
 /// How the last step ended: 1 A (on to the next), 0 B (back).
 pub const ANSWER: u32 = STATE + 1;
@@ -34,10 +35,17 @@ pub const ANSWER: u32 = STATE + 1;
 const MAP_CURSOR: u32 = STATE + 2;
 /// The map picked.
 const MAP: u32 = STATE + 3;
-/// The colour pick's cursor (an index into the map's free colours).
+/// The army screen's colour cursor (an index into the map's free colours).
 const COLOUR_CURSOR: u32 = STATE + 4;
-/// 1 when the colour pick was left with B: the start script comes round again and goes to the CO screen, not to the selector.
-const BACK_TO_CO: u32 = STATE + 5;
+/// The army screen's CO cursor (an index into [`gm::ROSTER`]; it keeps its place between visits) and the CO it is on (an AW2 CO id, for the tests).
+const CO_CURSOR: u32 = STATE + 5;
+pub const CO_PICK: u32 = STATE + 7;
+/// How long UP or DOWN has been held (frames) and which: AW2's cursor repeat.
+const HELD: u32 = STATE + 8;
+const HELD_DIR: u32 = STATE + 9;
+/// AW2's cursor repeat: frames from the press to the second step, and between the following ones.
+const REPEAT_DELAY: u8 = 10;
+const REPEAT_RATE: u8 = 4;
 /// The play state's game mode as it was before the selector set the War Room's.
 const SAVED_MODE: u32 = STATE + 6;
 /// The last choice on each map (an army code, 0 none), [`MAX_MAPS`] maps, by mission.
@@ -53,8 +61,10 @@ const ROW: u32 = crate::gauntlet::ROW;
 /// come (6 at most), +0x0E how many colours are free to wear on the map picked, +0x0F.. those army codes (8 at most).
 pub const SHOWN: u32 = STATE + 0x20;
 
-/// The CO screen's picks (`gUnknown_030058D4`): the player's CO is the first.
+/// The CO screen's picks (`gUnknown_030058D4`): the list `SetArmyCoIdsFromList` gives to the armies, the player's CO the first.
 const CO_PICKS: u32 = 0x0300_58D4;
+/// `SetArmyCoIdsFromList(list)`: what AW2's CO screen calls with its picks.
+const SET_ARMY_CO_IDS: u32 = 0x0803_BCDC;
 
 /// The play state's game mode (the War Room's is 2) and map id.
 const PLAY_MODE: u32 = 0x0300_3FC1;
@@ -106,14 +116,9 @@ pub fn first_id() -> u8 {
 }
 
 pub const SELECT: u8 = 1;
-pub const COLOUR: u8 = 2;
+pub const ARMY: u8 = 2;
 
-const KEY_A: u32 = 1 << 0;
-const KEY_B: u32 = 1 << 1;
-const KEY_RIGHT: u32 = 1 << 4;
-const KEY_LEFT: u32 = 1 << 5;
-const KEY_UP: u32 = 1 << 6;
-const KEY_DOWN: u32 = 1 << 7;
+use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_L, KEY_R, KEY_UP};
 
 pub fn step(core: &Core) -> u8 {
     core.raw_read_8(STEP, -1)
@@ -124,15 +129,8 @@ pub fn up(core: &Core) -> bool {
     step(core) != 0
 }
 
-/// The start script's call: the map selector opens (the War Room's SELECT MAP follows as a child proc) or, coming back from the colour pick, the CO screen follows at once (the step
-/// stays 0, which the script reads as "skip the selector").
+/// The start script's call: the map selector opens (the War Room's SELECT MAP follows as a child proc).
 pub fn begin_select(core: &mut Core) {
-    if core.raw_read_8(BACK_TO_CO, -1) == 1 {
-        core.raw_write_8(BACK_TO_CO, -1, 0);
-        core.raw_write_8(STEP, -1, 0);
-        core.raw_write_8(ANSWER, -1, 1);
-        return;
-    }
     core.raw_write_8(ANSWER, -1, 0);
     core.raw_write_8(STEP, -1, SELECT);
     core.raw_write_8(MAP_CURSOR, -1, 0);
@@ -271,7 +269,8 @@ fn rows(core: &mut Core) {
     }
 }
 
-/// The selector's screen has ended (the start script's call): A put a map's id in the play state, B zeroed it. The game mode is put back; a map taken becomes the session's mission.
+/// The selector's screen has ended (the start script's call): A put a map's id in the play state, B zeroed it. The game mode is put back; a map taken becomes the session's mission and the
+/// army screen opens on it (the colour starts on the one last worn on the map).
 pub fn chosen(core: &mut Core) {
     let id = core.raw_read_8(PLAY_MAP, -1);
     leave(core);
@@ -281,7 +280,7 @@ pub fn chosen(core: &mut Core) {
             // (the battle is played on the campaign's own entry, [`crate::ds_campaign::choose_gauntlet_map`] fills it)
             core.raw_write_8(PLAY_MAP, -1, crate::campaign_model::MAP_ID);
             crate::ds_campaign::choose_gauntlet_map(core, m);
-            core.raw_write_8(ANSWER, -1, 1);
+            begin_army(core, m);
         }
         None => core.raw_write_8(ANSWER, -1, 0),
     }
@@ -321,21 +320,41 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![(SCROLL_TRACK, Box::new(scroll_track))]
 }
 
-/// The start script's call after the CO pick: the colour pick opens on the colour last worn on this map. A map with one colour (or none) free has nothing to pick.
-pub fn begin_colour(core: &mut Core) {
-    let e = picked(core);
-    let free = e.map(Entry::free).unwrap_or_default();
+/// The army screen opens for `mission`: the colour on the one last worn on the map (a map with one colour free just shows it), the CO where the cursor was.
+fn begin_army(core: &mut Core, mission: usize) {
+    let free = gm::entries().get(mission).map(Entry::free).unwrap_or_default();
+    let last = last_choice(core, mission);
+    let at = free.iter().position(|&c| c == last).unwrap_or(0);
+    core.raw_write_8(COLOUR_CURSOR, -1, at as u8);
+    let co = core.raw_read_8(CO_CURSOR, -1) as usize % gm::ROSTER.len();
+    core.raw_write_8(CO_CURSOR, -1, co as u8);
+    core.raw_write_8(CO_PICK, -1, gm::ROSTER[co].0);
+    core.raw_write_8(HELD, -1, 0);
+    core.raw_write_8(HELD_DIR, -1, 0);
+    // (1 for the script's test of the selector's answer; the screen's own A and B set it when they end it)
     core.raw_write_8(ANSWER, -1, 1);
-    match free.len() {
-        0 => crate::ds_campaign::set_gauntlet_choice(core, 0),
-        1 => crate::ds_campaign::set_gauntlet_choice(core, free[0]),
-        _ => {
-            let last = last_choice(core, e.map_or(0, |e| e.mission));
-            let at = free.iter().position(|&c| c == last).unwrap_or(0);
-            core.raw_write_8(COLOUR_CURSOR, -1, at as u8);
-            core.raw_write_8(ANSWER, -1, 0);
-            core.raw_write_8(STEP, -1, COLOUR);
-        }
+    core.raw_write_8(STEP, -1, ARMY);
+}
+
+/// The start script's call after the army screen's A: the picked CO goes to the armies as AW2's CO screen gives its picks, by `SetArmyCoIdsFromList` called here in the screen's place with the
+/// list it reads. A jump to the function does not run the traps on it, so the one that matters here runs first: [`crate::tag::set_cos`] moves a five-army map's pick to the player's army (the
+/// fifth; the first keeps its fixed CO). The Gauntlet has no two-front maps ([`crate::two_front`]'s trap there).
+pub fn apply(core: &mut Core) {
+    let co = core.raw_read_8(CO_PICK, -1);
+    core.raw_write_8(CO_PICKS, -1, co);
+    core.gba_mut().cpu_mut().set_gpr(0, CO_PICKS as i32);
+    crate::tag::set_cos(core);
+    core.gba_mut().cpu_mut().set_thumb_pc(SET_ARMY_CO_IDS);
+}
+
+/// A mission is starting (`ResetRulesAfterCampaignMap`, [`crate::ds_campaign`]'s `mission_start`): a five-army map's player is its fifth army, whose CO the start has just put back to the
+/// mission's own, none: the army screen's pick (kept by [`crate::tag::set_cos`] in army 5's CO byte before the start) is put there again.
+pub fn keep_pick(core: &mut Core) {
+    if !crate::gauntlet::session(core) || core.raw_read_8(crate::gauntlet::CONTINUING, -1) != 0 {
+        return;
+    }
+    if crate::ds_campaign::mission_info(core).and_then(|m| m.native.as_ref()).is_some_and(|n| n.five_pick.is_some()) {
+        crate::five::set_army5_co(core, core.raw_read_8(CO_PICK, -1));
     }
 }
 
@@ -386,24 +405,37 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
             let free = picked(core).map(Entry::free).unwrap_or_default();
             let n = free.len().max(1) as u8;
             let mut c = core.raw_read_8(COLOUR_CURSOR, -1) % n;
-            if pressed & KEY_RIGHT != 0 {
+            if pressed & KEY_R != 0 {
                 c = (c + 1) % n;
             }
-            if pressed & KEY_LEFT != 0 {
+            if pressed & KEY_L != 0 {
                 c = (c + n - 1) % n;
             }
             core.raw_write_8(COLOUR_CURSOR, -1, c);
-            if pressed & KEY_A != 0 && !free.is_empty() {
-                let code = free[c as usize];
-                crate::ds_campaign::set_gauntlet_choice(core, code);
+            // UP and DOWN walk the roster, a held key repeating as AW2's cursors do.
+            let dir = if keys & KEY_DOWN != 0 { 1u8 } else if keys & KEY_UP != 0 { 2 } else { 0 };
+            let (held, was) = (core.raw_read_8(HELD, -1), core.raw_read_8(HELD_DIR, -1));
+            let held = if dir != was { 0 } else { held.saturating_add(1) };
+            core.raw_write_8(HELD, -1, held);
+            core.raw_write_8(HELD_DIR, -1, dir);
+            if dir != 0 && (dir != was || (held >= REPEAT_DELAY && (held - REPEAT_DELAY) % REPEAT_RATE == 0)) {
+                let len = gm::ROSTER.len();
+                let at = core.raw_read_8(CO_CURSOR, -1) as usize % len;
+                let at = if dir == 1 { (at + 1) % len } else { (at + len - 1) % len };
+                core.raw_write_8(CO_CURSOR, -1, at as u8);
+                core.raw_write_8(CO_PICK, -1, gm::ROSTER[at].0);
+            }
+            if pressed & KEY_A != 0 {
                 let mission = picked(core).map_or(0, |e| e.mission);
+                // (a map with no colour free keeps the map's own: 0)
+                let code = free.get(c as usize).copied().unwrap_or(0);
+                crate::ds_campaign::set_gauntlet_choice(core, code);
                 if mission < MAX_MAPS {
                     core.raw_write_8(LAST + mission as u32, -1, code);
                 }
                 core.raw_write_8(ANSWER, -1, 1);
                 core.raw_write_8(STEP, -1, 0);
             } else if pressed & KEY_B != 0 {
-                core.raw_write_8(BACK_TO_CO, -1, 1);
                 core.raw_write_8(ANSWER, -1, 0);
                 core.raw_write_8(STEP, -1, 0);
             }
@@ -412,7 +444,7 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
     0
 }
 
-/// Writes [`SHOWN`]: what the selector lists for the map under the cursor and what the colour pick offers for the map picked.
+/// Writes [`SHOWN`]: what the selector lists for the map under the cursor and what the army screen offers for the map picked.
 fn mirror(core: &mut Core) {
     let entries = gm::entries();
     let cursor = core.raw_read_8(MAP_CURSOR, -1) as usize;
@@ -439,92 +471,49 @@ fn mirror(core: &mut Core) {
 /// The sea behind the windows (the game's own Teams and SELECT MAP pictures lie on one).
 const SEA: Rgb = (152, 224, 232);
 
-/// An army code's name: AW2's five, or a skin's.
-pub fn colour_name(code: u8) -> String {
-    match code {
-        1 => "Orange Star".into(),
-        2 => "Blue Moon".into(),
-        3 => "Green Earth".into(),
-        4 => "Yellow Comet".into(),
-        5 => "Black Hole".into(),
-        c => crate::army_skin::skins().get((c.saturating_sub(crate::army_skin::SKIN)) as usize).map(|s| s.name.clone()).unwrap_or_default(),
-    }
+/// The most enemy cards the screen shows: Versus' Teams screen has five armies, the player's the first. A map with more lines (Iron Crown's Asuka stage) shows the first four.
+const MAX_ENEMIES: usize = 4;
+
+/// The army screen's cards: (CO, army code) of the player first, then the enemies in the order they come.
+fn cards(e: &Entry, co: u8, colour: u8) -> Vec<(u8, u8)> {
+    std::iter::once((co, colour)).chain(e.enemies.iter().take(MAX_ENEMIES).map(|&(co, c)| (co, e.shown_colour(c)))).collect()
 }
 
 /// The title window and the keys it names.
-fn header(cv: &mut Rgba<'_>, core: &Core, what: &str, keys: &str) {
+fn header(cv: &mut Rgba<'_>, core: &Core, what: &str) {
     cv.window(4, 3, W as i32 - 8, 16);
     cv.text(core, 10, 7, "GAUNTLET", INK, SHADE);
     let x = 10 + online::text_width(core, "GAUNTLET") + 8;
     cv.text(core, x, 7, what, GRAY_INK, SHADE);
-    let w = online::text_width(core, keys);
-    cv.text(core, W as i32 - 10 - w, 7, keys, GRAY_INK, SHADE);
 }
 
-fn fit(core: &Core, s: &str, max: i32) -> String {
-    let mut t = s.to_string();
-    while t.len() > 1 && online::text_width(core, &t) > max {
-        t.pop();
-    }
-    t
+/// The army screen's picture for map `e` with CO `co` in army colour `colour` (also the text audit's page): the cards, windows and help plate of AW2's Teams screen
+/// ([`crate::army_cards`]) on the sea, the map's name in a title window.
+pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
+    use crate::army_cards::{Field, Help, Seat};
+    let cv = &mut Rgba(rgba);
+    cv.rect(0, 0, W as i32, online::H as i32, SEA);
+    header(cv, core, e.title);
+    let seats: Vec<Seat> = cards(e, co, colour)
+        .into_iter()
+        .enumerate()
+        .map(|(k, (co, colour))| Seat {
+            name: if k == 0 { "Player 1".into() } else { "CPU".into() },
+            co: Some(co),
+            colour,
+            team: None,
+            partner: crate::army_cards::NONE,
+            ready: false,
+            mine: k == 0,
+            field: (k == 0).then_some(Field::Co),
+            tag: Some(if k == 0 { "1P" } else { "CP" }),
+        })
+        .collect();
+    let lines = vec!["Choose your CO and army colour.".to_string(), "Up Down: CO  R: Colour  A: Start  B: Back".to_string()];
+    crate::army_cards::draw(core, cv.0, &seats, false, &Help { lines }, false);
 }
 
-/// The enemies you will face: a window at (4, y) with each line's face, the army's emblem and the order they come in, the CO's name under them.
-fn enemies(cv: &mut Rgba<'_>, core: &Core, e: &Entry, y: i32) {
-    let (x, w, h) = (4, W as i32 - 8, 56);
-    cv.window(x, y, w, h);
-    cv.text(core, x + 6, y + 3, "Enemies you will face", GRAY_INK, SHADE);
-    let n = e.enemies.len().max(1) as i32;
-    let slot = ((w - 8) / n).min(74);
-    // (a face and the army's emblem side by side; with many enemies the face shrinks, and the order's number goes when there is no room)
-    let face = (slot - 20).clamp(16, 24);
-    for (k, &(co, colour)) in e.enemies.iter().enumerate() {
-        let sx = x + 6 + slot * k as i32;
-        cv.rect(sx - 1, y + 15, face + 2, face + 2, INK);
-        crate::online_teams::draw_face(core, cv, co, sx, y + 16, face);
-        crate::army_cards::emblem(core, cv, colour, sx + face + 3, y + 17);
-        if slot >= 62 {
-            cv.text(core, sx + face + 22, y + 20, &(k + 1).to_string(), INK, SHADE);
-        }
-        let name = fit(core, &crate::online_teams::co_label(core, co), slot - 3);
-        cv.text(core, sx, y + 42, &name, INK, SHADE);
-    }
-}
-
-fn colour_pick(cv: &mut Rgba<'_>, core: &Core, e: &Entry, cursor: usize, co: u8) {
-    header(cv, core, "Army Colour", "A: Choose  B: Back");
-    let free = e.free();
-    let cursor = cursor.min(free.len().saturating_sub(1));
-    let (x, y, w, h) = (4, 22, W as i32 - 8, 74);
-    cv.window(x, y, w, h);
-    // The player's CO, as the CO screen picked it.
-    cv.text(core, x + 6, y + 5, "Your army", GRAY_INK, SHADE);
-    if co != 0xFF && co != 0 {
-        cv.rect(x + 5, y + 19, 34, 34, INK);
-        crate::online_teams::draw_face(core, cv, co, x + 6, y + 20, 32);
-        let name = fit(core, &crate::online_teams::co_label(core, co), 48);
-        cv.text(core, x + 6, y + 56, &name, INK, SHADE);
-    }
-    // The colours left: emblems in a row, the chosen one framed.
-    let pitch = 30;
-    let (ex, ey) = (x + 62, y + 22);
-    cv.text(core, ex, y + 5, "Choose a colour", GRAY_INK, SHADE);
-    for (k, &code) in free.iter().enumerate() {
-        let cx = ex + pitch * k as i32;
-        if k == cursor {
-            cv.rect(cx - 3, ey - 3, 22, 22, YELLOW);
-            cv.rect(cx - 2, ey - 2, 20, 20, WHITE);
-        }
-        crate::army_cards::emblem(core, cv, code, cx, ey);
-    }
-    if let Some(&code) = free.get(cursor) {
-        cv.text(core, ex, ey + 23, &colour_name(code), INK, SHADE);
-    }
-    cv.text(core, ex, ey + 35, "The enemy wears the rest.", GRAY_INK, SHADE);
-    enemies(cv, core, e, 100);
-}
-
-/// The step's picture over the finished one. `true` when one is up.
+/// The army screen's picture over the finished one. `true` when one is up.
 pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
     if rgba.len() != W * online::H * 4 {
         return false;
@@ -534,23 +523,15 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
         return false;
     }
     // (the map selector is the game's own screen: nothing is drawn over it)
-    if s != COLOUR {
+    if s != ARMY {
         return false;
     }
-    let mut cv = Rgba(rgba);
-    cv.rect(0, 0, W as i32, online::H as i32, SEA);
-    if let Some(e) = picked(core) {
-        // (the CO screen's pick list outlives the screen: its first entry is the player's CO)
-        colour_pick(&mut cv, core, e, core.raw_read_8(COLOUR_CURSOR, -1) as usize, core.raw_read_8(CO_PICKS, -1));
-    }
+    let Some(e) = picked(core) else { return false };
+    let co = core.raw_read_8(CO_PICK, -1);
+    let free = e.free();
+    let colour = free.get(core.raw_read_8(COLOUR_CURSOR, -1) as usize).copied().unwrap_or(1);
+    paint_army(core, rgba, e, co, colour);
     true
-}
-
-/// The colour pick's picture for map `e` (the text audit's page).
-pub fn paint_colour_pick(core: &Core, rgba: &mut [u8], e: &Entry, cursor: usize, co: u8) {
-    let mut cv = Rgba(rgba);
-    cv.rect(0, 0, W as i32, online::H as i32, SEA);
-    colour_pick(&mut cv, core, e, cursor, co);
 }
 
 #[cfg(test)]

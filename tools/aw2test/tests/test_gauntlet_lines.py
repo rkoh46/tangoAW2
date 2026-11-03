@@ -211,8 +211,7 @@ def intro_and_victory_faces(info):
         ctx.games.append(g)
         d = ga.Gauntlet(g)
         d.open(True, map=info.mission)
-        d.choose_cos(1, prefs=[ga.ANDY])
-        d.pick_colour(None)
+        d.pick_army(ga.ANDY)
         first = info.lines[0]
         faces = []
         for _ in range(600):

@@ -43,6 +43,9 @@ pub struct Seat {
     /// The seat of the player looking (its window is cream).
     pub mine: bool,
     pub field: Option<Field>,
+    /// The card's tag ("1P", "CP") drawn by us, for a screen whose frame is not the game's own Teams screen (the Gauntlet's: no tag to sample from it). `None`: the game's tag is
+    /// taken from the frame as before.
+    pub tag: Option<&'static str>,
 }
 
 /// The game's card: 48 x 48 with a green frame, at y 36; the first card's left edge and the pitch by the number of cards
@@ -309,10 +312,11 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
     if rgba.len() != online::W * online::H * 4 || seats.len() < 2 {
         return;
     }
-    // The game's tags, from this frame, or the last frame that had them.
+    // The game's tags, from this frame, or the last frame that had them (a screen that labels its cards itself has none to take).
+    let labelled = seats.iter().take(n).all(|s| s.tag.is_some());
     let cached = tag_cache().lock().unwrap().clone();
     let complete = cached.len() >= n && cached.iter().take(n).all(|t| !t.is_empty());
-    let sampled = if !live_tags && complete {
+    let sampled = if labelled || (!live_tags && complete) {
         None
     } else {
         sample_tags(rgba, n)
@@ -333,6 +337,7 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
             }
             c.clone()
         }
+        None if labelled => Vec::new(),
         None => tag_cache().lock().unwrap().clone(),
     };
     let ground = sea(rgba);
@@ -371,7 +376,14 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
                 glyph(cv, &g, left + 3, CARD_Y + 3);
             }
         }
-        if let Some(t) = tags.get(s) {
+        if let Some(label) = seat.tag {
+            // (on the card's frame colour, at its upper right corner, as the game's own tag sits)
+            let ink = if label == "CP" { WHITE } else { YELLOW };
+            let w = online::text_width(core, label);
+            let x = left + CARD - 4 - w;
+            cv.rect(x - 2, CARD_Y + 1, w + 4, 12, FRAME);
+            cv.text(core, x, CARD_Y + 2, label, ink, FRAME);
+        } else if let Some(t) = tags.get(s) {
             let ox = tag_x(n, left);
             if seat.field == Some(Field::Controller) {
                 if let (Some(x0), Some(x1)) = (t.iter().map(|p| p.0).min(), t.iter().map(|p| p.0).max()) {

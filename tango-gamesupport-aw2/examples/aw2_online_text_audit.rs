@@ -875,12 +875,12 @@ fn gauntlet(c: &mut Ctx) {
         title,
         enemies: widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect(),
         stages: vec![colours[..n.min(6)].to_vec()],
-        enemy_skin: false,
+        enemy_skin: None,
     };
     for n in [3usize, 4, 6] {
         for (k, &co) in widest.iter().take(2).enumerate() {
             let e = entry(n, "Cinder Sea");
-            paint(c, &format!("gauntlet_colour_{n}_{k}"), n == 3, |core, rgba| gu::paint_colour_pick(core, rgba, &e, 2, co));
+            paint(c, &format!("gauntlet_army_{n}_{k}"), n == 3, |core, rgba| gu::paint_army(core, rgba, &e, co, 1));
         }
     }
 }

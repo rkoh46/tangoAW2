@@ -1,4 +1,4 @@
-"""Composes `faces_vs_copage.png` from the pictures `-k gauntlet_faces_vs_copage` leaves (AW2TEST_FACES): per CO the face as a dialogue box draws it (left) next to the same CO on AW2's CO screen (right).
+"""Composes `faces_vs_army_screen.png` from the pictures `-k gauntlet_faces_vs_army_screen` leaves (AW2TEST_FACES): per CO the face as a dialogue box draws it (left) next to the same CO on the army screen (right).
 Usage: python3 compose_faces.py <folder> <out.png>"""
 import glob
 import os
@@ -19,7 +19,7 @@ sheet = Image.new("RGB", (cols * cw, ((len(cos) + cols - 1) // cols) * cell_h), 
 dr = ImageDraw.Draw(sheet)
 for i, co in enumerate(cos):
     x, y = (i % cols) * cw, (i // cols) * cell_h
-    dr.text((x + 2, y), f"{NAMES.get(co, co)} ({co}): box face | CO screen", fill=(255, 220, 120))
+    dr.text((x + 2, y), f"{NAMES.get(co, co)} ({co}): box face | army screen", fill=(255, 220, 120))
     sheet.paste(Image.open(os.path.join(folder, f"box_{co}.png")).convert("RGB").resize((128, 88), Image.NEAREST), (x, y + 12))
     s = os.path.join(folder, f"screen_{co}.png")
     if os.path.exists(s):

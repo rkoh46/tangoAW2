@@ -309,6 +309,7 @@ fn mission_start(core: &mut Core) {
         Some((co, _, team)) => crate::five::set_campaign(core, true, co, team),
         None => crate::five::set_campaign(core, false, 0, 0),
     }
+    crate::gauntlet_ui::keep_pick(core);
 }
 
 /// The campaign's end-of-battle handler (`EndOfGame_FinishCampaignMap`),
@@ -355,10 +356,10 @@ pub const FLOW_CREDITS_RUNNING: u8 = 8;
 pub const FLOW_PROLOGUE_SEEN: u8 = 9;
 /// The Gauntlet's way back to Select Mode begins ([`crate::gauntlet::returning`]).
 pub const FLOW_RETURNING: u8 = 10;
-/// The Gauntlet's choosing steps ([`crate::gauntlet_ui`]): the map selector opens, the colour pick opens, a step is up (the start proc waits while it is), how it ended
-/// (1: A, on; 0: B, back), and the start proc comes round again (B on the CO screen or on the colour pick).
+/// The Gauntlet's choosing steps ([`crate::gauntlet_ui`]): the map selector opens, the army screen's CO goes to the armies, a step is up (the start proc waits while it is), how it ended
+/// (1: A, on; 0: B, back), and the start proc comes round again (B on the army screen).
 pub const FLOW_PICK_SELECT: u8 = 11;
-pub const FLOW_PICK_COLOUR: u8 = 12;
+pub const FLOW_PICK_APPLY: u8 = 12;
 pub const FLOW_PICK_UP: u8 = 13;
 pub const FLOW_PICK_ANSWER: u8 = 14;
 pub const FLOW_PICK_AGAIN: u8 = 15;
@@ -602,30 +603,23 @@ fn start_new_proc_script(save: u32, seen: u32) -> Vec<u8> {
 /// [`SELECT_MODE_START`], begins on Campaign).
 const MAIN_MENU_PROC: u32 = 0x0849_E7F8;
 
-/// The Gauntlet's start proc ([`crate::gauntlet`]): fade out; the map selector ([`crate::gauntlet_ui`], B goes back to Select Mode); fill the CO screen's lists (the stub answers and
-/// the proc goes on); the CO screen (a child: B answers 0 and the proc comes round again, to the selector); the colour pick (B: round again, to the CO screen); the progress saved
-/// (the colour is kept for Continue), BG0 emptied, `ResetRulesAfterCampaignMap`, then AW2's mission proc (the mission card, the battle) as the campaign's world map ends in.
-#[allow(clippy::too_many_arguments)]
-fn gauntlet_start_script(co_setup: u32, clear: u32, returning: u32, save: u32, flows: [u32; 6]) -> Vec<u8> {
+/// The Gauntlet's start proc ([`crate::gauntlet`]): fade out; the map selector ([`crate::gauntlet_ui`], B goes back to Select Mode); the army screen (the proc waits while it is up; B: round
+/// again, to the selector); the army screen's CO given to the armies; the progress saved (the colour is kept for Continue), BG0 emptied, `ResetRulesAfterCampaignMap`, then AW2's mission proc
+/// (the mission card, the battle) as the campaign's world map ends in.
+fn gauntlet_start_script(clear: u32, returning: u32, save: u32, flows: [u32; 6]) -> Vec<u8> {
     const BACK: i16 = 100;
     const AGAIN: i16 = 101;
-    const SKIP: i16 = 102;
-    let [select, colour, up, answer, again, chosen] = flows;
+    let [select, apply, up, answer, again, chosen] = flows;
     [
         proc_cmd(0x1D, 0x1E, 0),
         proc_cmd(0x02, 0, select),
-        // (coming back from the colour pick's B: the CO screen follows at once, no selector)
-        proc_cmd(0x28, SKIP, up),
         proc_cmd(0x06, 1, SELECT_MAP_PROC),
+        // (the map taken, `chosen` opens the army screen; B on the selector leaves)
         proc_cmd(0x02, 0, chosen),
-        proc_cmd(0x0B, SKIP, 0),
         proc_cmd(0x28, BACK, answer),
-        proc_cmd(0x02, 0, co_setup),
-        proc_cmd(0x06, 1, CO_SELECT_PROC),
-        proc_cmd(0x28, AGAIN, 0x0803_BD6D),
-        proc_cmd(0x02, 0, colour),
         proc_cmd(0x14, 0, up),
         proc_cmd(0x28, AGAIN, answer),
+        proc_cmd(0x02, 0, apply),
         proc_cmd(0x02, 0, save | 1),
         proc_cmd(0x02, 0, clear),
         proc_cmd(0x02, 0, RESET_RULES),
@@ -777,8 +771,8 @@ pub fn campaign(core: &Core) -> Option<&'static Campaign> {
             let ending = built.add(&ending_script(credits_start, credits_running));
             let help = DIFFICULTY_HELP.map(|t| built.add(&[t.as_bytes(), &[0]].concat()));
             let returning = built.add_magic(data::Magic::Flow(FLOW_RETURNING));
-            let flows = [FLOW_PICK_SELECT, FLOW_PICK_COLOUR, FLOW_PICK_UP, FLOW_PICK_ANSWER, FLOW_PICK_AGAIN, FLOW_PICK_CHOSEN].map(|f| built.add_magic(data::Magic::Flow(f)));
-            let gauntlet_start = built.add(&gauntlet_start_script(co_setup, clear, returning, save, flows));
+            let flows = [FLOW_PICK_SELECT, FLOW_PICK_APPLY, FLOW_PICK_UP, FLOW_PICK_ANSWER, FLOW_PICK_AGAIN, FLOW_PICK_CHOSEN].map(|f| built.add_magic(data::Magic::Flow(f)));
+            let gauntlet_start = built.add(&gauntlet_start_script(clear, returning, save, flows));
             let gauntlet_end = built.add(&gauntlet_end_script(save));
             assert!(built.base + (built.blob.len() as u32) < DATA_END);
             Some(Campaign {
@@ -2168,10 +2162,8 @@ fn landing(core: &mut Core) {
             crate::gauntlet_ui::begin_select(core);
             0
         }
-        Some(data::Magic::Flow(FLOW_PICK_COLOUR)) => {
-            crate::gauntlet_ui::begin_colour(core);
-            0
-        }
+        // (a tail call: `SetArmyCoIdsFromList` returns to the start proc's caller)
+        Some(data::Magic::Flow(FLOW_PICK_APPLY)) => return crate::gauntlet_ui::apply(core),
         Some(data::Magic::Flow(FLOW_PICK_CHOSEN)) => {
             crate::gauntlet_ui::chosen(core);
             0

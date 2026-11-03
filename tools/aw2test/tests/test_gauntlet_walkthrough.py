@@ -75,27 +75,20 @@ def gauntlet_walkthrough_pictures(ctx):
         e.wait(40)
     w.shot("Map selector: Cinder Sea, the enemies you will face", force=True)
     e.press("A", 6)
-    w.watch("Map picked: to the CO screen", 200, every=15, until=d.on_co_screen)
-    d.wait_co_screen()
-    w.shot("CO screen: any of 36 COs", force=True)
+    w.watch("Map picked: to the army screen", 200, every=15, until=lambda: d.step() == ga.ARMY)
+    d.wait_army()
+    w.shot("Army screen: your card, the enemies' cards", force=True)
     for k in range(3):
-        e.press("RIGHT", 6)
-        e.wait(40)
-        w.shot("CO screen: browsing COs")
-    d.choose_co([ga.ARIA])
-    w.shot("CO screen: Aria chosen", force=True)
-    for _ in range(60):
-        if not d.on_co_select():
-            break
-        d.co_screen_a()
+        e.press("DOWN", 4)
         e.wait(20)
-    d.wait_step(ga.COLOURS)
-    w.shot("Colour pick: what the enemies leave (Orange Star)", force=True)
+        w.shot("Army screen: DOWN browses the COs")
+    d.pick_co(ga.ARIA)
+    w.shot("Army screen: Aria chosen", force=True)
     for k in range(2):
-        e.press("RIGHT", 4)
+        e.press("R", 4)
         e.wait(14)
-        w.shot("Colour pick: browsing the free colours", force=True)
-    d.pick_colour(None)
+        w.shot("Army screen: R browses the free colours", force=True)
+    e.press("A", 6)
     sc = lambda ee: ee.press("A", 4) if d.scripts_running() else None
     w.watch("Loading the battle: mission card", 1500, every=25, press=None, until=d.in_battle)
     quiet = 0

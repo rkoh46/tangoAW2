@@ -1471,18 +1471,27 @@ pub struct Entry {
     pub enemies: Vec<(u8, u8)>,
     /// The enemies' colours stage by stage (the player's army must have a colour free in every stage; a skin's host moves between stages).
     pub stages: Vec<Vec<u8>>,
-    /// An enemy line wears a skin (Silver Nova's Caulder, Lili and Tabitha): the skin is on the battlefield already, so the player cannot wear it too (a skin sits on one colour).
-    pub enemy_skin: bool,
+    /// An enemy line wears a skin (Silver Nova's Caulder, Lili and Tabitha): the skin is on the battlefield already, so the player cannot wear it too (a skin sits on one colour). The enemy
+    /// colour (an army of that colour wears the skin, whichever line) and the skin's index.
+    pub enemy_skin: Option<(u8, usize)>,
 }
 
 impl Entry {
     /// What the player may wear on this map: every army colour the enemies of no stage wear, and the skins when every stage leaves a colour to host them ([`free_colours_staged`]).
     pub fn free(&self) -> Vec<u8> {
         let mut v = free_colours_staged(&self.stages);
-        if self.enemy_skin {
+        if self.enemy_skin.is_some() {
             v.retain(|c| *c < crate::army_skin::SKIN);
         }
         v
+    }
+
+    /// An enemy's army code as the battle shows it: the skin an enemy line of this colour wears, else the colour itself.
+    pub fn shown_colour(&self, colour: u8) -> u8 {
+        match self.enemy_skin {
+            Some((c, skin)) if c == colour => crate::army_skin::SKIN + skin as u8,
+            _ => colour,
+        }
     }
 
     /// The enemy colours of the stage the battle is on (0: the mission's own map).
@@ -1528,7 +1537,7 @@ pub fn entries() -> &'static [Entry] {
                     title: m.title,
                     enemies: stages.iter().flatten().copied().collect(),
                     stages: stages.iter().map(|v| v.iter().map(|e| e.1).collect()).collect(),
-                    enemy_skin: m.skin.is_some(),
+                    enemy_skin: m.skin.and_then(|(army, skin)| Some((m.armies.get(army as usize - 1)?.colour, skin))),
                 }
             })
             .collect()
@@ -1848,7 +1857,9 @@ mod tests {
         // Chrome Meridian: Flak, then the three Silver Nova COs on one colour; the skin is on the field already, so the player may wear plain colours only, never the host's or Black Hole's
         let c = by("gauntlet_07");
         assert_eq!(c.enemies.iter().map(|x| x.0).collect::<Vec<_>>(), vec![co::FLAK, crate::es_co::CAULDER, crate::es_co::LILI, crate::es_co::TABITHA]);
-        assert!(c.enemy_skin);
+        assert!(c.enemy_skin.is_some());
+        // (the army screen shows the three lines as the battle does: in the skin, Black Hole's own colour for Flak)
+        assert_eq!(c.enemies.iter().map(|x| c.shown_colour(x.1)).collect::<Vec<_>>(), vec![colour::BLACK_HOLE, crate::army_skin::SKIN, crate::army_skin::SKIN, crate::army_skin::SKIN]);
         assert_eq!(c.enemies.iter().map(|x| x.1).collect::<Vec<_>>(), vec![colour::BLACK_HOLE, CHROME_HOST, CHROME_HOST, CHROME_HOST]);
         assert_eq!(c.free(), crate::army_skin::order().into_iter().filter(|c| *c < crate::army_skin::SKIN && *c != colour::BLACK_HOLE && *c != CHROME_HOST).collect::<Vec<_>>());
         let m = &def().missions[c.mission];
@@ -1857,7 +1868,7 @@ mod tests {
         assert_eq!(m.armies[0].colour, colour::BLACK_HOLE);
         assert!(m.armies[1..4].iter().all(|a| a.colour == m.armies[CHROME_SKIN_ARMY as usize - 1].colour));
         // the other maps' skins are the player's choice only
-        assert!(!by("gauntlet_01").enemy_skin && !by("gauntlet_02").enemy_skin);
+        assert!(by("gauntlet_01").enemy_skin.is_none() && by("gauntlet_02").enemy_skin.is_none());
     }
 
     /// Every enemy CO appears on one map only, except the COs the owner named twice: Last Eclipse's Von Bolt and Asuka (Granite Spine's Von Bolt and Iron Crown's stage two Asuka), and Blue Bastion's Grit, Colin and Sasha (Iron Crown's Grit and Brass Canal's Sasha;

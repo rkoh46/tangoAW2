@@ -1,8 +1,8 @@
 # The Gauntlet mode: plumbing (`crate::gauntlet`, `crate::mode_menu`)
 
-Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick one CO (any CO the game has, no partner), then fight a map's enemy COs one after another in a single battle (the gauntlet engine,
+Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, then one army screen (any CO the game has, no partner, and an army colour the map leaves free), then fight a map's enemy COs one after another in a single battle (the gauntlet engine,
 [gauntlet.md](gauntlet.md): hidden lines that arrive when the lines before them fall), AW2's results, back on Select Mode. The maps are the content (`crate::gauntlet_mode`: `def()` returns a
-`CampaignDef` whose missions are the maps, `ROSTER` every CO, `SOURCE` 4; Cinder Sea is `gauntlet_01`, twelve maps today, room for 32: the table in gauntlet.md); this page is how the mode is wired. Code: `gauntlet.rs`, `gauntlet_ui.rs` (the map selector and the colour pick), `mode_menu.rs`, `ds_campaign.rs`
+`CampaignDef` whose missions are the maps, `ROSTER` every CO, `SOURCE` 4; Cinder Sea is `gauntlet_01`, twelve maps today, room for 32: the table in gauntlet.md); this page is how the mode is wired. Code: `gauntlet.rs`, `gauntlet_ui.rs` (the map selector and the army screen), `mode_menu.rs`, `ds_campaign.rs`
 (`start_gauntlet`, `gauntlet_start_script`, `gauntlet_end_script`, `after_map`, `end_of_battle`), `campaign_model.rs` (the source), tests `tools/aw2test/tests/test_gauntlet_mode.py`.
 
 ## The flow, screen by screen
@@ -24,17 +24,25 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick one CO (an
      `0x0808731A`: a track of a hundred sprites overflowed the sprite buffer into the BG0 control shadow and garbled the screen). The game's own handler takes the pad: UP/DOWN browse, **A writes the
      map's id into the play state's map id, B zeroes it**; `chosen` reads which (as the War Room's flow does with `0x0803BD6D`), takes the mission (`ds_campaign::choose_gauntlet_map`: the session's mission and its header in
      the battle's map-table entry, the play state's map id back to `0xF0`) or, on B, goes back to Select Mode (`gauntlet::returning`: the wheel stays on GAUNTLET). A map bigger than the picture area (32 x 22 cells; Iron Crown is 40 x 26, Harvest Run 36 x 24, Chrome Meridian 38 x 26) is shown by its middle part: header +0x2C (the picture; the battle reads +0x00) points at a cropped LZ77 copy in free ROM (`PREVIEW_ROM` 0x08E20000, 0x800 a mission), so the picture never runs over the list (the property counters at the top count the part shown). The cursor row is read from the game's
-     list each frame (`MAP_CURSOR`, `SHOWN` for the tests). Coming back from the colour pick's B the step stays 0 and the script skips the selector (`28 SKIP FLOW_PICK_UP`).
-   - **the CO pick:** the CO screen's lists (`FLOW_CO_SETUP`: **all 35 COs**, the roster's unlock bits are not used: `unlocked_cos`), AW2's CO screen (`0x086165C0`). B comes back to the selector
-     (`FLOW_PICK_AGAIN` starts the proc again).
-   - **the army colour pick** (step 2): the colours the map's enemies do not wear as emblems in a row (`Entry::free`), the chosen one framed, its name under them; the player's CO and the enemies
-     are shown. LEFT/RIGHT, A takes it, B goes back to the CO screen (`BACK_TO_CO`: the proc comes round again and skips the selector). A map with one free colour has nothing to pick; the cursor starts
-     on the colour last worn on that map (`gauntlet_ui::LAST`, per session). The pick is kept in the mode's progress record (`ds_campaign::gauntlet_choice`: byte +7) and saved (`FLOW_SAVE`) before the
-     battle, so a run saved halfway continues in it.
+     list each frame (`MAP_CURSOR`, `SHOWN` for the tests).
+   - **the army screen** (step 2, one screen for the CO and the colour; the game's CO screen is not used): Versus' Teams screen laid out for one player against the map's CPUs, drawn by us over
+     the finished frame (`gauntlet_ui::draw`) from the pieces the Teams screens use, nothing new of our own: `army_cards::draw`, the cards, windows and pink help plate of AW2's Teams
+     screen, the page online rooms and offline Versus share (with the pack Versus' Teams screen is this page in every look, DS map graphics or not, so the Gauntlet's is too: Dual Strike's
+     NORMAL BATTLE cards, `ds_coselect::draw_versus`, are only drawn when that page is not, which never happens with the pack). The ground is the sea of the game's Teams and SELECT MAP
+     pictures with a title window naming the map (the game's own TEAMS banner and wallpaper belong to the Versus flow's screen, which is not run), and the cards carry their 1P / CP tags
+     as text (`Seat::tag`; Versus' are sampled from the game's frame). The first card is the player's (tag 1P, the window cream),
+     then the map's enemies in the order they come, as CPU cards with their CO and the colour the map gives them (a line that wears Silver Nova shows its sun, `Entry::shown_colour`; at most four: the screen has five cards, so Iron Crown's Asuka stage is not shown).
+     **Keys:** UP / DOWN choose the CO (all 35 of `gauntlet_mode::ROSTER`, round again, a held key repeating as AW2's cursors do; the cursor keeps its place between visits), R / L the colour
+     (round the colours the map leaves free, `Entry::free`, Silver Nova among them where the map allows it; a map with one free colour shows it and R changes nothing; the cursor starts
+     on the colour last worn on the map, `gauntlet_ui::LAST`, per session), A starts, B goes back to the selector (the proc comes round again: `FLOW_PICK_AGAIN`). **The enemies are not
+     editable:** LEFT and RIGHT do nothing (there is no other army to move to). A saves the colour in the mode's progress record (`ds_campaign::gauntlet_choice`: byte +7) and the proc
+     saves (`FLOW_SAVE`) before the battle, so a run saved halfway continues in it. The CO goes to the armies as AW2's CO screen gives its picks: `gauntlet_ui::apply` calls
+     `SetArmyCoIdsFromList` with the list the CO screen reads (`0x030058D4`), after `tag::set_cos` (a jump to the function runs none of the traps on it) which moves a five-army map's pick to the
+     player's fifth army; `gauntlet_ui::keep_pick` puts it back after `mission_start`, which sets army 5's CO to the mission's own, none.
    - BG0 emptied, `ResetRulesAfterCampaignMap`, AW2's mission proc (`0x0849EBFC`: **the mission card** "MISSION 1 / Cinder Sea" (the map's name under it), the intro scene, the Setup phase if the mission
      has one, the battle). The card is AW2's campaign card, drawn by the mission proc itself with the mission's number; the War Room has no card at all (its battle starts at once), so
      there is no "War Room card" to borrow, and dropping the card would mean cutting AW2's mission proc apart.
-3. The player's army wears the colour it picked (`gauntlet::keep_colour`, at the map's start): AW2's CO screen gives an army the colour of its CO's country, which would make a Drake pick Green Earth
+3. The player's army wears the colour it picked (`gauntlet::keep_colour`, at the map's start): AW2's rules give an army the colour of its CO's country, which would make a Drake pick Green Earth
    like the enemy's Drake. A pick of **Silver Nova** (a skin: `army_skin::SKIN + i`) sits on the lowest AW2 colour no army has (`army_skin::assign`; Cinder Sea: Orange Star's) from the pick on
    (`gauntlet::player_skin`, read by `army_skin::sync`: the ROM's palettes must hold it before the map's graphics load, a palette the game has loaded keeps the colours it was loaded with). The
    skin only recolours: the designs (Infantry, Mech, HQ, battle figures) stay the CO's nation's (`army_skin::design_*`; Silver Nova's designs are for the Silver Nova COs).
@@ -118,5 +126,5 @@ come) is what the selector shows and what the player may not wear; `Entry::free`
 map that fixes other colours changes the offer with no other edit. The enemy armies need teams of their own (team 2: team 0 is "my own number" and 1 is the player's). A map with later stages lists their enemies too and keeps a plain colour out of the offer if any stage's enemy wears it ([gauntlet.md](gauntlet.md), "Colours and stages"); a five-army map has the player in army 5 (its pick is the CO screen's army-1 pick, army 1 a fixed enemy).
 
 ## Aids and tests
-`aw2dev gauntlet start [--co N]` boots the harness into the mode with a picture of each screen (wheel, map selector, CO pick, colour pick, Setup, first turn); `aw2dev gauntlet test` runs `-k gauntlet_mode`. The selector takes the pad only once the game's list is in (`Gauntlet.wait_select_map`: its fade-in and list take about a hundred frames; after UP/DOWN wait ~40 frames before A: the cursor's move blocks input). `selector_ids`, `entry_name`, `entry_cos`, `entry_tab` and `record_rows` read what the game's screen reads. `-k gauntlet_pictures_selector` takes the selector (the seven maps in their order) and the colour pick in the three looks (AW2 graphics, DS map graphics with the tilt, without it) into `selector_sheet.png` (`AW2TEST_SHEET` copies it).
+`aw2dev gauntlet start [--co N]` boots the harness into the mode with a picture of each screen (wheel, map selector, army screen with the CO changed, Setup, first turn); `aw2dev gauntlet test` runs `-k gauntlet_mode`. The selector takes the pad only once the game's list is in (`Gauntlet.wait_select_map`: its fade-in and list take about a hundred frames; after UP/DOWN wait ~40 frames before A: the cursor's move blocks input). `selector_ids`, `entry_name`, `entry_cos`, `entry_tab` and `record_rows` read what the game's screen reads. `-k gauntlet_pictures_selector` takes the selector (the seven maps in their order) and the army screen in the three looks (AW2 graphics, DS map graphics with the tilt, without it) into `selector_sheet.png` (`AW2TEST_SHEET` copies it).
 `aw2test/gauntlet.py` is the driver (`Gauntlet.start(co, colour=..)`, `open`, `pick_colour`, `shown` (what the step lists, from `gauntlet_ui::SHOWN`), `capture`, `win`, `lose`, `best`, `results`, `saved_record`); wins use the mission's own captures (Drake's HQ, Sensei's, Hawke's) and the game's rout.

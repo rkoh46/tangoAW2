@@ -625,6 +625,7 @@ pub fn draw(core: &Core, rgba: &mut [u8]) {
                 ready,
                 mine,
                 field,
+                tag: None,
             }
         })
         .collect();

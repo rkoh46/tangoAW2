@@ -68,8 +68,8 @@ LOOKS = (
 
 
 @test(modes=("ds",))
-def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
-    """The map selector (the War Room's own SELECT MAP: both maps) and the colour pick in AW2's graphics, the DS map graphics with the tilt and without it (the owner's standing rule: every
+def gauntlet_pictures_selector_and_army_screen_in_the_three_looks(ctx):
+    """The map selector (the War Room's own SELECT MAP: both maps) and the army screen in AW2's graphics, the DS map graphics with the tilt and without it (the owner's standing rule: every
     visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns the top of the list, the R box on a map with five records, the fourth row, the last row (Iron Crown, the list scrolled to its end: twelve maps), the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
     from PIL import Image
     rows = []
@@ -104,11 +104,9 @@ def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
             e.press("UP", 4)
             e.wait(40)
         e.press("A", 6)
-        d.wait_co_screen()
-        d.choose_cos(1, prefs=[ga.ANDY])
-        d.wait_step(ga.COLOURS)
+        d.wait_army()
         e.wait(20)
-        row.append(shot(ctx, e, f"{look}_colour_pick"))
+        row.append(shot(ctx, e, f"{look}_army_screen"))
         rows.append(row)
         e.close()
     ims = [[Image.open(p).convert("RGB") for p in r] for r in rows]

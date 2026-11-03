@@ -1,5 +1,5 @@
-"""Every CO of the Gauntlet's maps: the face as a dialogue box draws it next to the same CO on AW2's own CO screen (`-k gauntlet_faces_vs_copage`): the screen the Gauntlet's CO pick opens shows each CO with
-the colours the battle uses for it (`GetLoadedCoPalette`). Pictures in the test's folder (`AW2TEST_FACES` copies them where a person looks); tools/aw2test/compose_faces.py makes `faces_vs_copage.png` of them."""
+"""Every CO of the Gauntlet's maps: the face as a dialogue box draws it next to the same CO on the Gauntlet's army screen (`-k gauntlet_faces_vs_army_screen`): the card shows each CO with
+the colours the battle uses for it. Pictures in the test's folder (`AW2TEST_FACES` copies them where a person looks); tools/aw2test/compose_faces.py makes `faces_vs_army_screen.png` of them."""
 
 import os
 
@@ -32,7 +32,7 @@ def cos_of_maps():
 
 
 @test(modes=("ds",))
-def gauntlet_faces_vs_copage_boxes(ctx):
+def gauntlet_faces_vs_army_screen_boxes(ctx):
     """The box face of every CO of every new map (the departing CO's first box, the arriving CO's last)."""
     out = os.environ.get("AW2TEST_FACES") or ctx.out
     os.makedirs(out, exist_ok=True)
@@ -64,8 +64,8 @@ def gauntlet_faces_vs_copage_boxes(ctx):
 
 
 @test(modes=("ds",))
-def gauntlet_faces_vs_copage_screens(ctx):
-    """AW2's CO screen with the cursor on each CO the maps use."""
+def gauntlet_faces_vs_army_screen_screens(ctx):
+    """The Gauntlet's army screen with the cursor on each CO the maps use."""
     out = os.environ.get("AW2TEST_FACES") or ctx.out
     os.makedirs(out, exist_ok=True)
     e = Emu(save=paths.base_save(), ds=ctx.ds)
@@ -73,30 +73,9 @@ def gauntlet_faces_vs_copage_screens(ctx):
     ctx.games.append(g)
     d = ga.Gauntlet(g)
     d.open(True, map=0)
-    d.wait_co_screen()
+    d.wait_army()
     for co in cos_of_maps():
-        c = None
-        for _ in range(60):
-            c = d.co_cursor()
-            if c:
-                break
-            e.wait(10)
-        k = c["cos"].index(co)
-        tab = next(t for t in range(len(c["counts"])) if k < sum(c["counts"][:t + 1]))
-        at = k - sum(c["counts"][:tab])
-        for _ in range(12):
-            c = d.co_cursor()
-            if c["tab"] == tab:
-                break
-            e.press("DOWN" if c["tab"] < tab else "UP", 6)
-            e.wait(30)
-        for _ in range(30):
-            c = d.co_cursor()
-            if c["at"] == at:
-                break
-            e.press("RIGHT" if c["at"] < at else "LEFT", 6)
-            e.wait(30)
-        e.wait(60)
-        ctx.check(d.co_cursor()["co"] == co, f"the CO screen's cursor is on CO {co}")
+        ctx.eq(d.pick_co(co), co, f"the army screen's CO is {co}")
+        e.wait(20)
         os.replace(png(ctx, e, f"screen_{co}"), os.path.join(out, f"screen_{co}.png"))
     e.close()

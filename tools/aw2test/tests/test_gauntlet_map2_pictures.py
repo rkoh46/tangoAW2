@@ -124,8 +124,7 @@ def gauntlet_map2_pictures(ctx):
     ctx.games.append(g)
     d = ga.Gauntlet(g)
     d.open(map=ga.MAP2)
-    d.choose_cos(1, prefs=[ga.ANDY])
-    d.pick_colour(ga.EMERALD_SUN, free=[ga.EMERALD_SUN])
+    d.pick_army(ga.ANDY, ga.EMERALD_SUN)
     frames = []
     pic = None
     for _ in range(900):
