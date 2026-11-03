@@ -25,7 +25,7 @@ use crate::gauntlet_mode::{self as gm, Entry};
 use crate::online::{self, Rgb, Rgba, GRAY_INK, INK, SHADE, W, WHITE, YELLOW};
 
 pub const STATE: u32 = 0x0203_D080;
-pub const STATE_LEN: u32 = 0x40;
+pub const STATE_LEN: u32 = 0x60;
 /// 0 nothing up, 1 the map selector, 2 the colour pick.
 pub const STEP: u32 = STATE;
 /// How the last step ended: 1 A (on to the next), 0 B (back).
@@ -40,12 +40,14 @@ const COLOUR_CURSOR: u32 = STATE + 4;
 const BACK_TO_CO: u32 = STATE + 5;
 /// The play state's game mode as it was before the selector set the War Room's.
 const SAVED_MODE: u32 = STATE + 6;
-/// The last choice on each map (an army code, 0 none), 8 maps.
-const LAST: u32 = STATE + 8;
-const LAST_MAPS: usize = 8;
-/// The War Room record rows the record box reads: [`LAST_MAPS`] rows of [`ROW`] bytes, in Survival's block of zeroed rows (Survival and the Gauntlet are never open together).
-const ROWS: u32 = crate::survival::ROWS;
-const ROW: u32 = 0x14;
+/// The last choice on each map (an army code, 0 none), [`MAX_MAPS`] maps, by mission.
+const LAST: u32 = STATE + 0x40;
+/// The most maps the Gauntlet can list: the campaign engine's mission limit ([`crate::campaign_model::MAX_MISSIONS`]: the record words by mission, the cropped pictures in free ROM) and the
+/// map-table ids a list can walk ([`SLOT_IDS`]: 51) both allow 32. A new map beyond that needs both raised (docs/dev/gauntlet-mode.md, "Adding a map").
+pub const MAX_MAPS: usize = 32;
+/// The War Room record rows the record box reads ([`crate::gauntlet::ROWS`]: the Gauntlet's own record block, not Survival's).
+const ROWS: u32 = crate::gauntlet::ROWS;
+const ROW: u32 = crate::gauntlet::ROW;
 
 /// What the step shows (for the tests, which cannot read the picture's words): +0 the maps listed, +1 how many enemies the highlighted map has, +2.. their (CO, colour) in the order they
 /// come (6 at most), +0x0E how many colours are free to wear on the map picked, +0x0F.. those army codes (8 at most).
@@ -63,8 +65,45 @@ const WAR_ROOM_TAB: u32 = 0x0809_0EF2;
 /// SELECT MAP's list: the first row shown, the cursor's row (words), the ids ([`crate::five_map::LIST_IDS`]).
 const LIST_FIRST: u32 = 0x0300_5900;
 const LIST_CURSOR: u32 = 0x0300_5930;
-/// The first map-table id of ours (one per mission, [`LAST_MAPS`] at most, up to 0xFD: the table walk's last id with the pack).
-pub const FIRST_ID: u8 = 0xF6;
+/// The map-table ids a Gauntlet list may use, ascending (the game lists the table in id order, so the list's order is the ids' order): the free ones past the campaigns' (0xF2..=0xFD: the table walk's
+/// last id with the pack is 0xFD, 0xFE is `ds_versus::BATTLE_ID`) and, below them, Survival's entries (0xC9..=0xEF). Survival's entries are borrowed only by a list of more than twelve maps, and given back
+/// whole when the selector closes ([`crate::survival::restore_entry`]): Survival and the Gauntlet are never open together. A list of n maps takes the **last** n of them, so the first twelve maps use
+/// the free ids and touch nothing of Survival's. An id is a slot in the list, not a map's identity (that is its record key `gauntlet_NN`, [`crate::gauntlet::record_id`]).
+pub const SLOT_IDS: [u8; 51] = {
+    let mut v = [0u8; 51];
+    let mut i = 0;
+    while i < 39 {
+        v[i] = 0xC9 + i as u8;
+        i += 1;
+    }
+    while i < 51 {
+        v[i] = 0xF2 + (i - 39) as u8;
+        i += 1;
+    }
+    v
+};
+/// The lowest id a full list ([`MAX_MAPS`]) uses: where the record rows start.
+pub const ROW_BASE: u8 = SLOT_IDS[SLOT_IDS.len() - MAX_MAPS];
+
+/// The ids of a list of `n` maps, ascending (the last `n` of [`SLOT_IDS`]).
+pub fn ids_for(n: usize) -> &'static [u8] {
+    &SLOT_IDS[SLOT_IDS.len() - n.min(MAX_MAPS)..]
+}
+
+/// How many maps the list's ids are laid out for: the number of maps, or (`TANGOAW2_GAUNTLET_SLOTS`, a test aid: the harness borrows Survival's ids with the maps there are) more. The ids of the
+/// first n of the last `span` are used.
+fn span() -> usize {
+    static S: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *S.get_or_init(|| {
+        let n = gm::entries().len().min(MAX_MAPS);
+        std::env::var("TANGOAW2_GAUNTLET_SLOTS").ok().and_then(|v| v.parse::<usize>().ok()).map_or(n, |v| v.clamp(n, MAX_MAPS))
+    })
+}
+
+/// The first map-table id the list uses now.
+pub fn first_id() -> u8 {
+    ids_for(span())[0]
+}
 
 pub const SELECT: u8 = 1;
 pub const COLOUR: u8 = 2;
@@ -108,13 +147,13 @@ pub fn begin_select(core: &mut Core) {
 /// The map-table id of the Gauntlet's mission `m` (one entry each, past the Versus maps' and Survival's): the list shows the ids in order, so a map's id is the first plus its place in the
 /// selector's order ([`gm::order`]: by the number of enemy COs); the mission stays the map's identity everywhere else.
 pub fn id_of(mission: usize) -> u8 {
-    FIRST_ID + gm::rank_of(mission).min(LAST_MAPS - 1) as u8
+    ids_for(span())[gm::rank_of(mission).min(gm::entries().len().min(MAX_MAPS) - 1)]
 }
 
 /// The mission of a map-table id of ours.
 fn mission_of(id: u8) -> Option<usize> {
-    let rank = id.checked_sub(FIRST_ID)? as usize;
-    (rank < gm::entries().len().min(LAST_MAPS)).then(|| gm::order()[rank])
+    let rank = ids_for(span()).iter().position(|&i| i == id)?;
+    (rank < gm::entries().len().min(MAX_MAPS)).then(|| gm::order()[rank])
 }
 
 /// Each frame the selector is up: what the game's list builder and SELECT MAP read is as the Gauntlet wants it. The game mode is the War Room's (the builder lists a tab only for Versus' and the
@@ -124,7 +163,7 @@ fn frame(core: &mut Core) {
     set8(core, WAR_ROOM_TAB, crate::survival::TAB as u8);
     entries_in_table(core, true);
     rows(core);
-    let rows = ROWS.wrapping_sub(ROW * (FIRST_ID as u32 - 0x6C));
+    let rows = ROWS.wrapping_sub(ROW * (ROW_BASE as u32 - 0x6C));
     for at in crate::survival::RECORD_POOLS.into_iter().chain([crate::ds_versus::INSERT_POOL]) {
         if core.raw_read_32(at, -1) != rows {
             core.raw_write_32(at, -1, rows);
@@ -180,7 +219,13 @@ fn preview_blob(e: &Entry) -> Option<&'static Vec<u8>> {
 /// The Gauntlet's map entries in the map table: each mission's compiled header with the tab the list shows ([`TAB`] while the selector is up, a tab no list shows otherwise).
 fn entries_in_table(core: &mut Core, shown: bool) {
     let Some(table) = crate::ds_campaign::selector_table(core) else { return };
-    for e in gm::entries().iter().take(LAST_MAPS) {
+    for e in gm::entries().iter().take(MAX_MAPS) {
+        let id = id_of(e.mission);
+        if !shown && id <= 0xEF {
+            // (a borrowed Survival entry goes back whole)
+            crate::survival::restore_entry(core, id);
+            continue;
+        }
         let Some(mut h) = crate::ds_campaign::mission_header(core, e.mission) else { continue };
         let tab = if shown { crate::survival::TAB } else { crate::five_map::HIDDEN_TAB };
         h[0x1A..0x1C].copy_from_slice(&tab.to_le_bytes());
@@ -199,7 +244,7 @@ fn entries_in_table(core: &mut Core, shown: bool) {
             }
             h[0x2C..0x30].copy_from_slice(&rom.to_le_bytes());
         }
-        let at = table + crate::five_map::ENTRY * id_of(e.mission) as u32;
+        let at = table + crate::five_map::ENTRY * id as u32;
         let mut now = [0u8; 0x5C];
         core.raw_read_range(at, -1, &mut now);
         if now != h {
@@ -210,11 +255,11 @@ fn entries_in_table(core: &mut Core, shown: bool) {
 
 /// The War Room's record rows for our maps (five records of four bytes, in the layout the Gauntlet's own record has: AW2's `CO | days << 8 | score << 20`), the first the Gauntlet's best on the map.
 fn rows(core: &mut Core) {
-    let mut b = vec![0u8; (ROW as usize) * LAST_MAPS];
-    for e in gm::entries().iter().take(LAST_MAPS) {
+    let mut b = vec![0u8; crate::gauntlet::ROWS_LEN as usize];
+    for e in gm::entries().iter().take(MAX_MAPS) {
         // (the map's five results as the War Room keeps them: best first, one word each)
         // (the game reads the row of the map-table id it lists the map by: the map's place in the selector's order, not its mission; the results themselves are the map's record id's)
-        let at = ROW as usize * gm::rank_of(e.mission);
+        let at = ROW as usize * (id_of(e.mission) - ROW_BASE) as usize;
         for (k, w) in crate::gauntlet::results_of(core, e.mission).iter().enumerate() {
             b[at + 4 * k..at + 4 * k + 4].copy_from_slice(&w.to_le_bytes());
         }
@@ -305,7 +350,7 @@ pub fn cursors(core: &Core) -> (u8, u8) {
 }
 
 fn last_choice(core: &Core, mission: usize) -> u8 {
-    if mission < LAST_MAPS {
+    if mission < MAX_MAPS {
         core.raw_read_8(LAST + mission as u32, -1)
     } else {
         0
@@ -352,7 +397,7 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
                 let code = free[c as usize];
                 crate::ds_campaign::set_gauntlet_choice(core, code);
                 let mission = picked(core).map_or(0, |e| e.mission);
-                if mission < LAST_MAPS {
+                if mission < MAX_MAPS {
                     core.raw_write_8(LAST + mission as u32, -1, code);
                 }
                 core.raw_write_8(ANSWER, -1, 1);
@@ -506,4 +551,67 @@ pub fn paint_colour_pick(core: &Core, rgba: &mut [u8], e: &Entry, cursor: usize,
     let mut cv = Rgba(rgba);
     cv.rect(0, 0, W as i32, online::H as i32, SEA);
     colour_pick(&mut cv, core, e, cursor, co);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The list at its maximum: 32 maps get 32 ascending ids that avoid the campaigns' and the battle's (0xF0, 0xF1, 0xFE), the record rows cover every id, a map's identity (its record key) never moves when
+    /// maps are added, and 32 maps' records keep their own top fives. The first twelve maps never touch Survival's entries.
+    #[test]
+    fn a_full_list_has_ids_rows_records_and_order_that_work() {
+        for n in 1..=MAX_MAPS {
+            let ids = ids_for(n);
+            assert_eq!(ids.len(), n);
+            assert!(ids.windows(2).all(|w| w[0] < w[1]), "ascending: the game lists the table in id order");
+            assert_eq!(*ids.last().unwrap(), 0xFD, "the table walk's last id");
+            assert!(ids.iter().all(|&i| i != 0xF0 && i != 0xF1 && i != 0xFE && i >= ROW_BASE));
+            if n <= 12 {
+                assert!(ids.iter().all(|&i| i >= 0xF2), "up to twelve maps use only the free ids: Survival's entries are untouched ({n})");
+            }
+        }
+        assert_eq!(SLOT_IDS.len(), 51);
+        assert!(SLOT_IDS.windows(2).all(|w| w[0] < w[1]));
+        assert!(MAX_MAPS <= SLOT_IDS.len() && MAX_MAPS <= crate::campaign_model::MAX_MISSIONS, "the limit is the campaign's missions and the ids");
+        assert_eq!(MAX_MAPS * 0x800, 0x10000, "the cropped pictures of 32 maps fit before Survival's strings (0x08E20000..0x08E30000)");
+        // rows: every id of a full list has a row inside the Gauntlet's block, and the table follows the rows
+        assert!(ids_for(MAX_MAPS).iter().all(|&i| ((i - ROW_BASE) as u32) < crate::gauntlet::ROW_COUNT));
+        assert_eq!(crate::gauntlet::TABLE, crate::gauntlet::ROWS + crate::gauntlet::ROWS_LEN);
+        assert!(crate::gauntlet::BLOCK + crate::gauntlet::BLOCK_LEN <= 0x0203_F100, "the block ends before the Rules screen's tiles");
+        // order: thirty-two maps with enemy counts 2..5 in any definition order list fewest first, ties by definition
+        let counts: Vec<usize> = (0..MAX_MAPS).map(|m| 2 + (m * 7 + m / 3) % 4).collect();
+        let order = gm::order_of(&counts);
+        assert!(order.windows(2).all(|w| counts[w[0]] < counts[w[1]] || (counts[w[0]] == counts[w[1]] && w[0] < w[1])));
+        let mut sorted = order.clone();
+        sorted.sort();
+        assert_eq!(sorted, (0..MAX_MAPS).collect::<Vec<_>>());
+        // records: 32 maps each keep their own five results by their record key, whatever the list's order
+        let mut t = vec![0u8; crate::gauntlet::TABLE_LEN];
+        for round in 0..5u32 {
+            for k in 1..=MAX_MAPS as u8 {
+                assert!(crate::gauntlet::insert(&mut t, k, k, 10 + round, 100 * k as u32 + round).is_some(), "map {k} round {round}");
+            }
+        }
+        for k in 1..=MAX_MAPS as u8 {
+            let w = crate::gauntlet::tops(&t, k);
+            assert!(w.iter().all(|&x| x as u8 == k), "map {k}'s five are its own");
+            assert_eq!(w.map(|x| x >> 20), [100 * k as u32 + 4, 100 * k as u32 + 3, 100 * k as u32 + 2, 100 * k as u32 + 1, 100 * k as u32]);
+        }
+        // keys: gauntlet_01..gauntlet_32 have record ids 1..32, so a map added later never moves another's
+        for n in 1..=MAX_MAPS {
+            assert_eq!(crate::gauntlet::record_id(&format!("gauntlet_{n:02}")), Some(n as u8));
+        }
+    }
+
+    #[test]
+    fn todays_maps_are_listed_with_ascending_ids_in_their_order() {
+        assert!(gm::entries().len() <= MAX_MAPS);
+        let ids: Vec<u8> = gm::order().iter().map(|&m| id_of(m)).collect();
+        assert!(ids.windows(2).all(|w| w[0] < w[1]));
+        for &m in gm::order() {
+            assert_eq!(mission_of(id_of(m)), Some(m));
+        }
+        assert_eq!(first_id(), ids[0]);
+    }
 }

@@ -205,13 +205,23 @@ pub const VERSION: u8 = 2;
 pub const P_VERSION: u32 = crate::ds_campaign::PROGRESS + 5;
 /// The results kept per map (the War Room's five records of a map).
 pub const TOP: usize = 5;
-/// The table: [`SLOTS`] slots of [`SLOT_LEN`] bytes (+0 the map's id, 0 a free slot; +4.. its five results, best first, one AW2 word each: CO | days << 8 | score << 20), room for 16 maps.
-/// In RAM it is the end of Survival's block of zeroed rows ([`crate::survival::ROWS`], free while Survival is closed; the selector's record rows are its first 16 rows); in Flash it follows the
-/// progress record's 0x20 bytes.
-pub const SLOTS: usize = 16;
+/// The table: [`SLOTS`] slots of [`SLOT_LEN`] bytes (+0 the map's id, 0 a free slot; +4.. its five results, best first, one AW2 word each: CO | days << 8 | score << 20), room for
+/// [`crate::gauntlet_ui::MAX_MAPS`] (32) maps; in Flash it follows the progress record's 0x20 bytes (a record saved with 16 slots is a prefix of it: the slots after it read as free).
+/// In RAM the Gauntlet's record block ([`BLOCK`]) holds the selector's record rows, then the table.
+pub const SLOTS: usize = 32;
 pub const SLOT_LEN: usize = 0x18;
 pub const TABLE_LEN: usize = SLOTS * SLOT_LEN;
-pub const TABLE: u32 = crate::survival::ROWS + crate::survival::ROWS_LEN - TABLE_LEN as u32;
+/// The Gauntlet's record block in EWRAM (`ram_map`): the War Room record rows the map selector's record box reads, one row of [`ROW`] bytes for each map-table id from
+/// [`crate::gauntlet_ui::ROW_BASE`] to 0xFD, then the table. The bytes are time-shared with the Teams screen's borrowed tiles (a Versus screen the Gauntlet never shows), the two-front store
+/// (no Gauntlet map has a second front) and the War Room's rows on Dual Strike's maps ([`crate::ds_versus::ROWS`]: kept only while that table is in use, and the Gauntlet runs on Survival's).
+pub const BLOCK: u32 = 0x0203_E800;
+pub const ROW: u32 = 0x14;
+/// The map-table ids the record rows cover (0xFD, the table walk's last id, down to the lowest id the list can use).
+pub const ROW_COUNT: u32 = 0xFD - crate::gauntlet_ui::ROW_BASE as u32 + 1;
+pub const ROWS: u32 = BLOCK;
+pub const ROWS_LEN: u32 = ROW * ROW_COUNT;
+pub const TABLE: u32 = BLOCK + ROWS_LEN;
+pub const BLOCK_LEN: u32 = ROWS_LEN + TABLE_LEN as u32;
 /// The Gauntlet's region of slot 13: the progress record, then the table.
 pub const RECORD_LEN: usize = 0x20 + TABLE_LEN;
 /// The maps 0.9.4 listed, by the position its records were kept at.
@@ -389,14 +399,15 @@ mod tests {
     }
 
     #[test]
-    fn the_layout_fits_slot_13_and_leaves_room_for_sixteen_maps() {
-        assert!(SLOTS >= 16);
-        assert_eq!(RECORD_LEN, 0x20 + 16 * 0x18);
+    fn the_layout_fits_slot_13_and_leaves_room_for_thirty_two_maps() {
+        assert!(SLOTS >= 32);
+        assert_eq!(RECORD_LEN, 0x20 + 32 * 0x18);
         assert!(SAVE_OFFSET as usize + RECORD_LEN <= 0xFAE, "the sector's payload");
-        assert!(crate::survival::ROWS + (SLOTS_ROWS as u32) * 0x14 <= TABLE, "the selector's rows and the table do not overlap");
-        assert!(TABLE + TABLE_LEN as u32 <= crate::survival::ROWS + crate::survival::ROWS_LEN);
+        assert!(ROWS + ROWS_LEN <= TABLE, "the selector's rows and the table do not overlap");
+        assert!(TABLE + TABLE_LEN as u32 <= BLOCK + BLOCK_LEN);
+        // a record saved with 16 slots (the first top-five build) is a prefix of today's: its table loads whole and the new slots are free
+        assert_eq!(0x20 + 16 * SLOT_LEN, 0x1A0);
     }
-    const SLOTS_ROWS: usize = 16;
 
     #[test]
     fn results_sort_as_the_war_room_sorts_them() {
@@ -430,13 +441,13 @@ mod tests {
         assert_eq!(tops(&t, 1), [w(2, 11, 400), 0, 0, 0, 0]);
         assert_eq!(tops(&t, 2), [w(3, 12, 600), w(1, 10, 300), 0, 0, 0]);
         assert_eq!(tops(&t, 3), [0; 5]);
-        // sixteen maps fit, a seventeenth does not
+        // thirty-two maps fit, a thirty-third does not
         let mut t = vec![0u8; TABLE_LEN];
-        for id in 1..=16u8 {
+        for id in 1..=32u8 {
             assert!(insert(&mut t, id, 1, 5, 100).is_some());
         }
-        assert_eq!(insert(&mut t, 17, 1, 5, 100), None);
-        assert!(insert(&mut t, 16, 1, 5, 200).is_some(), "a map that has a slot still takes results");
+        assert_eq!(insert(&mut t, 33, 1, 5, 100), None);
+        assert!(insert(&mut t, 32, 1, 5, 200).is_some(), "a map that has a slot still takes results");
     }
 
     #[test]

@@ -509,6 +509,24 @@ fn list(core: &mut Core) {
     }
 }
 
+/// A map-table entry of ours as the build wrote it (the Gauntlet's map selector borrowed it for a list of more than twelve maps: [`crate::gauntlet_ui::SLOT_IDS`]): the whole header again. An id of no
+/// entry of Survival's, or Survival's data missing, is hidden instead.
+pub(crate) fn restore_entry(core: &mut Core, id: u8) {
+    let at = TABLE + 0x5C * id as u32;
+    let mut done = false;
+    if installed(core) {
+        if let Some(built) = BUILT.get().and_then(|b| b.as_ref()) {
+            for (a, b) in built.writes.iter().filter(|w| w.0 == at) {
+                core.raw_write_range(*a, -1, b);
+                done = true;
+            }
+        }
+    }
+    if !done {
+        set16(core, at + 0x1A, crate::five_map::HIDDEN_TAB);
+    }
+}
+
 /// Every frame with the pack on: Survival's state, the War Room switches,
 /// the battle's budget. Returns the keys the game sees.
 pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
@@ -563,7 +581,10 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             core.raw_write_32(at, -1, rows);
         }
     }
-    list(core);
+    // (the Gauntlet's map selector borrows some of these map-table entries while it is up: crate::gauntlet_ui::SLOT_IDS)
+    if !crate::gauntlet_ui::selecting(core) {
+        list(core);
+    }
     // SELECT MAP in Dual Strike's look (crate::survival_ui).
     keys = if on {
         crate::survival_ui::tick(core, keys, prev)

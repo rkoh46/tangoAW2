@@ -947,6 +947,516 @@ fn tabitha_arrives() -> Scene {
     ])
 }
 
+// --- Gauntlet 08, Tidewater Atoll ---------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_08.py): the player's, Eagle's (on the field), Adder's (hidden).
+pub const TIDE_PLAYER: (u8, u8) = (3, 14);
+pub const TIDE_EAGLE: (u8, u8) = (25, 4);
+pub const TIDE_ADDER: (u8, u8) = (25, 15);
+
+/// Adder's wave: a battleship, two cruisers, a Sub and a Black Boat off his island, bombers, a Fighter and a Copter overhead, troops and armour on it.
+const ADDER_WAVE: [(u8, (u8, u8)); 18] = [
+    (unit::BATTLESHIP, (19, 16)),
+    (unit::CRUISER, (19, 13)),
+    (unit::CRUISER, (29, 13)),
+    (unit::SUB, (19, 18)),
+    (unit::BLACK_BOAT, (29, 16)),
+    (unit::BOMBER, (23, 13)),
+    (unit::BOMBER, (22, 17)),
+    (unit::FIGHTER, (26, 11)),
+    (unit::INFANTRY, (21, 16)),
+    (unit::INFANTRY, (26, 15)),
+    (unit::INFANTRY, (21, 17)),
+    (unit::MECH, (27, 17)),
+    (unit::MECH, (24, 16)),
+    (unit::TANK, (23, 15)),
+    (unit::TANK, (25, 12)),
+    (unit::ARTILLERY, (24, 11)),
+    (unit::ANTI_AIR, (28, 15)),
+    (unit::B_COPTER, (25, 16)),
+];
+
+/// Tidewater Atoll: the player (a free CO) against Eagle (Green Earth) on the north-east island, then Adder (Black Hole) on the south-east island.
+fn tidewater_atoll() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_08", "Tidewater Atoll");
+    m.objective = "Take Eagle's island, then Adder's harbour.";
+    m.map = MapSrc::Built("gauntlet_08");
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(12000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::EAGLE)).team(2).funds(8000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::ADDER)).team(2).funds(0),
+    ];
+    m.units = crate::es_campaign::deployment("gauntlet_08");
+    m.rank_days = 24;
+    let lines = [
+        Wire { army: 2, hq: TIDE_EAGLE, zone: Rect::new(19, 0, 29, 9) },
+        Wire { army: 3, hq: TIDE_ADDER, zone: Rect::new(18, 10, 29, 19) },
+    ];
+    wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &ADDER_WAVE, adder_arrives())]);
+    m.intro = Scene::new(vec![
+        Line::say(co::EAGLE, "Welcome to the atoll! The wind and the sky are on my side."),
+        Line::say(co::EAGLE, "Land on my beach if you can. My fighters will be waiting."),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::ADDER, "The atoll is yours. Fine flying. I will remember the face.")]);
+    m
+}
+
+fn adder_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::EAGLE, Mood::Sad, "My island has fallen? Adder, take the harbour. Hold the line!"),
+        Line::say(co::ADDER, "With pleasure. The harbour is mine, and the sea is wide."),
+        Line::say(co::ADDER, "You will find the water here colder than you expected."),
+    ])
+}
+
+// --- Gauntlet 09, Silverpine Ford ---------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_09.py): the player's, Hachi's (on the field), Sonja's (hidden).
+pub const SILVER_PLAYER: (u8, u8) = (3, 18);
+pub const SILVER_HACHI: (u8, u8) = (26, 10);
+pub const SILVER_SONJA: (u8, u8) = (6, 4);
+
+/// Sonja's wave: recons and artillery in the north-west woods, foot soldiers and a Copter.
+const SONJA_WAVE: [(u8, (u8, u8)); 19] = [
+    (unit::INFANTRY, (6, 6)),
+    (unit::INFANTRY, (7, 1)),
+    (unit::INFANTRY, (7, 6)),
+    (unit::INFANTRY, (2, 3)),
+    (unit::INFANTRY, (11, 6)),
+    (unit::MECH, (13, 2)),
+    (unit::MECH, (13, 7)),
+    (unit::RECON, (11, 4)),
+    (unit::RECON, (6, 4)),
+    (unit::RECON, (11, 7)),
+    (unit::TANK, (4, 7)),
+    (unit::TANK, (6, 5)),
+    (unit::MD_TANK, (12, 1)),
+    (unit::ARTILLERY, (8, 6)),
+    (unit::ARTILLERY, (11, 3)),
+    (unit::ARTILLERY, (13, 3)),
+    (unit::ROCKETS, (2, 6)),
+    (unit::ANTI_AIR, (8, 5)),
+    (unit::B_COPTER, (12, 5)),
+];
+
+/// Silverpine Ford: the player (a free CO) against Hachi (Green Earth) in the eastern pines, then Sonja (Blue Moon) in the north-west woods.
+fn silverpine_ford() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_09", "Silverpine Ford");
+    m.objective = "Cross the Silver Pool's river and take Hachi's pines, then Sonja's woods.";
+    m.map = MapSrc::Built("gauntlet_09");
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(12000),
+        ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::HACHI)).team(2).funds(8000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SONJA)).team(2).funds(0),
+    ];
+    m.units = crate::es_campaign::deployment("gauntlet_09");
+    m.rank_days = 24;
+    let lines = [
+        Wire { army: 2, hq: SILVER_HACHI, zone: Rect::new(17, 0, 31, 21) },
+        Wire { army: 3, hq: SILVER_SONJA, zone: Rect::new(0, 0, 14, 8) },
+    ];
+    wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &SONJA_WAVE, sonja_arrives())]);
+    m.intro = Scene::new(vec![
+        Line::say(co::HACHI, "Welcome to Silverpine! Fresh air, good soup, and a river to cross."),
+        Line::say(co::HACHI, "Cross at the fords if you like. I keep a table by every one."),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::SONJA, "The ford is yours. I read the river wrong, and you read it right.")]);
+    m
+}
+
+fn sonja_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::HACHI, Mood::Sad, "My soup pot, my pines! Sonja, the woods are yours!"),
+        Line::say(co::SONJA, "Thank you, Hachi. I have been watching from the trees."),
+        Line::say(co::SONJA, "Every path in these woods has a lookout. Come and find them."),
+    ])
+}
+
+// --- Gauntlet 10, Neon Row ----------------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_10.py): the player's, Colin's (on the field), Kindle's and Jugger's (hidden).
+pub const NEON_PLAYER: (u8, u8) = (4, 16);
+pub const NEON_COLIN: (u8, u8) = (22, 9);
+pub const NEON_KINDLE: (u8, u8) = (4, 3);
+pub const NEON_JUGGER: (u8, u8) = (28, 3);
+
+/// Kindle's wave: infantry swarming the north-west blocks, tanks, missiles and copters over the roofs.
+const KINDLE_WAVE: [(u8, (u8, u8)); 19] = [
+    (unit::INFANTRY, (4, 4)),
+    (unit::INFANTRY, (3, 1)),
+    (unit::INFANTRY, (9, 3)),
+    (unit::INFANTRY, (1, 4)),
+    (unit::INFANTRY, (14, 5)),
+    (unit::INFANTRY, (3, 2)),
+    (unit::MECH, (14, 4)),
+    (unit::MECH, (7, 5)),
+    (unit::TANK, (12, 5)),
+    (unit::TANK, (9, 6)),
+    (unit::TANK, (4, 2)),
+    (unit::MD_TANK, (6, 0)),
+    (unit::MD_TANK, (1, 2)),
+    (unit::MISSILES, (3, 4)),
+    (unit::ARTILLERY, (12, 2)),
+    (unit::ARTILLERY, (11, 6)),
+    (unit::ANTI_AIR, (10, 2)),
+    (unit::B_COPTER, (2, 0)),
+    (unit::B_COPTER, (14, 1)),
+];
+
+/// Jugger's wave: tanks and a Mega Tank in the north-east blocks, rockets and artillery behind them.
+const JUGGER_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::TANK, (29, 2)),
+    (unit::TANK, (17, 2)),
+    (unit::TANK, (26, 2)),
+    (unit::MD_TANK, (27, 2)),
+    (unit::MD_TANK, (21, 5)),
+    (unit::MD_TANK, (20, 2)),
+    (unit::MEGATANK, (27, 3)),
+    (unit::ARTILLERY, (21, 4)),
+    (unit::ARTILLERY, (25, 5)),
+    (unit::ROCKETS, (21, 6)),
+    (unit::ROCKETS, (22, 1)),
+    (unit::INFANTRY, (18, 0)),
+    (unit::INFANTRY, (27, 0)),
+    (unit::INFANTRY, (31, 4)),
+    (unit::INFANTRY, (19, 3)),
+    (unit::MECH, (24, 6)),
+    (unit::MECH, (25, 2)),
+    (unit::ANTI_AIR, (20, 0)),
+    (unit::RECON, (21, 2)),
+    (unit::B_COPTER, (22, 5)),
+];
+
+/// Neon Row: the player (a free CO) against Colin (Blue Moon) in the east-centre blocks, then Kindle (Black Hole) in the north-west blocks, then Jugger (Black Hole) in the north-east blocks.
+fn neon_row() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_10", "Neon Row");
+    m.objective = "Take the downtown block by block: Colin's, then Kindle's and Jugger's.";
+    m.map = MapSrc::Built("gauntlet_10");
+    m.armies = vec![
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Pick).funds(12000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(2).funds(10000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::KINDLE)).team(2).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::JUGGER)).team(2).funds(0),
+    ];
+    m.units = crate::es_campaign::deployment("gauntlet_10");
+    m.rank_days = 26;
+    let lines = [
+        Wire { army: 2, hq: NEON_COLIN, zone: Rect::new(16, 8, 31, 14) },
+        Wire { army: 3, hq: NEON_KINDLE, zone: Rect::new(0, 0, 14, 7) },
+        Wire { army: 4, hq: NEON_JUGGER, zone: Rect::new(16, 0, 31, 7) },
+    ];
+    wire(
+        &mut m,
+        &lines,
+        vec![
+            arrival(&lines, 1, chest::<3, 15000, 1000>, &KINDLE_WAVE, kindle_arrives()),
+            arrival(&lines, 2, chest::<4, 20000, 1500>, &JUGGER_WAVE, jugger_arrives()),
+        ],
+    );
+    m.intro = Scene::new(vec![
+        Line::say(co::COLIN, "Welcome to Neon Row! Every sign on this street is mine."),
+        Line::say(co::COLIN, "Money talks here, friend. And it never stops talking."),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::JUGGER, "Heh. You took the whole street. Not bad for a nobody.")]);
+    m
+}
+
+fn kindle_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::COLIN, Mood::Sad, "My shops! My signs! Somebody take this street off my hands!"),
+        Line::say(co::KINDLE, "Oh, I will. Let me show you how a real city fights, honey."),
+        Line::say(co::KINDLE, "Every block you take, I take two back. Come on in."),
+    ])
+}
+
+fn jugger_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::KINDLE, Mood::Sad, "Ugh, my streets! You are no fun at all. Jugger, you're up."),
+        Line::say(co::JUGGER, "Finally. My turn to bust something up."),
+        Line::say(co::JUGGER, "The rest of this street gets flattened. Hope you like rubble."),
+    ])
+}
+
+// --- Gauntlet 11, Blue Bastion: all of Blue Moon -----------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_11.py): Olaf's (on the field), Grit's, Colin's and Sasha's (hidden), the player's (army 5).
+pub const BASTION_OLAF: (u8, u8) = (19, 18);
+pub const BASTION_GRIT: (u8, u8) = (19, 7);
+pub const BASTION_COLIN: (u8, u8) = (27, 7);
+pub const BASTION_SASHA: (u8, u8) = (27, 18);
+pub const BASTION_PLAYER: (u8, u8) = (3, 20);
+
+/// Grit's wave: artillery and rockets in the north-west ward, Md Tanks and foot soldiers.
+const GRIT_WAVE: [(u8, (u8, u8)); 17] = [
+    (unit::ARTILLERY, (20, 7)),
+    (unit::ARTILLERY, (16, 9)),
+    (unit::ARTILLERY, (19, 7)),
+    (unit::ARTILLERY, (18, 7)),
+    (unit::ROCKETS, (19, 3)),
+    (unit::ROCKETS, (19, 8)),
+    (unit::MD_TANK, (21, 7)),
+    (unit::MD_TANK, (15, 7)),
+    (unit::INFANTRY, (18, 4)),
+    (unit::INFANTRY, (17, 9)),
+    (unit::INFANTRY, (19, 5)),
+    (unit::INFANTRY, (20, 4)),
+    (unit::MECH, (15, 5)),
+    (unit::MECH, (18, 11)),
+    (unit::MECH, (17, 7)),
+    (unit::ANTI_AIR, (19, 11)),
+    (unit::RECON, (16, 11)),
+];
+
+/// Colin's wave: cheap tanks and a crowd of infantry in the north-east ward, copters.
+const COLIN_WAVE: [(u8, (u8, u8)); 19] = [
+    (unit::TANK, (26, 7)),
+    (unit::TANK, (30, 8)),
+    (unit::TANK, (25, 7)),
+    (unit::TANK, (24, 7)),
+    (unit::INFANTRY, (29, 3)),
+    (unit::INFANTRY, (31, 7)),
+    (unit::INFANTRY, (24, 8)),
+    (unit::INFANTRY, (29, 5)),
+    (unit::INFANTRY, (29, 4)),
+    (unit::INFANTRY, (24, 9)),
+    (unit::MECH, (25, 6)),
+    (unit::MECH, (30, 4)),
+    (unit::MD_TANK, (27, 5)),
+    (unit::MD_TANK, (30, 11)),
+    (unit::APC, (27, 7)),
+    (unit::ANTI_AIR, (31, 10)),
+    (unit::B_COPTER, (31, 11)),
+    (unit::B_COPTER, (29, 10)),
+    (unit::ROCKETS, (30, 7)),
+];
+
+/// Sasha's wave: Md Tanks, a Mega Tank and artillery in the south-east ward, a Fighter and a Bomber.
+const SASHA_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::MD_TANK, (27, 18)),
+    (unit::MD_TANK, (26, 20)),
+    (unit::MD_TANK, (26, 18)),
+    (unit::MEGATANK, (25, 18)),
+    (unit::TANK, (31, 14)),
+    (unit::TANK, (27, 19)),
+    (unit::TANK, (31, 18)),
+    (unit::INFANTRY, (26, 17)),
+    (unit::INFANTRY, (25, 16)),
+    (unit::INFANTRY, (24, 21)),
+    (unit::INFANTRY, (24, 18)),
+    (unit::MECH, (29, 16)),
+    (unit::MECH, (31, 16)),
+    (unit::ARTILLERY, (30, 22)),
+    (unit::ARTILLERY, (30, 17)),
+    (unit::ARTILLERY, (26, 22)),
+    (unit::FIGHTER, (31, 22)),
+    (unit::BOMBER, (29, 21)),
+    (unit::ANTI_AIR, (28, 17)),
+    (unit::ANTI_AIR, (27, 16)),
+];
+
+/// Blue Bastion: all of Blue Moon in one fortress, the lines one after another (the same colour on four army slots, as Harvest Run's Orange Star).
+fn blue_bastion() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_11", "Blue Bastion");
+    m.objective = "Storm the fortress ward by ward: Olaf, then Grit, Colin and Sasha.";
+    m.map = MapSrc::Built("gauntlet_11");
+    m.armies = vec![
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(9000),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::GRIT)).team(1).funds(0),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::COLIN)).team(1).funds(0),
+        ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SASHA)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
+    ];
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_11"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.rank_days = 40;
+    let lines = [
+        Wire { army: 1, hq: BASTION_OLAF, zone: Rect::new(15, 14, 21, 22) },
+        Wire { army: 2, hq: BASTION_GRIT, zone: Rect::new(15, 3, 21, 11) },
+        Wire { army: 3, hq: BASTION_COLIN, zone: Rect::new(24, 3, 31, 11) },
+        Wire { army: 4, hq: BASTION_SASHA, zone: Rect::new(24, 14, 31, 22) },
+    ];
+    wire(
+        &mut m,
+        &lines,
+        vec![
+            arrival(&lines, 1, chest::<2, 15000, 1000>, &GRIT_WAVE, grit_arrives()),
+            arrival(&lines, 2, chest::<3, 20000, 1500>, &COLIN_WAVE, colin_arrives()),
+            arrival(&lines, 3, chest::<4, 25000, 2000>, &SASHA_WAVE, sasha_arrives()),
+        ],
+    );
+    m.intro = Scene::new(vec![
+        Line::say(co::OLAF, "Welcome to the Bastion! All of Blue Moon stands behind this wall."),
+        Line::say(co::OLAF, "Cold stone, cold hearts. I will keep the west gate myself."),
+    ]);
+    m.victory = Scene::new(vec![Line::say(co::SASHA, "The Bastion has fallen. Blue Moon will remember it. And you.")]);
+    m
+}
+
+fn grit_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::OLAF, Mood::Sad, "The west gate is broken! Grit, hold the north ward!"),
+        Line::say(co::GRIT, "Heh, leave it to me, Olaf! My guns reach the whole courtyard."),
+    ])
+}
+
+fn colin_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::GRIT, Mood::Sad, "Blast it! They got past my guns. Colin, you're next!"),
+        Line::say(co::COLIN, "Hee hee! Do you know what a wall costs? I just bought two more."),
+    ])
+}
+
+fn sasha_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::COLIN, Mood::Sad, "My treasury wall! Sasha, take the last ward, quick!"),
+        Line::say(co::SASHA, "Stand down, Colin. This is where Blue Moon ends its retreat."),
+        Line::say(co::SASHA, "You came a long way to reach me. Let's see if it was worth it."),
+    ])
+}
+
+// --- Gauntlet 12, Last Eclipse --------------------------------------------------------------------------------------------------------------------------
+
+/// The HQs (five/gauntlet/spec/gauntlet_12.py): Sturm's (on the field), Von Bolt's, Aria's and Asuka's (hidden), the player's (army 5).
+pub const ECLIPSE_STURM: (u8, u8) = (14, 14);
+pub const ECLIPSE_VON_BOLT: (u8, u8) = (24, 5);
+pub const ECLIPSE_ARIA: (u8, u8) = (24, 20);
+pub const ECLIPSE_ASUKA: (u8, u8) = (35, 13);
+pub const ECLIPSE_PLAYER: (u8, u8) = (3, 13);
+
+/// Von Bolt's wave: armour, a Neo Tank and missiles in the north chamber, a Fighter and a Bomber.
+const ECLIPSE_VON_BOLT_WAVE: [(u8, (u8, u8)); 19] = [
+    (unit::MD_TANK, (27, 5)),
+    (unit::MD_TANK, (27, 6)),
+    (unit::MD_TANK, (20, 4)),
+    (unit::NEOTANK, (25, 8)),
+    (unit::TANK, (28, 10)),
+    (unit::TANK, (27, 4)),
+    (unit::ARTILLERY, (27, 2)),
+    (unit::ARTILLERY, (24, 4)),
+    (unit::MISSILES, (22, 2)),
+    (unit::MISSILES, (23, 9)),
+    (unit::INFANTRY, (21, 11)),
+    (unit::INFANTRY, (26, 11)),
+    (unit::INFANTRY, (20, 6)),
+    (unit::INFANTRY, (24, 6)),
+    (unit::MECH, (20, 2)),
+    (unit::MECH, (23, 3)),
+    (unit::ANTI_AIR, (28, 6)),
+    (unit::FIGHTER, (25, 11)),
+    (unit::BOMBER, (22, 11)),
+];
+
+/// Aria's wave: fast tanks and recons in the south chamber, artillery behind, copters.
+const ARIA_WAVE: [(u8, (u8, u8)); 20] = [
+    (unit::TANK, (20, 19)),
+    (unit::TANK, (27, 19)),
+    (unit::TANK, (24, 15)),
+    (unit::TANK, (20, 21)),
+    (unit::RECON, (23, 22)),
+    (unit::RECON, (25, 17)),
+    (unit::MD_TANK, (24, 14)),
+    (unit::MD_TANK, (26, 16)),
+    (unit::ARTILLERY, (26, 13)),
+    (unit::ARTILLERY, (23, 21)),
+    (unit::ROCKETS, (22, 23)),
+    (unit::INFANTRY, (24, 25)),
+    (unit::INFANTRY, (23, 17)),
+    (unit::INFANTRY, (24, 17)),
+    (unit::INFANTRY, (27, 13)),
+    (unit::MECH, (27, 14)),
+    (unit::MECH, (25, 18)),
+    (unit::ANTI_AIR, (27, 24)),
+    (unit::B_COPTER, (21, 25)),
+    (unit::B_COPTER, (25, 19)),
+];
+
+/// Asuka's wave: Neo Tanks, Md Tanks and a Mega Tank in the citadel's yard, missiles, a Fighter and two Bombers.
+const ASUKA_WAVE: [(u8, (u8, u8)); 23] = [
+    (unit::NEOTANK, (33, 13)),
+    (unit::NEOTANK, (36, 13)),
+    (unit::NEOTANK, (38, 10)),
+    (unit::MD_TANK, (37, 14)),
+    (unit::MD_TANK, (33, 17)),
+    (unit::MD_TANK, (31, 13)),
+    (unit::MEGATANK, (35, 9)),
+    (unit::ARTILLERY, (36, 12)),
+    (unit::ARTILLERY, (36, 8)),
+    (unit::MISSILES, (36, 15)),
+    (unit::MISSILES, (38, 17)),
+    (unit::INFANTRY, (36, 18)),
+    (unit::INFANTRY, (34, 13)),
+    (unit::INFANTRY, (35, 13)),
+    (unit::INFANTRY, (37, 8)),
+    (unit::MECH, (37, 9)),
+    (unit::MECH, (38, 14)),
+    (unit::MECH, (37, 18)),
+    (unit::ANTI_AIR, (34, 18)),
+    (unit::ANTI_AIR, (31, 14)),
+    (unit::FIGHTER, (35, 15)),
+    (unit::BOMBER, (34, 9)),
+    (unit::BOMBER, (37, 12)),
+];
+
+/// Last Eclipse: Sturm, Von Bolt (Black Hole), Aria (Orange Star) and Asuka (Black Hole), one after another in a Black Hole stronghold (three armies of Black Hole's colour on three slots).
+fn last_eclipse() -> MissionDef {
+    let mut m = MissionDef::new("gauntlet_12", "Last Eclipse");
+    m.objective = "Break the stronghold wall by wall: Sturm, Von Bolt, Aria, and Asuka in her citadel.";
+    m.map = MapSrc::Built("gauntlet_12");
+    m.armies = vec![
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)).team(1).funds(9000),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::VON_BOLT)).team(1).funds(0),
+        ArmyDef::new(colour::ORANGE_STAR, CoSpec::Fixed(crate::co_new::ARIA)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(crate::co_new::ASUKA)).team(1).funds(0),
+        ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
+    ];
+    m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_12"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.rank_days = 44;
+    let lines = [
+        Wire { army: 1, hq: ECLIPSE_STURM, zone: Rect::new(10, 0, 18, 25) },
+        Wire { army: 2, hq: ECLIPSE_VON_BOLT, zone: Rect::new(20, 0, 28, 11) },
+        Wire { army: 3, hq: ECLIPSE_ARIA, zone: Rect::new(20, 13, 28, 25) },
+        Wire { army: 4, hq: ECLIPSE_ASUKA, zone: Rect::new(30, 0, 39, 25) },
+    ];
+    wire(
+        &mut m,
+        &lines,
+        vec![
+            arrival(&lines, 1, chest::<2, 15000, 1000>, &ECLIPSE_VON_BOLT_WAVE, eclipse_von_bolt_arrives()),
+            arrival(&lines, 2, chest::<3, 20000, 1500>, &ARIA_WAVE, aria_arrives()),
+            arrival(&lines, 3, chest::<4, 25000, 2000>, &ASUKA_WAVE, eclipse_asuka_arrives()),
+        ],
+    );
+    m.intro = Scene::new(vec![
+        Line::say(co::STURM, "Behold the stronghold! Black Hole's last wall, and I hold the door."),
+        Line::say(co::STURM, "Three more walls behind me. You will not see the last."),
+    ]);
+    m.victory = Scene::new(vec![Line::say(crate::co_new::ASUKA, "The eclipse ends. I will write down how it was done.")]);
+    m
+}
+
+fn eclipse_von_bolt_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::STURM, Mood::Sad, "The outer works are gone? Von Bolt, the chamber is yours!"),
+        Line::say(co::VON_BOLT, "Sturm, you are loud and you are late. I shall finish this."),
+        Line::say(co::VON_BOLT, "The machine has measured this chamber. Your end is on the page."),
+    ])
+}
+
+fn aria_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(co::VON_BOLT, Mood::Sad, "The machine failed me. Aria, the south chamber is yours."),
+        Line::say(crate::co_new::ARIA, "Orange Star keeps its promises, even in a place like this."),
+        Line::say(crate::co_new::ARIA, "I am not here for Black Hole. I am here for you. Come on."),
+    ])
+}
+
+fn eclipse_asuka_arrives() -> Scene {
+    Scene::new(vec![
+        Line::feel(crate::co_new::ARIA, Mood::Sad, "You made it through my line. Asuka waits at the end."),
+        Line::say(crate::co_new::ASUKA, "Every wall has been recorded. The last page is the citadel."),
+        Line::say(crate::co_new::ASUKA, "The eclipse is mine to end. Approach, and be read."),
+    ])
+}
+
 // --- What the map selector shows (crate::gauntlet_ui) ---------------------------------------------------------------------------------------------------
 
 /// One of the Gauntlet's maps as the selector lists it: read from the map's mission, so a new map is listed by adding its mission to [`def`] (nothing else).
@@ -1030,10 +1540,15 @@ pub fn entries() -> &'static [Entry] {
 pub fn order() -> &'static [usize] {
     static O: std::sync::OnceLock<Vec<usize>> = std::sync::OnceLock::new();
     O.get_or_init(|| {
-        let mut v: Vec<usize> = (0..entries().len()).collect();
-        v.sort_by_key(|&m| (entries()[m].enemies.len(), m));
-        v
+        order_of(&entries().iter().map(|e| e.enemies.len()).collect::<Vec<_>>())
     })
+}
+
+/// The selector's order for maps with these enemy counts (by mission index): the missions by count, fewest first, ties in the definition's order.
+pub fn order_of(counts: &[usize]) -> Vec<usize> {
+    let mut v: Vec<usize> = (0..counts.len()).collect();
+    v.sort_by_key(|&m| (counts[m], m));
+    v
 }
 
 /// A map's place in the selector's list (0 the top): the map-table id the list shows it by is the first one plus this.
@@ -1043,7 +1558,7 @@ pub fn rank_of(mission: usize) -> usize {
 
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
-    let mut missions = vec![cinder_sea(), iron_crown(), dustwind_basin(), brass_canal(), granite_spine(), harvest_run(), chrome_meridian()];
+    let mut missions = vec![cinder_sea(), iron_crown(), dustwind_basin(), brass_canal(), granite_spine(), harvest_run(), chrome_meridian(), tidewater_atoll(), silverpine_ford(), neon_row(), blue_bastion(), last_eclipse()];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     CampaignDef {
         source: SOURCE,
@@ -1227,6 +1742,11 @@ mod tests {
             "gauntlet_05" => include_str!("../five/gauntlet/gauntlet_05.txt"),
             "gauntlet_06" => include_str!("../five/gauntlet/gauntlet_06.txt"),
             "gauntlet_07" => include_str!("../five/gauntlet/gauntlet_07.txt"),
+            "gauntlet_08" => include_str!("../five/gauntlet/gauntlet_08.txt"),
+            "gauntlet_09" => include_str!("../five/gauntlet/gauntlet_09.txt"),
+            "gauntlet_10" => include_str!("../five/gauntlet/gauntlet_10.txt"),
+            "gauntlet_11" => include_str!("../five/gauntlet/gauntlet_11.txt"),
+            "gauntlet_12" => include_str!("../five/gauntlet/gauntlet_12.txt"),
             other => panic!("no text map for {other}: add it to text_of"),
         }
     }
@@ -1261,7 +1781,7 @@ mod tests {
 
     #[test]
     fn every_map_wave_lands_on_ground_inside_its_zone() {
-        let skip = ["gauntlet_01"]; // (Cinder Sea is a sea map: its waves stand on water and shore)
+        let skip = ["gauntlet_01", "gauntlet_08"]; // (Cinder Sea and Tidewater Atoll are sea maps: their waves stand on water and shore)
         for m in def().missions.iter().filter(|m| !skip.contains(&m.key)) {
             let map = crate::custom_campaign::built_map(m.key).unwrap_or_else(|| panic!("{}: the map is built (aw2dev maps gen --campaign gauntlet)", m.key));
             let r = rows(text_of(m.key), map.width as usize);
@@ -1337,5 +1857,67 @@ mod tests {
         assert!(m.armies[1..4].iter().all(|a| a.colour == m.armies[CHROME_SKIN_ARMY as usize - 1].colour));
         // the other maps' skins are the player's choice only
         assert!(!by("gauntlet_01").enemy_skin && !by("gauntlet_02").enemy_skin);
+    }
+
+    /// Every enemy CO appears on one map only, except the COs the owner named twice: Last Eclipse's Von Bolt and Asuka (Granite Spine's Von Bolt and Iron Crown's stage two Asuka), and Blue Bastion's Grit, Colin and Sasha (Iron Crown's Grit and Brass Canal's Sasha;
+    /// Neon Row's Colin). Nothing else may repeat across the Gauntlet's maps.
+    #[test]
+    fn no_two_maps_share_an_enemy_co_but_the_named_exceptions() {
+        use std::collections::BTreeMap;
+        let mut seen: BTreeMap<u8, Vec<&str>> = BTreeMap::new();
+        for e in entries() {
+            let mut cos: Vec<u8> = e.enemies.iter().map(|x| x.0).collect();
+            // (a CO appears once on a map, except Harvest Run's and Blue Bastion's one-army lines, which are four different COs)
+            cos.sort();
+            let n = cos.len();
+            cos.dedup();
+            assert_eq!(cos.len(), n, "{}: a CO fights twice on one map", e.key);
+            for c in cos {
+                seen.entry(c).or_default().push(e.key);
+            }
+        }
+        let allowed: &[(u8, &[&str])] = &[
+            (co::VON_BOLT, &["gauntlet_05", "gauntlet_12"]),
+            (crate::co_new::ASUKA, &["gauntlet_02", "gauntlet_12"]),
+            (co::GRIT, &["gauntlet_02", "gauntlet_11"]),
+            (co::SASHA, &["gauntlet_04", "gauntlet_11"]),
+            (co::COLIN, &["gauntlet_10", "gauntlet_11"]),
+        ];
+        for (c, maps) in &seen {
+            if maps.len() > 1 {
+                let ok = allowed.iter().find(|a| a.0 == *c).is_some_and(|a| a.1 == maps.as_slice());
+                assert!(ok, "CO {c} is on {maps:?}: only the named repeats are allowed");
+            }
+        }
+    }
+
+    #[test]
+    fn the_five_added_maps_have_the_owners_lines() {
+        let e = entries();
+        let by = |k: &str| e.iter().find(|x| x.key == k).unwrap();
+        let cos = |k: &str| by(k).enemies.iter().map(|x| x.0).collect::<Vec<_>>();
+        let cols = |k: &str| by(k).enemies.iter().map(|x| x.1).collect::<Vec<_>>();
+        assert_eq!(by("gauntlet_08").title, "Tidewater Atoll");
+        assert_eq!((cos("gauntlet_08"), cols("gauntlet_08")), (vec![co::EAGLE, co::ADDER], vec![colour::GREEN_EARTH, colour::BLACK_HOLE]));
+        assert_eq!(by("gauntlet_09").title, "Silverpine Ford");
+        assert_eq!(cos("gauntlet_09"), vec![co::HACHI, co::SONJA]);
+        assert_eq!(by("gauntlet_10").title, "Neon Row");
+        assert_eq!((cos("gauntlet_10"), cols("gauntlet_10")), (vec![co::COLIN, co::KINDLE, co::JUGGER], vec![colour::BLUE_MOON, colour::BLACK_HOLE, colour::BLACK_HOLE]));
+        assert_eq!(by("gauntlet_11").title, "Blue Bastion");
+        assert_eq!(cos("gauntlet_11"), vec![co::OLAF, co::GRIT, co::COLIN, co::SASHA]);
+        assert!(cols("gauntlet_11").iter().all(|&c| c == colour::BLUE_MOON));
+        assert!(!by("gauntlet_11").free().contains(&colour::BLUE_MOON), "the player never wears Blue Moon on the Bastion");
+        // Last Eclipse: Sturm, Von Bolt, Aria, Asuka; three Black Hole lines and Aria's Orange Star; the player wears neither colour
+        assert_eq!(by("gauntlet_12").title, "Last Eclipse");
+        assert_eq!(cos("gauntlet_12"), vec![co::STURM, co::VON_BOLT, crate::co_new::ARIA, crate::co_new::ASUKA]);
+        assert_eq!(cols("gauntlet_12"), vec![colour::BLACK_HOLE, colour::BLACK_HOLE, colour::ORANGE_STAR, colour::BLACK_HOLE]);
+        let f = by("gauntlet_12").free();
+        assert!(!f.contains(&colour::BLACK_HOLE) && !f.contains(&colour::ORANGE_STAR) && f.contains(&colour::BLUE_MOON));
+        // twelve maps, the two-enemy maps first and the four-enemy maps last
+        assert_eq!(e.len(), 12);
+        let counts: Vec<usize> = order().iter().map(|&m| e[m].enemies.len()).collect();
+        assert_eq!(counts.iter().filter(|&&c| c == 2).count(), 4);
+        assert!(counts.windows(2).all(|w| w[0] <= w[1]));
+        assert!(counts[counts.len() - 4..].iter().all(|&c| c >= 4), "{counts:?}");
     }
 }

@@ -114,6 +114,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("Survival", (0x0203_FA00, 0x310)),
     ("DS Campaign", (0x0203_FD10, 0x50)),
     ("Gauntlet's map selector and colour pick (crate::gauntlet_ui::STATE)", (crate::gauntlet_ui::STATE, crate::gauntlet_ui::STATE_LEN)),
+    ("Gauntlet's records: the selector's record rows, then the top-five table (crate::gauntlet::BLOCK)", (crate::gauntlet::BLOCK, crate::gauntlet::BLOCK_LEN)),
     ("CPU tactics, heal effect, Oozium, stun, battle distance, Teams list", (0x0203_FD60, 0x1A0)),
     ("design list, joypad and invention picks", (0x0203_FF00, 0x100)),
     ("five armies: the player table, moved (crate::five::PLAYERS: six 0x3C-byte slots)", (crate::five::PLAYERS, 6 * 0x3C)),
@@ -131,6 +132,21 @@ pub const REGIONS: &[(&str, Region)] = &[
 
 /// Pairs of regions that overlap but are never in use together, and why.
 pub const TIME_SHARED: &[(&str, &str, &str)] = &[
+    (
+        "Gauntlet's records: the selector's record rows, then the top-five table (crate::gauntlet::BLOCK)",
+        "Teams screen: borrowed tiles while partners show",
+        "the Teams screen is a Versus screen: the Gauntlet's flow (selector, CO pick, colour pick, battle) never shows it",
+    ),
+    (
+        "Gauntlet's records: the selector's record rows, then the top-five table (crate::gauntlet::BLOCK)",
+        "two fronts: the front off the screen",
+        "no Gauntlet map is a two-front battle (a front is stored only during one)",
+    ),
+    (
+        "Gauntlet's records: the selector's record rows, then the top-five table (crate::gauntlet::BLOCK)",
+        "War Room records on Dual Strike's maps (crate::ds_versus::ROWS)",
+        "those rows are kept only while Dual Strike's Versus table is in use (ds_versus::war_room); the Gauntlet's selector and battle run on Survival's table",
+    ),
     (
         "two fronts: the front off the screen",
         "Teams screen: borrowed tiles while partners show",
