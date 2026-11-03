@@ -43,8 +43,8 @@ def build():
     # --- woods and outcrops
     for i, (cx, cy, n) in enumerate([(3, 8, 3), (9, 8, 3), (11, 14, 2), (6, 14, 2), (21, 8, 3), (25, 8, 2), (28, 16, 3), (20, 13, 2), (22, 3, 3), (3, 3, 2), (9, 19, 2), (29, 8, 2)]):
         m.cluster("f", cx, cy, n * 3, seed=10 + i)
-    for i, pts in enumerate([[(1, 12), (6, 12)], [(19, 6), (24, 6)], [(19, 20), (23, 21)], [(25, 14), (29, 14)], [(1, 5), (3, 6)], [(8, 11), (12, 12)]]):
-        belt(m, "^", pts, width=1, seed=20 + i, p=0.95)
+    # (no other range: the spine is the map's one mountain feature, a few rocks aside)
+    m.puts("^", [(3, 12), (4, 12), (25, 14), (26, 14), (22, 20), (23, 20), (9, 3)])
     m.header(armies=4, colours=(BM, OS, YC, BH), team=(1, 2, 2, 2), objective=[1], hidden=[3, 4], comment=(
         "Gauntlet 05 Granite Spine (normal look, no fog, 32 x 22, four armies): the player (army 1, HQ (3,18), south-west, a free CO) against Jake (Orange Star, army 2, HQ (28,12), the east slopes), then Grimm "
         "(Yellow Comet, army 3, HQ (6,4), the north-west shelf) and Von Bolt (Black Hole, army 4, HQ (27,4), the north-east valley), who come onto the battlefield in turn. A spine of mountains (x 14..17) has "
