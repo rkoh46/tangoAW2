@@ -122,3 +122,61 @@ def gauntlet_lines_last_eclipse_the_minicannon_fires_down_its_lane_on_sturms_tur
     ctx.check(now.get(inn["id"], 0) < 100, "the Tank in the lane was hit on Sturm's turn")
     ctx.eq(now.get(out["id"]), 100, "the Tank beside the lane was not")
     e.close()
+
+
+def _scene_state(e):
+    """What the screen shows of a dialogue box: (the tile ids of the box's text layer (BG0), the tile ids the face layer (BG1) uses, the box's side ('top' or 'bottom' by the rows of BG0 that hold text))."""
+    import struct
+    cnt = [e.u16(0x04000008 + 2 * i) for i in range(4)]
+    vofs = e.u16(0x04000012)
+    v0 = bytes(e.read(0x06000000 + ((cnt[0] >> 8) & 31) * 0x800, 0x800))
+    v1 = bytes(e.read(0x06000000 + ((cnt[1] >> 8) & 31) * 0x800, 0x800))
+    m0 = struct.unpack_from("<1024H", v0)
+    m1 = struct.unpack_from("<1024H", v1)
+    rows = [r for r in range(32) if any((x & 0x3FF) not in (0, 257) for x in m0[r * 32:(r + 1) * 32])]
+    text = {x & 0x3FF for x in m0 if (x & 0x3FF) not in (0, 257)}
+    face = {x & 0x3FF for x in m1 if (x & 0x3FF) not in (0, 1023)}
+    return text, face, vofs, rows
+
+
+def arrival_boxes(info):
+    def fn(ctx):
+        """Every arrival scene shows every speaker's box, one after the other, and a box's text tiles are its own: none is also a tile of the face beside it (a tile two pictures draw into is how the first box's
+        text came out garbled), whichever side of the screen the box is on."""
+        from PIL import Image
+        from tests.test_gauntlet_map2 import png
+        e, g, d = start(ctx, info)
+        for k, l in enumerate(info.lines[:-1]):
+            nxt = info.lines[k + 1]
+            d.capture(ctx, l.hq, army=info.player)
+            seen = []
+            for _ in range(200):
+                if not d.scripts_running():
+                    break
+                e.wait(90)
+                text, face, vofs, rows = _scene_state(e)
+                px = Image.open(png(ctx, e, f"{info.key}_{nxt.name}_box{len(seen)}")).convert("RGB")
+                w, h = px.size
+                pink = sum(1 for y in range(6, 36, 3) for x in range(60, w - 4, 6) if px.getpixel((x, y))[0] > 235 and 225 < px.getpixel((x, y))[1] < 250) + \
+                    sum(1 for y in range(h - 36, h - 6, 3) for x in range(60, w - 4, 6) if px.getpixel((x, y))[0] > 235 and 225 < px.getpixel((x, y))[1] < 250)
+                if pink > 40:
+                    seen.append((sorted(text & face), pink))
+                    e.press("A", 4)
+                    e.wait(30)
+                else:
+                    e.press("A", 4)
+            ctx.check(len(seen) >= 2, f"{info.title}: {nxt.name}'s arrival shows {len(seen)} boxes (the departing CO's and {nxt.name}'s)")
+            ctx.eq([s[0] for s in seen], [[]] * len(seen), f"{info.title}: no text tile of a box is a tile of the face")
+            d.settle()
+        e.close()
+    fn.__name__ = f"gauntlet_lines_{info.key}_arrival_boxes_are_all_shown_and_clean"
+    test(modes=("ds",))(fn)
+
+
+for _info in gm.MAPS.values():
+    arrival_boxes(_info)
+
+
+# (the first two maps are not in the registry: their lines and HQs, for the same check)
+arrival_boxes(gm.MapInfo(0, "gauntlet_01", "Cinder Sea", 1, (3, 18), [gm.Line("drake", 9, 2, (27, 18)), gm.Line("sensei", 18, 3, (3, 3)), gm.Line("hawke", 14, 4, (29, 3))]))
+arrival_boxes(gm.MapInfo(1, "gauntlet_02", "Iron Crown", 5, (4, 22), [gm.Line("grit", 5, 1, (8, 9)), gm.Line("jess", 17, 2, (24, 5)), gm.Line("kanbei", 6, 3, (34, 6)), gm.Line("rachel", 80, 4, (30, 20))]))

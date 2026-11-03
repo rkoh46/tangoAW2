@@ -1324,6 +1324,8 @@ struct Compiler<'a> {
     conds: Vec<(u32, Cond)>,
     units: HashMap<(usize, &'static str), (u8, u8, u8)>,
     fns: Vec<fn(&mut Core)>,
+    /// A scene being compiled is one a trigger plays in the middle of a battle ([`Action::Scene`]): see [`Compiler::one_scene`].
+    battle_scene: bool,
     /// The texts already made (equal texts share an id: every CO says "Report." with the same one).
     shared: HashMap<Vec<u8>, u16>,
     /// The next once-latch flag.
@@ -1525,8 +1527,21 @@ impl<'a> Compiler<'a> {
         if let Some(t) = scene.song {
             out.push(cmd(0x41, 0, t.resolve(self.core), 0, 0));
         }
+        if self.battle_scene {
+            // A scene a trigger plays in the middle of a battle (a line arriving after a capture or a rout) opens with an empty box that closes at once, and each change of speaker closes the box and
+            // opens one for the new face. Without them the first box's text came out drawn over by other pictures (the box sat at the bottom of the screen with the map's windows) and the lines after
+            // the first speaker's never showed at all (op 0x38 alone changed nothing visible in a box opened there).
+            out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, scene.place));
+            out.push(cmd(0x18, 0, 0, 0, 0));
+        }
         out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, scene.place));
+        let mut first_line = true;
         for l in &merged(&scene.lines) {
+            if self.battle_scene && !first_line {
+                out.push(cmd(0x18, 0, 0, 0, 0));
+                out.push(cmd(0x17, 0, face(l.who), 0, scene.place));
+            }
+            first_line = false;
             if let Some(co) = l.only {
                 // (jumps over the two commands below unless the player's CO is `co`: a relative
                 // jump, made absolute by `script`)
@@ -1744,6 +1759,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         conds: Vec::new(),
         units: HashMap::new(),
         fns: Vec::new(),
+        battle_scene: false,
         shared: HashMap::new(),
         next_flag: FLAG_FIRST,
         named_latches: std::collections::HashMap::new(),
@@ -2229,7 +2245,12 @@ fn compile_mission(
                     let s = cx.stub(Magic::Call(STAGE_NEXT, 0));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
                 }
-                Action::Scene(s) => cmds.extend(cx.scene_cmds(s, SceneEnd::Fade)?),
+                Action::Scene(s) => {
+                    cx.battle_scene = true;
+                    let r = cx.scene_cmds(s, SceneEnd::Fade);
+                    cx.battle_scene = false;
+                    cmds.extend(r?)
+                }
                 Action::AddFunds { army, funds } => {
                     let s = cx.stub(Magic::Call(FUNDS_ADD | *army as u32, *funds as u32));
                     cmds.push(cmd(0x00, s, 0, 0, 0));
