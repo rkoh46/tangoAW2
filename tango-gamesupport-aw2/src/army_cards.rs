@@ -380,7 +380,7 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
             // (on the card's frame colour, at its upper right corner, as the game's own tag sits)
             let ink = if label == "CP" { WHITE } else { YELLOW };
             let w = online::text_width(core, label);
-            let x = left + CARD - 4 - w;
+            let x = left + CARD - 5 - w;
             cv.rect(x - 2, CARD_Y + 1, w + 4, 12, FRAME);
             cv.text(core, x, CARD_Y + 2, label, ink, FRAME);
         } else if let Some(t) = tags.get(s) {
