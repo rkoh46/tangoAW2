@@ -22,14 +22,28 @@ LOOKS = (
 )
 
 
+def settled_png(ctx, e, name):
+    """A picture of the screen once it is not a fade or a flash: a frame that is mostly white (the screen flashes white when a line is revealed and when a scene's fade starts) is taken again after a
+    few frames (up to 40 tries), so a sheet never holds a blank capture."""
+    from PIL import Image
+    for _ in range(40):
+        p = png(ctx, e, name)
+        px = list(Image.open(p).convert("RGB").getdata())
+        white = sum(1 for r, g, b in px if r > 245 and g > 245 and b > 245) / len(px)
+        if white < 0.6:
+            return p
+        e.wait(6)
+    return p
+
+
 def scene_pics(ctx, e, d, tag, most=4):
-    """The boxes of the running script, one picture each (A through them)."""
+    """The boxes of the running script, one picture each (A through them); a flash between two boxes is waited out."""
     pics = []
     for _ in range(400):
         if d.scripts_running():
             if len(pics) < most:
                 e.wait(70)
-                pics.append(png(ctx, e, f"{tag}_box{len(pics)}"))
+                pics.append(settled_png(ctx, e, f"{tag}_box{len(pics)}"))
             e.press("A", 4)
         elif pics:
             break

@@ -83,6 +83,13 @@ The list takes **up to 32 maps** (`gauntlet_ui::MAX_MAPS`). Three things set tha
 To go past 32: raise `MAX_MISSIONS` (and `RECORDS` / the `ds_campaign` regions that depend on it), `PREVIEW_ROM`'s room, `gauntlet::SLOTS`, `gauntlet_ui::MAX_MAPS` and `ram_map`'s block, and find more ids (there are none left below 0xFD without taking the Vault's or Versus' pool).
 The unit tests `a_full_list_has_ids_rows_records_and_order_that_work` (32 maps' ids, rows, records and order) and, in the harness, `-k gauntlet_mode_a_long_list` (the aid `TANGOAW2_GAUNTLET_SLOTS=32` lays the ids out for a full house, so today's twelve borrow Survival's entries: every map is listed with its name, the list scrolls to the last, the record box reads the borrowed ids' rows, Survival's entries come back byte for byte) cover it.
 
+## Known issue: garbled text in a dialogue box at the bottom of the screen
+The first box of an arrival scene (and every other box the game puts at the **bottom** of the screen, when the cursor is in the upper half) shows some of its glyphs drawn over by other pictures ("My island has fallen?" comes out "Myei&and has fallen?"). It is
+in the game's own frames and does not settle with time, it is the same on `bh2design` 127c0a220 (before the five new maps; Cinder Sea, Dustwind Basin and Harvest Run all show it) and so it is older than the new maps, and a box at the **top** (the winning scenes, Asuka's Keep's scenes
+after a capture) is clean. What it is not (each tried and ruled out): capture timing (the same pixels 600 frames on), the speaker's mood face (the plain face garbles the same), the box's place argument (op 0x17: 1 is the bottom too, other values stop the script), the second face op
+(dropping it changes which glyphs are hit, not that they are), the panel's tile slots (clearing VRAM tiles 444..607 before the scene changes nothing). Open: which writer shares the box's text tile slots. The capture helper `settled_png` only waits out the white flashes
+of a reveal (they made one picture of a sheet blank).
+
 ## The rout rule
 Capturing a line's HQ routes that army at once (all its units destroyed by AW2's own `DefeatArmy`, every property it owns neutral), then the next line comes; the last line's HQ wins as before. It is the shared engine's, so every map has it by default: list every line but the last in `cut_off` ([gauntlet.md](gauntlet.md), "The rout"). Tests `-k gauntlet_rout`.
 
