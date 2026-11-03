@@ -10,71 +10,71 @@ armies 4 6 1 2 5 5
 team 1 2 2 2
 hidden 3 4
 unit 1 1 13 16
-unit 1 1 10 18
-unit 1 1 12 18
-unit 1 1 9 19
-unit 1 1 10 20
+unit 1 1 13 18
+unit 1 1 1 19
+unit 1 1 5 19
+unit 1 1 12 20
 unit 1 2 7 17
-unit 1 2 1 20
-unit 1 3 2 15
+unit 1 2 12 19
+unit 1 3 1 15
 unit 1 3 9 15
 unit 1 5 3 16
-unit 1 5 8 20
-unit 1 5 11 20
-unit 1 5 13 20
-unit 1 6 9 17
-unit 1 7 5 20
-unit 1 10 6 18
-unit 1 10 3 20
-unit 1 11 6 20
-unit 1 14 3 15
-unit 1 14 3 17
-unit 1 16 13 18
-unit 1 19 3 19
+unit 1 5 7 20
+unit 1 5 10 20
+unit 1 5 14 20
+unit 1 6 3 18
+unit 1 7 6 20
+unit 1 10 9 18
+unit 1 10 2 20
+unit 1 11 9 20
+unit 1 14 2 15
+unit 1 14 9 16
+unit 1 16 3 19
+unit 1 19 8 19
 unit 2 1 29 6
-unit 2 1 18 7
-unit 2 1 21 7
-unit 2 1 16 10
-unit 2 1 22 11
-unit 2 1 23 11
-unit 2 1 24 12
-unit 2 2 28 9
+unit 2 1 19 7
+unit 2 1 23 7
+unit 2 1 21 10
+unit 2 1 27 11
+unit 2 1 28 11
+unit 2 1 29 12
 unit 2 2 17 10
+unit 2 2 24 10
 unit 2 3 20 7
 unit 2 3 19 8
 unit 2 5 27 5
 unit 2 5 27 6
-unit 2 5 28 8
+unit 2 5 27 8
 unit 2 5 21 9
 unit 2 6 16 8
-unit 2 7 21 10
+unit 2 7 29 9
 unit 2 10 17 8
-unit 2 10 27 8
-unit 2 10 27 9
-unit 2 11 27 12
-unit 2 14 27 11
-unit 2 14 22 13
-unit 2 16 21 11
-unit 2 19 27 13
-.^fRc....Rcf.^.Rc^f..Rc.^.fRc^ff
-cf.R.ccccRcfccfR..cc.R.fcc.Rc.cc
+unit 2 10 28 8
+unit 2 10 25 9
+unit 2 11 28 12
+unit 2 14 21 11
+unit 2 14 27 13
+unit 2 16 30 11
+unit 2 19 30 13
+.^.Rc....Rcf.^.Rc^f..R..^..Rc^ff
+c..R.cc.cRc.cc.R..cc.R..fc.Rc.cc
 RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-cc.R.bc.cRcccc.Rc.c.cRC.cccR.bcf
-ff.R.b.^.Rc^b.fR..f^.RC.b.cRcb.f
-f..Rc...aRc....Rc^tfCR.ff..Rcf.^
-f^cRf..^cRc...cRc^^..RC^.^aRcf.^
-fc.RcccccR..cc.R.cff.RCfC.CR..c.
+cc.R.bf.cRc..f.R....fRc.cccR.b..
+ff.R.b.^.Rc^b..R..f^.Rc.b.fR.b.f
+f..Rc...aRc....Rc^tfcR.ff..R.f.^
+f^cR...^cR....cRc^^..R.^.^aRcf.^
+...RcccccR..cc.R.c...RC.C.cR..c.
 RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-ccfR...c.RccbfcR.C.CCR2BCC.Rffcc
-..cRCff.cRfff^fR.f..CRCBf..Rc.^^
-.^cRC^..cR.ft.cR.f.f.R..AfCRc.ff
-^^CR.f^.fRc.ffcR..^^CRC.f.cRf.^f
-cCCRCCCfcRccfccRccc..R.C.ccRcccc
+cc.R...f.Rf.b.fR.f.CCR2BC..R..cf
+..cRcff.cR.ff^.R.f..CRCBf..Rc.^^
+.^cRc^..fR.ft.cR.f.f.R..AfcR..ff
+^^cR.f^..Rc.ff.R..^^cR..f.cR..^f
+f.cRCC..cRc..ccRcfc..R.c.ccR.cfc
 RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-CC.RCfCCCR..cccRc.bc.RCcc.fRc.cc
-f.CR1B^.CRC^^fcRcf..cR.^ffcRc..^
-ffCRCBffCRc.t.cRc..fcRfftf.Rcf.^
-f^CR.fA..Rf^..cRc..^cRc^.^.Rc^ff
-cCCRCCCCcRfc.c.Rcc.ccR.ccccRc.cc
+c..RC..CfR..cccRc.bf.Rccc..R..fc
+f.CR1B^.CRc^^fcRcf..cR.^ffcR...^
+fffRCBffcRc.t.cRc..fcR.ftf.Rcf.^
+f^.R.fA..R.^..cRf..^cRf^.^.Rf^ff
+.fcRCfc.fR.c.c.Rfc.fcR.c.fcRc.cf
 RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-.ccR.C.ccRf.cccR.cf.cR..c.cR..cc
+.c.R.c.fcR..fccR.c..cR....fR..cc

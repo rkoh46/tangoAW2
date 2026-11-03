@@ -90,7 +90,7 @@ def gauntlet_pictures_selector_and_colour_pick_in_the_three_looks(ctx):
         row.append(shot(ctx, e, f"{look}_selector_records"))
         e.press("R", 6)
         e.wait(40)
-        ctx.check(d.selector_ids()[0] == [ga.FIRST_ID + r for r in range(len(ga.SELECTOR_ORDER))], f"{look}: every map is listed, fewest enemies first")
+        ctx.check(d.selector_ids()[0] == ga.list_ids(), f"{look}: every map is listed, fewest enemies first")
         for _ in range(3):
             e.press("DOWN", 4)
             e.wait(40)

@@ -34,13 +34,13 @@ def build():
                 continue
             street = any(m.get(x + a, y + b) == "R" for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)))
             r = rnd.random()
-            if street and r < 0.62:
+            if street and r < 0.40:
                 m.g[y][x] = "C"
             elif not street and r < 0.30:
                 m.g[y][x] = "f"
             elif not street and r < 0.52:
                 m.g[y][x] = "^"
-            elif street and r < 0.72:
+            elif street and r < 0.50:
                 m.g[y][x] = "f"
     m.header(armies=4, colours=(OS, BM, BH, BH), team=(1, 2, 2, 2), objective=[1], hidden=[3, 4], comment=(
         "Gauntlet 10 Neon Row (normal look, no fog, 32 x 22, four armies): the player (army 1, HQ (4,16), the south-west blocks, a free CO) against Colin (Blue Moon, army 2, HQ (22,9), the east-centre blocks), then Kindle (Black Hole, "
@@ -55,7 +55,7 @@ def build():
     for x, y in ((12, 11), (18, 5), (12, 17), (24, 17)):
         m.put("t", x, y)
     thin_roads(m)
-    neutralize(m, 6)
+    neutralize(m, 4)
     # (the hidden lines' blocks are neutral city until they arrive: their HQ cells are plain, so nothing near them is owned)
     for k in ("3", "4"):
         x, y = HQS[k]

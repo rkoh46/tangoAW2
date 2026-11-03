@@ -50,13 +50,13 @@ def build():
     route(m, [S(26, 10), S(28, 15), S(27, 19)], seed=7, wander=0.4)
     thin_roads(m); fix_rungs(m); clean_river_roads(m)
     for args in [(3, 18, "BBC"), (7, 20, "BC"), (2, 15, "C"), (8, 18, "BC"), (6, 13, "C"), (12, 19, "c"),
-                 (26, 10, "bbbc"), (23, 12, "bc"), (29, 8, "ca"), (24, 7, "bc"), (21, 15, "c"), (28, 16, "cb"), (30, 12, "c"), (22, 19, "c"), (19, 6, "c"), (29, 2, "c"),
+                 (26, 10, "BBBC"), (23, 12, "BC"), (29, 8, "CA"), (24, 7, "BC"), (21, 15, "C"), (28, 16, "CB"), (30, 12, "C"), (22, 19, "C"), (19, 6, "c"), (29, 2, "c"),
                  (6, 4, "bbbc"), (3, 3, "c"), (10, 3, "bc"), (9, 8, "b"), (2, 7, "c"), (13, 5, "c"), (12, 15, "b")]:
         try:
             town(m, args[0], args[1], args[2], seed=args[0] * 31 + args[1], radius=2)
         except ValueError:
             pass
-    neutralize(m, 6)
+    neutralize(m, 9)
     prune_road_stubs(m)
     for y in range(13, 22):
         for x in range(0, 14):

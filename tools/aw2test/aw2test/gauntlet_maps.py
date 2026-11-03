@@ -72,6 +72,32 @@ add(MapInfo(6, "gauntlet_07", "Chrome Meridian", 5, (4, 22), [
     Line("tabitha", 86, 4, (30, 20), wave=20, chest=(25000, 2000)),
 ], skin_enemies=True))
 
+add(MapInfo(7, "gauntlet_08", "Tidewater Atoll", 1, (3, 14), [
+    Line("eagle", 8, 2, (25, 4)),
+    Line("adder", 13, 3, (25, 15), wave=18, chest=(15000, 1000)),
+]))
+add(MapInfo(8, "gauntlet_09", "Silverpine Ford", 1, (3, 18), [
+    Line("hachi", 15, 2, (26, 10)),
+    Line("sonja", 7, 3, (6, 4), wave=19, chest=(15000, 1000)),
+]))
+add(MapInfo(9, "gauntlet_10", "Neon Row", 1, (4, 16), [
+    Line("colin", 16, 2, (22, 9)),
+    Line("kindle", 74, 3, (4, 3), wave=19, chest=(15000, 1000)),
+    Line("jugger", 72, 4, (28, 3), wave=20, chest=(20000, 1500)),
+]))
+add(MapInfo(10, "gauntlet_11", "Blue Bastion", 5, (3, 20), [
+    Line("olaf", 3, 1, (19, 18)),
+    Line("grit", 5, 2, (19, 7), wave=17, chest=(15000, 1000)),
+    Line("colin", 16, 3, (27, 7), wave=19, chest=(20000, 1500)),
+    Line("sasha", 78, 4, (27, 18), wave=20, chest=(25000, 2000)),
+]))
+add(MapInfo(11, "gauntlet_12", "Last Eclipse", 5, (3, 13), [
+    Line("sturm", 10, 1, (14, 14)),
+    Line("von_bolt", 75, 2, (24, 5), wave=19, chest=(15000, 1000)),
+    Line("aria", 93, 3, (24, 20), wave=20, chest=(20000, 1500)),
+    Line("asuka", 92, 4, (35, 13), wave=23, chest=(25000, 2000)),
+]))
+
 
 def player_army(mission):
     """The player's army slot on the Gauntlet map of this mission: 1 (Cinder Sea, the maps of two and three armies), 5 on a five-army map (Iron Crown and the maps added here)."""

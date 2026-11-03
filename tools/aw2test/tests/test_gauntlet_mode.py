@@ -374,7 +374,7 @@ def hue_share(px, want):
 @test(modes=("ds",))
 def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps(ctx):
     """GAUNTLET opens the game's own map-select screen (the War Room's SELECT MAP: list, map picture, the enemies' faces, the record box on R), not the CO screen. The list holds each Gauntlet
-    map (map-table ids 0xF6.. with their names), the highlighted map's entry holds its enemies in the order they come (the game draws their faces from it) and the record rows hold the best
+    map (map-table ids ga.list_ids() with their names), the highlighted map's entry holds its enemies in the order they come (the game draws their faces from it) and the record rows hold the best
     result. UP and DOWN move the list's cursor (the mirror of the mission follows it); A takes the map and the CO screen follows with the map the session's mission; B goes back to Select Mode."""
     e, g, d = boot(ctx)
     d.open(pick=False)
@@ -382,7 +382,7 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.check(sv.running(e, sv.SELECT_MAP_PROC), "the screen is the game's SELECT MAP proc")
     ctx.eq(e.u8(ga.PLAY_ST + 1), 2, "the game mode is the War Room's while it is up (its list builder lists a tab for Versus and the War Room only)")
     ids, row = d.selector_ids()
-    ctx.eq(ids, [ga.FIRST_ID + r for r in range(len(ga.SELECTOR_ORDER))], "the list is the Gauntlet's maps, one entry a row")
+    ctx.eq(ids, ga.list_ids(), "the list is the Gauntlet's maps, one entry a row")
     ctx.eq([d.entry_name(i) for i in ids], ga.SELECTOR_TITLES, "the list is ordered by the number of enemy COs, fewest first (ties in the Gauntlet's own order)")
     ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (0, ga.SELECTOR_ORDER[0]), "the cursor is on the first row: the mission under it is that row's map")
     ctx.check(not d.on_co_screen(), "no CO screen yet: the selector is the first screen")
@@ -391,37 +391,42 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     maps, enemies, _ = ga.shown(e)
     ctx.eq((maps, [c for c, _ in enemies]), (len(ga.SELECTOR_ORDER), [73, 12]), "the mirror of the highlighted map: its enemies in order")
     png(pic(ctx, e, "selector"))
-    for _ in range(2):
-        e.press("DOWN", 4)
-        e.wait(40)
-    ids, row = d.selector_ids()
-    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (2, 0), "two DOWNs move to the third row: mission 0, Cinder Sea")
-    cinder = d.entry_cos(ids[2])
+    def go(row):
+        cur = d.selector_ids()[1]
+        for _ in range(abs(row - cur)):
+            e.press("DOWN" if row > cur else "UP", 4)
+            e.wait(40)
+        return d.selector_ids()
+    cinder_row, iron_row = ga.row_of(0), ga.row_of(1)
+    ids, row = go(cinder_row)
+    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (cinder_row, 0), "DOWN moves the cursor to mission 0, Cinder Sea (three enemies: after the maps with two)")
+    cinder = d.entry_cos(ids[cinder_row])
     ctx.eq(cinder[:4], [0xFF, 9, 18, 14], "Cinder Sea's enemies in order (the player picks; Drake, Sensei, Hawke): the faces the screen draws")
     ctx.eq(ga.shown(e)[1], [(9, ga.GREEN_EARTH), (18, ga.YELLOW_COMET), (14, ga.BLACK_HOLE)], "Cinder Sea's enemies in order, each in the map's fixed colour")
-    for _ in range(4):
-        e.press("DOWN", 4)
-        e.wait(40)
-    ids, row = d.selector_ids()
-    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (6, 1), "the last row is mission 1, Iron Crown (five enemies: the most, so the bottom)")
-    iron = d.entry_cos(ids[6])
+    ids, row = go(iron_row)
+    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (len(ga.SELECTOR_ORDER) - 1, 1), "the last row is mission 1, Iron Crown (five enemies: the most, so the bottom; the list has scrolled to it)")
+    iron = d.entry_cos(ids[iron_row])
     ctx.eq(iron[:4], [0xFF, 5, 17, 6], "Iron Crown's entry names its first three lines in order (the screen draws three faces: the player's slot, then Grit, Jess, Kanbei)")
     ctx.eq(ga.shown(e)[1], [(5, ga.BLUE_MOON), (17, ga.GREEN_EARTH), (6, ga.YELLOW_COMET), (80, ga.ORANGE_STAR), (92, ga.BLACK_HOLE)], "Iron Crown lists all five enemies in order, Asuka of stage two last")
     ctx.eq(ga.shown(e)[2], [ga.EMERALD_SUN], "Iron Crown offers Silver Nova only (every plain colour is an enemy's in some stage)")
     png(pic(ctx, e, "selector_iron_crown"))
-    # (the colours the pick will offer: Chrome Meridian has the Silver Nova corps on the enemy side, so no skin and neither Black Hole's nor Yellow Comet's (the skin's host) colour; Harvest Run is all of Orange Star, so
-    # never Orange Star's colour)
-    for row, want in ((5, [ga.ORANGE_STAR, ga.BLUE_MOON, ga.GREEN_EARTH]), (4, [ga.BLUE_MOON, ga.YELLOW_COMET, ga.GREEN_EARTH, ga.BLACK_HOLE, ga.EMERALD_SUN])):
-        e.press("UP", 4)
-        e.wait(40)
-        ctx.eq((d.selector_ids()[1], ga.shown(e)[2]), (row, want), f"row {row} offers {want}")
-    for _ in range(2):
-        e.press("UP", 4)
-        e.wait(40)
-    ctx.eq(d.selector_ids()[1], 2, "UP walks back up to Cinder Sea")
-    for _ in range(2):
-        e.press("UP", 4)
-        e.wait(40)
+    # (the colours each map's pick offers, from the bottom of the list up: Chrome Meridian has the Silver Nova corps on the enemy side, so no skin and neither Black Hole's nor Yellow Comet's (the skin's host) colour;
+    # Harvest Run is all of Orange Star and Blue Bastion all of Blue Moon, so never that colour; Last Eclipse wears Black Hole's and Orange Star's; the others as their enemies' colours say)
+    P = [ga.ORANGE_STAR, ga.BLUE_MOON, ga.YELLOW_COMET, ga.GREEN_EARTH, ga.BLACK_HOLE]          # (the Teams screen's order)
+    offer = {11: [c for c in P if c not in (ga.BLACK_HOLE, ga.ORANGE_STAR)] + [ga.EMERALD_SUN],
+             10: [c for c in P if c != ga.BLUE_MOON] + [ga.EMERALD_SUN],
+             6: [ga.ORANGE_STAR, ga.BLUE_MOON, ga.GREEN_EARTH],
+             5: [ga.BLUE_MOON, ga.YELLOW_COMET, ga.GREEN_EARTH, ga.BLACK_HOLE, ga.EMERALD_SUN],
+             9: [c for c in P if c not in (ga.BLUE_MOON, ga.BLACK_HOLE)] + [ga.EMERALD_SUN],
+             8: [c for c in P if c not in (ga.GREEN_EARTH, ga.BLUE_MOON)] + [ga.EMERALD_SUN],
+             7: [c for c in P if c not in (ga.GREEN_EARTH, ga.BLACK_HOLE)] + [ga.EMERALD_SUN]}
+    for mission in (11, 10, 6, 5, 9, 8, 7):
+        row = ga.row_of(mission)
+        go(row)
+        ctx.eq((d.selector_ids()[1], ga.shown(e)[2]), (row, offer[mission]), f"{ga.SELECTOR_TITLES[row]} (row {row}) offers {offer[mission]}")
+    go(cinder_row)
+    ctx.eq(d.selector_ids()[1], cinder_row, "UP walks back up to Cinder Sea")
+    go(0)
     ctx.eq(d.selector_ids()[1], 0, "UP goes back to the first")
     e.press("A", 6)
     d.wait_co_screen()
@@ -429,7 +434,46 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq((d.session()["mission"], d.session()["map_id"]), (ga.SELECTOR_ORDER[0], 0xF0), "the map is the session's mission, the battle's map id the campaign engine's")
     ctx.eq(e.u8(ga.PLAY_ST + 1), 1, "the game mode is the campaign's again")
     ctx.eq(e.u8(ga.UI_STEP), 0, "the selector's step is over")
-    ctx.eq(d.entry_tab(ga.FIRST_ID), 0x7F, "the Gauntlet's entries are on no list any more")
+    ctx.eq(d.entry_tab(ga.list_ids()[0]), 0x7F, "the Gauntlet's entries are on no list any more")
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_a_long_list_borrows_survivals_map_entries_and_gives_them_back(ctx):
+    """The list of a full house (the test aid TANGOAW2_GAUNTLET_SLOTS=32 lays the ids out for 32 maps, so today's twelve take ids 0xDC.., Survival's entries): the selector lists every map in order with its own
+    name, scrolls to the last row, the record box reads the rows of those ids, and when the selector is left every borrowed entry is Survival's again, byte for byte (crate::survival::restore_entry)."""
+    os.environ["TANGOAW2_GAUNTLET_SLOTS"] = "32"           # (the driver's own id arithmetic follows the aid too: ga.list_ids)
+    try:
+        _long_list(ctx)
+    finally:
+        os.environ.pop("TANGOAW2_GAUNTLET_SLOTS", None)
+
+
+def _long_list(ctx):
+    e, g, d = boot(ctx, env={"TANGOAW2_GAUNTLET_SLOTS": "32"})
+    saves.to_select_mode(e)
+    borrowed =list(range(ga.SLOT_IDS[-ga.MAX_MAPS], 0xF0))
+    entry = lambda i: bytes(e.read(0x08E0_0000 + 0x5C * i, 0x5C))      # (crate::survival::TABLE)
+    before = {i: entry(i) for i in borrowed}
+    ctx.check(any(before[i][0x14:0x16] != b"\0\0" for i in borrowed), "Survival's entries are in the table before the Gauntlet opens")
+    d.open(pick=False, from_title=False)
+    d.wait_step(ga.SELECTOR)
+    ids, row = d.selector_ids()
+    ctx.eq(ids, ga.list_ids(), "the list is the twelve maps on the borrowed ids")
+    ctx.check(ids[0] < 0xE0, f"the first map's id is a Survival entry's ({ids[0]:#x})")
+    ctx.eq([d.entry_name(i) for i in ids], ga.SELECTOR_TITLES, "every map has its own name, in the order of the enemy counts")
+    for _ in range(len(ids) - 1):
+        e.press("DOWN", 4)
+        e.wait(40)
+    ids, row = d.selector_ids()
+    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (len(ids) - 1, 1), "DOWN scrolls the list to the last map, Iron Crown")
+    d.put_results(2, [(ga.MAX, 20, 400)])
+    e.wait(10)
+    ctx.eq(d.record_rows()[-1][0], (ga.MAX, 20 | 400 << 12), "the box's row of the last id holds Iron Crown's best")
+    e.press("B", 6)
+    e.wait(120)
+    after = {i: entry(i) for i in borrowed}
+    ctx.eq([hex(i) for i in borrowed if after[i] != before[i]], [], "every borrowed entry is Survival's again")
     e.close()
 
 
@@ -458,7 +502,7 @@ def gauntlet_mode_selector_shows_the_top_five_in_the_record_box(ctx):
 def gauntlet_mode_records_are_kept_by_the_maps_id_not_its_place_in_the_list(ctx):
     """A record region with results under map ids 2 and 1 (Iron Crown's and Cinder Sea's) shows each on its own row whatever order the region lists them; an id no map has is kept untouched."""
     save = ga.with_record(paths.base_save(), os.path.join(ctx.out, "ids.sav"), ga.region_bytes({
-        2: [(ga.MAX, 20, 400), (ga.ANDY, 22, 300)], 1: [(ga.SAMI, 9, 280)], 9: [(ga.KANBEI, 5, 500)]}))
+        2: [(ga.MAX, 20, 400), (ga.ANDY, 22, 300)], 1: [(ga.SAMI, 9, 280)], 40: [(ga.KANBEI, 5, 500)]}))
     e, g, d = boot(ctx, save=save)
     d.open(pick=False)
     d.wait_step(ga.SELECTOR)
@@ -466,7 +510,7 @@ def gauntlet_mode_records_are_kept_by_the_maps_id_not_its_place_in_the_list(ctx)
     rows = d.record_rows()
     ctx.eq(rows[ga.row_of(0)][:2], [(ga.SAMI, 9 | 280 << 12), (0, 0)], "Cinder Sea (id 1) shows its own result")
     ctx.eq(rows[ga.row_of(1)][:3], [(ga.MAX, 20 | 400 << 12), (ga.ANDY, 22 | 300 << 12), (0, 0)], "Iron Crown (id 2) shows its two")
-    ctx.eq(d.results(9), [(ga.KANBEI, 5, 500)], "the record of an id no map has now is loaded and kept")
+    ctx.eq(d.results(40), [(ga.KANBEI, 5, 500)], "the record of an id no map has now is loaded and kept")
     e.close()
 
 
@@ -562,11 +606,11 @@ def gauntlet_mode_b_on_the_selector_goes_back_to_select_mode_and_a_second_visit_
     ctx.eq(e.u8(ga.UI_STEP), 0, "the selector's step is over")
     ctx.check(e.u8(ga.PLAY_ST + 1) != 2, "the War Room's game mode is not left behind")
     ctx.eq(e.u8(0x0809_0EF2), 7, "the War Room's own tab is back (Survival's and ours are not left on it)")
-    ctx.eq(d.entry_tab(ga.FIRST_ID), 0x7F, "the Gauntlet's entries are on no list")
+    ctx.eq(d.entry_tab(ga.list_ids()[0]), 0x7F, "the Gauntlet's entries are on no list")
     e.press("A", 8)
     d.wait_step(ga.SELECTOR)
     ids, row = d.selector_ids()
-    ctx.eq((ids, row), ([ga.FIRST_ID + r for r in range(len(ga.SELECTOR_ORDER))], 0), "the second visit lists the maps again")
+    ctx.eq((ids, row), (ga.list_ids(), 0), "the second visit lists the maps again")
     e.close()
 
 

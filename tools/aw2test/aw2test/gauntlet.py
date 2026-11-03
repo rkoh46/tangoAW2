@@ -14,7 +14,7 @@ GAUNTLET = 4
 PICKED, CONTINUING = 0x0203FD54, 0x0203FD55   # crate::gauntlet
 MAGIC = b"AWGA"
 SLOT, OFFSET, MID_SLOT = 13, 0x240, 12      # the record follows BH's (0) and BH2's (0x120) in slot 13; a run saved halfway shares slot 12 (tag 4 << 5)
-SLOTS, SLOT_LEN, TOP = 16, 0x18, 5          # crate::gauntlet: the top five of up to 16 maps, keyed by the map's id (gauntlet_NN is NN)
+SLOTS, SLOT_LEN, TOP = 32, 0x18, 5          # crate::gauntlet: the top five of up to 32 maps, keyed by the map's id (gauntlet_NN is NN)
 TABLE_LEN = SLOTS * SLOT_LEN
 RECORD_LEN = 0x20 + TABLE_LEN              # the progress record (version byte at +5: 2), then the table
 WHEEL_LAST = 0x03005934           # the wheel's remembered position
@@ -31,14 +31,19 @@ ORANGE_STAR, BLUE_MOON, GREEN_EARTH, YELLOW_COMET, BLACK_HOLE, EMERALD_SUN = 1, 
 CINDER_FREE = [ORANGE_STAR, BLUE_MOON, EMERALD_SUN]   # AW2's five minus Cinder Sea's enemies (Green Earth, Yellow Comet, Black Hole), then the skin
 CINDER_ENEMY_COLOURS = [GREEN_EARTH, YELLOW_COMET, BLACK_HOLE]
 
-# the game's SELECT MAP list (crate::five_map::LIST_IDS, LIST_LAST) and its cursor words; the Gauntlet's maps are map-table ids FIRST_ID.. (crate::gauntlet_ui::FIRST_ID)
+# the game's SELECT MAP list (crate::five_map::LIST_IDS, LIST_LAST) and its cursor words; the Gauntlet's maps are map-table ids SLOT_IDS (below: crate::gauntlet_ui::SLOT_IDS)
 LIST_IDS, LIST_LAST = 0x0203DC24, 0x0203DC24 + 0x6E + 1
 LIST_FIRST, LIST_CURSOR_ROW = 0x03005900, 0x03005930
-FIRST_ID = 0xF6
+# the map-table ids a list may use, ascending (crate::gauntlet_ui::SLOT_IDS): Survival's 0xC9..0xEF borrowed only by a list of more than twelve maps, then the free 0xF2..0xFD; a list of n maps takes the last n
+SLOT_IDS = list(range(0xC9, 0xF0)) + list(range(0xF2, 0xFE))
+MAX_MAPS = 32
+ROW_BASE = SLOT_IDS[-MAX_MAPS]      # crate::gauntlet_ui::ROW_BASE: the first id the record rows cover
 PLAY_ST = 0x03003FC0                # the play state: +1 the game mode (2 while the selector is up: the War Room's), +2 the map id (0 until A)
 
-TABLE = 0x0203FA40 + 0x2D0 - 0x180   # crate::gauntlet::TABLE: the table in RAM (the end of Survival's block of rows)
-ROWS = 0x0203FA40                  # the War Room record rows the selector's record box reads (crate::survival::ROWS: Survival's zeroed block, free while Survival is closed)
+BLOCK = 0x0203E800                 # crate::gauntlet::BLOCK: the record rows the selector's record box reads, one per map-table id from ROW_BASE to 0xFD, then the top-five table
+ROWS = BLOCK
+ROW_COUNT = 0xFD - ROW_BASE + 1
+TABLE = BLOCK + 0x14 * ROW_COUNT   # crate::gauntlet::TABLE: the table in RAM
 UI_SHOWN = UI + 0x20          # what the step shows: +0 maps listed, +1 enemies, +2.. (CO, colour) pairs, +0x0E free count, +0x0F.. free army codes
 HOSTS = 0x0203C500            # crate::army_skin::STATE: the colour each skin sits on (0 none)
 
@@ -51,8 +56,16 @@ def shown(e):
 
 # The selector lists the maps by their number of enemy COs, fewest first (crate::gauntlet_mode::order; ties in the definition's order): the missions by row and their names. A map's identity is its
 # mission (the record, `Gauntlet.open(map=<mission>)`), never its row.
-SELECTOR_ORDER = [2, 3, 0, 4, 5, 6, 1]
-SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Cinder Sea", "Granite Spine", "Harvest Run", "Chrome Meridian", "Iron Crown"]
+SELECTOR_ORDER = [2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
+SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown"]
+
+
+def list_ids():
+    """The map-table ids the selector lists, in its order: the last n of SLOT_IDS (more with the test aid TANGOAW2_GAUNTLET_SLOTS=<span>, which lays the ids out for that many maps and so borrows Survival's)."""
+    n = len(SELECTOR_ORDER)
+    span = max(n, min(MAX_MAPS, int(os.environ.get("TANGOAW2_GAUNTLET_SLOTS") or 0)))
+    return SLOT_IDS[len(SLOT_IDS) - span:][:n]
+
 def row_of(mission):
     """The selector's row (and the record row the game reads for it) of the map of this mission."""
     return SELECTOR_ORDER.index(mission)
@@ -132,8 +145,9 @@ class Gauntlet(BhCampaign):
 
     def record_rows(self):
         """The War Room record rows the screen reads for the Gauntlet's maps (crate::gauntlet_ui::rows): per map five (CO, score) records."""
-        b = bytes(self.e.read(ROWS, 0x14 * 8))
-        return [[(b[0x14 * m + 4 * k], int.from_bytes(b[0x14 * m + 4 * k + 1:0x14 * m + 4 * k + 4], "little")) for k in range(5)] for m in range(8)]
+        b = bytes(self.e.read(ROWS, 0x14 * ROW_COUNT))
+        rows = [0x14 * (i - ROW_BASE) for i in list_ids()]       # (the game reads the row of the map-table id it lists a map by)
+        return [[(b[o + 4 * k], int.from_bytes(b[o + 4 * k + 1:o + 4 * k + 4], "little")) for k in range(5)] for o in rows]
 
     def open(self, from_title=True, pick=True, map=0):
         """Select Mode's GAUNTLET, A: the map selector (the mode starts at once: no box, no world map); with `pick` A takes the highlighted map and the CO screen follows."""
@@ -146,7 +160,7 @@ class Gauntlet(BhCampaign):
             self.wait_step(SELECTOR)
             # (the selector lists the maps by their number of enemy COs, fewest first, crate::gauntlet_mode::order: DOWN until the cursor is on the mission `map`;
             # the cursor's move takes a moment to settle before it takes A)
-            for _ in range(8):
+            for _ in range(len(SELECTOR_ORDER) + 2):
                 if e.u8(UI_MAP_CURSOR) == map:
                     break
                 e.press("DOWN", 4)

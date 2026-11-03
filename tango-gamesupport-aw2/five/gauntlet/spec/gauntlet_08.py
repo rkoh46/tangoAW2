@@ -50,7 +50,7 @@ def build():
     m.units(1, INF, [(3, 13), (6, 15), (4, 15)]).unit(1, MECH, 2, 14).unit(1, AA, 6, 14).unit(1, BCO, 5, 13).unit(1, BCO, 3, 16).unit(1, FTR, 7, 15).unit(1, TCO, 4, 14)
     for kind, (x, y) in zip((LAN, CR, SUB), m.sea_near(11, 14, 3)):
         m.unit(1, kind, x, y)
-    m.units(2, INF, [(25, 3), (24, 5), (26, 4)]).unit(2, AA, 23, 4).unit(2, BCO, 26, 3).unit(2, FTR, 24, 2).unit(2, FTR, 25, 5).unit(2, BMB, 27, 5)
+    m.units(2, INF, [(25, 3), (24, 5), (26, 4)]).unit(2, AA, 23, 4).unit(2, BCO, 26, 3).unit(2, FTR, 24, 2).unit(2, FTR, 25, 5).unit(2, BMB, 27, 5).unit(2, MECH, 22, 5).unit(2, TANK, 26, 5).unit(2, ART, 22, 6).unit(2, ROCK, 27, 6)
     for kind, (x, y) in zip((BS, CR, CR, SUB, LAN), m.sea_near(20, 5, 5)):
         m.unit(2, kind, x, y)
     for k, t in {"1": "the player's HQ", "2": "Eagle's HQ (Green Earth): the first line", "3": "Adder's HQ (Black Hole, hidden until Eagle falls): the last"}.items():
