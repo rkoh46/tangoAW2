@@ -85,3 +85,40 @@ def falls(info):
 for _info in gm.MAPS.values():
     selector_and_start(_info)
     falls(_info)
+
+
+@test(modes=("ds",))
+def gauntlet_lines_last_eclipse_the_minicannon_fires_down_its_lane_on_sturms_turn(ctx):
+    """Last Eclipse's minicannon behind the first seam (W at (17,12): it fires on (16..13, 12), the lane in front of the seam (13,12)), on Black Hole's turn: with Sturm's army reduced to one far Infantry (so nothing
+    else can hurt them), a Tank of the player's put in the lane loses hit points on his turn and one put beside the lane does not. The map's inventions list holds the four cannons."""
+    info = gm.MAPS[11]
+    e, g, d = start(ctx, info)
+    got = [bytes(e.read(0x0202_8360 + 8 * i, 8)) for i in range(4)]
+    ctx.eq(sorted((b[0], b[1]) for b in got), [(17, 12), (28, 5), (29, 16), (38, 19)], "the map's inventions: the four minicannons")
+    sturm = g.units(army=1)
+    keep = next(u for u in sturm if u["type"] == 1)
+    for u in sturm:
+        if u["id"] != keep["id"]:
+            d.remove_unit(u)
+    d.place_unit(keep, 22, 23)
+    tanks = [u for u in g.units(army=info.player) if u["type"] == 5]
+    inn, out = tanks[0], tanks[1]
+    d.place_unit(inn, 15, 12)
+    d.place_unit(out, 15, 16)
+    e.wait(10)
+    d.end_turn()
+    left = False
+    for _ in range(3000):
+        left = left or g.current_army() != info.player
+        if left and g.current_army() == info.player and d.in_battle() and not d.scripts_running():
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(10)
+    d.wait_control()
+    g._units_base = g._players_base = None
+    now = {u["id"]: u["hp"] for u in g.units(army=info.player)}
+    ctx.log(f"in the lane {inn['id']}: {now.get(inn['id'])}; beside it {out['id']}: {now.get(out['id'])}")
+    ctx.check(now.get(inn["id"], 0) < 100, "the Tank in the lane was hit on Sturm's turn")
+    ctx.eq(now.get(out["id"]), 100, "the Tank beside the lane was not")
+    e.close()

@@ -26,6 +26,7 @@ class MapInfo:
     player_hq: tuple
     lines: list = field(default_factory=list)
     skin_enemies: bool = False     # an enemy line wears Silver Nova (the skin is no choice for the player)
+    sealed: bool = False           # the first line starts in a chamber sealed by pipe seams: its units cannot leave it until a seam is broken
 
     @property
     def five(self):
@@ -85,18 +86,18 @@ add(MapInfo(9, "gauntlet_10", "Neon Row", 1, (4, 16), [
     Line("kindle", 74, 3, (4, 3), wave=19, chest=(15000, 1000)),
     Line("jugger", 72, 4, (28, 3), wave=20, chest=(20000, 1500)),
 ]))
-add(MapInfo(10, "gauntlet_11", "Blue Bastion", 5, (3, 20), [
-    Line("olaf", 3, 1, (19, 18)),
-    Line("grit", 5, 2, (19, 7), wave=17, chest=(15000, 1000)),
-    Line("colin", 16, 3, (27, 7), wave=19, chest=(20000, 1500)),
-    Line("sasha", 78, 4, (27, 18), wave=20, chest=(25000, 2000)),
+add(MapInfo(10, "gauntlet_11", "Blue Bastion", 5, (3, 22), [
+    Line("olaf", 3, 1, (16, 21)),
+    Line("grit", 5, 2, (20, 15), wave=17, chest=(15000, 1000)),
+    Line("colin", 16, 3, (32, 15), wave=19, chest=(20000, 1500)),
+    Line("sasha", 78, 4, (26, 13), wave=20, chest=(25000, 2000)),
 ]))
 add(MapInfo(11, "gauntlet_12", "Last Eclipse", 5, (3, 13), [
-    Line("sturm", 10, 1, (14, 14)),
-    Line("von_bolt", 75, 2, (24, 5), wave=19, chest=(15000, 1000)),
-    Line("aria", 93, 3, (24, 20), wave=20, chest=(20000, 1500)),
-    Line("asuka", 92, 4, (35, 13), wave=23, chest=(25000, 2000)),
-]))
+    Line("sturm", 10, 1, (19, 13)),
+    Line("von_bolt", 75, 2, (29, 6), wave=19, chest=(15000, 1000)),
+    Line("aria", 93, 3, (29, 20), wave=20, chest=(20000, 1500)),
+    Line("asuka", 92, 4, (39, 13), wave=23, chest=(25000, 2000)),
+], sealed=True))
 
 
 def player_army(mission):

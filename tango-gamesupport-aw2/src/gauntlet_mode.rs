@@ -1179,85 +1179,85 @@ fn jugger_arrives() -> Scene {
 
 // --- Gauntlet 11, Blue Bastion: all of Blue Moon -----------------------------------------------------------------------------------------------------------
 
-/// The HQs (five/gauntlet/spec/gauntlet_11.py): Olaf's (on the field), Grit's, Colin's and Sasha's (hidden), the player's (army 5).
-pub const BASTION_OLAF: (u8, u8) = (19, 18);
-pub const BASTION_GRIT: (u8, u8) = (19, 7);
-pub const BASTION_COLIN: (u8, u8) = (27, 7);
-pub const BASTION_SASHA: (u8, u8) = (27, 18);
-pub const BASTION_PLAYER: (u8, u8) = (3, 20);
+/// The HQs (five/gauntlet/spec/gauntlet_11.py): Olaf's (the outer bailey, on the field), Grit's (west ward), Colin's (east ward) and Sasha's (the keep: hidden), the player's (army 5).
+pub const BASTION_OLAF: (u8, u8) = (16, 21);
+pub const BASTION_GRIT: (u8, u8) = (20, 15);
+pub const BASTION_COLIN: (u8, u8) = (32, 15);
+pub const BASTION_SASHA: (u8, u8) = (26, 13);
+pub const BASTION_PLAYER: (u8, u8) = (3, 22);
 
-/// Grit's wave: artillery and rockets in the north-west ward, Md Tanks, a Tank and foot soldiers.
+/// Grit's wave: artillery and rockets in the west ward, Md Tanks, a Tank and foot soldiers.
 const GRIT_WAVE: [(u8, (u8, u8)); 17] = [
-    (unit::ARTILLERY, (20, 7)),
-    (unit::ARTILLERY, (16, 9)),
-    (unit::ARTILLERY, (19, 7)),
-    (unit::ARTILLERY, (18, 7)),
-    (unit::ROCKETS, (19, 3)),
-    (unit::ROCKETS, (19, 8)),
-    (unit::MD_TANK, (21, 7)),
-    (unit::MD_TANK, (15, 7)),
-    (unit::INFANTRY, (18, 4)),
-    (unit::INFANTRY, (17, 9)),
-    (unit::INFANTRY, (19, 5)),
-    (unit::INFANTRY, (20, 4)),
-    (unit::MECH, (15, 5)),
-    (unit::MECH, (18, 11)),
-    (unit::MECH, (17, 7)),
-    (unit::ANTI_AIR, (19, 11)),
-    (unit::TANK, (16, 11)),
+    (unit::ARTILLERY, (20, 13)),
+    (unit::ARTILLERY, (19, 15)),
+    (unit::ARTILLERY, (19, 13)),
+    (unit::ARTILLERY, (21, 13)),
+    (unit::ROCKETS, (19, 10)),
+    (unit::ROCKETS, (20, 15)),
+    (unit::MD_TANK, (21, 15)),
+    (unit::MD_TANK, (19, 12)),
+    (unit::INFANTRY, (19, 11)),
+    (unit::INFANTRY, (19, 16)),
+    (unit::INFANTRY, (21, 12)),
+    (unit::INFANTRY, (20, 11)),
+    (unit::MECH, (21, 11)),
+    (unit::MECH, (21, 17)),
+    (unit::MECH, (18, 15)),
+    (unit::ANTI_AIR, (20, 17)),
+    (unit::TANK, (18, 17)),
 ];
 
-/// Colin's wave: cheap tanks and a crowd of infantry in the north-east ward, copters.
+/// Colin's wave: cheap tanks and a crowd of infantry in the east ward, copters.
 const COLIN_WAVE: [(u8, (u8, u8)); 19] = [
-    (unit::TANK, (26, 7)),
-    (unit::TANK, (30, 8)),
-    (unit::TANK, (25, 7)),
-    (unit::TANK, (24, 7)),
-    (unit::INFANTRY, (29, 3)),
-    (unit::INFANTRY, (31, 7)),
-    (unit::INFANTRY, (24, 8)),
-    (unit::INFANTRY, (29, 5)),
-    (unit::INFANTRY, (29, 4)),
-    (unit::INFANTRY, (24, 9)),
-    (unit::MECH, (25, 6)),
-    (unit::MECH, (30, 4)),
-    (unit::MD_TANK, (27, 5)),
-    (unit::MD_TANK, (30, 11)),
-    (unit::APC, (27, 7)),
-    (unit::ANTI_AIR, (31, 10)),
-    (unit::B_COPTER, (31, 11)),
-    (unit::B_COPTER, (29, 10)),
-    (unit::ROCKETS, (30, 7)),
+    (unit::TANK, (34, 13)),
+    (unit::TANK, (32, 15)),
+    (unit::TANK, (32, 13)),
+    (unit::TANK, (31, 13)),
+    (unit::INFANTRY, (32, 10)),
+    (unit::INFANTRY, (33, 15)),
+    (unit::INFANTRY, (34, 15)),
+    (unit::INFANTRY, (31, 12)),
+    (unit::INFANTRY, (32, 11)),
+    (unit::INFANTRY, (32, 16)),
+    (unit::MECH, (33, 13)),
+    (unit::MECH, (33, 11)),
+    (unit::MD_TANK, (31, 15)),
+    (unit::MD_TANK, (34, 17)),
+    (unit::APC, (31, 17)),
+    (unit::ANTI_AIR, (33, 17)),
+    (unit::B_COPTER, (32, 17)),
+    (unit::B_COPTER, (33, 16)),
+    (unit::ROCKETS, (34, 10)),
 ];
 
-/// Sasha's wave: Md Tanks, a Mega Tank and artillery in the south-east ward, a Fighter and a Bomber.
+/// Sasha's wave: Md Tanks, a Mega Tank and artillery in the keep, a Fighter and a Bomber.
 const SASHA_WAVE: [(u8, (u8, u8)); 20] = [
-    (unit::MD_TANK, (27, 18)),
-    (unit::MD_TANK, (26, 20)),
-    (unit::MD_TANK, (26, 18)),
-    (unit::MEGATANK, (25, 18)),
-    (unit::TANK, (31, 14)),
-    (unit::TANK, (27, 19)),
-    (unit::TANK, (31, 18)),
-    (unit::INFANTRY, (26, 17)),
-    (unit::INFANTRY, (25, 16)),
-    (unit::INFANTRY, (24, 21)),
-    (unit::INFANTRY, (24, 18)),
-    (unit::MECH, (29, 16)),
-    (unit::MECH, (31, 16)),
-    (unit::ARTILLERY, (30, 22)),
-    (unit::ARTILLERY, (30, 17)),
-    (unit::ARTILLERY, (26, 22)),
-    (unit::FIGHTER, (31, 22)),
-    (unit::BOMBER, (29, 21)),
-    (unit::ANTI_AIR, (28, 17)),
-    (unit::ANTI_AIR, (27, 16)),
+    (unit::MD_TANK, (27, 13)),
+    (unit::MD_TANK, (26, 14)),
+    (unit::MD_TANK, (26, 13)),
+    (unit::MEGATANK, (28, 13)),
+    (unit::TANK, (26, 11)),
+    (unit::TANK, (29, 13)),
+    (unit::TANK, (24, 14)),
+    (unit::INFANTRY, (23, 13)),
+    (unit::INFANTRY, (25, 12)),
+    (unit::INFANTRY, (29, 15)),
+    (unit::INFANTRY, (27, 14)),
+    (unit::MECH, (28, 12)),
+    (unit::MECH, (29, 12)),
+    (unit::ARTILLERY, (28, 16)),
+    (unit::ARTILLERY, (27, 15)),
+    (unit::ARTILLERY, (26, 16)),
+    (unit::FIGHTER, (29, 16)),
+    (unit::BOMBER, (23, 16)),
+    (unit::ANTI_AIR, (25, 15)),
+    (unit::ANTI_AIR, (24, 11)),
 ];
 
 /// Blue Bastion: all of Blue Moon in one fortress, the lines one after another (the same colour on four army slots, as Harvest Run's Orange Star).
 fn blue_bastion() -> MissionDef {
     let mut m = MissionDef::new("gauntlet_11", "Blue Bastion");
-    m.objective = "Storm the fortress ward by ward: Olaf, then Grit, Colin and Sasha.";
+    m.objective = "Storm the castle ring by ring: Olaf, then Grit, Colin and Sasha in the keep.";
     m.map = MapSrc::Built("gauntlet_11");
     m.armies = vec![
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::OLAF)).team(1).funds(9000),
@@ -1269,10 +1269,10 @@ fn blue_bastion() -> MissionDef {
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_11"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
     m.rank_days = 40;
     let lines = [
-        Wire { army: 1, hq: BASTION_OLAF, zone: Rect::new(15, 14, 21, 22) },
-        Wire { army: 2, hq: BASTION_GRIT, zone: Rect::new(15, 3, 21, 11) },
-        Wire { army: 3, hq: BASTION_COLIN, zone: Rect::new(24, 3, 31, 11) },
-        Wire { army: 4, hq: BASTION_SASHA, zone: Rect::new(24, 14, 31, 22) },
+        Wire { army: 1, hq: BASTION_OLAF, zone: Rect::new(13, 5, 39, 22) },
+        Wire { army: 2, hq: BASTION_GRIT, zone: Rect::new(18, 10, 21, 17) },
+        Wire { army: 3, hq: BASTION_COLIN, zone: Rect::new(31, 10, 34, 17) },
+        Wire { army: 4, hq: BASTION_SASHA, zone: Rect::new(23, 11, 29, 16) },
     ];
     wire(
         &mut m,
@@ -1284,8 +1284,8 @@ fn blue_bastion() -> MissionDef {
         ],
     );
     m.intro = Scene::new(vec![
-        Line::say(co::OLAF, "Welcome to the Bastion! All of Blue Moon stands behind this wall."),
-        Line::say(co::OLAF, "Cold stone, cold hearts. I will keep the west gate myself."),
+        Line::say(co::OLAF, "Welcome to the Bastion! All of Blue Moon stands behind these walls."),
+        Line::say(co::OLAF, "Cold stone, cold hearts. I will hold the outer wall myself."),
     ]);
     m.victory = Scene::new(vec![Line::say(co::SASHA, "The Bastion has fallen. Blue Moon will remember it. And you.")]);
     m
@@ -1293,7 +1293,7 @@ fn blue_bastion() -> MissionDef {
 
 fn grit_arrives() -> Scene {
     Scene::new(vec![
-        Line::feel(co::OLAF, Mood::Sad, "The west gate is broken! Grit, hold the north ward!"),
+        Line::feel(co::OLAF, Mood::Sad, "The outer wall is broken! Grit, hold the west ward!"),
         Line::say(co::GRIT, "Heh, leave it to me, Olaf! My guns reach the whole courtyard."),
     ])
 }
@@ -1307,7 +1307,7 @@ fn colin_arrives() -> Scene {
 
 fn sasha_arrives() -> Scene {
     Scene::new(vec![
-        Line::feel(co::COLIN, Mood::Sad, "My treasury wall! Sasha, take the last ward, quick!"),
+        Line::feel(co::COLIN, Mood::Sad, "My treasury ward! Sasha, hold the keep, quick!"),
         Line::say(co::SASHA, "Stand down, Colin. This is where Blue Moon ends its retreat."),
         Line::say(co::SASHA, "You came a long way to reach me. Let's see if it was worth it."),
     ])
@@ -1316,90 +1316,90 @@ fn sasha_arrives() -> Scene {
 // --- Gauntlet 12, Last Eclipse --------------------------------------------------------------------------------------------------------------------------
 
 /// The HQs (five/gauntlet/spec/gauntlet_12.py): Sturm's (on the field), Von Bolt's, Aria's and Asuka's (hidden), the player's (army 5).
-pub const ECLIPSE_STURM: (u8, u8) = (14, 14);
-pub const ECLIPSE_VON_BOLT: (u8, u8) = (24, 5);
-pub const ECLIPSE_ARIA: (u8, u8) = (24, 20);
-pub const ECLIPSE_ASUKA: (u8, u8) = (35, 13);
+pub const ECLIPSE_STURM: (u8, u8) = (19, 13);
+pub const ECLIPSE_VON_BOLT: (u8, u8) = (29, 6);
+pub const ECLIPSE_ARIA: (u8, u8) = (29, 20);
+pub const ECLIPSE_ASUKA: (u8, u8) = (39, 13);
 pub const ECLIPSE_PLAYER: (u8, u8) = (3, 13);
 
-/// Von Bolt's wave: armour, a Neo Tank and missiles in the north chamber, a Fighter and a Bomber.
+/// Von Bolt's wave: armour, a Neo Tank and missiles in the north chamber (clear of the minicannon's lane), a Fighter and a Bomber.
 const ECLIPSE_VON_BOLT_WAVE: [(u8, (u8, u8)); 19] = [
-    (unit::MD_TANK, (27, 5)),
-    (unit::MD_TANK, (27, 6)),
-    (unit::MD_TANK, (20, 4)),
-    (unit::NEOTANK, (25, 8)),
-    (unit::TANK, (28, 10)),
-    (unit::TANK, (27, 4)),
-    (unit::ARTILLERY, (27, 2)),
-    (unit::ARTILLERY, (24, 4)),
-    (unit::MISSILES, (22, 2)),
-    (unit::MISSILES, (23, 9)),
-    (unit::INFANTRY, (21, 11)),
-    (unit::INFANTRY, (26, 11)),
-    (unit::INFANTRY, (20, 6)),
-    (unit::INFANTRY, (24, 6)),
-    (unit::MECH, (20, 2)),
-    (unit::MECH, (23, 3)),
-    (unit::ANTI_AIR, (28, 6)),
-    (unit::FIGHTER, (25, 11)),
-    (unit::BOMBER, (22, 11)),
+    (unit::MD_TANK, (32, 5)),
+    (unit::MD_TANK, (30, 7)),
+    (unit::MD_TANK, (25, 3)),
+    (unit::NEOTANK, (32, 6)),
+    (unit::TANK, (29, 5)),
+    (unit::TANK, (30, 9)),
+    (unit::ARTILLERY, (29, 10)),
+    (unit::ARTILLERY, (29, 2)),
+    (unit::MISSILES, (28, 10)),
+    (unit::MISSILES, (27, 4)),
+    (unit::INFANTRY, (25, 9)),
+    (unit::INFANTRY, (25, 12)),
+    (unit::INFANTRY, (31, 8)),
+    (unit::INFANTRY, (25, 4)),
+    (unit::MECH, (33, 5)),
+    (unit::MECH, (28, 11)),
+    (unit::ANTI_AIR, (27, 8)),
+    (unit::FIGHTER, (30, 8)),
+    (unit::BOMBER, (33, 12)),
 ];
 
 /// Aria's wave: fast tanks and recons in the south chamber, artillery behind, copters.
 const ARIA_WAVE: [(u8, (u8, u8)); 20] = [
-    (unit::TANK, (20, 19)),
+    (unit::TANK, (25, 19)),
     (unit::TANK, (27, 19)),
-    (unit::TANK, (24, 15)),
-    (unit::TANK, (20, 21)),
-    (unit::RECON, (23, 22)),
-    (unit::RECON, (25, 17)),
-    (unit::MD_TANK, (24, 14)),
-    (unit::MD_TANK, (26, 16)),
-    (unit::ARTILLERY, (26, 13)),
-    (unit::ARTILLERY, (23, 21)),
-    (unit::ROCKETS, (22, 23)),
-    (unit::INFANTRY, (24, 25)),
-    (unit::INFANTRY, (23, 17)),
-    (unit::INFANTRY, (24, 17)),
-    (unit::INFANTRY, (27, 13)),
-    (unit::MECH, (27, 14)),
-    (unit::MECH, (25, 18)),
-    (unit::ANTI_AIR, (27, 24)),
-    (unit::B_COPTER, (21, 25)),
-    (unit::B_COPTER, (25, 19)),
+    (unit::TANK, (28, 25)),
+    (unit::TANK, (32, 15)),
+    (unit::RECON, (28, 20)),
+    (unit::RECON, (27, 18)),
+    (unit::MD_TANK, (25, 17)),
+    (unit::MD_TANK, (29, 17)),
+    (unit::ARTILLERY, (33, 20)),
+    (unit::ARTILLERY, (29, 20)),
+    (unit::ROCKETS, (30, 15)),
+    (unit::INFANTRY, (29, 18)),
+    (unit::INFANTRY, (28, 16)),
+    (unit::INFANTRY, (26, 14)),
+    (unit::INFANTRY, (33, 21)),
+    (unit::MECH, (30, 24)),
+    (unit::MECH, (30, 20)),
+    (unit::ANTI_AIR, (31, 22)),
+    (unit::B_COPTER, (25, 23)),
+    (unit::B_COPTER, (29, 23)),
 ];
 
 /// Asuka's wave: Neo Tanks, Md Tanks and a Mega Tank in the citadel's yard, missiles, a Fighter and two Bombers.
 const ASUKA_WAVE: [(u8, (u8, u8)); 23] = [
-    (unit::NEOTANK, (33, 13)),
-    (unit::NEOTANK, (36, 13)),
-    (unit::NEOTANK, (38, 10)),
-    (unit::MD_TANK, (37, 14)),
-    (unit::MD_TANK, (33, 17)),
-    (unit::MD_TANK, (31, 13)),
-    (unit::MEGATANK, (35, 9)),
-    (unit::ARTILLERY, (36, 12)),
-    (unit::ARTILLERY, (36, 8)),
-    (unit::MISSILES, (36, 15)),
-    (unit::MISSILES, (38, 17)),
-    (unit::INFANTRY, (36, 18)),
-    (unit::INFANTRY, (34, 13)),
+    (unit::NEOTANK, (40, 12)),
+    (unit::NEOTANK, (38, 14)),
+    (unit::NEOTANK, (43, 6)),
+    (unit::MD_TANK, (41, 15)),
+    (unit::MD_TANK, (42, 19)),
+    (unit::MD_TANK, (40, 10)),
+    (unit::MEGATANK, (40, 5)),
+    (unit::ARTILLERY, (40, 9)),
+    (unit::ARTILLERY, (43, 4)),
+    (unit::MISSILES, (42, 17)),
+    (unit::MISSILES, (39, 20)),
+    (unit::INFANTRY, (39, 21)),
     (unit::INFANTRY, (35, 13)),
-    (unit::INFANTRY, (37, 8)),
-    (unit::MECH, (37, 9)),
-    (unit::MECH, (38, 14)),
-    (unit::MECH, (37, 18)),
-    (unit::ANTI_AIR, (34, 18)),
-    (unit::ANTI_AIR, (31, 14)),
-    (unit::FIGHTER, (35, 15)),
-    (unit::BOMBER, (34, 9)),
-    (unit::BOMBER, (37, 12)),
+    (unit::INFANTRY, (39, 13)),
+    (unit::INFANTRY, (41, 4)),
+    (unit::MECH, (38, 6)),
+    (unit::MECH, (41, 14)),
+    (unit::MECH, (41, 21)),
+    (unit::ANTI_AIR, (37, 21)),
+    (unit::ANTI_AIR, (40, 14)),
+    (unit::FIGHTER, (42, 14)),
+    (unit::BOMBER, (42, 5)),
+    (unit::BOMBER, (35, 11)),
 ];
 
-/// Last Eclipse: Sturm, Von Bolt (Black Hole), Aria (Orange Star) and Asuka (Black Hole), one after another in a Black Hole stronghold (three armies of Black Hole's colour on three slots).
+/// Last Eclipse: Sturm, Von Bolt (Black Hole), Aria (Orange Star) and Asuka (Black Hole), one after another in a Black Hole stronghold of sealed chambers whose only gates are pipe seams (three armies of Black Hole's colour on three slots).
 fn last_eclipse() -> MissionDef {
     let mut m = MissionDef::new("gauntlet_12", "Last Eclipse");
-    m.objective = "Break the stronghold wall by wall: Sturm, Von Bolt, Aria, and Asuka in her citadel.";
+    m.objective = "Break through the seams: Sturm, Von Bolt, Aria, and Asuka in her citadel.";
     m.map = MapSrc::Built("gauntlet_12");
     m.armies = vec![
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::STURM)).team(1).funds(9000),
@@ -1409,12 +1409,13 @@ fn last_eclipse() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
     ];
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_12"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
+    m.look = 3; // the Wasteland look: a stronghold on blasted ground
     m.rank_days = 44;
     let lines = [
-        Wire { army: 1, hq: ECLIPSE_STURM, zone: Rect::new(10, 0, 18, 25) },
-        Wire { army: 2, hq: ECLIPSE_VON_BOLT, zone: Rect::new(20, 0, 28, 11) },
-        Wire { army: 3, hq: ECLIPSE_ARIA, zone: Rect::new(20, 13, 28, 25) },
-        Wire { army: 4, hq: ECLIPSE_ASUKA, zone: Rect::new(30, 0, 39, 25) },
+        Wire { army: 1, hq: ECLIPSE_STURM, zone: Rect::new(14, 0, 23, 25) },
+        Wire { army: 2, hq: ECLIPSE_VON_BOLT, zone: Rect::new(25, 0, 33, 12) },
+        Wire { army: 3, hq: ECLIPSE_ARIA, zone: Rect::new(25, 14, 33, 25) },
+        Wire { army: 4, hq: ECLIPSE_ASUKA, zone: Rect::new(35, 0, 43, 25) },
     ];
     wire(
         &mut m,

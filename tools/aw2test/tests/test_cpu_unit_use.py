@@ -245,6 +245,11 @@ def _cpu_progress_new_map(info):
     def fn(ctx):
         # (only the first line is on the field: the later lines' armies are asleep; the CPU's units are the first line's)
         g, days, mine = gauntlet_days(ctx, 5, map=info.mission, me=info.player, armies=info.armies[:1])
+        if info.sealed:
+            # (Last Eclipse: the first line is shut in by pipe seams the computer does not break: its units hold their chamber, so only that they stay put and none idles on a production tile is asked
+            # (cpu_port_idle_gauntlet_11))
+            ctx.check(len(days) >= 2, f"{info.title}: the computer's turns end (the sealed line does not stall the game)")
+            return
         check_share(ctx, acted_fractions(ctx, days, info.title.lower()), 0.6, info.title)
         closing_in(ctx, days, mine, info.title)
     fn.__name__ = f"cpu_progress_gauntlet_{info.title.lower().replace(' ', '_')}"
