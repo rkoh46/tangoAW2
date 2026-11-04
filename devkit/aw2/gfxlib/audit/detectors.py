@@ -494,6 +494,20 @@ def faces(shots):
     return out
 
 
+# ---------------------------------------------------------------------------------------------------------------- empty CO page
+def copage(s):
+    """A CO page whose body (under the tabs and the page's title) has no text at all: the Dual Strike CO page's "Existing skills" page when the battle has no skills on lists nothing (the same
+    for every CO, Andy and Sturm included): a warning, so that an empty page is a decision somebody made and not a lost text."""
+    if "copage" not in s.tags or s.look not in ("ds_tilt", "ds_flat"):
+        return []
+    a = s.arr
+    body = a[72:140, 16:205]
+    dark = int((body.max(axis=2) < 110).sum())
+    if dark < 40:
+        return [F("copage", f"the CO page has no text under its title ({dark} dark pixels in the body)", "warn", box=(16, 72, 204, 68))]
+    return []
+
+
 # ---------------------------------------------------------------------------------------------------------------- leftover
 def leftover(s):
     """Detail blocks kept from the previous picture when the screen changed completely."""
@@ -547,7 +561,7 @@ def facts(s):
     return []
 
 
-DETECTORS = {"blank": blank, "stripes": stripes, "dark": dark, "sprites": sprites, "palette": palette, "text": text, "leftover": leftover, "seams": seams}
+DETECTORS = {"blank": blank, "stripes": stripes, "dark": dark, "sprites": sprites, "palette": palette, "text": text, "copage": copage, "leftover": leftover, "seams": seams}
 
 
 def judge_scene(shots, only=None):

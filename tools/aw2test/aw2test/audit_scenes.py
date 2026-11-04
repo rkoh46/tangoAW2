@@ -394,13 +394,12 @@ def victory(rec, e, d, tag, most=4):
         e.press("A", 4)
         e.wait(40)
     e.wait(60)
-    rec.snap(e, f"{tag}_after_win", ["worldmap"])
+    rec.snap_stable(e, f"{tag}_after_win", ["worldmap"])
 
 
 def world_map(rec, e, d, name="world_map"):
     d.wait_world_map()
-    e.wait(90)
-    rec.snap(e, name, ["worldmap"])
+    rec.snap_stable(e, name, ["worldmap"])
 
 
 # ---------------------------------------------------------------------------------------------------------------- War Room, Survival
@@ -500,7 +499,7 @@ def aw2_campaign(rec):
     rec.snap(e, "m1_turn1", ["battle", "map"])
     cm.win_here(e, d)
     e.wait(60)
-    rec.snap(e, "world_map", ["worldmap"])
+    rec.snap_stable(e, "world_map", ["worldmap"])
 
 
 @scene("ds_campaign", "world_map_and_mission", pack=True)
@@ -532,7 +531,7 @@ def ds_campaign(rec):
     rec.tilt(e)
     rec.snap(e, "turn1", ["battle", "map"])
     cm.win_here(e, d)
-    rec.snap(e, "after_win", ["worldmap"])
+    rec.snap_stable(e, "after_win", ["worldmap"])
 
 
 def _bh_enter(rec, n):
@@ -555,7 +554,7 @@ def bh_campaign(rec):
     from . import bhact2 as a2
     for n in (1, 11):
         e, g, d, picks = _bh_enter(rec, n)
-        rec.snap(e, f"m{n}_world_map", ["worldmap"])
+        rec.snap_stable(e, f"m{n}_world_map", ["worldmap"])
         d.pick_mission()
         if picks:
             d.choose_cos(len(picks), prefs=list(picks))
@@ -670,7 +669,7 @@ def sn_campaign(rec):
     for n in (1, 9, 16):
         e, g, d = es.boot(rec.ctx, n, env=rec.env)
         d.wait_world_map()
-        rec.snap(e, f"m{n}_world_map", ["worldmap"])
+        rec.snap_stable(e, f"m{n}_world_map", ["worldmap"])
         from . import bhact2 as a2
         picks = es.PICKS.get(n, [])
         a2.open_mission(rec.ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)

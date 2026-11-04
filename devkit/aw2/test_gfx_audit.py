@@ -114,6 +114,16 @@ class Detectors(unittest.TestCase):
             self.assertEqual([f["detector"] for f in detectors.judge(self.shot(d, "washed", ["dialogue"]), ["palette"])], ["palette"])
             self.assertEqual(detectors.judge(self.shot(d, "ok", ["dialogue"]), ["palette"]), [])
 
+    def test_an_empty_dual_strike_co_page_body_is_a_warning(self):
+        def page(a, text):
+            a[:] = (250, 245, 240)
+            if text:
+                a[90:100, 30:150] = 20
+        with tempfile.TemporaryDirectory() as t:
+            d = scene(t, "t", "s", "ds_flat", [("empty", lambda a: page(a, False), ["copage"], None), ("full", lambda a: page(a, True), ["copage"], None)])
+            self.assertEqual([f["detector"] for f in detectors.judge(self.shot(d, "empty", ["copage"], "ds_flat"), ["copage"])], ["copage"])
+            self.assertEqual(detectors.judge(self.shot(d, "full", ["copage"], "ds_flat"), ["copage"]), [])
+
     def test_a_fade_is_not_a_blank_frame(self):
         with tempfile.TemporaryDirectory() as t:
             d = scene(t, "t", "s", "aw2", [("b", lambda a: None, ["fade"], None)])

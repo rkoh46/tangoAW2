@@ -94,6 +94,30 @@ class Rec:
         self.shots.append({"name": name, "png": os.path.basename(p) + ".png", "vram": os.path.basename(v) if v else None, "tags": list(tags), "size": list(im.size), "frame": e.frame, **meta})
         return p + ".png"
 
+    def snap_stable(self, e, name, tags=(), region=(0, 0, 112, 36), gap=20, tries=15, **meta):
+        """A picture of an animated screen once `region` (the world map's CAMPAIGN title, which flies in letter by letter for about a second) has stopped changing: two pictures `gap` frames apart
+        agree there. A region that never settles is a failed fact."""
+        from PIL import Image
+        import io
+        def crop():
+            self.shots_tmp = os.path.join(self.out, "_probe")
+            e.shot(self.shots_tmp)
+            im = Image.open(self.shots_tmp + ".bmp").convert("RGB")
+            os.remove(self.shots_tmp + ".bmp")
+            x, y, w, h = region
+            return im.crop((x, y, x + w, y + h))
+        last = crop()
+        for _ in range(tries):
+            e.wait(gap)
+            now = crop()
+            # (the sea behind the title animates: settled is "under 10% of the pixels changed", the flying letters change a fifth of them)
+            n = sum(1 for p, q in zip(last.getdata(), now.getdata()) if p != q)
+            if n < 0.10 * now.width * now.height:
+                return self.snap(e, name, tags, **meta)
+            last = now
+        self.fact(False, f"{name}: the picture's top {region} never settled in {tries * gap} frames")
+        return self.snap(e, name, tags, **meta)
+
     def fact(self, ok, msg):
         self.facts.append({"ok": bool(ok), "msg": msg})
         return ok

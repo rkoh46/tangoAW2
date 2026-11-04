@@ -95,6 +95,7 @@ Detectors (`DETECTORS` in `detectors.py`; each says what it catches in its docst
 | `sprites` | an all-zero OAM entry drawing tile 0 at the top-left corner (stray sprite), a scanline over the 1210 OBJ cycles (sprite budget overflow: sprites dropped) | the video dump |
 | `palette` | a palette bank the screen draws with that is grey (the moved-unit grey over the dialogue faces' BG bank 9) or has one colour under a face | the video dump |
 | `text` | a dialogue-box glyph cell that is none of the game's glyphs: two strings drawn into the same tiles (the garbled first box); ink at the box edge | the picture, tag `dialogue` |
+| `copage` | the Dual Strike CO page whose body has no text (the "Existing skills" page with no skills on is empty for EVERY CO, Andy and Sturm too: a warning, so it stays a decision) | `ds_tilt`/`ds_flat` pictures tagged `copage` |
 | `leftover` | detailed blocks identical to the previous picture while the rest of a menu screen changed completely (tiles left from the last screen); a warning | consecutive pictures |
 | `seams` | tilt only: 1 px dark/bright lines across the tilted map where the plane's tiles do not meet | the picture |
 | `tilt` | the tilt's own per-frame logs (`tiltall`): frames left flat, blends showing the flat map, camera checks that failed | `ds_tilt` scenes |
@@ -104,6 +105,8 @@ Detectors (`DETECTORS` in `detectors.py`; each says what it catches in its docst
 The report (`<out>/report.md`, `report.json`) has the coverage table (pictures and scene runs per mode and look), every finding with its picture, and the sheet list; sheets are `<out>/sheets/<mode>__<look>_NN.png` (3 x 3 at 2x, the online pages 4 x 6 at 1x),
 a failing picture framed red. Exit 0: no failing finding. `--reuse DIR` judges the pictures of an earlier run again after a detector change (seconds). `--binary-dir` runs the scenes on another build's examples (how a regress entry reproduces an old bug).
 LOOK at the sheets after every run: the detectors are heuristics, a picture nobody looked at is not covered.
+
+Animated screens: `rec.snap_stable(e, name, tags, region=...)` waits until the region has stopped changing (the world map's CAMPAIGN title flies in letter by letter for about a second: a picture taken in it reads "CAMp" and is no bug) and records a failed fact if it never does. Use it for every screen that animates in.
 
 Adding a screen: write a scene in `audit_scenes.py` (`@scene(mode, name, looks=..., nopack=True)`, drive the game with the aw2test helpers, `rec.snap(e, name, tags)` for each picture, `rec.fact(ok, msg)` for a memory check), run
 `aw2dev gfx audit --scenes NAME`, look at the sheet, and keep it if it adds a screen no other scene shows. Adding a detector: a function in `detectors.py` registered in `DETECTORS`, a made-up-picture case in `test_gfx_audit.py`.
