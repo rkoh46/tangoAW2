@@ -6,6 +6,7 @@
   gfx explain PATH [--region x,y,w,h] decode a VRAM/OAM/palette dump (and what draws a region of a picture) into images and tables
   gfx bisect --screen S --good C --bad C   run a screen's check across commits for the first bad one
   gfx blame --screen S --dump NAME    the first tick at which a guarded VRAM range stops matching the golden dump, with the procs running then
+  gfx audit [--modes M --looks L]     sweep every mode's screens in the looks, run every detector, write report.md/json and contact sheets (exit 1 on findings)
 """
 import json, os, re, shutil, subprocess, time, tomllib
 from pathlib import Path
@@ -59,6 +60,8 @@ def register(sub):
     a.add_argument("--binary-dir", help="another build's target/release/examples (e.g. the build that shows the bug)")
     a.add_argument("--golden")
     a.set_defaults(fn=lambda x: blame(x))
+    from ..gfxlib.audit import cli as audit_cli     # (`gfx audit`: the sweep of every mode in the three looks)
+    audit_cli.register(gs)
 
 
 def load_bugs():
@@ -80,8 +83,31 @@ def _bug_build(bug):
     return _worktree_build(tag, wt)
 
 
+def audit_findings(bug, bd):
+    """The `audit = ["mode/scene/look", ...]` of a [[bug]]: those scenes run on the bug's build (`bd`: its examples dir), judged by the audit's detectors. `audit_shots` (regexes) limits the findings
+    that count to those pictures (so a bug that is NOT the only finding of the scene is still proven by the pictures it garbles); `audit_detectors` to those detectors. Returns the failing findings."""
+    import re
+    from ..gfxlib.audit import runner
+    out = cfg.work("gfx", "regress_audit_" + bug["name"])
+    got = []
+    for spec in bug["audit"]:
+        job = tuple(spec.split("/"))
+        runner.run_job(job, out, bd)
+        res = runner.judge(out, [job])
+        for f in res["findings"]:
+            if f["severity"] != "fail":
+                continue
+            if bug.get("audit_detectors") and f["detector"] not in bug["audit_detectors"]:
+                continue
+            if bug.get("audit_shots") and not any(re.search(r, f.get("shot", "")) for r in bug["audit_shots"]):
+                continue
+            got.append(f)
+    return got
+
+
 def regress(a):
-    """Every [[bug]] of the catalogue: build/run with the bug back, the named screens must produce a failing finding; prints DETECTED / MISSED."""
+    """Every [[bug]] of the catalogue: build/run with the bug back (a patch, a revert of the fix commits, or an env switch), the named screens and audit scenes must produce a failing finding;
+    prints DETECTED / MISSED."""
     cat, bugs = load_catalogue(), load_bugs()
     missed = 0
     for name, b in bugs.items():
@@ -91,10 +117,15 @@ def regress(a):
         if b.get("patch"):
             wt, bd = _bug_build(b)
             ed = wt / "tango-gamesupport-aw2" / "examples"
+        elif b.get("revert"):
+            wt, bd = _revert_build(b["revert"])
+            ed = wt / "tango-gamesupport-aw2" / "examples"
         got = []
-        for sn in b["screens"]:
+        for sn in b.get("screens", []):
             fs = run_screen(cat[sn], cfg.work("gfx", "regress_" + name), None, bd, ed, env=b.get("env"))
             got += [f for f in fs if f["severity"] == "fail"]
+        if b.get("audit"):
+            got += audit_findings(b, bd)
         ok = bool(got)
         missed += not ok
         print(f"[{'DETECTED' if ok else 'MISSED '}] {name}: {b.get('what', '')}" + (f"  e.g. {got[0]['detector']}: {got[0]['msg'][:110]}" if got else ""))

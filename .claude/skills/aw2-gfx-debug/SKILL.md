@@ -3,6 +3,7 @@ name: aw2-gfx-debug
 description: Detect and debug garbled or wrong graphics in tangoAW2 (broken text, clobbered font tiles, wrong palettes, stray tiles, frozen or black frames) with aw2dev gfx, and turn each fix into a regression screen.
 ---
 
+0. Looking for bugs nobody has reported yet: `./aw2dev gfx audit` (every mode in AW2 / Dual Strike tilt / Dual Strike flat looks; `--modes`, `--scenes`, `--looks` narrow it, `--reuse DIR` re-judges old pictures). Open the contact sheets in `<out>/sheets/` and `report.md`; red frames are findings, the others deserve a look too. Fix one bug per commit and add the screen or an `audit =` line to a `[[bug]]` of the catalogue so `gfx regress` proves the detectors would catch it again (docs/dev/graphics.md, "The audit").
 1. Build the examples (`./aw2dev build --examples`). First time: `./aw2dev gfx golden` from a build you trust (it renders from your ROM into ~/.aw2dev/golden; never commit it).
 2. Detect: `./aw2dev gfx check` (all catalogued screens) or `--screen banner_5p`; for a live run `./aw2dev check <run> --gfx --black`. Open the PNGs it names (heat-maps, same-region sheets).
 3. Understand: `./aw2dev gfx explain <shot.bmp> --region x,y,w,h` (OAM entries, BG tiles, palette banks, tile sheets); `./aw2dev gfx blame --screen S --dump NAME` for the first tick a guarded tile range changes and the procs then.

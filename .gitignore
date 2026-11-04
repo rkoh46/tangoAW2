@@ -26,3 +26,4 @@ __pycache__/
 /devkit/config.local.toml
 /devkit/**/__pycache__/
 /dist/
+/scratch-audit/

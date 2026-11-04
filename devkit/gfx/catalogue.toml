@@ -162,3 +162,33 @@ checks = ["golden", "palette"]
 palette = { rc = true }
 variants = { default = {} }
 golden = { tolerance = 0.002 }
+
+# ---- past bugs the AUDIT must catch again: the fix commit(s) reverted in a worktree (`revert`), then the named audit scenes ("mode/scene/look") run on that build ----
+# audit_detectors / audit_shots (regexes on the picture's name) narrow which failing findings count, so a scene that has other findings is still proof for this bug.
+[[bug]]
+name = "five_army_face_palette"
+what = "a five-army battle's moved-unit grey written over BG palette 9 while a scene's box is up: every face washed out in the player's colour (c7104cf5e)"
+revert = ["c7104cf5e"]
+audit = ["gauntlet/five_army_arrival/ds_flat"]
+audit_detectors = ["palette"]
+
+[[bug]]
+name = "arrival_first_box"
+what = "an arrival scene's first box opened without the empty box first: its text drawn over by other pictures, the later speakers' lines never shown (4fae416ef)"
+revert = ["4fae416ef"]
+audit = ["gauntlet/cinder_sea_run/ds_flat"]
+audit_shots = ["arrival"]
+
+[[bug]]
+name = "silver_nova_ds_stripes"
+what = "Silver Nova's Infantry/Mech cells drawn as black and white stripes with the Dual Strike map graphics (the skin's frames were never matched against the converted sheet, c1fcf2106)"
+revert = ["c1fcf2106"]
+audit = ["gauntlet/cinder_sea_run/ds_flat", "gauntlet/cinder_sea_run/ds_tilt"]
+audit_detectors = ["stripes"]
+
+[[bug]]
+name = "black_hole_emblem_on_silver_nova"
+what = "the terrain panel on Silver Nova's HQ drawing Black Hole's HQ, the Dual Strike CO page tabs of its COs showing Black Hole's grey box instead of the sun (c1fcf2106)"
+revert = ["c1fcf2106"]
+audit = ["gauntlet/cinder_sea_run/aw2", "cos/pages_and_chart/aw2"]
+audit_detectors = ["facts"]
