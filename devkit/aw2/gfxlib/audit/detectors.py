@@ -21,7 +21,8 @@ from .. import ocr
 STRIPE_WINDOW_FLIPS = 100      # sn_looks' striped Infantry/Mech cells measured over 100 flips in a 16 x 16 window, healthy AW2 art about 50
 GREY_CHROMA = 14               # a palette entry is grey when max-min of its channels (0..255) is below this
 GREY_BANK_ENTRIES = 10         # a bank is grey when this many of entries 1..15 are grey and all are within GREY_CHROMA
-WASHED_HUE_SPREAD = 8          # degrees; faces measured 11..24 over the first sweep
+FACE_BANK = 9                  # the dialogue box faces' BG palette bank (docs/dev/gauntlet-mode.md, "Faces in the boxes of a five-army battle")
+WASHED_SAME_HUE = 11           # entries in one hue band; faces under dialogue boxes measured 9 at most over the second sweep
 CYCLES_PER_LINE = 1210         # GBA OBJ budget per scanline in a non-HBlank-free mode (a sprite w wide costs w cycles, rotated 2 w + 10)
 
 
@@ -296,22 +297,19 @@ def _grey(d, bank, obj):
 
 
 def _washed(d, bank, obj):
-    """A bank that has lost its colours: a grey ramp, or a one-hue ramp (six or more tinted entries within 8 degrees of one hue: the moved-unit grey of an army is bluish, greenish or yellowish).
-    Real faces measured 11 to 24 degrees apart (skin, hair, eyes, clothes)."""
+    """A bank that has lost its colours: a grey ramp, or a bank where WASHED_SAME_HUE of its tinted entries lie within 16 degrees of one hue (an army's moved-unit grey is bluish, greenish or
+    yellowish, and fills most of the bank). Measured on bank 9 under real faces: at most 9 entries in step, the washed faces of the five-army bug 12."""
     import colorsys
-    import math
     if _grey(d, bank, obj):
         return "a grey ramp"
     hs = []
     for r, g, b in (d.colour(16 * bank + i, obj) for i in range(1, 16)):
         h, sat, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
         if sat > 0.15 and v > 0.2:
-            hs.append(math.radians(h * 360))
-    if len(hs) >= 6:
-        c, sn = sum(math.cos(h) for h in hs) / len(hs), sum(math.sin(h) for h in hs) / len(hs)
-        R = max(math.hypot(c, sn), 1e-9)
-        if math.degrees(math.sqrt(-2 * math.log(R))) < WASHED_HUE_SPREAD:
-            return "a one-hue ramp"
+            hs.append(h * 360)
+    best = max((sum(1 for h in hs if min(abs(h - c), 360 - abs(h - c)) <= 16) for c in hs), default=0)
+    if best >= WASHED_SAME_HUE:
+        return f"a one-hue ramp ({best} of 15 entries within 16 degrees of one hue)"
     return None
 
 
@@ -321,12 +319,12 @@ def palette(s):
     if d is None or s.tags & {"fade", "blank_ok"}:
         return []
     out = []
-    if s.tags & {"dialogue", "dialogue_box", "story"}:
-        for (y0, y1) in _boxes(s.arr):
-            for (kind, b), (what, at) in _rect_banks(d, (0, y0, 48, y1 - y0)).items():
-                why = _washed(d, b, kind == "OBJ")
-                if why and not (kind, b) in s.meta.get("grey_ok", ()):
-                    out.append(F("palette", f"{kind} palette bank {b} drawing the face in the dialogue box is {why} ({what} at {at}): a washed-out face", box=(0, y0, 48, y1 - y0)))
+    if s.tags & {"dialogue", "dialogue_box", "story", "first_box", "capture"} and not s.tags & {"copage", "menu"} and any(not (y0 > 12 and y1 < 150) for y0, y1 in _boxes(s.arr)):
+        # a speaker's face is drawn in BG palette bank 9 (the palette is written in the dialogue's own HBlank handler, so the cells' bank numbers say nothing); a five-army battle's
+        # moved-unit grey is written into the same bank for the units, and must not be there while a box is up
+        why = _washed(d, FACE_BANK, False)
+        if why and FACE_BANK not in s.meta.get("grey_ok", ()):
+            out.append(F("palette", f"BG palette bank {FACE_BANK}, the faces' bank, is {why} while a dialogue box is up: the speaker's face is washed out", box=(0, 0, 48, 48)))
     if "map" in s.tags and not s.tags & {"moved", "setup"}:
         dc = d.dispcnt()
         if dc["bg_on"][1]:
@@ -448,11 +446,59 @@ def text(s):
     return out
 
 
+# ---------------------------------------------------------------------------------------------------------------- faces (across the pictures of a scene)
+def _face_sig(s):
+    """(colours, structure) of the face at the left end of the first dialogue box of the picture, or None: the set of 5-bit colours the face's pixels use that the rest of the box does
+    not (so not the box's own cream and pink), and a 6 x 6 grey grid of the face."""
+    a = s.arr
+    for (y0, y1) in _boxes(a):
+        if y0 > 12 and y1 < 150:
+            continue
+        f = a[y0 + 2:y1 - 2, 0:46]
+        if (f.min(axis=2) < 200).mean() < 0.18:
+            continue
+        rest = a[y0 + 2:y1 - 2, 100:230].reshape(-1, 3) >> 3
+        box = {tuple(c) for c in rest.tolist()}
+        flat = f.reshape(-1, 3) >> 3
+        cols = {tuple(c) for c in flat.tolist()} - box
+        counts = {}
+        for c in map(tuple, flat.tolist()):
+            if c in cols:
+                counts[c] = counts.get(c, 0) + 1
+        cols = {c for c, n in counts.items() if n >= 6}
+        grey = f.mean(axis=2)
+        h, w = grey.shape
+        grid = np.array([[grey[i * h // 6:(i + 1) * h // 6, j * w // 6:(j + 1) * w // 6].mean() for j in range(6)] for i in range(6)])
+        return cols, grid
+    return None
+
+
+def faces(shots):
+    """Scene level: two pictures of one scene whose faces are different drawings (the grey grids differ) but use the same colours: the faces were all given one palette (a five-army battle's
+    moved-unit grey written over the faces' bank while a scene ran: every face in the player's colour). Returns {shot name: finding}."""
+    sigs = []
+    for s in shots:
+        if not (s.tags & {"dialogue", "dialogue_box", "story", "first_box"}) or s.tags & {"fade", "copage", "map"}:
+            continue
+        sg = _face_sig(s)
+        if sg and len(sg[0]) >= 8:
+            sigs.append((s, sg))
+    out = {}
+    for i, (s, (c, g)) in enumerate(sigs):
+        for (t, (c2, g2)) in sigs[:i]:
+            diff = float(np.abs(g - g2).mean())
+            jac = len(c & c2) / max(len(c | c2), 1)
+            if diff > 22 and jac >= 0.85:
+                out[s.name] = F("palette", f"the face here and the different face in {t.name} are drawn in the same colours ({jac:.0%} shared of {len(c | c2)}): one palette for every face, washed out")
+                break
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------------------- leftover
 def leftover(s):
     """Detail blocks kept from the previous picture when the screen changed completely."""
     p = s.prev
-    if p is None or s.tags & {"fade", "blank_ok", "scene", "power", "capture", "map", "battle"} or not (s.tags & {"menu", "worldmap"}) or p.img.size != s.img.size:
+    if p is None or s.mode == "online" or s.scene == "title" or s.tags & {"fade", "blank_ok", "scene", "power", "capture", "map", "battle", "title"} or not (s.tags & {"menu", "worldmap"}) or p.img.size != s.img.size:
         return []
     a, b = s.arr, p.arr
     H, W = a.shape[:2]
@@ -502,6 +548,11 @@ def facts(s):
 
 
 DETECTORS = {"blank": blank, "stripes": stripes, "dark": dark, "sprites": sprites, "palette": palette, "text": text, "leftover": leftover, "seams": seams}
+
+
+def judge_scene(shots, only=None):
+    """The detectors that compare the pictures of one scene run (a list of Shots in order): {shot name: [findings]}."""
+    return {}      # (none yet: `faces` below compared faces across a scene and was dropped: one CO's expressions are different drawings in the same colours)
 
 
 def judge(shot, only=None):

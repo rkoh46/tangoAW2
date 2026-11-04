@@ -125,6 +125,7 @@ def tour(rec, g, prefix, cells, tags=("battle", "map"), **meta):
         look_at(rec, g, x, y, f"{prefix}{k}", tags, **meta)
 
 
+PAGE_KEY = {"aw2_nopack": "RIGHT", "aw2": "RIGHT", "ds_tilt": "DOWN", "ds_flat": "DOWN"}
 VIEWS = ((3, 3), (22, 4), (4, 15), (22, 15))      # the four quarters of a 30 x 20 map under the 15 x 10 window
 
 
@@ -185,7 +186,7 @@ def battle_map(rec):
     e.wait(90)
     rec.snap(e, "co_page1", ["battle", "copage"])
     for k in range(3):
-        e.press("RIGHT", 6)
+        e.press(PAGE_KEY[rec.look], 6)          # (the Dual Strike CO page turns with DOWN, AW2's with RIGHT, which on the Dual Strike page goes to the next army's CO)
         e.wait(45)
         rec.snap(e, f"co_page{k + 2}", ["battle", "copage"])
     e.press("B", 4)
@@ -806,7 +807,7 @@ def co_pages(rec):
         from PIL import Image
         tabs[name] = Image.open(p).convert("RGB").crop((20, 4, 48, 28)).tobytes()
         for k in range(3):
-            e.press("RIGHT", 6)
+            e.press(PAGE_KEY[rec.look], 6)
             e.wait(45)
             rec.snap(e, f"{name}_page{k + 2}", ["battle", "copage"])
         e.close()

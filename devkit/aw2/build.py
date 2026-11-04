@@ -78,6 +78,9 @@ def test(args):
         rc |= r.returncode
         r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_wait"], cwd=cfg.DEVKIT, check=False)   # `aw2dev wait`
         rc |= r.returncode
+        # `aw2dev gfx audit`'s detectors on made-up pictures and video dumps, the report, the sheets, the exit code (no ROM)
+        r = util.run([sys.executable, "-W", "ignore", "-m", "unittest", "aw2.test_gfx_audit"], cwd=cfg.DEVKIT, check=False)
+        rc |= r.returncode
         from .commands import kit as _kit
         import argparse as _ap
         rc |= _kit.check(_ap.Namespace(strict=False))      # docs, skills and tests must not point at missing commands or files

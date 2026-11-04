@@ -96,6 +96,24 @@ class Detectors(unittest.TestCase):
             png(d / "blank.png", lambda a: None)
             self.assertIn("blank", {f["detector"] for f in detectors.judge(detectors.Shot("t", "s", "aw2", "blank", d / "blank.png", None, [], {}))})
 
+    def test_washed_out_faces_bank_9_while_a_box_is_up(self):
+        """A dialogue box (a near-white band at the screen's top) with BG palette bank 9 turned into one blue ramp is flagged; real face colours are not."""
+        def boxed(a):
+            a[:] = (30, 120, 60)
+            a[2:46] = (250, 240, 240)
+        with tempfile.TemporaryDirectory() as t:
+            d = scene(t, "t", "s", "aw2", [("ok", boxed, ["dialogue"], {}), ("washed", boxed, ["dialogue"], {})])
+            raw = bytearray((d / "washed.vram").read_bytes())
+            for i in range(1, 16):                                  # bank 9: fifteen blues
+                struct.pack_into("<H", raw, 0x18000 + 2 * (16 * 9 + i), (8 + i) | (14 + i) << 5 | (24 + i % 6) << 10)
+            (d / "washed.vram").write_bytes(bytes(raw))
+            raw = bytearray((d / "ok.vram").read_bytes())
+            for i in range(1, 16):                                  # bank 9: skin, hair, eyes, clothes (hues all over)
+                struct.pack_into("<H", raw, 0x18000 + 2 * (16 * 9 + i), ((i * 11) % 32) | ((i * 5) % 32) << 5 | ((i * 17) % 32) << 10)
+            (d / "ok.vram").write_bytes(bytes(raw))
+            self.assertEqual([f["detector"] for f in detectors.judge(self.shot(d, "washed", ["dialogue"]), ["palette"])], ["palette"])
+            self.assertEqual(detectors.judge(self.shot(d, "ok", ["dialogue"]), ["palette"]), [])
+
     def test_a_fade_is_not_a_blank_frame(self):
         with tempfile.TemporaryDirectory() as t:
             d = scene(t, "t", "s", "aw2", [("b", lambda a: None, ["fade"], None)])

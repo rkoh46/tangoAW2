@@ -117,9 +117,11 @@ def judge(out, jobs, only=None):
         d = Path(out) / job[0] / job[1] / job[2]
         prev = None
         n = 0
-        for sh in man["shots"]:
-            shot = detectors.Shot(job[0], job[1], job[2], sh["name"], d / sh["png"], d / sh["vram"] if sh.get("vram") else None, sh.get("tags", []), sh, prev=prev)
-            for f in detectors.judge(shot, only):
+        shots = [detectors.Shot(job[0], job[1], job[2], sh["name"], d / sh["png"], d / sh["vram"] if sh.get("vram") else None, sh.get("tags", []), sh) for sh in man["shots"]]
+        across = detectors.judge_scene(shots, only)
+        for shot, sh in zip(shots, man["shots"]):
+            shot.prev = prev
+            for f in detectors.judge(shot, only) + across.get(shot.name, []):
                 f.update({"mode": job[0], "scene": job[1], "look": job[2], "shot": sh["name"], "png": str(d / sh["png"])})
                 findings.append(f)
             prev = shot
