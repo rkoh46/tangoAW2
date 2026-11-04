@@ -884,6 +884,11 @@ pub fn choose(
         scored.push((Scored { t, total, parts }, spots.clone()));
     }
     scored.sort_by_key(|(s, _)| (Reverse(s.total), s.t));
+    // Artillery and Rockets never stand on a door the enemy can reach: when every pick scores badly, the door penalty alone
+    // could still leave one on top of the pool (M19 day 8: Artillery -38 over Tank -43).
+    if pressed && scored.iter().any(|(s, _)| !matches!(s.t, 10 | 11)) {
+        scored.retain(|(s, _)| !matches!(s.t, 10 | 11));
+    }
     let ranked_scores: Vec<(u8, i32)> = scored.iter().map(|(s, _)| (s.t, s.total)).collect();
     let pool = pool_of(&ranked_scores);
     let pick = draw(&pool, seed);
