@@ -37,7 +37,7 @@ TABITHA: You will write "well done". Watch / me, Father. Lili! The shore!
 LILI: Ooh, the shore! We sit on a sandbar / a mile out. After it, all shallow!
 LILI: There are ports at both ends of / the bar. Then forty paces of splash.
 LILI: Then a road. It goes up and up and / has forks. To the fort. I got lost.
-TABITHA: Cape Astra. Two coves, a headland, / and the only deep harbour for miles.
+TABITHA: Cape Astra. Two coves, a headland, / the only deep harbour for miles. Mine.
 TABITHA: Whoever holds it holds the coast. / I land, and it is mine. Move.
 LILI: Oh! It is on all my bills! The last / stop. Mr. Bear remembered that.
 TABITHA: Explain. And do not ramble.
@@ -140,14 +140,14 @@ TABITHA: Then nobody sneezes. We hold / the ridge until you finish.
 LILI: We have one HQ, in the south-west. / If it falls, we lose. Oh no.
 LILI: The bosses call a hill held eight / days "expensive". What is that?
 LEGIONARY: Commander, the lancer captain / asks to charge. That is the fourth time.
-TABITHA: Tell him a charge uphill is a / funeral. He holds the reserve.
+TABITHA: Tell him a charge uphill is a / funeral. He holds the reserve. Fool.
 TABITHA: If he asks again, he may lead / it. Behind the crest. In the dirt.
 LILI: Mr. Bear says reserves are the / best toys. They never get broken.
 TABITHA: Behind this ridge lies the / causeway into the province.
 TABITHA: The wardens' relief army comes / from the north and the east.
 TABITHA: A landing is no conquest until / it is held. So I hold. Obviously.
 LEGIONARY: Commander, the line is formed on / the crest. Waiting.
-TABITHA: Shields to the front. Rear rank, / lift. Roof them over.
+TABITHA: Shields to the front. Rear rank, / lift. Roof them over. Quickly, you slugs.
 LEGIONARY: Tortoise formation! Lock / shields, ma'am!
 LILI: A tortoise! A tortoise on a dune! / It has guns! Mr. Bear is jealous!
 TABITHA: A dune that does not run. Shells / roll off it like rain.
@@ -171,9 +171,9 @@ EAGLE: Huh. That's a really good tortoise. / Bombs away anyway!
 EAGLE: Retreat! Not defeat, just / surprise... backwards!
 JESS: Pull back! The dunes are yours, / Commander. Don't get comfortable.
 LILI: Radio, Sister! The causeway is open! / Eight days, to the hour. Hooray!
-TABITHA: To the hour. Adequate.
+TABITHA: To the hour. Adequate. Do not / look so pleased, Lili.
 LEGIONARY: Commander, may the lancers ride / now? The captain is asking again.
-TABITHA: Over the causeway, in good order. / Then they may ride inland. Far.
+TABITHA: Over the causeway, in good order. / Then they may ride inland. Far from me.
 TABITHA: Lili. By the authority the / bosses gave me,
 TABITHA: you are Chief Engineer and / Quartermaster of the Corps.
 LILI: Me, now? In the mud? With no parade? / Mr. Bear will be so sad.
@@ -189,7 +189,7 @@ LILI: Sister! The wardens left a / dispatch case on the ridge!
 LILI: It says, um, "Unknown green / fleet. Assume Black Hole." Who?
 TABITHA: Black Hole. I do not know the / name. They are afraid of it.
 LILI: They blame us for somebody else! / Hee hee. That is like a game.
-TABITHA: It means they will not listen / until they are broken. Fine.
+TABITHA: It means they will not listen / until I break them. I enjoy that.
 TABITHA: The coast is mine as far as the / ridge. Now I march on the province.
 TABITHA: The road is long. And they / think I am someone else. Pathetic.
 
@@ -220,7 +220,7 @@ SOLDIER GE: ...I'll try, ma'am. Thank you for / the bread.
 NARRATION: Muro Alto, a walled town. Rock, / towers and a keep.
 TABITHA: Muro Alto is the gate to the next / province. Take it and the road opens.
 TABITHA: Lili. The wall is yours. I take / the main body round
-TABITHA: and hold the coast road behind / you. You lead the siege.
+TABITHA: and hold the coast road behind / you. Try not to embarrass me.
 LILI: Me? I lead? But I only play with / the loads. Mr. Bear gives orders.
 TABITHA: Give your orders to stone. Stone / is stupid. You will manage.
 LILI: ...Stone does not talk back. Mr. / Bear says that is a good start!
@@ -271,7 +271,7 @@ JAVIER: The keep is yours. I yield, not to / numbers, but to craft.
 JAVIER: You read my wall as a master reads / a page. I salute you.
 LILI: Thank you! It was a nice wall. Mr. / Bear and I are sorry we broke it.
 JAVIER: A wall is only stone. A man's / word is the keep. Mine is kept.
-TABITHA: Lord Javier. I came to ask you a / question. You may keep your sword.
+TABITHA: Lord Javier. I came to ask you a / question. You may keep your sword. Toy.
 JAVIER: Ask, Commander. I will answer as an / honest man, in an honest hall.
 TABITHA: The ash. Grey on the wind, grey / on the fields. Have you seen it?
 JAVIER: ...I have. For three years, in my / family's orchards.
@@ -304,7 +304,7 @@ TABITHA: And the stencil? You stared at it / for a long time.
 LILI: ...I have seen that mark before. / Not on grain. Not here. Where was it?
 TABITHA: Where?
 LILI: Mr. Bear says it is a secret. I / forgot. Mr. Bear remembers. Shh.
-TABITHA: Lili. If it is a secret, I will / find it. Do not make me.
+TABITHA: Lili. If it is a secret, I will / find it. Do not make me hurt you.
 LILI: I know. I want to be sure before / I say. Please, Sister. Please?
 TABITHA: ...Then be sure. Quickly. I / am not patient.
 
@@ -315,7 +315,7 @@ TABITHA: ...Then be sure. Quickly. I / am not patient.
 NARRATION: The Mistvale, along the Verna. / A river under fog. Day one.
 LEGIONARY: Commander! Banners on the east / bank. A corps, in the fog.
 LEGIONARY: Red plumes, ma'am. Red cloaks. / The star of the Second.
-TABITHA: The Second Corps. I know it. It / sailed a week behind us.
+TABITHA: The Second Corps. I know it. It / sailed a week behind me. Behind!
 LILI: It was meant to meet us at the / cape! Where did it go?
 LEGIONARY: It took the old road north, / Chief. Fast. Faster than we did.
 TABITHA: Without a word. Why is the Second / at the head of my road?
@@ -330,7 +330,7 @@ TABITHA: Because here the Second Corps / wears Orange Star's colour.
 TABITHA: One army wears the green. Today / the other wears the red.
 LILI: That is confusing in the fog! The / toys will pick the wrong box.
 TABITHA: They may pick the wrong enemy. I / will not forgive them for it.
-TABITHA: Fire only on what shoots. And keep / your Recons close.
+TABITHA: Fire only on what shoots. And keep / your Recons close, you blind idiots.
 LEGIONARY: Commander. A rider with a flag / of truce. A letter, ma'am.
 TABITHA: Bring it.
 LEGIONARY: It is for "my dear Tabitha". / His words, ma'am.
@@ -345,13 +345,13 @@ TABITHA: The Directorate gave him a sealed / order. I know that much.
 TABITHA: I do not know what is in it. I / know what it does to him.
 TABITHA: He has stopped asking permission. / Even from me. How dare he.
 CAULDER: Tabitha. Did you read it? Did / you like the postscript?
-TABITHA: I read it. Father, you are / blocking my road.
+TABITHA: I read it. Father, you are / blocking my road. Move it.
 CAULDER: It is my road, by the seal of / the Directorate. Do go round.
-TABITHA: What does the seal say?
+TABITHA: What does the seal say? Tell / me. I am your daughter.
 CAULDER: That, my dear, is none of your / concern. Yet.
 TABITHA: Then it says something you do not / wish to say aloud.
 CAULDER: It says the Directorate is hungry, / and that you are slow.
-TABITHA: I did not ask what the Directorate / says. I asked what it orders.
+TABITHA: I did not ask what the Directorate / says. I asked what it orders you.
 CAULDER: The fog is lovely today. It makes / the data uncertain, and so honest.
 CAULDER: Hard to see who wears which red. / Do be careful where you aim, girls.
 LILI: Sister, Daddy will not move! What / do we do? What are the orders?
@@ -375,16 +375,16 @@ CAULDER: I can hardly object. We fight on, / girls, and I shall note the results
 NARRATION: The fog lifts. On the east bank, / a white coat. A raised red glove.
 CAULDER: The fog is gone, Tabitha. I can / see your face now. How pale.
 CAULDER: You have beaten me, in the way / that soldiers count. Instructive.
-TABITHA: Lay down your arms, Father. I / will take the camp.
+TABITHA: Lay down your arms, Father. I / will take the camp. And the credit.
 CAULDER: I think not. I have cut the corps / in two. A small experiment.
 CAULDER: Half stays with you. It is the / half that dislikes my instruments.
-TABITHA: You are giving me an army.
+TABITHA: You are giving me an army. / ...Is that a gift, or a test?
 CAULDER: I am leaving it. Soldiers are / only a variable. I have enough data.
-TABITHA: They are mine. I do not give / them away. I do not share. Ever.
+TABITHA: They were mine all along. I do not / share what is mine. Not even with you.
 LILI: Three thousand one hundred and four / toys! And one present! For us?
 LILI: Mr. Bear counted them twice. He / says a present is a trick.
 CAULDER: Lili understands. Do keep them fed, / Tabitha. A starved sample is useless.
-TABITHA: Father. The sealed order. What / does it say?
+TABITHA: Father. The sealed order. What / does it say? Tell me. Now.
 CAULDER: "If, by the first frost, no one / is found who feeds Novaria,
 CAULDER: take the granaries of the north / by force. Tell no one."
 LILI: Granaries? By force? In somebody / else's land? Is that allowed?
@@ -409,7 +409,7 @@ TABITHA: The frontier is forty leagues / north of the cape. Half the Second
 TABITHA: helps us hold it. The other half / walks with Father.
 LILI: The Second Corps wears red cloaks, / Sister. We wear green. Why?
 LILI: Dyeing them costs forty-one credits. / Mr. Bear says they will miss the red.
-TABITHA: Let them keep it. They will die in / it just as well.
+TABITHA: Let them keep it. They will die in / it just as well. Idiots.
 LILI: Mr. Bear says that is the nicest / thing you said all week! Hee hee.
 TABITHA: Mr. Bear is a fool.
 LILI: He is stuffed, Sister. Not stupid. / That is a different thing. Pfft.
@@ -417,8 +417,8 @@ TABITHA: Is it? Father left his / instruments behind, I hear.
 LILI: Eleven crates! Barometers and / something that ticks. All labelled!
 TABITHA: Do not open the one that ticks.
 LILI: Mr. Bear opened it! It was empty. / Was that the joke? I did not laugh.
-TABITHA: Father does not joke. Not with / empty crates.
+TABITHA: Father does not joke. Not with / empty crates. He measures.
 TABITHA: His order stands: if nobody is / found, he takes the north's granaries.
 TABITHA: The north is full of granaries. / We have until the first frost.
 LILI: Then the road is a clock! Mr. Bear / likes clocks. He winds them. Tick tock!
-TABITHA: Then wind faster.
+TABITHA: Then wind faster, you little brat.

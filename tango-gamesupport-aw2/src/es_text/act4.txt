@@ -46,12 +46,12 @@ TABITHA: No alliances in the port. Every / flag fights every flag. Pathetic.
 TABITHA: That is also my chance. Let them / spend themselves on each other.
 LILI: I noted who owes whom! Javier / owes Sonja. Sonja owes no one.
 LILI: Kindle owes everyone, and collects / from everyone besides. Sneaky!
-TABITHA: So we hit whoever gets close and / let the rest bleed.
+TABITHA: So we hit whoever gets close and / let the rest bleed. Slowly.
 LILI: Mr. Bear wants to hit / everyone. He is not patient.
 TABITHA: Then Mr. Bear will learn patience in / a week. Or I will teach him.
 LILI: Mr. Bear will learn it by noon, and be / bored by one.
 TABITHA: Then be bored quietly.
-TABITHA: Count what we have, Lili. And find / me a roof that holds.
+TABITHA: Count what we have, Lili. And find / me a roof that holds. Quick.
 TABITHA: We move at first light.
 LILI(h): Yes, Sister! I always wanted a / seat at a siege. Popcorn! Hee hee.
 
@@ -85,7 +85,7 @@ LILI: A clerk's hand. Small, neat, very / old-fashioned. Not a Directorate hand.
 TABITHA: I know Father's writing. I have / read his letters all my life.
 TABITHA: This is not Father's. The approvals / bear his name. Not his pen.
 LILI: Does somebody sign for Daddy? Or / does Daddy sign for them?
-TABITHA: I do not know. I intend to ask. / Loudly.
+TABITHA: I do not know. I intend to ask. / Loudly. With a whip.
 LILI: One more entry, Sister! The war / chest.
 LILI: Nine hundred thousand credits, / lent to Daddy for the corps.
 LILI: Every coin has the stamp. The / money that bought this army.
@@ -145,7 +145,7 @@ COLIN: I'll take the valley road! Blue / Moon says the east gate falls first!
 TABITHA: Keep the money, Colin. Take / the gate, or lose it.
 @END
 LILI: Daddy's herald came at midnight, / Sister! A sealed letter!
-TABITHA: Read it.
+TABITHA: Read it. Go on.
 LILI: "The Directorate recalls Commander / Tabitha to answer for the north."
 LILI: "The corps pass to the Director. / Lili's detachment will report in."
 LILI: Daddy is cross! Hee hee. He wants / his toys back in the box.
@@ -211,7 +211,7 @@ CAULDER: I know, Lili. You would have counted / well. I chose the subject well.
 CAULDER: I never knew who held the pen. I / assure you, on my instruments.
 CAULDER: I knew only that the grain always / came, and was always paid for.
 CAULDER: And that whoever paid had no face. / I once had a maker. I outgrew him.
-TABITHA: It is a ledger, Father. Today it / closes.
+TABITHA: It is a ledger, Father. Today it / closes. Stop babbling.
 CAULDER: A ledger that never closes. I / was curious about it. Not afraid.
 CAULDER: When the harvest turned grey, I / did not ask why. I asked how long
 CAULDER: a hungry corps would follow. A / question of science. Not of ethics.
@@ -359,7 +359,7 @@ LILI: That is why the door is shut. They / do not want to be asked. Naughty.
 TABITHA: The door will be asked. By me.
 LILI: I counted the garrison. Half of / it owes Hachi money. Hee hee.
 LILI: It is the most loyal army I ever / counted. I do not know how to beat it.
-TABITHA: Quiet, Lili.
+TABITHA: Quiet, Lili. Do not squeak.
 TABITHA: Three lanes. Lili, the Weir Valley. / Bring the walls down in order.
 TABITHA: My partner takes the Salt Road and / the harbour district.
 TABITHA: I take Needle Pass, the airfield / and the Sunrise Gate.
@@ -398,7 +398,7 @@ EAGLE: Wing up! Falcon Field isn't done / yet!
 LILI: The Market Ward is next. Give me / eight turns and three guns, west gate.
 TABITHA: My column keeps the Eagles off your / guns. Do not dawdle.
 LILI: Please do not boss me, Sister. / I am breaking toys. It is busy.
-TABITHA: Together. Do not fail me.
+TABITHA: Together. Do not fail me. Or / else.
 
 == m16_phase3
 TABITHA: The Market Ward has fallen. The / Citadel and the Sunrise Gate stand.
@@ -452,7 +452,7 @@ LILI: Customs books, floor to ceiling! / Three harvests of stamps!
 LILI: Crates in the vault! Hundreds! / Stencilled, every one!
 LEGIONARY: Commander! The jars are here / too. Sealed. Grey.
 LILI: The stencil. A circle, a bar, a / double stroke. The same as the first bill.
-TABITHA: Lili. Where have you seen that / mark?
+TABITHA: Lili. Where have you seen that / mark? Tell me.
 LILI: When I am sure, Sister. The / crates are not it. Not the whole thing.
 HACHI: I remember those crates. Slow / Tuesdays. Paid in advance. No receipt.
 HACHI: I sold the porters nails. Nobody / asked what was inside. Not even me.
@@ -510,7 +510,7 @@ LILI: What is that on the lid? A mark. / Black. A stencil.
 LILI: It is the stencil. It is paid in / advance, Sister. All of it.
 TABITHA: Close the lid.
 TABITHA: No one opens that crate. No one / eats from it. Not yet.
-TABITHA: Lili. Keep the bill.
+TABITHA: Lili. Keep the bill. And keep / your mouth shut.
 LILI: I always keep the bill.
 NARRATION: Dusk. The harbour lamps are lit / one by one.
 LILI: Sister? What is that, on the / northern horizon?

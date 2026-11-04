@@ -5,19 +5,28 @@ The Emerald Sun army is being redesigned as **Silver Nova** and its five Roman C
 Speaker names in the files: **TABITHA, LILI, CAULDER** (no KLAUS / AURELIA / CASSIUS / LIVIA / VARRO anywhere any more, not even as a name another character says).
 
 ## The new cast and how the five old roles fold into them
-- **TABITHA** = Klaus: the commander, the player's chief commander, the road, the crime-scene reader. A young woman: stern, confident, an officer to her bones, short orders, dry, fair; gives credit last.
-  Pigtails, a white-and-lilac uniform dress, a glare. NEVER contractions, no exclamation marks. Calls herself "Commander Tabitha". (Her "Super Power" is a barrage called Firestorm.)
-- **LILI** = Aurelia + Livia + Cassius's player-side roles (the engineer and quartermaster who counts everything, and the loud rival who becomes a friend and leads M5): a small girl with two teddy
-  bears (the pink one is **Mabel**, the green one **Gus**), polite, exact, sing-song, creepy-cute: she says terrible things sweetly ("Mabel says that wall will fall at noon. Mabel is never wrong."),
-  counts paces, tons and debts, talks to her bears, never raises her voice, never shouts; the campaign's one joke a mission is hers and it is dry and unsettling. NO contractions, no exclamation marks.
-  Her weather power (Enigma) is the sky "turning its mind": snow, sand or rain at random. She is a quartermaster-engineer, so she found the ledger pattern (Livia's beat) and she builds the siege (Aurelia's).
-  In M5 she leads the dust-and-wheels race; in M6 the property audit; in M3 the siege of the wall (her first scene as a commander); in M8 and M12 she is Tabitha's forced Tag pair; she joins the roster after M3.
-- **CAULDER** = Varro + Cassius's antagonist roles: a tall white-haired scientist-commander in a long white coat with a red-gloved hand: sinister, courteous, clinical, calls people "subject" only when he is
-  sure he has won; says "my dear Commander" to Tabitha (he is her old patron: he found money for the corps and did not ask where it came from); reads every hunger as an experiment's opportunity. Never shouts,
-  never uses contractions, no exclamation marks. He is **never a player CO** and never in a player's pool. He is the Directorate's favourite and the Second Corps' commander (the old Cassius beat: M1's
-  radio banter, M4's enemy army and the letters' scene) and the Director whose camp falls in M14 (the old Varro beat, boss). The two old men merge: the rival in M1/M4 is the same man who is
-  unmasked as HOBB's paymaster in M14. Where the old text had Cassius change sides in M14, **Lili's detachment** (the Yellow Comet-coloured army, ordered to guard Caulder's camp) changes sides on day 4;
-  she is NOT in M14's player pool (the pool is Kanbei and Colin only). After M4 Caulder is in no player scene, only letters and radio (M5 on) until M14 where he appears in person, and he never appears after M14.
+- **TABITHA** = Klaus's role: the commander and the player's chief commander (the road, the crime-scene reader). VOICE (the owner's brief, Days of Ruin's Tabitha): Caulder's daughter, an elite commander and
+  extremely cruel, vindictive, arrogant and spoiled. She sneers at everyone as weak, stupid little people and enjoys making them suffer ("idiots", "pathetic", "little man", "dolt"); she takes a defeat as a
+  personal insult and swears revenge; she wants her father's approval and is crushed or furious when he calls her a failure; she is pampered (breakfast in bed). She still commands, orders and explains the
+  plan, but with contempt; to Lili she is a bully and a protector in one ("Do not whine", "Stay behind me", anyone who touches Lili burns). Contractions and exclamation marks are allowed. Her signature
+  "Stupid weak people!" (her CO page quote) is used RARELY: three or four times in a campaign, never twice in a scene. Pigtails, a white-and-lilac uniform dress, a glare. Calls herself "Commander Tabitha"
+  to strangers. (Her "Super Power" is a barrage called Firestorm.)
+- **LILI** = Aurelia + Livia + Cassius's player-side roles (the engineer and quartermaster who counts, and the rival who becomes a friend and leads M5). VOICE: the youngest child, her mind shattered by
+  experiments: childlike, giggly and cheerful in a creepy way. Battles are games, enemy units and her own soldiers are "toys" (she hates "broken toys" but likes breaking them), she talks to her teddy bear
+  **Mr. Bear** as if he were alive and answers him (he is her only bear: no Mabel, no Gus, no "green one"), she is forgetful and easily confused ("I forget what we said"), she does not really understand
+  death or war, she adores and imitates her big sister Tabitha ("Sister"), calls Caulder "Daddy" (never "Papa"). She is the only one of the three kindness can reach: a kind word (Sensei, Crumb's biscuit)
+  moves her, and she is the one who changes sides in M14. Her weather power (Enigma) is a toy she plays with (snow, sand, rain). She still gives the story's numbers (clock, ledgers, stencil), but like a
+  child counting on her fingers. Short sentences, giggles ("Hee hee"), exclamation marks. Her CO page quote "Tee hee! Let's go, Mr. Bear!" is used RARELY (twice in the whole campaign); other giggles are
+  "Hee hee". In M5 she leads the dust-and-wheels race; in M6 the property audit; in M3 the siege of the wall; in M8 and M12 she is Tabitha's forced Tag pair; she joins the roster after M3.
+- **CAULDER** = Varro + Cassius's antagonist roles. VOICE: the head of Silver Nova, a scientist with no ethics at all. He sees every army, every soldier and his own children as specimens and test subjects;
+  battles are experiments, he observes, measures and takes notes ("I shall note how they cope", "a useful result", "Do write it down"). Calm, quiet, coldly curious and pleased by interesting results;
+  polite in a chilling way ("Tabitha", "Lili", "girls"), never shouts, never uses contractions, no exclamation marks; when a "failure" disappoints him he turns contemptuous and dismissive ("defective unit",
+  "how tedious", "my worst results"), even to his daughters. He arms both sides for profit and data and makes promises he does not mean. He considers ethics (scruples) a weakness. His dark secret, used once
+  (M14, "I once had a maker. I outgrew him"): he is a clone who killed his creator. His CO page quote "Fascinating..." is his signature, used TWICE in the campaign (M4's sealed orders, M14's farewell).
+  He is a tall white-haired scientist-commander in a long white coat with a red-gloved hand, **never a player CO** and never in a player's pool. He is the Directorate's favourite and the Second Corps' commander
+  (M1's radio, M4's enemy army and the letters' scene) and the Director whose camp falls in M14. Where the old text had Cassius change sides in M14, **Lili's detachment** changes sides on day 4; she is NOT in
+  M14's player pool (the pool is Kanbei and Colin only). After M4 Caulder is in no player scene, only letters and radio (M5 on) until M14, and never appears after M14.
+  The family: Caulder treats the girls as tools; Tabitha bullies and protects Lili; Lili idolizes Tabitha.
 - Old Cassius's player-side lines (M5, M8 Tag partner, M11 shortcut choice, M12, M14 ally) are Lili's now; his vanity and horses are gone (give the speed jokes to nobody, or to Lili's bears).
   Where two of the old officers spoke to each other, find the natural 3-voice scene: merge, cut or move a line to LEGIONARY (the unnamed Silver Nova soldier face; rename his role in the lines as "a corps soldier"
   or "the adjutant") or to NARRATION. **Never let a character talk to herself**. @IF / @WITH / @PARTNER groups only name TABITHA and LILI now (the player's pool: Tabitha and Lili, plus Kanbei and Colin as partners).

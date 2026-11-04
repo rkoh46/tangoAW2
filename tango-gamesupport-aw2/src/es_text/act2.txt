@@ -6,7 +6,7 @@
 @SONG co:lili
 NARRATION: The Comet Road, Yellow Comet. / Day one of nine.
 NARRATION: Four bridges over the Sable. / Posts: Highwatch, Crossways, Lowmere.
-TABITHA: Lili. The corps has rested. The / road is yours. Do not waste it.
+TABITHA: Lili. The corps has rested. The / road is yours. Do not waste it, or else.
 LILI: Mine, Sister? Mr. Bear is so / happy! He does not like sand, though.
 TABITHA: There will be a great deal of / sand. You have the command.
 LILI: Then I look at the clock first! / The Comet guards will blow
@@ -52,7 +52,7 @@ LILI: Somebody always takes the toys, / Sensei. So I hold them tight.
 @SONG ally2
 NARRATION: Day eight. Lowmere, the last / post, is taken. The bridges stand.
 LILI(h): The clock, Sister! May I tell / everyone about the clock? Please?
-TABITHA: Tell it. Briefly.
+TABITHA: Tell it. Briefly. I am bored / already.
 LILI: Day eight! One whole day left! I / counted twice. Mr. Bear counted five.
 LILI: One day is four hundred measures of / grain. I wrote it on my hand.
 LILI: It is a good number. Mr. Bear is / crying. No, wait. He is cotton.
@@ -97,7 +97,7 @@ TABITHA: Write the figure down. We will ask / again, in person.
 == m06_pre
 @SONG co:lili
 NARRATION: The market town of Argenthaven, / Blue Moon. Sixteen days.
-TABITHA: Lili. You asked for me. I would / rather be at the front.
+TABITHA: Lili. You asked for me. I would / rather be at the front. Hurry up.
 LILI: I asked you to be quiet, Sister. / Can you? It is hard. Try.
 COLIN: Oh! You're the Novarian / treasurer? I-I thought you'd be taller.
 LILI: Mr. Bear is older than I am. I am / the right size. For me!
@@ -173,13 +173,13 @@ LILI: The first bills came by noon! / Eleven hundred! I counted them all!
 TABITHA: Is the coin accepted?
 LILI: Accepted! They even like it! Colin / hung one on his wall. Silly Colin.
 LILI: I count. Then I look. Sister, / come here. Look at this one.
-TABITHA: A bill of exchange. Blue Moon / paper. It looks clean to me.
+TABITHA: A bill of exchange. Blue Moon / paper. It looks clean to me. Boring.
 LILI: The ink is clean. It is the edge / I do not like. The edge is funny.
 TABITHA: ...A stencil. Four letters. The / same as on the relief crates.
 LILI: H, O, B, B. On an old guild bill. / Three years old. Not ours.
 TABITHA: Then the stencil has been paid by / more than Novaria.
 LILI: Or the name does the paying, / Sister. I do not know which. Not yet.
-TABITHA: Lili. You went very white when / you saw it.
+TABITHA: Lili. You went very white when / you saw it. Do not lie to me.
 LILI: The room is cold. Mr. Bear says it / is not. Mr. Bear is being rude.
 LILI: A mark is a mark. I will tell you / when I am sure. I promise!
 TABITHA: When you are sure. And if you / are not, I will make you tell me.
@@ -264,7 +264,7 @@ NELL: Orange Star's border force sits at / Ironhold. It will meet you.
 TABITHA: Then Max will meet me. I will / make it brief for him as well.
 NELL: Then don't give him one. I'll hold / the council. Come north.
 LILI: "Come north", she says. Mr. Bear / says that is how a spider talks.
-TABITHA: Lili. Be quiet. She is being / generous. Foolishly.
+TABITHA: Lili. Be quiet. She is being / generous. The fool.
 LILI: Mr. Bear says the spider is nice / too. Right up until dinner. Tee hee.
 
 # ---------------------------------------------------------------- M8 Two Hands (Tabitha + Lili; enemy Max and Sasha)
@@ -299,7 +299,7 @@ TABITHA: Two hands. One closes on the / enemy, one does the work behind.
 LILI: If a hand lands on you, Sister, / I will hold your hand. I counted.
 TABITHA: ...Two Hands. Fine. It will do.
 MAX: Who commands on the field of / Ironhold? Come out and say it!
-TABITHA: I do.
+TABITHA: I do. Kneel.
 LILI: We do! Mr. Bear does too, a little.
 MAX: Two of them. Two heads, one army. / One's a kid with a teddy bear. Huh.
 SASHA: Blue Moon holds the south-east / road for the Accord. Note it.
@@ -352,7 +352,7 @@ TABITHA: The stencil. It appears. Kite / Hill. An air depot.
 LILI: The freight yards run it. Our / crates go through it twice a year.
 TABITHA: Then we do not sit down yet. We go / and look at the depot.
 LILI: Yes! The trail first. Then the / table. I will tell Nell so. Hee hee.
-TABITHA: Lili. You have been quiet since / the stencil. Is there something to say?
+TABITHA: Lili. You have been quiet since / the stencil. Out with it.
 LILI(s): ...Sister. About the table. I / should say something.
 LILI: Never mind. Next time. When I know / how to say it. Mr. Bear says so.
 TABITHA: Then I will wait. I am good at / it. You know that. Do not fib to me.

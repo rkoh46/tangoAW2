@@ -919,31 +919,31 @@ fn chrome_meridian() -> MissionDef {
         Line::say(co::FLAK, "Hah! Welcome to the Meridian! Cheap tanks, loud guns, and no plan!"),
         Line::say(co::FLAK, "I am the plan. Come on, let's make some noise!"),
     ]);
-    m.victory = Scene::new(vec![Line::say(crate::es_co::TABITHA, "The Meridian is yours. The corps will remember the one who broke it.")]);
+    m.victory = Scene::new(vec![Line::say(crate::es_co::TABITHA, "You broke my Meridian! I will not forget your face. Stupid weak people!")]);
     m
 }
 
 fn caulder_arrives() -> Scene {
     Scene::new(vec![
         Line::feel(co::FLAK, Mood::Sad, "What?! Nobody told me I'd lose! Somebody else take over!"),
-        Line::say(crate::es_co::CAULDER, "A shame. The depot was not built to hold. The citadel is."),
-        Line::say(crate::es_co::CAULDER, "Every gate, every tower, measured. Do come in."),
+        Line::say(crate::es_co::CAULDER, "A pity. The depot was only a first trial. The citadel is the real experiment."),
+        Line::say(crate::es_co::CAULDER, "Every gate and tower is measured. Do come in. I shall take notes."),
     ])
 }
 
 fn lili_arrives() -> Scene {
     Scene::new(vec![
-        Line::feel(crate::es_co::CAULDER, Mood::Sad, "The citadel has fallen. It was measured, but not by you."),
-        Line::say(crate::es_co::LILI, "Caulder always did take too long. The plains are mine now."),
-        Line::say(crate::es_co::LILI, "Fast, light and everywhere at once. Let us see you keep up."),
+        Line::feel(crate::es_co::CAULDER, Mood::Sad, "The citadel has fallen? How tedious. My notes were so tidy."),
+        Line::say(crate::es_co::LILI, "Daddy is slow! Now it is my turn! The plains are my playground!"),
+        Line::say(crate::es_co::LILI, "Zoom, zoom, zoom! Mr. Bear says catch me if you can! Hee hee!"),
     ])
 }
 
 fn tabitha_arrives() -> Scene {
     Scene::new(vec![
-        Line::feel(crate::es_co::LILI, Mood::Sad, "They crossed the Meridian faster than I thought. Tabitha, the rest is yours."),
-        Line::say(crate::es_co::TABITHA, "Thank you, Lili. The corps ends here, then."),
-        Line::say(crate::es_co::TABITHA, "Come to the south-east. I will show you what silver is made of."),
+        Line::feel(crate::es_co::LILI, Mood::Sad, "They broke my toys! Sister, Sister, the rest is for you! Please?"),
+        Line::say(crate::es_co::TABITHA, "Hush, Lili. Go sit behind me. I will end this."),
+        Line::say(crate::es_co::TABITHA, "Come to the south-east, little people. I will show you what silver cuts like."),
     ])
 }
 
