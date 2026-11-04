@@ -382,6 +382,21 @@ def press_through(rec, e, d, prefix, until, most=8, step=70, tags=("story",), ma
     return n
 
 
+def victory(rec, e, d, tag, most=4):
+    """The mission won (a test aid, `force_win`): the winning scene's boxes, then the results and the world map."""
+    if not d.force_win((1,)):
+        rec.note(f"{tag}: force_win did not end the mission")
+        return
+    n = scene_boxes(rec, e, d, f"{tag}_victory", most=most, patience=300)
+    for _ in range(60):
+        if d.world_map_up() and not d.scripts_running():
+            break
+        e.press("A", 4)
+        e.wait(40)
+    e.wait(60)
+    rec.snap(e, f"{tag}_after_win", ["worldmap"])
+
+
 def world_map(rec, e, d, name="world_map"):
     d.wait_world_map()
     e.wait(90)
@@ -558,6 +573,8 @@ def bh_campaign(rec):
         d.wait_control()
         rec.tilt(e)
         rec.snap(e, f"m{n}_turn1", ["battle", "map"])
+        if n == 1:
+            victory(rec, e, d, f"m{n}")
         e.close()
 
 
@@ -573,6 +590,8 @@ def bh2_campaign(rec):
         d.wait_control()
         rec.tilt(e)
         rec.snap(e, f"m{n}_turn1", ["battle", "map"])
+        if n == 1:
+            victory(rec, e, d, f"m{n}")
         e.close()
 
 
@@ -663,6 +682,8 @@ def sn_campaign(rec):
         d.wait_control()
         rec.tilt(e)
         rec.snap(e, f"m{n}_turn1", ["battle", "map"])
+        if n == 1:
+            victory(rec, e, d, f"m{n}")
         e.close()
 
 
