@@ -21,6 +21,7 @@ from .. import ocr
 STRIPE_WINDOW_FLIPS = 100      # sn_looks' striped Infantry/Mech cells measured over 100 flips in a 16 x 16 window, healthy AW2 art about 50
 GREY_CHROMA = 14               # a palette entry is grey when max-min of its channels (0..255) is below this
 GREY_BANK_ENTRIES = 10         # a bank is grey when this many of entries 1..15 are grey and all are within GREY_CHROMA
+WASHED_HUE_SPREAD = 8          # degrees; faces measured 11..24 over the first sweep
 CYCLES_PER_LINE = 1210         # GBA OBJ budget per scanline in a non-HBlank-free mode (a sprite w wide costs w cycles, rotated 2 w + 10)
 
 
@@ -294,6 +295,26 @@ def _grey(d, bank, obj):
     return grey >= GREY_BANK_ENTRIES and bright >= 4 and max(chroma) < 2 * GREY_CHROMA
 
 
+def _washed(d, bank, obj):
+    """A bank that has lost its colours: a grey ramp, or a one-hue ramp (six or more tinted entries within 8 degrees of one hue: the moved-unit grey of an army is bluish, greenish or yellowish).
+    Real faces measured 11 to 24 degrees apart (skin, hair, eyes, clothes)."""
+    import colorsys
+    import math
+    if _grey(d, bank, obj):
+        return "a grey ramp"
+    hs = []
+    for r, g, b in (d.colour(16 * bank + i, obj) for i in range(1, 16)):
+        h, sat, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+        if sat > 0.15 and v > 0.2:
+            hs.append(math.radians(h * 360))
+    if len(hs) >= 6:
+        c, sn = sum(math.cos(h) for h in hs) / len(hs), sum(math.sin(h) for h in hs) / len(hs)
+        R = max(math.hypot(c, sn), 1e-9)
+        if math.degrees(math.sqrt(-2 * math.log(R))) < WASHED_HUE_SPREAD:
+            return "a one-hue ramp"
+    return None
+
+
 def palette(s):
     """Washed-out palettes where colour must be: the faces of a dialogue box (the box's left end) and the map's unit layer (BG1, banks 8..15)."""
     d = s.dump
@@ -303,8 +324,9 @@ def palette(s):
     if s.tags & {"dialogue", "dialogue_box", "story"}:
         for (y0, y1) in _boxes(s.arr):
             for (kind, b), (what, at) in _rect_banks(d, (0, y0, 48, y1 - y0)).items():
-                if _grey(d, b, kind == "OBJ") and not (kind, b) in s.meta.get("grey_ok", ()):
-                    out.append(F("palette", f"{kind} palette bank {b} drawing the face in the dialogue box is a grey ramp ({what} at {at}): a washed-out face", box=(0, y0, 48, y1 - y0)))
+                why = _washed(d, b, kind == "OBJ")
+                if why and not (kind, b) in s.meta.get("grey_ok", ()):
+                    out.append(F("palette", f"{kind} palette bank {b} drawing the face in the dialogue box is {why} ({what} at {at}): a washed-out face", box=(0, y0, 48, y1 - y0)))
     if "map" in s.tags and not s.tags & {"moved", "setup"}:
         dc = d.dispcnt()
         if dc["bg_on"][1]:
@@ -403,11 +425,14 @@ def _read_cells(m):
 
 def text(s):
     """Dialogue box text: glyph cells that match none of the game's glyphs."""
-    if s.tags & {"fade", "title", "worldmap_art", "copage"}:        # (the CO page's text is laid out in its own bands, not a dialogue box)
+    # (the screens whose boxes are dialogue and message boxes; menus, lists and pages lay their text out in bands of their own, black on white too)
+    if not (s.tags & {"dialogue", "dialogue_box", "story", "capture", "battle", "scene", "power", "first_box"}) or s.tags & {"fade", "title", "worldmap_art", "copage", "menu", "worldmap", "online", "map"}:       # ("map": the plain map, whose HUD panel is a pale box too)
         return []
     a = s.arr
     out = []
     for (y0, y1) in _boxes(a):
+        if y0 > 12 and y1 < 150:          # a dialogue box stands at the top or the bottom of the screen
+            continue
         x0 = 8
         # a face fills the box's left end: skip it
         left = a[y0 + 4:y1 - 4, 4:46]
@@ -462,8 +487,9 @@ def seams(s):
     # horizontal 1 px seams inside the map plane (rows 24..120), measured against the rows above and below
     for y in range(24, min(H - 2, 120)):
         d1, d2 = a[y] - a[y - 1], a[y] - a[y + 1]
-        dark = ((d1 < -60) & (d2 < -60)).mean()
-        bright = ((d1 > 60) & (d2 > 60)).mean()
+        same = np.abs(a[y - 1] - a[y + 1]) < 24            # (a line, not an edge or a band: the rows either side agree)
+        dark = ((d1 < -60) & (d2 < -60) & same).mean()
+        bright = ((d1 > 60) & (d2 > 60) & same).mean()
         if dark > 0.55 or bright > 0.55:
             out.append(F("seams", f"a 1 px {'dark' if dark > bright else 'bright'} line across {max(dark, bright):.0%} of row {y}", box=(0, y, W, 1)))
             break

@@ -56,7 +56,7 @@ def showcase_map(ctx, armies=2, name="showcase", hq1=(0, 0)):
         m.unit(5, "infantry", 15, 10)
         m.colours = [5, 1, 2, 3, 4]
     owners = 3 if armies == 2 else 5
-    SEA = 0x0A           # (the open-sea tile: `tile_for("sea")` is 0x08, an island-sea tile that draws an eye)
+    SEA = 0x09           # (the open-sea tile: `tile_for("sea")` is 0x08, an island-sea tile that draws an eye)
     kinds = ["plain", "wood", "mountain", "river", "road", SEA, "shoal", "reef", "bridge", "pipe"]
     for k, kind in enumerate(kinds):
         for r in range(3):
@@ -347,7 +347,7 @@ def scene_boxes(rec, e, d, prefix, most=6, early=True, tags=("dialogue",), patie
             quiet += 1
             if n and (quiet > patience or d.world_map_up()):
                 break
-        if t and stable >= 5:
+        if t and stable >= 5 and d.scripts_running():          # (the box's text can still be in RAM after the script ended: no A then, it would open the map menu)
             if early and n == 0:
                 rec.snap(e, f"{prefix}_first_early", list(tags) + ["first_box"])
             e.wait(150)
@@ -362,6 +362,9 @@ def scene_boxes(rec, e, d, prefix, most=6, early=True, tags=("dialogue",), patie
         frames += 4
         if d.scripts_running() and not t and frames % 80 == 0:
             e.press("A", 4)
+    if n and d.in_battle() and not d.scripts_running():
+        e.press("B", 4)               # (the A that closed the last box can land on the map and open its menu: B closes it, and does nothing on the map)
+        e.wait(20)
     return n
 
 
@@ -778,6 +781,16 @@ def co_pages(rec):
         g = rec.ctx.boot_teams(m, env=rec.env)
         e = g.e
         g.set_teams([cid, "andy"], {1})
+        if name in ("sturm", "asuka"):
+            # Black Hole's own COs as the Black Hole army (R cycles army 1's colour, the cursor on army 1 first): the reference for the army emblem on the CO page's tab
+            e.write(0x02017C50 + 0x32, bytes([0]))
+            e.wait(10)
+            for _ in range(8):
+                if e.u8(0x02017C5D) == 5 and e.u8(SKIN_STATE + 4) == 0:
+                    break
+                e.press("R", 4)
+                e.wait(10)
+            rec.fact(e.u8(0x02017C5D) == 5, f"{name} on the Black Hole colour for the emblem reference")
         e.wait(80)
         rec.snap(e, f"{name}_teams", ["menu", "teams"])
         g.teams_to_rules()
@@ -799,7 +812,7 @@ def co_pages(rec):
         e.close()
     # the army emblem on the page's first tab: Black Hole's COs show Black Hole's, Silver Nova's their own sun
     same = lambda a, b: tabs.get(a) is not None and tabs.get(a) == tabs.get(b)
-    rec.fact(same("asuka", "sturm"), "Asuka's CO page tab is Black Hole's emblem, like Sturm's")
+    rec.fact(same("asuka", "sturm"), "Asuka's CO page tab (Black Hole's army) is Black Hole's emblem, like Sturm's")
     for n in ("tabitha", "lili", "caulder"):
         rec.fact(not same(n, "sturm"), f"{n}'s CO page tab is not Black Hole's emblem")
     rec.fact(same("tabitha", "lili") and same("lili", "caulder"), "the three Silver Nova COs' CO page tabs show the same emblem")
