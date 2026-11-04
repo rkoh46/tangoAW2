@@ -59,11 +59,10 @@ pub(crate) fn plan(core: &mut Core, rec: u32) -> Option<(i32, i32)> {
     }
     // (a Lander is AW2's to move, loading and unloading, except where it sits idle on a port of its own: it then
     // steps off, towards its soldiers, so the port can build)
-    if t == LANDER
-        && (!on_production(&b, army, b.idx(u.x, u.y))
-            || core.raw_read_8(rec + 7, -1) != 0
-            || core.raw_read_8(rec + 8, -1) != 0)
-    {
+    // (a Lander that carries soldiers sails to a landing like a Black Boat with its cargo: [`crate::cpu_ferry`] drops them there)
+    let loaded = core.raw_read_8(rec + 7, -1) != 0 || core.raw_read_8(rec + 8, -1) != 0;
+    let ferry = loaded && crate::custom_campaign::ferry_landers(core);
+    if t == LANDER && !ferry && (loaded || !on_production(&b, army, b.idx(u.x, u.y))) {
         return None;
     }
     let (cell, note) = boat(core, &b, army, &u, roll).or_else(|| step_off(core, &b, army, &u, roll))?;
@@ -335,7 +334,7 @@ fn xy(b: &Board, i: usize) -> (i32, i32) {
 fn boat(core: &Core, b: &Board, army: u32, u: &Unit, roll: u32) -> Option<((i32, i32), String)> {
     let g = Ground::new(core, b, army, u, roll)?;
     // A ferry job (docs/dev/cpu-unit-use.md): soldiers to the landing, or to the beach to wait for them.
-    let job = if u.t == BLACK_BOAT {
+    let job = if u.t == BLACK_BOAT || (u.t == LANDER && crate::custom_campaign::ferry_landers(core)) {
         crate::cpu_ferry::mission(core, b, army, u)
     } else {
         None

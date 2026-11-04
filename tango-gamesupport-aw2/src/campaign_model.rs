@@ -87,6 +87,8 @@ pub struct Custom {
     pub marks: Vec<(u8, u8)>,
     /// Per mission: a reversed Black Onyx.
     pub onyx: Vec<Option<OnyxDef>>,
+    /// Per mission: the computer's loaded Landers ferry their cargo ([`crate::custom_campaign::ferry_landers`]).
+    pub ferry_landers: Vec<bool>,
     /// Per mission: the address of its Black Factory table (96 bytes, 32
     /// days x 3 doors; 0: Factory Blues').
     pub factory: Vec<u32>,

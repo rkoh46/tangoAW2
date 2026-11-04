@@ -1233,6 +1233,7 @@ fn bh2_32() -> MissionDef {
     ];
     m.units = deployment("bh2_32");
     m.skin = Some((2, 0)); // the corps wears the Silver Nova skin (skin 0), on the colour the mission gives army 2
+    m.ferry_landers = true; // day 7's Lander carries an Infantry and a Neotank to a beach
     m.look = 2; // the Desert look: Black Hole's own sunburnt island (its sea stays water; and M32 is no look twin of M30)
     m.rank_days = 20;
     let at = |kind: u8, c: (u8, u8)| UnitDef::new(2, kind, c.0, c.1).attack();
@@ -1242,7 +1243,7 @@ fn bh2_32() -> MissionDef {
         // Lili's siege engines
         day_wave(5, vec![at(unit::ARTILLERY, M32_SIEGE[0]), at(unit::ROCKETS, M32_SIEGE[1]), at(unit::MD_TANK, M32_SIEGE[2]), at(unit::ARTILLERY, M32_SIEGE[3])]),
         // Lili's fleet
-        day_wave(7, vec![at(unit::BATTLESHIP, M32_FLEET[0]), at(unit::CRUISER, M32_FLEET[1]), at(unit::CRUISER, M32_FLEET[2]), at(unit::SUB, M32_FLEET[3]), at(unit::LANDER, M32_FLEET[4])]),
+        day_wave(7, vec![at(unit::BATTLESHIP, M32_FLEET[0]), at(unit::CRUISER, M32_FLEET[1]), at(unit::CRUISER, M32_FLEET[2]), at(unit::SUB, M32_FLEET[3]), UnitDef::new(2, unit::LANDER, M32_FLEET[4].0, M32_FLEET[4].1).carry(unit::INFANTRY).carry(unit::NEOTANK)]),
     ];
     m.intro = txt("m32_pre");
     m.victory = txt("m32_post");

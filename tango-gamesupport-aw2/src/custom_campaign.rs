@@ -483,6 +483,8 @@ pub struct UnitDef {
     /// asks for less ([`UnitDef::ammo`], [`UnitDef::fuel`]).
     pub ammo: u8,
     pub fuel: u8,
+    /// A transport's passengers (unit types, 0 = none; two at most): spawned and loaded in it ([`UnitDef::carry`]).
+    pub cargo: [u8; 2],
 }
 
 /// [`UnitDef::ai`] of a unit that stands still ([`UnitDef::stand`]): role 0 (0 itself means
@@ -505,7 +507,17 @@ impl UnitDef {
             ammo: FULL,
             fuel: FULL,
             freeze: false,
+            cargo: [0, 0],
         }
+    }
+    /// A transport that arrives loaded: this passenger (a second call adds a second one) is created in it, as a Load leaves it.
+    pub const fn carry(mut self, kind: u8) -> UnitDef {
+        if self.cargo[0] == 0 {
+            self.cargo[0] = kind;
+        } else {
+            self.cargo[1] = kind;
+        }
+        self
     }
     pub const fn hp(mut self, hp: u8) -> UnitDef {
         self.hp = hp;
@@ -877,6 +889,8 @@ pub struct MissionDef {
     pub setup: bool,
     /// A reversed Black Onyx on the mission ([`OnyxDef`]).
     pub onyx: Option<OnyxDef>,
+    /// The computer's loaded Landers sail to a landing and unload there ([`crate::cpu_ferry`]; AW2's own Lander logic has no beaches on a campaign map). Off: AW2 plays them.
+    pub ferry_landers: bool,
     /// The Black Factory's schedule: (day, the three doors' unit types, 0
     /// none), left to right; days not listed spawn nothing. Empty: Factory
     /// Blues' table (`factory.rs`). The spawner reads row `day & 0x1F`.
@@ -1095,6 +1109,7 @@ impl MissionDef {
             pool: Vec::new(),
             setup: true,
             onyx: None,
+            ferry_landers: false,
             factory: Vec::new(),
             on_win: Vec::new(),
             volcano: None,
@@ -1255,6 +1270,10 @@ pub const BOND: u32 = 0xBC30_0000;
 /// strike; [`SET_CO`] | army (the CO); [`CUSTOM_FN`] | index.
 pub const SET_ARMY: u32 = 0xBC40_0000;
 pub const SPAWN: u32 = 0xBC50_0000;
+/// [`SPAWN_ON`] (x | y << 8 | kind << 16): a unit created on the cell as it is, even when a transport stands there (a passenger; [`LOAD_CARGO`] loads it).
+pub const SPAWN_ON: u32 = 0xBD00_0000;
+/// [`LOAD_CARGO`] (x | y << 8 | kind << 16): the passenger just made on a transport's cell by [`SPAWN_ON`] is loaded into the transport there.
+pub const LOAD_CARGO: u32 = 0xBD10_0000;
 pub const RESTORE_ARMY: u32 = 0xBC60_0000;
 pub const STRIKE: u32 = 0xBC70_0000;
 pub const SET_CO: u32 = 0xBC80_0000;
@@ -1942,6 +1961,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         counted: def.bonds.len().saturating_sub(def.extra_bonds),
         music: def.missions.iter().map(|m| m.music).collect(),
         onyx: def.missions.iter().map(|m| m.onyx).collect(),
+        ferry_landers: def.missions.iter().map(|m| m.ferry_landers).collect(),
         factory: (0..n)
             .map(|i| cx.factory.iter().find(|f| f.0 == i).map_or(0, |f| f.1))
             .collect(),
@@ -2177,6 +2197,13 @@ fn compile_mission(
                                     FIELDS_UNIT | u.hp as u32,
                                     u.x as u32 | (u.y as u32) << 8 | (u.fuel as u32) << 16 | (u.ammo as u32) << 24,
                                 ));
+                                cmds.push(cmd(0x00, s, 0, 0, 0));
+                            }
+                            for &c in u.cargo.iter().filter(|&&c| c != 0) {
+                                let packed = u.x as u32 | (u.y as u32) << 8 | (c as u32) << 16;
+                                let s = cx.stub(Magic::Call(SPAWN_ON, packed));
+                                cmds.push(cmd(0x00, s, 0, 0, 0));
+                                let s = cx.stub(Magic::Call(LOAD_CARGO, packed));
                                 cmds.push(cmd(0x00, s, 0, 0, 0));
                             }
                             if u.name.is_none() && u.ai != 0 {
@@ -3224,6 +3251,15 @@ const JAM_HOLD: u8 = 9;
 /// start and fires from 0.
 const RESTORE_COUNTER: u8 = 1;
 
+/// The running mission has the computer's loaded Landers sail to a landing and unload ([`MissionDef::ferry_landers`]).
+pub fn ferry_landers(core: &Core) -> bool {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::is_ds(core) {
+        return false;
+    }
+    let mission = crate::ds_campaign::mission(core) as usize;
+    custom_of(core).and_then(|c| c.ferry_landers.get(mission).copied()).unwrap_or(false)
+}
+
 fn custom_of(core: &Core) -> Option<&crate::campaign_model::Custom> {
     crate::ds_campaign::campaign(core)?.model.custom.as_ref()
 }
@@ -3554,6 +3590,32 @@ pub fn rules(core: &mut Core, m: &Magic) -> u32 {
             cpu.set_gpr(2, kind as i32);
             cpu.set_thumb_pc(CREATE_UNIT_AT);
             crate::campaign_model::TAIL_CALLED
+        }
+        Magic::Call(SPAWN_ON, packed) => {
+            let (x, y, kind) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8);
+            let cpu = core.gba_mut().cpu_mut();
+            cpu.set_gpr(0, x as i32);
+            cpu.set_gpr(1, y as i32);
+            cpu.set_gpr(2, kind as i32);
+            cpu.set_thumb_pc(CREATE_UNIT_AT);
+            crate::campaign_model::TAIL_CALLED
+        }
+        Magic::Call(LOAD_CARGO, packed) => {
+            let (x, y, kind) = (packed as u8, (packed >> 8) as u8, (packed >> 16) as u8);
+            // (the transport is the record the cell names; the passenger the not-yet-loaded record of that type on the same cell)
+            let row = core.raw_read_16(MAP + 0x417A + 2 * y as u32, -1) as u32;
+            let tid = core.raw_read_8(MAP + 0x12 + row + x as u32, -1) as u32;
+            let base = core.raw_read_32(UNITS_PTR, -1);
+            let t = base + UNIT * tid;
+            let pass = (1..256u32).map(|i| base + UNIT * i).find(|&a| {
+                a != t && core.raw_read_8(a, -1) == kind && core.raw_read_8(a + 2, -1) == x && core.raw_read_8(a + 3, -1) == y && core.raw_read_8(a + 1, -1) & 0x08 == 0
+            });
+            if let (true, Some(pass)) = (tid != 0, pass) {
+                if crate::cpu_ferry::load(core, t, pass) {
+                    crate::cpu_ferry::set_cell(core, x as i32, y as i32, tid as u8);
+                }
+            }
+            0
         }
         Magic::Call(f, packed) if f & 0xFFF0_0000 == TAG_UNIT => {
             let (x, y, tag, ai) = (

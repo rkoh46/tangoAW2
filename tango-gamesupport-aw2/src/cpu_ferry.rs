@@ -239,7 +239,7 @@ fn exchange(core: &mut Core, army: u32, rec: u32) -> bool {
             let to = neighbours(&b, here)
                 .into_iter()
                 .filter(|&n| {
-                    b.cost(army, INFANTRY, n as i32 % b.w, n as i32 / b.w) != 0xFF
+                    b.cost(army, if u.t == BLACK_BOAT { INFANTRY } else { core.raw_read_8(p, -1) }, n as i32 % b.w, n as i32 / b.w) != 0xFF
                         && b.at[n] == 0
                         && ferry.land_to[n] >= 0
                 })
@@ -262,7 +262,7 @@ fn exchange(core: &mut Core, army: u32, rec: u32) -> bool {
             return changed;
         }
         let (cap, _) = carries(core, BLACK_BOAT, INFANTRY);
-        if (held.len() as u32) < cap {
+        if u.t == BLACK_BOAT && (held.len() as u32) < cap {
             // Board: a soldier that needs the ferry, unmoved, whose walk reaches the boat's neighbour (or already is).
             let next = ferry.needing.iter().find(|f| {
                 if f.flags & MOVED != 0 || !carries(core, BLACK_BOAT, f.t).1 {
@@ -366,7 +366,7 @@ pub(crate) fn turn_start(core: &mut Core, army: u32) {
         .collect();
     drop(b);
     for &(rec, t) in &mine {
-        if t == BLACK_BOAT {
+        if t == BLACK_BOAT || (t == LANDER && crate::custom_campaign::ferry_landers(core) && !cargo(core, rec).is_empty()) {
             exchange(core, army, rec);
         }
     }
