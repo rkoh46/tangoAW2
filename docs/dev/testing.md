@@ -59,3 +59,9 @@ A small fix the user will playtest: build, `aw2dev install-mac`, let them test. 
 Start it with its output in a file (`python3 tools/aw2test/run.py ... > /tmp/run.log 2>&1 &`) and wait with `aw2dev wait`: `aw2dev wait PID`, `aw2dev wait /tmp/run.log --text "passed in"`
 (`--timeout`, `--poll`). Never `until ! pgrep -f "run.py ..."; do sleep 20; done`: `pgrep -f` matches the waiting shell's own command line, which holds the same words, so the loop never ends and
 a pile of them builds up (use `pgrep -f "[r]un.py ..."` if you must).
+
+## Profiles and runs
+`aw2dev profiles [--reset] [--n N]` creates the test profiles (`devkit/work/profiles/host`, `guest`, ... with copies of the ROM and the Dual Strike pack, volume 0; `--reset` rebuilds them); `aw2dev runs [-n N]` lists the newest live run folders (`devkit/work/runs/`) with their scenario and verdict files. Profile configs hold absolute paths: after copying a `devkit/work` folder to another checkout, rewrite `data_path` in `profiles/*/config/config.json` (the app otherwise reads and writes the other checkout's profile).
+
+## Kit regression tests (no ROM)
+`aw2.test_kitgrow` (run by `aw2dev test python`): the Gauntlet kit (`gauntlet new-map` refusals and scaffold, `gauntlet cos` reading, parser registration of every new command), `campaign text-lint` / `scene-check` parsing, `bh2 waves` parsing, `co consistency`.

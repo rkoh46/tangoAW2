@@ -12,3 +12,8 @@ Rule: it must read as part of AW2. No plain black/dark bars with text, nothing d
 4. View the BMPs in `devkit/work/audit/text/` (and a live frame: `./aw2dev live lobby --players 2 --local`, `./aw2dev sheet latest`).
 5. If another seat can see the screen while not its mover, apply skill aw2-waiting-view.
 6. Show the user the sheets before release.
+
+## Screens that show COs (the Gauntlet's army screen is the model)
+- `./aw2dev gauntlet army-sheet [--map NN ...]`: the army screen in three states (as it opens, CO changed, R pressed) and three looks (AW2, DS + tilt, DS flat) as one sheet; look at colours, faces, whole names, the tag sprites.
+- `./aw2dev gauntlet faces [--map NN ...]`: each CO's dialogue-box face beside the same CO on the army screen: the faces must match in direction and colours.
+- Scenes on a five-army battle: `./aw2dev campaign scene-check` (BG palette 9 is shared by the moved-unit grey and dialogue faces).

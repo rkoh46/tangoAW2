@@ -121,3 +121,14 @@ background**: the pixel-art mode's `checker`, `checker_seeds`, `grid_hint`, `era
 ## Limits
 The supplied pictures are one expression each: the happy, sad and angry slots show the neutral face (edited faces were rejected; real expression pictures from the owner are picked up as `art-src/cos/<id>_<expression>.*`). The importer expects a bust on a
 flat dark background; a different picture needs its own framing `.toml`: the scale, the mug's square, the eyes, the palette and the zones are decided by looking at the picture (`/tmp`-style overlays of the zones are easy to make: draw the polygons on the picture). The zone polygons are by eye, to a few source pixels. The portrait is palette scheme 0 repeated for the eight colour schemes the game offers (no recolour variants).
+
+
+## Consistency (`aw2dev co consistency CO`)
+One sheet (`devkit/work/co/consistency_<co>.png`) of the CO's committed art (figure, four faces, mini, HUD) and the real-game pictures `aw2dev co portrait ingame CO` left (CO select, HUD, CO page, dialogue), plus a static check (`devkit/aw2/colib/consistency.py`): all seven pictures exist, and no two lean clearly opposite ways (the mass of the picture against the middle of its box; a CO mirrored for one picture and not another does). The lean test is a heuristic, so look at the sheet: the CO must face the same way on every screen. Then `aw2dev gauntlet faces --map NN` puts the dialogue-box face next to the army screen, and `aw2dev campaign scene-check` proves the face keeps its own palette in scenes. Not yet automated: the CO on the map's CO window and the records box in the three looks (add them to this sheet when a CO needs them).
+
+## Worked example: Caulder (CO 88)
+1. `tango-gamesupport-aw2/cos/caulder.toml` (copy of `tabitha.toml`): stats, powers, quotes, theme, `[portrait] source = "art-src/cos/caulder_v1.jpg"`.
+2. The owner's picture in `art-src/cos/caulder_v1.jpg` with `caulder_v1.toml` beside it (`flip`, `mug`, `eyes`, `keep_off`; `aw2dev co portrait grid` shows the cells for pixel art). If the CO faces left, `flip = true` mirrors the figure and the faces together.
+3. `aw2dev co portrait import caulder`, `aw2dev co portrait lint caulder`, `aw2dev co portrait sheet caulder`: look beside the real COs.
+4. Engine: id in `co_new.rs` / `es_co.rs`, art and texts in `es_cos.rs`, music slot in `es_music::SOURCES`, CO page texts in `ds_co_page.rs`; `aw2dev co check`, `aw2dev co verify caulder`.
+5. In the game: `aw2dev co portrait ingame caulder`, `aw2dev co consistency caulder`, `aw2dev gauntlet faces --map 07`, `aw2dev campaign scene-check`, `aw2dev campaign text-lint`.

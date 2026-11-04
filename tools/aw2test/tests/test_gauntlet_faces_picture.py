@@ -23,9 +23,15 @@ def box_crop(im):
     return im.crop((0, 0, 64, 44)) if pink(4, 40) >= pink(h - 40, h - 4) else im.crop((0, h - 44, 64, h))
 
 
+def chosen_infos():
+    """`AW2TEST_FACES_MAPS=gauntlet_05,gauntlet_12` (keys, as `aw2dev gauntlet faces --map` passes them): only those maps' lines; default every registered map."""
+    want = [k for k in os.environ.get("AW2TEST_FACES_MAPS", "").split(",") if k]
+    return [i for i in gm.MAPS.values() if not want or i.key in want]
+
+
 def cos_of_maps():
     out = {}
-    for info in gm.MAPS.values():
+    for info in chosen_infos():
         for l in info.lines:
             out.setdefault(l.co, l.name)
     return out
@@ -36,7 +42,7 @@ def gauntlet_faces_vs_army_screen_boxes(ctx):
     """The box face of every CO of every new map (the departing CO's first box, the arriving CO's last)."""
     out = os.environ.get("AW2TEST_FACES") or ctx.out
     os.makedirs(out, exist_ok=True)
-    for info in gm.MAPS.values():
+    for info in chosen_infos():
         e, g, d = start(ctx, info)
         for k, l in enumerate(info.lines[:-1]):
             nxt = info.lines[k + 1]

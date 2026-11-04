@@ -9,6 +9,8 @@
   bh2 silhouettes             the silhouette check (no two maps alike, no oval blobs; docs/dev/bh2-maps.md)
   bh2 difficulty              the static difficulty score of every mission (M31 must be the hardest by 10%)
   bh2 features                the feature coverage table (properties, terrain, inventions per map) and what no map uses yet
+  bh2 waves --mission NN [--out DIR]  a mission with day waves (M32: days 3, 5, 7), from the campaign model: the whole map after Setup, then per wave the whole map and the scene's first box, and the real app's views of
+                              each in the AW2 and DS-tilt looks, as one sheet (`bh2_waves_pictures`)
   bh2 check                   the world-map flag check (every mission flag on land inside its nation) and the pipeline checks (specs up to date, lint clean)
 Maps: `aw2dev maps gen --campaign bh2`, `aw2dev maps lint --source bh2`.
 """
@@ -46,6 +48,13 @@ def register(sub):
     a.set_defaults(fn=difficulty)
     a = ps.add_parser("features", help="which properties, terrain and inventions each BH2 map uses")
     a.set_defaults(fn=features)
+    a = ps.add_parser("waves", help="a mission's day waves: the map after Setup, after each wave, each scene's first box, in the AW2 and DS-tilt looks (sheet)")
+    a.add_argument("--mission", type=int, required=True, metavar="NN")
+    a.add_argument("--out", help="folder (default devkit/work/bh2/waves)")
+    a.add_argument("--list", action="store_true", help="only list the mission's waves from the campaign model")
+    a.add_argument("--reuse", action="store_true", help="skip the harness run: use the last run's pictures and checkpoints")
+    a.add_argument("--no-looks", action="store_true", help="skip the real app's looks (the harness pictures only)")
+    a.set_defaults(fn=waves)
     a = ps.add_parser("check", help="world-map flags inside their nations, on land; looks and weather; with the game's pictures, ground colours of neighbouring missions")
     a.add_argument("--pictures", help="the game's pictures (default devkit/work/campaign/bh2/review_raw, when it exists)")
     a.set_defaults(fn=check)
@@ -187,3 +196,83 @@ def check(a):
         util.say(f"WARNING: {w}")
     util.say("bh2 check: " + ("flags clean" if not problems else f"{len(problems)} problem(s)") + (f", {len(warns)} look warning(s)" if warns else ", looks vary"))
     return 1 if problems else 0
+
+
+def waves_model(n):
+    """{day: {"units": [...], "boxes": n}} of mission n from the campaign model (`aw2_campaign_waves`, no ROM)."""
+    import subprocess
+    exe = util.example_bin("aw2_campaign_waves")
+    util.check_fresh(exe, "aw2_campaign_waves")
+    out = subprocess.run([str(exe), "bh2", f"bh2_{n:02d}"], capture_output=True, text=True, check=True).stdout
+    waves = {}
+    for line in out.splitlines():
+        _, day, spawn, boxes = line.split("\t")
+        w = waves.setdefault(int(day), {"units": [], "boxes": 0})
+        if spawn != "-":
+            w["units"] += spawn.split(";")
+        w["boxes"] += int(boxes)
+    return waves
+
+
+def waves(a):
+    """`bh2 waves`: lists the waves (days with a Spawn) from the model, runs `-k bh2_waves_pictures` (the harness: the whole map by the cursor's sweep, the first box of each wave's scene, console checkpoints),
+    then boots the real app on each checkpoint in the AW2 and the DS-tilt looks (`armyskinlib.look`, needs `cargo build --release -p tango`) and composes `m<N>_waves_sheet.png`: row 1 the harness's maps, rows 2 and 3 the
+    app's views (AW2, DS tilt) of the map after Setup, then per wave the first box and the cursor view on the wave."""
+    import os, subprocess, sys
+    from pathlib import Path
+    n = a.mission
+    model = waves_model(n)
+    days = sorted(d for d, w in model.items() if w["units"])
+    for d in sorted(model):
+        util.say(f"M{n} day {d}: {len(model[d]['units'])} units spawned, {model[d]['boxes']} scene boxes")
+    if not days:
+        util.say(f"M{n} has no day waves in the campaign model")
+        return 1
+    if a.list:
+        return 0
+    out = Path(a.out or cfg.work("bh2", "waves"))
+    out.mkdir(parents=True, exist_ok=True)
+    from ..armyskinlib import look as lk
+    ck = lk.CKPT()
+    ck.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, AW2TEST_WAVES_MISSION=str(n), AW2TEST_WAVES_OUT=str(out), AW2TEST_WAVES_CKPT=str(ck))
+    r = subprocess.run([sys.executable, str(cfg.REPO / "tools" / "aw2test" / "run.py"), "-k", "bh2_waves_pictures", "--mode", "ds"], env=env, cwd=cfg.REPO) if not a.reuse else None
+    if r and r.returncode:
+        return r.returncode
+    from PIL import Image, ImageDraw
+    cols = [("after Setup", f"m{n}_after_setup", None)]
+    for d in days:
+        cols += [(f"day {d}: first box", f"m{n}_day{d}_box", None), (f"day {d}: the wave", f"m{n}_day{d}_wave", None)]
+    maps = [Image.open(out / f"m{n}_after_setup_map.png").convert("RGB")] + [Image.open(out / f"m{n}_day{d}_map.png").convert("RGB") for d in days]
+    rows = []
+    if not a.no_looks:
+        os.environ["TANGOAW2_BH2_CAMPAIGN"] = "1"
+        for title, kw in (("AW2 graphics", dict(ds=True, graphics=False)), ("DS graphics + tilt", dict(ds=True, graphics=True, tilt=True))):
+            row = []
+            for label, name, _ in cols:
+                shot = out / f"{name}_{'tilt' if kw.get('tilt') else 'aw2'}.png"
+                lk.look(name, str(shot), scale=1 if kw.get("tilt") else None, **kw)
+                row.append(Image.open(shot).convert("RGB"))
+            rows.append((title, row))
+    w, h = (rows[0][1][0].size if rows else (240, 160))
+    mw = 330
+    pad, head = 6, 18
+    mh = max(im.height * mw // im.width for im in maps)
+    sheet = Image.new("RGB", (pad + len(cols) * (w * 2 + pad), head + mh + pad + len(rows) * (h * 2 + head + pad)), (24, 24, 32))
+    dr = ImageDraw.Draw(sheet)
+    x = pad
+    for i, im in enumerate(maps):
+        t = "map after Setup" if i == 0 else f"map after day {days[i - 1]}'s wave"
+        dr.text((x, 3), t, fill=(255, 255, 255))
+        sheet.paste(im.resize((mw, im.height * mw // im.width), Image.LANCZOS), (x, head))
+        x += mw + pad
+    for i, (title, row) in enumerate(rows):
+        y = head + mh + pad + i * (h * 2 + head + pad)
+        dr.text((pad, y), title, fill=(255, 220, 80))
+        for j, im in enumerate(row):
+            dr.text((pad + j * (w * 2 + pad) + 90, y), cols[j][0], fill=(255, 255, 255))
+            sheet.paste(im.resize((w * 2, h * 2), Image.NEAREST), (pad + j * (w * 2 + pad), y + 14))
+    path = out / f"m{n}_waves_sheet.png"
+    sheet.save(path)
+    util.say("picture:", path)
+    return 0

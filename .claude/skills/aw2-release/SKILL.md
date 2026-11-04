@@ -10,3 +10,6 @@ description: Release tangoAW2: checklist, notes, IPA, tag and push. Use only whe
    `hirestilt` + `HEAD:main/v030/aw2/ds-campaign2` + tag, watch workflow, rerun failed jobs once, list assets). Without `--yes` it stops before the push.
 5. Check the assets: macOS dmg, Windows exe/pdb, Linux AppImage/debug, `tangoaw2-<ver>-ios.ipa`.
 6. Tell the user to reopen the app (install-mac never closes a running one). Details: docs/dev/release.md.
+
+## Playtest bundle
+`./aw2dev playtest-app` builds `dist/TangoAW2-Playtest.app` (the Silver Nova Campaign on, its own bundle id, settings and data folders; installs nothing; docs/dev/release.md "Playtest bundle"). Use it to hand a build to a tester without touching the release app.

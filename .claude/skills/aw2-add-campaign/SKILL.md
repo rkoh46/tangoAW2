@@ -41,3 +41,8 @@ Read docs/dev/bh2-maps.md ("BH2 in the game"), docs/dev/bh2-text.md ("Final wiri
   (`docs/dev/five-suspend.md`); add its suspend-and-resume check beside `tests/test_five_suspend.py` (the byte-for-byte `whole_battle` comparison).
 - `aw2dev campaign playthrough bh2 <N> [--player cpu|bot]`: the mission played to its end in the harness, day by day: report, units and funds by day, takeovers, stage switches, stalls, a contact sheet
   (`docs/dev/playthrough.md`). Add the mission's HQ cells to `tests/test_playthrough.py` `HQS` for pictures of each takeover.
+
+## Dialogue voices, lints and scene checks (every campaign)
+- Before writing a line for a Silver Nova CO (Caulder, Lili, Tabitha...) read `tools/estext/BIBLE.md`: the owner's reference personalities live there. Write original lines; signature quotes rarely.
+- After any text change: `./aw2dev campaign text-lint [es|bh2|all]` (grammar, 176 px boxes, voice rules; a warning fails).
+- After any scene work: `./aw2dev campaign scene-check` (Gauntlet maps and BH2 M31: arrival boxes shown and clean, faces in their speaker's own palette; the lesson is in docs/dev/campaign-scenes.md). A mission with day waves: `./aw2dev bh2 waves --mission NN`.
