@@ -192,3 +192,11 @@ what = "the terrain panel on Silver Nova's HQ drawing Black Hole's HQ, the Dual 
 revert = ["c1fcf2106"]
 audit = ["gauntlet/cinder_sea_run/aw2", "cos/pages_and_chart/aw2"]
 audit_detectors = ["facts"]
+
+[[bug]]
+name = "rout_message_over_scene"
+what = "the game's 'The Green Earth Army has lost!' box and a Gauntlet arrival scene's first box drawing into the same text tiles after a rout: the two texts mixed ('Blast! My flagshi?rmy has lost!') for a second (1ff784a81)"
+revert = ["1ff784a81"]
+audit = ["gauntlet/cinder_sea_run/ds_flat", "gauntlet/five_army_arrival/ds_flat"]
+audit_detectors = ["text"]
+audit_shots = ["capture"]
