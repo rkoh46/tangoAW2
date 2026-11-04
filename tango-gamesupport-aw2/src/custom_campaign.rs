@@ -1345,6 +1345,12 @@ struct Compiler<'a> {
     fns: Vec<fn(&mut Core)>,
     /// A scene being compiled is one a trigger plays in the middle of a battle ([`Action::Scene`]): see [`Compiler::one_scene`].
     battle_scene: bool,
+    /// The trigger being compiled fires on a line's fall ([`cond_has_fall`] of one of the mission's cut-off HQs): its scene opens with the game's "has lost" text, see [`rout_message_hook`].
+    after_rout: bool,
+    /// Per mission: the text id of its "has lost" box ([`Compiler::lost_text`]).
+    lost_ids: HashMap<usize, u16>,
+    /// (the same, and the line is one of the mission's cut-off lines: always true with `after_rout`)
+    scene_cut_here: bool,
     /// The texts already made (equal texts share an id: every CO says "Report." with the same one).
     shared: HashMap<Vec<u8>, u16>,
     /// The next once-latch flag.
@@ -1478,6 +1484,16 @@ impl<'a> Compiler<'a> {
         Ok(id)
     }
 
+    /// The text id of this mission's "has lost" box: a placeholder text whose table entry the game's message hook re-points at the army's own message when the line falls.
+    fn lost_text(&mut self) -> Result<u16, Error> {
+        if let Some(&id) = self.lost_ids.get(&self.mission) {
+            return Ok(id);
+        }
+        let id = self.text(format!("The Army has lost! {}", self.mission).into_bytes())?;
+        self.lost_ids.insert(self.mission, id);
+        Ok(id)
+    }
+
     fn dialogue(&mut self, s: &str) -> Result<u16, Error> {
         let raw = s.replace("\\x0f", "\x0f");
         // A text written with its own line breaks (`\r`) keeps them when every
@@ -1552,6 +1568,15 @@ impl<'a> Compiler<'a> {
             // the first speaker's never showed at all (op 0x38 alone changed nothing visible in a box opened there).
             out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, scene.place));
             out.push(cmd(0x18, 0, 0, 0, 0));
+            if self.after_rout && self.scene_cut_here {
+                // The game's "The Green Earth Army has lost!" (left out by `rout_message_hook`, which points the mission's lost-text id at it) as a box of its own, with no face, before the speakers.
+                let nf = face(Speaker::Narrator);
+                out.push(cmd(0x17, 0, nf, 0, scene.place));
+                out.push(cmd(0x38, 0, nf, 0, 0));
+                let lost = self.lost_text()?;
+                out.push(cmd(0x19, 0, lost, 0, 0));
+                out.push(cmd(0x18, 0, 0, 0, 0));
+            }
         }
         out.push(cmd(0x17, 0, face(scene.lines[0].who), 0, scene.place));
         let mut first_line = true;
@@ -1779,6 +1804,9 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         units: HashMap::new(),
         fns: Vec::new(),
         battle_scene: false,
+        after_rout: false,
+        lost_ids: HashMap::new(),
+        scene_cut_here: false,
         shared: HashMap::new(),
         next_flag: FLAG_FIRST,
         named_latches: std::collections::HashMap::new(),
@@ -1977,6 +2005,18 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         held_more: def.missions.iter().map(|m| m.held_more.clone()).collect(),
         sleepers: def.missions.iter().map(|m| m.sleepers.clone()).collect(),
         cut_off: def.missions.iter().map(|m| m.cut_off.clone()).collect(),
+        lost_text: (0..def.missions.len()).map(|k| cx.lost_ids.get(&k).copied().unwrap_or(0)).collect(),
+        scene_cut: def
+            .missions
+            .iter()
+            .map(|m| {
+                m.cut_off
+                    .iter()
+                    .filter(|&&(_, hq)| m.triggers.iter().any(|t| cond_has_fall(&t.cond, hq) && t.then.iter().any(|a| matches!(a, Action::Scene(_)))))
+                    .map(|&(a, _)| a)
+                    .collect()
+            })
+            .collect(),
         hidden: def.missions.iter().map(|m| m.hidden.clone()).collect(),
         skin_army: def.missions.iter().map(|m| m.skin).collect(),
         stage_records,
@@ -2156,6 +2196,8 @@ fn compile_mission(
         .find(|&a| team_of(a) != player_team && a != player)
         .unwrap_or(2) as u16;
     for t in &m.triggers {
+        cx.after_rout = m.cut_off.iter().any(|&(_, hq)| cond_has_fall(&t.cond, hq));
+        cx.scene_cut_here = cx.after_rout;
         let mut cmds = Vec::new();
         let mut ends = false;
         // A trigger that fires once latches a flag of its own.
@@ -2956,7 +2998,7 @@ fn enemy_adjacent(core: &Core, u: u32) -> bool {
 /// (`goal_hook` shares its address with the computer's inventions: [`crate::cpu_inventions::goal_hook`]
 /// is the one trap, and calls this first.)
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
-    vec![(BUY_STORES_ROLE, Box::new(built_foot_role)), (DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive)), (DEFEAT_PROC_OWNER, Box::new(rout_neutral)), (DEFEAT_PROC_HANDED, Box::new(rout_keep_hq_city))]
+    vec![(SHOW_MESSAGE, Box::new(rout_message_hook)), (BUY_STORES_ROLE, Box::new(built_foot_role)), (DEFEAT_ARMY_BODY, Box::new(defeat_army)), (END_CHECK_ALIVE, Box::new(hidden_alive)), (DEFEAT_PROC_OWNER, Box::new(rout_neutral)), (DEFEAT_PROC_HANDED, Box::new(rout_keep_hq_city))]
 }
 
 /// AW2's end-of-battle check (`sub_08028BAC`), past its loop that marks each army still in the battle as alive (a byte per army at sp + army): the battle ends when no army of a team is.
@@ -3002,6 +3044,42 @@ fn rout_neutral(core: &mut Core) {
     }
 }
 
+/// Whether a trigger's condition asks about the fall of the line whose HQ is `hq`.
+fn cond_has_fall(c: &Cond, hq: (u8, u8)) -> bool {
+    match c {
+        Cond::LineFallen { x, y } => (*x, *y) == hq,
+        Cond::Not(x) => cond_has_fall(x, hq),
+        Cond::All(v) | Cond::Any(v) => v.iter().any(|x| cond_has_fall(x, hq)),
+        _ => false,
+    }
+}
+
+/// The game's "show this message" function (`sub_08019818(text id, ..)`: starts its own event script with a dialogue box). The defeat of an army shows "The Green Earth Army has lost!" with it.
+/// Its box opened before a gauntlet scene's and the two boxes' texts, drawn into the same tiles, came out mixed ("Blast! My flagshi?rmy has lost!") for a second after every rout. When the line's
+/// fall plays a scene ([`defeat_army`] marked it), the message is left out here and its text is handed to the scene instead: the table entry the mission's `lost_text` is made to point at the game's own
+/// text for the army (the same words, the same name), and the scene's first box, a narration box, shows it. Every other defeat keeps its message.
+const SHOW_MESSAGE: u32 = 0x0801_9818;
+fn rout_message_hook(core: &mut Core) {
+    let s = core.raw_read_8(SCRATCH, -1);
+    let (id, lr) = {
+        let cpu = core.gba().cpu();
+        (cpu.gpr(0) as u32, cpu.gpr(14) as u32)
+    };
+    if s & 0x80 == 0 || !(3221..=3225).contains(&id) {
+        return;
+    }
+    let lost = crate::ds_campaign::campaign(core)
+        .and_then(|c| c.model.custom.as_ref().and_then(|m| m.lost_text.get(crate::ds_campaign::mission(core) as usize).copied()))
+        .unwrap_or(0);
+    if lost == 0 {
+        return;
+    }
+    let at = core.raw_read_32(crate::campaign_model::TEXT_TABLE + 4 * id, -1);
+    core.raw_write_32(crate::campaign_model::TEXT_TABLE + 4 * lost as u32, -1, at);
+    core.raw_write_8(SCRATCH, -1, s & 0x7F);
+    core.gba_mut().cpu_mut().set_thumb_pc(lr & !1);
+}
+
 fn rout_keep_hq_city(core: &mut Core) {
     let Some(army) = rout_proc_army(core) else { return };
     let player = if crate::five::active(core) { 5u8 } else { 1 };
@@ -3035,6 +3113,20 @@ fn defeat_army(core: &mut Core) {
         let cpu = core.gba().cpu();
         (cpu.gpr(4) as u32 & 0xFF, cpu.gpr(5) as u32)
     };
+    // (a gauntlet line routed by the capture of its HQ, whose fall plays a scene: the game's "has lost" message, called a moment later, is left out: `rout_message_hook`. The trap is on the
+    // instruction that copies the arguments, so they are still in r0 and r1 here)
+    let (arg_army, arg_code) = {
+        let cpu = core.gba().cpu();
+        (cpu.gpr(0) as u32 & 0xFF, cpu.gpr(1) as u32 & 0xFFFF)
+    };
+    let scene = arg_code == 2
+        && crate::stage::stage(core) == 0
+        && crate::ds_campaign::active(core)
+        && crate::ds_campaign::campaign(core)
+            .and_then(|c| c.model.custom.as_ref().and_then(|m| m.scene_cut.get(crate::ds_campaign::mission(core) as usize).map(|v| v.contains(&(arg_army as u8)))))
+            .unwrap_or(false);
+    let s = core.raw_read_8(SCRATCH, -1);
+    core.raw_write_8(SCRATCH, -1, if scene { s | 0x80 } else { s & 0x7F });
     if sleeping(core, army as u8) {
         core.gba_mut().cpu_mut().set_thumb_pc(DEFEAT_ARMY_EPILOGUE);
         return;

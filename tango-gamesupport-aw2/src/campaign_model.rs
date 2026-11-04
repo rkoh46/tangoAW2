@@ -107,6 +107,11 @@ pub struct Custom {
     pub sleepers: Vec<Vec<(u8, Vec<(u8, u8)>)>>,
     /// Per mission: armies cut off once the player holds their HQ ([`crate::custom_campaign::MissionDef::cut_off`]).
     pub cut_off: Vec<Vec<(u8, (u8, u8))>>,
+    /// Per mission: the cut-off armies whose fall plays a scene ([`crate::custom_campaign::MissionDef::triggers`]): the game's own "has lost" message is left out for them
+    /// (the scene's first box says it: [`crate::custom_campaign::rout_message_hook`]).
+    pub scene_cut: Vec<Vec<u8>>,
+    /// Per mission: the text id its arrival scenes' first box reads (0 when it has none): [`crate::custom_campaign::rout_message_hook`] points its table entry at the game's message.
+    pub lost_text: Vec<u16>,
     /// Per mission: the gauntlet engine's hidden lines ([`crate::custom_campaign::MissionDef::hidden`]).
     pub hidden: Vec<Vec<crate::custom_campaign::Hidden>>,
     /// Per mission: a skin an army wears ([`crate::custom_campaign::MissionDef::skin`]).
