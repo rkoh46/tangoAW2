@@ -151,6 +151,22 @@ def versus_windows(ctx):
     compare(ctx, "versus", a, b, PICTURES)
 
 
+def typed_box(ctx, g, name):
+    """A shot of the power's dialogue box once its line has typed out: the two runs reach it a few frames apart, so a fixed wait
+    catches one mid-line (or, waited long, one already in the power's animation)."""
+    e = g.e
+    e.wait_until(lambda: any(f == dsc.TEXT_BOX for _, _, f in g.procs()), 120)
+    last, path = None, None
+    for _ in range(40):
+        path = ctx.shot(g, name)
+        box = rect(path, DIALOGUE_RECT)
+        if box == last:
+            break
+        last = box
+        e.wait(6)
+    return path
+
+
 def gauntlet(ctx, code, tag):
     e = Emu(save=paths.base_save(), ds=ctx.ds)
     g = Game(e, ctx.image)
@@ -186,8 +202,7 @@ def gauntlet(ctx, code, tag):
     g.charge_power(1, "power")
     g.open_map_menu()
     g.choose("Power", g.MAP_MENU)
-    e.wait(80)
-    out["dialogue"] = (bank(e, WINDOW_BANK), ctx.shot(g, f"{tag}_dialogue"))
+    out["dialogue"] = (bank(e, WINDOW_BANK), typed_box(ctx, g, f"{tag}_dialogue"))
     out["boxes"] = boxes
     out["colour"] = colour
     out["unit_row"] = bytes(e.read(UNIT_PALETTES + 32 * (colour - 1), 32))
