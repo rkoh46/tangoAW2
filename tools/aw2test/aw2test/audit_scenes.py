@@ -765,6 +765,99 @@ def gauntlet_run(rec):
         look_at(rec, g, x, y, f"{name}_new_line", wait=60, ) 
 
 
+def volcano_show(rec, e, g, d, ring, at, first, last, prefix):
+    """A volcano's eruptions from day `first` to `last`, with a Tank of each army parked on the day's cells (the show visits only cells with a unit): the cells
+    before, a picture every 6 frames from the day's start and the map after. No warning marks before, the plume and boulders on screen in every look."""
+    from . import volcano as vo
+    from . import dscampaign as dsc
+    rec.tilt(e)
+    look_at(rec, g, *at, f"{prefix}_day{e.u16(vo.DAY)}", wait=90)
+    while e.u16(vo.DAY) < last:
+        nxt = e.u16(vo.DAY) + 1
+        if nxt >= first:
+            g._units_base = g._players_base = None
+            armies = sorted({u["army"] for u in g.units()})
+            for c, a in zip(vo.cells_on(ring, 3, nxt), armies):
+                u = next(u for u in g.units(army=a) if not (u["flags"] & 0x08))
+                occ = g.unit_at(*c)
+                if occ is not None and occ["id"] != u["id"]:
+                    d.remove_unit(occ)
+                addr = g.unit_addr(u["id"])
+                e.w8(addr, 4)                                   # a Tank, full HP, no fuel: it stays on the cell
+                e.w16(addr + 4, (e.u16(addr + 4) & 0xFF80) | 100)
+                e.w8(addr + 6, 0)
+                d.place_unit(u, *c)
+            g._units_base = g._players_base = None
+            look_at(rec, g, *at, f"{prefix}_day{nxt}_before", wait=40)
+        d.end_turn()
+        k = 0
+        for _ in range(1500):
+            turned = e.u16(vo.DAY) == nxt
+            if turned and not d.scripts_running() and k >= 70:
+                break
+            if nxt >= first and turned and k < 70:
+                if any(f == dsc.TEXT_BOX for _, _, f in g.procs()):     # a mission's line about the volcano: read on, the show waits for it
+                    e.press("A", 4)
+                    e.wait(10)
+                    continue
+                rec.snap(e, f"{prefix}_day{nxt}_show{k:02d}", ["battle", "map", "eruption"])
+                k += 1
+                e.wait(6)
+                continue
+            if d.scripts_running():
+                e.press("A", 4)
+            e.wait(10)
+        if nxt == first:                                # the plume and the boulders: they land one after another in the seconds after the day starts
+            for k in range(60):
+                e.wait(15)
+                rec.snap(e, f"{prefix}_day{nxt}_land{k:02d}", ["battle", "map", "eruption"])
+        else:
+            e.wait(1200)
+        d.settle() if hasattr(d, "settle") else d.wait_control()
+        g._units_base = g._players_base = None
+        if nxt >= first:
+            look_at(rec, g, *at, f"{prefix}_day{nxt}_after", wait=90)
+
+
+@scene("gauntlet", "cinder_sea_volcano", pack=True)
+def gauntlet_volcano(rec):
+    """Cinder Sea's volcano (Hawke's island, ring (21,0)-(28,7), 3 cells a day from day 3; the volcano on the map's top rows): days 3 and 4's eruptions."""
+    from . import gauntlet as ga
+    from . import volcano as vo
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    d.start(ga.CAULDER, colour=ga.EMERALD_SUN)
+    g._units_base = g._players_base = None
+    volcano_show(rec, e, g, d, vo.ring(21, 0, 28, 7), (24, 3), 3, 4, "volcano")
+
+
+@scene("bh_campaign", "ashfall_volcano", pack=True)
+def bh_ashfall_volcano(rec):
+    """BH Campaign M11 Ashfall Pass: Mount Ember (ring (11,6)-(18,13), mid-map) erupting on days 3 and 4."""
+    from . import volcano as vo
+    e, g, d, picks = _bh_enter(rec, 11)
+    d.pick_mission()
+    if picks:
+        d.choose_cos(len(picks), prefs=list(picks))
+    for _ in range(600):
+        if d.in_setup() or (d.in_battle() and not d.scripts_running()):
+            break
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(10)
+    if d.in_setup():
+        d.leave_setup()
+    for _ in range(600):
+        if d.in_battle() and not d.scripts_running():
+            break
+        e.press("A", 4)
+        e.wait(10)
+    d.wait_control()
+    g._units_base = g._players_base = None
+    volcano_show(rec, e, g, d, vo.ring(11, 6, 18, 13), (14, 9), 3, 4, "ashfall")
+    e.close()
+
+
 @scene("gauntlet", "five_army_arrival", pack=True)
 def gauntlet_five(rec):
     """Two five-army Gauntlet maps (Harvest Run, Chrome Meridian: the player is the fifth army): day 1, the first line's fall (box text, face palettes) and the arrival boxes."""
