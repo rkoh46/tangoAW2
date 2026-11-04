@@ -70,7 +70,7 @@ CAULDER: The vanguard is restless, girls. / It wishes to fight. Let it.
 TABITHA: Father. We are guests. For now. / Keep your toys on their leash.
 CAULDER: Guests with a vanguard. A very / polite kind of threat. Do go on.
 ASUKA: You came a long way.
-TABITHA: Eleven days of sea in a single / night. Lili counted it.
+TABITHA: Eleven days of sea in a single / night. Lili counted it. Badly.
 LILI: Twice! Hee hee. The answer was / still wrong. Mr. Bear got dizzy.
 ASUKA: That was the door. It is closed / now.
 TABITHA: We noticed. We cannot go back / the way we came. Fix it. Now.
@@ -135,7 +135,7 @@ LILI: Daddy! That is a very expensive / charge! Whee!
 TABITHA: The depot has walls. Riders do / not climb. Idiots.
 CAULDER: Then they will learn to, or / fail. Either result is of use.
 LILI: Ooh! The first rider will ride / into the moat! Watch! Watch!
-TABITHA: I know. Let him drown.
+TABITHA: I know. Let him drown. Slowly. / I want to watch.
 LEGIONARY: Ow. The moat is WET.
 ASUKA: Sergeant, note it. The moat has / claimed a corps soldier.
 
@@ -170,9 +170,9 @@ ASUKA: She wants to be paid. It is a / fine instinct.
 
 == m32_post
 @SONG co:tabitha
-TABITHA: The depot holds. The shore / holds. ...Annoying.
+TABITHA: The depot holds. The shore / holds. ...Annoying. Insulting.
 ASUKA: Tabitha. Enough. Both armies / stand. Neither wins.
-TABITHA: I know. Father has lost / three horses.
+TABITHA: I know. Father has lost / three horses. Fool horses.
 CAULDER: Two, Tabitha. The third / merely declined. A useful result.
 FLAK: Flak sorry. Flak ate horse's / oats. Oats good.
 CAULDER: You ate the oats. ...Were they / good oats? Describe the taste.
@@ -184,7 +184,7 @@ LILI: Eleven paces! Mr. Bear is / jealous. Let's go, Mr. Bear!
 LILI: Marshal! Your ledgers are very / neat! Can I read them? Please?
 HAWKE: Child. Mine belong to the / army, yours to the Directorate?
 LILI: ...Okay. Hee hee.
-TABITHA: Asuka. I will ask once. Who / is Hobb? Answer, weakling.
+TABITHA: Asuka. I will ask once. Who / is Hobb? Answer, worm.
 CRUMB CO: Me, sir! And my grandpa! He / built a door. Then they erased him.
 CRUMB CO: He left a reserve in the depot. / I think he fed you, too.
 LILI: Three grey harvests! Grain from / a ship with no owner!
@@ -195,22 +195,22 @@ CRUMB CO: Sir. That's what we do. Hobbs.
 TABITHA: ...Hobb. Your family holds a / debt of mine. I hate that.
 LILI: I have coins! Hee hee. We / can talk terms.
 CAULDER: Everything is an account, girls. / I shall keep this one. Open.
-TABITHA: Father. Not this one.
+TABITHA: Father. Not this one. I said so.
 ASUKA: Tabitha. The door is closed, not / locked. You may leave when you wish.
 HAWKE: Tabitha. You fought / for a shore you did not choose.
 TABITHA: Marshal. Discipline is the / only currency I trust.
 TABITHA: We will not leave yet. We / camp at the edge of your map.
-TABITHA: We will watch. And we will / take the rest.
+TABITHA: We will watch. And we will / take the rest. All of it.
 ASUKA: I look forward to being asked.
 
 == m32_epilogue
 @SONG ending2
 NARRATION: The edge of the map at dusk. / A Silver Nova camp on a cliff.
 LILI: Sister? The nova has dimmed on / us twice already. Hee hee.
-TABITHA: The nova does not set, Lili. / It waits. Stupid weak people!
+TABITHA: The nova does not set, Lili. / It waits. And so do I.
 LILI: For what, Sister?
-TABITHA: For the door to be asked again.
+TABITHA: For the door to be asked again. / And if not, to be kicked.
 CAULDER: And if it is not, girls? A / test needs a result.
-TABITHA: Then we ask it ourselves.
+TABITHA: Then we ask it ourselves. / With fire.
 NARRATION: Far away, in a depot, a key / hums once. Gerald's mark warms.
 NARRATION: The nova does not set. It waits.

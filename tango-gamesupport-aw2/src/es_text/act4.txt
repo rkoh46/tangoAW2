@@ -12,28 +12,28 @@ LILI: Four flags on one harbour! Silly. / I have never seen a worse game.
 LILI: Four flags and, by my count, eleven / creditors, Sister! Eleven!
 LILI: The port charges a berth fee per / flag. We have not paid one yet.
 LILI: They say that is why it is free. / The fee is for later. Like pudding.
-TABITHA: Was that a joke? Do not.
+TABITHA: Was that a joke? Do not. You / are not funny.
 LILI(h): It was a rule of the port! The / date is on the bill. Hee hee.
-TABITHA: Report, Lili.
+TABITHA: Report, Lili. Do not babble.
 LILI: Green Earth holds the west, past / the Rio Sale. Javier's banners, and
 LILI: a lot of towers he built in a / week. The man swears oaths at bricks.
 LILI: He builds fast and he builds thin. / I like him already. Wobbly toys!
 LILI: Yellow Comet took the east, by / the Rio Dolce, before dawn. Sonja.
 LILI: Nobody saw them land. The sentries / woke up in a ditch. Mr. Bear approves.
-TABITHA: And the north-east dock.
+TABITHA: And the north-east dock. / Do keep up.
 LILI(s): Black Hole. The real ones, / Sister. Not a stray banner. Oh dear.
 LILI: Walls, cranes, the Black Factory / and a big garrison. Kindle.
 LILI: The trail ends there! Every barge / we chased
 LILI: was loaded at the north dock. The / yard keeps its own books.
 TABITHA: Black Hole is not at war with / me. Yet. Remember that.
 LILI: Somebody should tell their guns! / They have not noticed. Silly guns.
-TABITHA: They defend cargo. They take us for / raiders. They are right.
+TABITHA: They defend cargo. They take us for / raiders. They are right. Fools.
 TABITHA: I came for a ledger. I will / take a fight as well.
-TABITHA: Where is the ledger kept? Which / warehouse? Which crate?
+TABITHA: Where is the ledger kept? Which / warehouse? Which crate? Think, mouse.
 LILI: The Harbour Office, in the middle / of the eight-sided square! The harbour
 LILI: master files every bill of lading. / The stencil will be there!
-TABITHA: Then the Harbour Office is the / objective. Take it.
-TABITHA: Calderon calls itself free. Today / it answers to me.
+TABITHA: Then the Harbour Office is the / objective. Take it. Step on anyone.
+TABITHA: Calderon calls itself free. Today / it answers to me. On its knees.
 TABITHA: Four provinces behind me. This / port is the gate to the northern coast.
 TABITHA: And hold it for three days. A file / is not read in an hour.
 LILI: Three days in the middle of four / armies. In an octagon. Ooh, lovely.
@@ -50,9 +50,9 @@ TABITHA: So we hit whoever gets close and / let the rest bleed. Slowly.
 LILI: Mr. Bear wants to hit / everyone. He is not patient.
 TABITHA: Then Mr. Bear will learn patience in / a week. Or I will teach him.
 LILI: Mr. Bear will learn it by noon, and be / bored by one.
-TABITHA: Then be bored quietly.
+TABITHA: Then be bored quietly. Or / go to your room.
 TABITHA: Count what we have, Lili. And find / me a roof that holds. Quick.
-TABITHA: We move at first light.
+TABITHA: We move at first light. Late / sleepers get left behind.
 LILI(h): Yes, Sister! I always wanted a / seat at a siege. Popcorn! Hee hee.
 
 == m13_day4
@@ -72,15 +72,15 @@ LILI: Javier ran back to his towers. / Sonja just vanished. Poof!
 LILI: Kindle is still in the north dock. / She is waving. Mr. Bear waved back.
 LILI: Sister! The harbour master's / strong room! It was not even locked!
 LILI: One book on the table. Black / cloth. Bills of lading.
-TABITHA: Read it aloud, Lili.
+TABITHA: Read it aloud, Lili. Slowly, / so even you understand.
 LILI: Grain. Three harvests of it, ship / by ship. Paid in advance.
 LILI: Every line has the same stencil in / the margin. And a second
 LILI: column that the harvest never / mentioned. Jars. Sealed, grey.
 LILI: Delivered to the northern / granaries on the same dates.
-TABITHA: Grain in one hold, ash in the / next. Same barge, same bill.
+TABITHA: Grain in one hold, ash in the / next. Same barge, same bill. Vile.
 LILI: You do not feed a country and / poison its fields by accident. Do you?
-TABITHA: No. Someone is feeding Novaria on / purpose. Now it is on paper.
-TABITHA: Who wrote that book? Lili, the / hand.
+TABITHA: No. Someone is feeding Novaria on / purpose. Now it is on paper. Good.
+TABITHA: Who wrote that book? Lili, the / hand. Quick, quick.
 LILI: A clerk's hand. Small, neat, very / old-fashioned. Not a Directorate hand.
 TABITHA: I know Father's writing. I have / read his letters all my life.
 TABITHA: This is not Father's. The approvals / bear his name. Not his pen.
@@ -93,15 +93,15 @@ TABITHA: He found money when no one else / would. He found it here.
 LILI: I copied the page! It is proof, / in my hand. Mr. Bear signed.
 TABITHA(s): Father's gold... carries / their mark? On every coin?
 LILI: Every coin! The stencil's stamp, in / the margin, in the same small hand.
-TABITHA: Keep the copy sealed, Lili. It / is the page that matters.
+TABITHA: Keep the copy sealed, Lili. It / is the page that matters. Do not drool.
 LILI: Sister. The stencil.
 LILI: I have seen this mark before. On a / bill. I will say no more. Shh.
-TABITHA: You do not need to. Not yet.
+TABITHA: You do not need to. Not yet. / Do not cry about it.
 LILI: Thank you. When I know, you will be / the first. In writing. In crayon.
 KINDLE: Ahem. Darlings, forgive the / radio. I do hope I'm not intruding.
 KINDLE: You have the Harbour Office. / Congratulations. Keep the book.
 KINDLE: The crates, the cranes and the / north dock stay mine. Paid for.
-TABITHA: By whom, Kindle?
+TABITHA: By whom, Kindle? Answer, / you painted hag.
 KINDLE: By someone who pays in advance. I / never ask for names. Names
 KINDLE: are for the unpaid. Go home, silver / soldier. You're frightening my dock.
 
@@ -121,7 +121,7 @@ NELL: Then the Accord agrees. You're a / conqueror who pays her way.
 NELL: You took a free port and gave it / back. That has no precedent.
 NELL: And Black Hole sits at the north / dock, selling to anyone.
 NELL: The Director's ships are on our / coast. They're not for show.
-TABITHA: I know. Father's letters say so. / He is not subtle.
+TABITHA: I know. Father's letters say so. / He is not subtle. Unlike me.
 NELL: Then the council won't stand in / your way. I'll see to it.
 
 # ---------------------------------------------------------------- M14 Caulder's Gambit (the storming of Fort Meridian; Caulder falls)
@@ -139,10 +139,10 @@ LILI: Careful! Reserves land on day five, / and again on day eight.
 LILI: If we are not through the walls by / the fifth, we fight a second army.
 @WITH KANBEI
 KANBEI: Kanbei will take the ridge track. / He has climbed worse, in worse fog.
-TABITHA: Then the ridge is yours, Kanbei. / Do not be late.
+TABITHA: Then the ridge is yours, Kanbei. / Do not be late. I hate waiting.
 @WITH COLIN
 COLIN: I'll take the valley road! Blue / Moon says the east gate falls first!
-TABITHA: Keep the money, Colin. Take / the gate, or lose it.
+TABITHA: Keep the money, Colin. Take / the gate, or lose it. And your head.
 @END
 LILI: Daddy's herald came at midnight, / Sister! A sealed letter!
 TABITHA: Read it. Go on.
@@ -168,7 +168,7 @@ CAULDER: Novaria will not starve while I am / Director. Come home. I will overlo
 TABITHA: Someone feeds Novaria on purpose, / Father. I have the book.
 CAULDER: A clerk's book, in a clerk's hand. / Burn it, and I will forget the outburst.
 CAULDER: I found you money when no one else / would. I asked obedience. Nothing more.
-TABITHA: You never asked where the money / came from, either.
+TABITHA: You never asked where the money / came from, either. Neither did I.
 CAULDER: A scientist never asks where / funds come from. Scruples are weak.
 LILI: I looked at the money, Daddy. It / has a stamp. A mean stamp.
 CAULDER: Lili. How tedious. After all I put / into you. Needles are not cheap.
@@ -177,9 +177,9 @@ CAULDER: Do mind the ridge track, girls. / I am curious what will break.
 CAULDER: My Directorate Guard has never / lost a wall. It would be a pity to teach it.
 TABITHA: Then I will teach it, Father. / Slowly. I have waited years.
 TABITHA: We do not wait for the reserves. / I took a coast, a pass, a port.
-TABITHA: Now I take this camp, and the man / in it. Lili, funds. Ladders.
+TABITHA: Now I take this camp, and the man / in it. Lili, funds. Ladders. Hurry.
 LEGIONARY: The corps is formed, Commander. / All three lanes.
-TABITHA: Then storm it. Leave the Guard / nothing standing.
+TABITHA: Then storm it. Leave the Guard / nothing standing. Not a finger.
 
 == m14_day4 | KANBEI, COLIN
 LILI: Daddy? Can you hear me? It is / Lili! Hi!
@@ -229,7 +229,7 @@ LILI: His papers, Sister. Every freight / bill goes north, past the Strait of El
 TABITHA: The Accord closed that strait the / day we landed. So it is the next gate.
 TABITHA: I am no failure. I will finish / his war my way. Stupid weak people!
 LILI: Where you go, I go, Sister. / Second rank, if you insist.
-TABITHA: Good girl, Lili.
+TABITHA: Good girl, Lili. Now stay / behind me.
 LILI(h): Tee hee! Let's go, Mr. Bear!
 
 == m14_map | KANBEI, COLIN
@@ -239,14 +239,14 @@ LILI: I turned the wall guns round! They / point inland now. Seaward is safer.
 LILI: The camp holds nine hundred tons of / stores. I counted twice. Or thrice.
 LILI: Daddy kept his numbers neat. He / kept his daughters in a drawer.
 LILI: Here. Take it.
-TABITHA: Your letter. You are giving it up?
+TABITHA: Your letter. You are giving it up? / ...Spineless. Fine.
 LILI: I am done carrying it. Mr. Bear / says burn it. I forgot why I kept it.
 TABITHA: I will keep it. A letter is / leverage. I will need leverage.
 LILI(s): Leverage. Of course. You are a / terrible comfort, Sister.
 TABITHA: The coast is mine from the cape to / this wall. Father's empire is mine.
 LILI: Courier from the Accord, Sister! / A fleet has shut the Strait of Elms.
 LILI: Green Earth's ships and a Yellow / Comet air wing. Holding. No parley.
-TABITHA: Then we go and open it. Lili, / take the head of the column.
+TABITHA: Then we go and open it. Lili, / take the head of the column. Do not trip.
 LILI: The head! Sister, are you well? / Mr. Bear will not let you down.
 TABITHA: I know. If you do, I will / make you sorry. Go.
 
@@ -261,33 +261,33 @@ LILI: And above them, Fighters and / Bombers in a wall. Gold and green.
 LILI: Green Earth's grey sea and Yellow / Comet's gold sky. Pretty. Scary.
 LILI: The Accord closed the strait nine / days ago. Our road north runs through.
 LILI: In the east, the Strait Fort and its / inlet harbour. Every bill ends there.
-TABITHA: What do we have?
+TABITHA: What do we have? Be quick, / I am hungry.
 LILI: Cruisers, a Battleship, two Subs, / ships taken at Fort Meridian,
 LILI: and a dozen transports. Fuel for / six days. Salt Isle and Reed Isle hold
 LILI: free ports. Ours, if we take them. / Then we are a fleet at anchor.
-TABITHA: Then we take the strait and the fort / in six days. This is a pair's fight.
+TABITHA: Then we take the strait and the fort / in six days. Do not slow me.
 TABITHA: Anti-air and Cruisers first. The / Tag Power on the screen. Together.
 LILI: Mr. Bear named the plan! "Take / the Strait." Not poetic. Exact.
 LILI: I build on stone. There is none / here. Only wet. Yuck.
 LILI: I hate every fathom of it. Mr. Bear / lost his hat. He is so upset.
 DRAKE: Dude. Drake, of the Accord's strait / fleet. Nobody passes. Orders.
-TABITHA: Admiral Drake. Move. I am / passing.
+TABITHA: Admiral Drake. Move your tubs. I am / passing.
 DRAKE: Dude, I know. I like your style. / You kept the lanes clean. Still, orders.
 SENSEI: Hm. The little one who counted my / wing on the Comet Road. Still at it?
 LILI: Good morning, Commander Sensei! / Mr. Bear says hello!
 SENSEI: An old man belongs in the air. The / ground's for people who can still bend.
-TABITHA: Commander Sensei. I have no / quarrel with your farms. Yet.
+TABITHA: Commander Sensei. I have no / quarrel with your farms. Yet, old man.
 SENSEI: You've got a corps on its coast. / That's a quarrel by any measure.
-TABITHA: It is a quarrel I mean to / finish. Open the strait.
+TABITHA: It is a quarrel I mean to / finish. Open the strait, or sink.
 DRAKE: Can't, dude. The council says hold, / so I hold. I hold really well.
 SENSEI: The council also says the silver / flag doesn't reach Stormhold.
 SENSEI: I don't argue with orders. I enjoy / them. They tell me where to be.
 LILI: What does the Accord pay you for / this, Commander?
 DRAKE: Pay? Nothing, dude. It's a fleet. / You sail where it says.
 LILI: Then it is the worst creditor of / all! Orders never forgive.
-TABITHA: Stormhold. The Accord's own / stronghold. You said it, Sensei.
+TABITHA: Stormhold. The Accord's own / stronghold. You said it, Sensei. Fool.
 SENSEI: Hm. I said a name. Forget I said / it. Old men talk.
-TABITHA: Lili, the Strait Fort's harbour. / That is the second objective.
+TABITHA: Lili, the Strait Fort's harbour. / That is the second objective. Focus.
 LILI: Okay! Sink the flagship, take / the harbour. A tidy game.
 TABITHA: Then play it well. Losing is / for the weak.
 
@@ -295,11 +295,11 @@ TABITHA: Then play it well. Losing is / for the weak.
 NARRATION: The sixth day, noon. A call / across the strait. Nell's voice.
 NELL: Commander Tabitha, this is Nell, on / the Accord's channel. I'll be brief.
 NELL: I'm offering the Accord's table. / Tonight. Stop your guns and sit down.
-TABITHA: Madam Chair. Tell the fleet to / stand down, and I will sit.
+TABITHA: Madam Chair. Tell the fleet to / stand down, and I will sit. Maybe.
 NELL: I asked them. The council set their / orders. Only the council can lift them.
 DRAKE: I want to. Honest. But orders are / orders, and mine are firm.
 SENSEI: Hm. I've got kind words too. They / don't carry torpedoes.
-TABITHA: Then we finish it by arms. We sit / down after. My thanks, Nell.
+TABITHA: Then we finish it by arms. We sit / down after. My thanks, Nell. Pet.
 
 == m15_post
 @SONG ally2
@@ -313,32 +313,32 @@ DRAKE: Thanks. I heard what you did at / Isle Verdant. Same lady, huh.
 LILI: Sister! The Strait Fort's harbour / book, taken whole at the pier!
 LILI: Every freight bill with the stencil / passes this harbour. Same mark.
 LILI: Stormhold! The Allied stronghold / on the plateau. The crates went there.
-TABITHA: In the Accord's own archives. / Under the Accord's own seal.
+TABITHA: In the Accord's own archives. / Under their own seal. Hypocrites.
 LILI: A secret in a vault, behind a gate / that never fell. I do not like it.
 LILI: Customs stamps, countersigned. The / mark is on every one. I know it.
 LILI: I saw it on a bill. I will not / say where. Not yet. Shh.
 SENSEI: Stormhold keeps the Accord's / records. It won't open for a corps.
 DRAKE: Eagle's up there, dude. And Hachi. / They don't kneel. Not for anyone.
 TABITHA: Then I will ask once. If they / refuse, their wall becomes rubble.
-TABITHA: Rest tonight. We sail for / Stormhold at dawn. Lili, plan.
+TABITHA: Rest tonight, you maggots. We sail / for Stormhold at dawn. Lili, plan.
 
 == m15_map
 @SONG ally1
 NARRATION: The Strait Fort at evening. The / nova flag over a captured harbour.
 NELL: Commander Tabitha. It's Nell, from / the council chamber. I can hear gulls.
-TABITHA: You are heard, Madam Chair. The / strait is open. The fleet lives.
+TABITHA: You are heard, Madam Chair. The / strait is open. The fleet lives. Barely.
 NELL: I know. Drake wept. Quietly. / Sensei said "hm" for an hour.
 NELL: I voted to open the strait. I lost / by one vote. It haunts me.
-TABITHA: Your council voted. It will / not vote again.
+TABITHA: Your council voted. It will / not vote again. I will see to it.
 NELL: Don't be. The council wants the / corps stopped at Stormhold. All of it.
 NELL: Eagle and Hachi hold the gate. / They won't open the archives.
 TABITHA: Then I will open them. Nell, I / will take the city if I must.
 NELL: I know. I'd rather it were a / table. I'll come to the gate.
-TABITHA: Come. Bring your chairs. I / will bring the ledger.
+TABITHA: Come. Bring your chairs. I / will bring the ledger. And my boots.
 LILI: Chairs at a siege! Mr. Bear / wants one. He wants a cushion too.
 LILI: Their wall is three hundred years / old. It never fell. That is rude.
 LILI: Every wall has a first time! I / keep a book of firsts. With stickers.
-TABITHA: Then we begin it. At dawn.
+TABITHA: Then we begin it. At dawn. / Sleep badly.
 
 # ---------------------------------------------------------------- M16 Silver Nova (Stormhold: Eagle and Hachi)
 
@@ -351,7 +351,7 @@ LILI: The Weir Valley, up the Stormwater / river, to the west gate.
 LILI: Mount Ember smokes below that gate. / From day three, it spits fire! Whoo!
 LILI: And Needle Pass, the high road over / the north mountains to Falcon Field.
 LILI: Above it all, the escarpment: / three gates, and Hachi's Market Ward.
-TABITHA: Six provinces in a year, and now / the seventh gate.
+TABITHA: Six provinces in a year, and now / the seventh gate. I am bored of gates.
 TABITHA: The last gate. Beyond it are the / Accord's archives, and my answer.
 LILI: The harbour book from the Strait / Fort names the Hall of Records.
 LILI: Every crate with the stencil was / stamped here, at a customs window.
@@ -361,14 +361,14 @@ LILI: I counted the garrison. Half of / it owes Hachi money. Hee hee.
 LILI: It is the most loyal army I ever / counted. I do not know how to beat it.
 TABITHA: Quiet, Lili. Do not squeak.
 TABITHA: Three lanes. Lili, the Weir Valley. / Bring the walls down in order.
-TABITHA: My partner takes the Salt Road and / the harbour district.
-TABITHA: I take Needle Pass, the airfield / and the Sunrise Gate.
+TABITHA: My partner takes the Salt Road and / the harbour district. Do not squeal.
+TABITHA: I take Needle Pass, the airfield / and the Sunrise Gate. The best part.
 LILI: Money for one more wave. Not two. / I counted. I am counting again.
 EAGLE: Death from above! Silver Nova! You / came all this way for a visit?
 EAGLE: Falcon Field is mine, Commander! / The wing's ready! Green Earth stands!
 HACHI: Eagle. Stop talking. You're / scaring the customers.
 HACHI: Friend, that's a lot of corps for / one town. Where's your shopping list?
-TABITHA: I am Commander Tabitha of / Novaria. I do not want your city.
+TABITHA: I am Commander Tabitha of / Novaria. I do not want your tiny city.
 TABITHA: I want the Hall of Records. Your / city stands between us. Move it.
 HACHI: Customer, that's what every burglar / says. Politely, with a siege engine.
 EAGLE: You'll never take the Sunrise Gate! / Five hundred in the wing!
@@ -379,7 +379,7 @@ HACHI: Hm. A mule. I knew a mule like you / once. She bought my nails.
 EAGLE: Hachi sold the whole Allied army / its nails! That's logistics!
 HACHI: And those nails are holding up the / gate. Think about that, customer.
 LILI: Make the offer first, Sister. / Mr. Bear wants us to be polite.
-TABITHA: Open the Hall of Records and I / turn the corps around. Once.
+TABITHA: Open the Hall of Records and I / turn the corps around. Once. Beg.
 EAGLE: Green Earth does not kneel!
 HACHI: The archives are the Accord's, not / mine. Open them for you, I open them for
 HACHI: everybody. Bad business.
@@ -389,14 +389,14 @@ EAGLE: Death from above! Always!
 HACHI: Right. Units on the shelf, funds in / the till. Customer, buy something.
 LILI: He is threatening us with shopping!
 LILI: He stocked an army, Sister! It / is a very serious shop.
-TABITHA: Then we begin. Three lanes. / Crush them. Move.
+TABITHA: Then we begin. Three lanes. / Crush them. Make them scream.
 
 == m16_phase2
 TABITHA: The escarpment is behind us. The / harbour district is mine. Market next.
 HACHI: Customer, you broke the shop / window. That goes on your account.
 EAGLE: Wing up! Falcon Field isn't done / yet!
 LILI: The Market Ward is next. Give me / eight turns and three guns, west gate.
-TABITHA: My column keeps the Eagles off your / guns. Do not dawdle.
+TABITHA: My column keeps the Eagles off your / guns. Do not dawdle, or I leave you.
 LILI: Please do not boss me, Sister. / I am breaking toys. It is busy.
 TABITHA: Together. Do not fail me. Or / else.
 
@@ -406,9 +406,9 @@ HACHI: Last chance sale, friend! Barter! / Everything half price, everything goe
 EAGLE: Wing up! All of it! Let 'em look at / the sky!
 LILI: Both Powers are lit! Watch the / cliff guns. They have the range.
 LILI: The Salt Road column is pinned under / the cliff. Mr. Bear counts forty.
-TABITHA: Then I take the field above them. / Hold the lane, Lili.
+TABITHA: Then I take the field above them. / Hold the lane, Lili. Hold it, or else.
 LILI: The repair lane is ours, Sister! / It heals anything that reaches it!
-TABITHA: Then reach it. Take the gate.
+TABITHA: Then reach it. Take the gate. / Any slacker gets shot.
 
 == m16_reserves
 HACHI: Merchant Union, friend! Shelves / empty, everything out the door!
@@ -428,20 +428,20 @@ EAGLE: Green Earth does not kneel, ma'am. / I'm sitting. It's a technicality.
 HACHI: I'll take that as a fair deal. / Friend, mind the glass on the floor.
 TABITHA: I do not own your town. I need one / door in it. The Hall of Records.
 HACHI: The key's in the till. Under the / receipts. Nothing hides from a good till.
-TABITHA: I will not burn your shop, Hachi. / Burning wastes stock.
+TABITHA: I will not burn your shop, Hachi. / Burning wastes stock. Pity.
 HACHI: Hm. Then you pay for the glass.
 LILI: I will write the bill for the glass, / at cost! Pay in ninety days. Yay!
 HACHI: At cost! I love this girl. Eagle, / she's the first Novarian to get retail.
 LILI(h): We took Stormhold! A whole / plateau! Sister, say it! Say it!
-TABITHA: It was adequate. All of you.
+TABITHA: It was adequate. All of you. / Do not look so smug, Lili.
 LILI: The Sunrise Gate. A hundred paces / of oak and iron. I will miss it. A little.
 NELL: Hello? Commander Tabitha? It's Nell. / I'm at the gate. May I come in?
-TABITHA: Madam Chair. The gate is open. / Come in. Wipe your feet.
+TABITHA: Madam Chair. The gate is open. / Come in. Wipe your feet. Dirty guest.
 NELL: Eagle. Hachi. Are you hurt?
 EAGLE: Only my pride, Nell. It's large. / There's a lot of it to hurt.
 HACHI: I'm fine. The customer is polite. / Ruinous, but polite.
 NELL: Commander. I said I'd broker the / peace. I've come to do it.
-TABITHA: Madam Chair. The Accord's table. / But I keep the archives.
+TABITHA: Madam Chair. The Accord's table. / But I keep the archives. All of them.
 NELL: Keeping the archives is a / conquest, Commander. You know that.
 TABITHA: I know. I will read every page / before I return them. If I do.
 
@@ -465,7 +465,7 @@ NELL: asked for chairs.
 @SONG ally1
 NARRATION: The Accord's table, laid out on / the Citadel terrace.
 NELL: Commander. Novaria will need a new / Director. And a plan for the grain.
-TABITHA: The Directorate will name one in / the spring. It will be one of us.
+TABITHA: The Directorate will name one in / the spring. It will be one of us. Me.
 JESS: Green Earth will send seed and / tractors. No strings.
 COLIN: Blue Moon will buy the first / harvest at a fair price. Fair!
 LILI: A fair price, Colin, is a price I / name! Tee hee. Draft the terms.
@@ -477,7 +477,7 @@ HACHI: And I'll send nails. Don't look at / me like that. Nails build barns.
 EAGLE: Green Earth will fly the first / sacks! Death from above, with bread!
 LILI: And I will ride with the grain / carts! Mr. Bear insists!
 NELL: Peace is a long errand, Lili. / Somebody has to ride it.
-TABITHA: Then it is settled. Nobody goes / hungry. Nobody pays in advance.
+TABITHA: Then it is settled. Nobody goes / hungry. Nobody pays in advance. Ha.
 NELL: To Novaria, then. And to the ones / who feed the world.
 
 == m16_epilogue
@@ -495,7 +495,7 @@ LILI: Sister, look at this wagon! Eleven / days from the north!
 LILI: Eleven! I said twelve. I was wrong! / Mr. Bear is delighted.
 LILI: The channels are cut. The southern / fields are green again!
 LILI: The north is still grey. The ash / does not leave quickly.
-TABITHA: It will. I will see to it. Give it / a decade.
+TABITHA: It will. I will see to it. Give it / a decade. Or I will skin someone.
 LILI: I have a decade! I have nothing but / decades and toys.
 TABITHA: Father is a cell number. His / empire is my workshop. His war is mine.
 TABITHA: I came to the sea because the / bread stopped. Now it has started.
@@ -508,8 +508,8 @@ LILI: Okay! Always. Sister! The last / crate.
 LILI: From the northern shipment. It is / not on my list.
 LILI: What is that on the lid? A mark. / Black. A stencil.
 LILI: It is the stencil. It is paid in / advance, Sister. All of it.
-TABITHA: Close the lid.
-TABITHA: No one opens that crate. No one / eats from it. Not yet.
+TABITHA: Close the lid. Now.
+TABITHA: No one opens that crate. No one / eats from it. Not yet. Cowards, obey.
 TABITHA: Lili. Keep the bill. And keep / your mouth shut.
 LILI: I always keep the bill.
 NARRATION: Dusk. The harbour lamps are lit / one by one.
@@ -521,7 +521,7 @@ NARRATION: A light. Black, if light can be / black. It does not flicker.
 NARRATION: Far to the north, a pillar of / dark light stands.
 NARRATION: It does not move. It casts no / shadow. It is silent.
 LILI: I do not know what it is. Mr. Bear / has gone quiet. Poor Mr. Bear.
-TABITHA: Nor do I.
+TABITHA: Nor do I. How infuriating.
 LILI: Mr. Bear says it is looking / at us. He is a bear. Often wrong.
-TABITHA: Nor does anyone know.
+TABITHA: Nor does anyone know. Fools.
 NARRATION: The nova waits. So does the / light.

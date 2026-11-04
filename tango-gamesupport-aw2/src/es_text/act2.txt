@@ -8,11 +8,11 @@ NARRATION: The Comet Road, Yellow Comet. / Day one of nine.
 NARRATION: Four bridges over the Sable. / Posts: Highwatch, Crossways, Lowmere.
 TABITHA: Lili. The corps has rested. The / road is yours. Do not waste it, or else.
 LILI: Mine, Sister? Mr. Bear is so / happy! He does not like sand, though.
-TABITHA: There will be a great deal of / sand. You have the command.
+TABITHA: There will be a great deal of / sand. Eat it. You have the command.
 LILI: Then I look at the clock first! / The Comet guards will blow
 LILI: the four bridges after day nine. / That is, um, two hundred sixteen hours.
 LILI: After the Sable there are posts. / After the posts, Yellow Comet. Toys!
-TABITHA: We cross as conquerors, so we / cross fast. Take all three posts.
+TABITHA: We cross as conquerors, so we / cross fast. Anyone who lags can drown.
 TABITHA: If the bridges fall, the corps / waits for the thaw. I hate waiting.
 NARRATION: Dry sand country, scrub and rock. / A sandstorm walks along the road.
 LILI: A storm! The dust scratches the / air. Long guns cannot see far.
@@ -20,9 +20,9 @@ LILI: It covers me too! Mr. Bear says / the wind is the sky sneezing.
 LILI: Across the desert, past the river, / is the Comet Pipe. A pipe wall!
 LILI: North to south, two gates: the / Highwatch road and the Lowmere road.
 LILI: And a weak spot on the Crossways / road. One good hit and it pops!
-TABITHA: A shortcut. Break the seam and the / wheels go straight through.
+TABITHA: A shortcut. Break the seam and the / wheels go straight through them.
 LILI: The ruins in the middle hold a / silo. Nobody's. Anybody can fire it.
-TABITHA: The signal posts across the Sable / see no further. Ride before it lifts.
+TABITHA: The signal posts across the Sable / see no further. Ride, you snails.
 LILI: Our depot is at the front / crossroads. Dunmere is home!
 LILI: Every day we are late costs four / hundred measures of grain.
 LILI: I do not like saying that number. / It makes my tummy hurt.
@@ -65,13 +65,13 @@ LILI(h): Mr. Bear, he said it! A stranger! / A Comet man was nice to me!
 TABITHA: We heard. The whole valley heard. / Stop squealing.
 SENSEI: Your people march because the / bread stopped, they say.
 SENSEI: My villages say the same about / winter. Hm. Strange company.
-TABITHA: The border is behind us. The / first Comet province lies open.
+TABITHA: The border is behind us. The / first Comet province lies open. Helpless.
 SENSEI: Open, yes. Whether it welcomes / you is another matter. Hm.
-TABITHA: Lili. The posts were taken with / a day in hand.
+TABITHA: Lili. The posts were taken with / a day in hand. Do not gloat.
 LILI: Say it, Sister! Mr. Bear is / listening. He has listened all week.
-TABITHA: ...It was well done.
+TABITHA: ...It was well done. There. / Now stop staring at me.
 LILI(h): Thank you! That is the nicest / thing you ever said to me!
-TABITHA: It is the only one. Do not wear / it out.
+TABITHA: It is the only one. Do not wear / it out. Or beg for another.
 
 == m05_map
 @SONG co:caulder
@@ -90,7 +90,7 @@ CAULDER: only for more road. A hungry / people forgives a long march.
 CAULDER: Every province you take is a / granary I can name to the Directorate.
 LILI: He did not say where the money / comes from. Mr. Bear noticed.
 TABITHA: No. He was careful. Very careful. / He is never kind for free.
-TABITHA: Write the figure down. We will ask / again, in person.
+TABITHA: Write the figure down. We will ask / again, in person. He will squirm.
 
 # ---------------------------------------------------------------- M6 The Ledger (Lili leads; enemy Colin and Hachi)
 
@@ -107,12 +107,12 @@ COLIN: C-counterfeit! That's, um, very / bold of you.
 LILI: The coin is made at the Directorate's / mint. I can show you. Look!
 HACHI: Receipts I can't spend, kid. Show / me silver that rings true.
 LILI: Then I will show you what I take. / Sister, the map, please.
-TABITHA: The whole town is the target. / About seventy properties in all.
+TABITHA: The whole town is the target. / About seventy properties. Grab them all.
 TABITHA: Capture, nothing else. Twenty-two / at once, at the end of any day,
-TABITHA: by the sixteenth day. The / Guildhall, north-west: Colin.
-TABITHA: The Counting House quarter, / south-east: Hachi.
+TABITHA: by the sixteenth day. The / Guildhall, north-west: sniveling Colin.
+TABITHA: The Counting House quarter, / south-east: Hachi, the haggler.
 TABITHA: Salt Row, south of the square, is / cut off by the Mill Water. Seven spans.
-TABITHA: Some fifty neutral houses lie / between us. Take them street by street.
+TABITHA: Some fifty neutral houses lie / between us. Kick the doors in.
 LILI: The Mill Water is a canal, Sister! / Bridges, and a wall of sluice gates!
 TABITHA: A neutral missile silo stands in / the market toward the Guildhall.
 COLIN: Ooh, the silo! That's mine, I / think. Um. Is it?
@@ -170,14 +170,14 @@ TABITHA: My sister bought a guild with a / clause and a giggle. Efficient. Fine.
 NARRATION: The town at night. The / clearing house, after closing.
 TABITHA: The town is taken. A trade town, / and its guild answers to me now.
 LILI: The first bills came by noon! / Eleven hundred! I counted them all!
-TABITHA: Is the coin accepted?
+TABITHA: Is the coin accepted? Or do I / have to hang someone?
 LILI: Accepted! They even like it! Colin / hung one on his wall. Silly Colin.
 LILI: I count. Then I look. Sister, / come here. Look at this one.
 TABITHA: A bill of exchange. Blue Moon / paper. It looks clean to me. Boring.
 LILI: The ink is clean. It is the edge / I do not like. The edge is funny.
-TABITHA: ...A stencil. Four letters. The / same as on the relief crates.
+TABITHA: ...A stencil. Four letters. The / same as on the relief crates. Disgusting.
 LILI: H, O, B, B. On an old guild bill. / Three years old. Not ours.
-TABITHA: Then the stencil has been paid by / more than Novaria.
+TABITHA: Then the stencil has been paid by / more than Novaria. Parasites.
 LILI: Or the name does the paying, / Sister. I do not know which. Not yet.
 TABITHA: Lili. You went very white when / you saw it. Do not lie to me.
 LILI: The room is cold. Mr. Bear says it / is not. Mr. Bear is being rude.
@@ -200,7 +200,7 @@ TABITHA: Reefs are for ships. Keep the / Cruisers in the open lanes.
 TABITHA: A silo is a single shot. It takes / three points from every unit around it.
 TABITHA: Friend and foe alike. We fire it / only where the enemy is thickest.
 LILI: The Green Earth fleet is the / biggest in two hundred leagues. Ooh.
-TABITHA: Its flagship is a Battleship, in / mid-Roads. Sink it, take the harbour.
+TABITHA: Its flagship is a Battleship, in / mid-Roads. Sink it. Watch them flail.
 LILI: Mr. Bear says bears and boats / are not friends. He is still wet.
 TABITHA: Noted. Why is that bear so / soggy, Lili?
 LILI: He fell in the harbour. He is not / sad. He is just thinking, quietly.
@@ -213,10 +213,10 @@ TABITHA: Then everybody is correct. I / want the harbour. For now.
 DRAKE: Nobody wants a harbour for "for / now", dude. Cannons say more.
 SENSEI: Hmph. A harbour. Young woman, I've / watched a hundred admirals want one.
 SENSEI: Yellow Comet's wing flies from / Isle Verdant's airport. Mind your hats.
-TABITHA: Then the guns will answer. Drake, / Sensei, stand by to be sunk.
+TABITHA: Then the guns will answer. Drake, / Sensei, stand by to be sunk, you fossils.
 SENSEI: Stand by? I've stood by since / before you could walk. Come on.
 LILI: Anti-air cruisers on the left / wing, please, Sister. Pretty please.
-TABITHA: Forward. Keep the lanes clear. / Fishing boats make poor targets.
+TABITHA: Forward. Keep the lanes clear. / Fishing boats make dull targets.
 
 == m07_day5
 SENSEI: Hmph. The wing's arrived, young / ones. Look up. Don't trip.
@@ -224,7 +224,7 @@ SENSEI: Twelve fighters, and one old man / who's seen all your tricks.
 LILI: Twelve! The wing was nine when I / counted last. Mr. Bear is impressed.
 LILI: Anti-air cruisers, bring them / round. Sensei, you are late!
 SENSEI: Late? I'm exactly on time. It's / the young who are early.
-TABITHA: Hold the line. The wing has one / pass and one tank of fuel.
+TABITHA: Hold the line. The wing has one / pass and one tank of fuel. Gloat later.
 
 == m07_post
 @SONG aw2:421
@@ -241,7 +241,7 @@ DRAKE: Ha. See, dude? That's almost a / joke.
 DRAKE: So I figure you're not Black / Hole. Black Hole mines things.
 TABITHA: We are not. I march on my own / account, and for bread.
 DRAKE: Bread. Huh. The nets came up grey / this spring. Ash. Weird.
-TABITHA: The same grey ash. It fell on our / fields for three years.
+TABITHA: The same grey ash. It fell on our / fields for three years. Sweet, is it not?
 DRAKE: Dude. For real? So you're / invading, and scared. That's new.
 TABITHA: I am not scared. I am hunting / someone. When I find him, he will be.
 SENSEI: Hmph. Drake. Are we being polite / to them now? How novel.
@@ -253,7 +253,7 @@ NARRATION: The Novarian flagship at dusk. A / radio call.
 LEGIONARY: Commander! A call on the long / wave. From the north.
 NELL: Hello? Is this Commander Tabitha? / This is Nell, of Orange Star.
 NELL: I chair the Allied Accord's / council. I hope I may speak.
-TABITHA: Speak, Madam Chair. Briefly.
+TABITHA: Speak, Madam Chair. Briefly. / I am growing bored of your voice.
 NELL: Thank you. First: the Accord has / noticed the green fleet.
 NELL: Four reports, four theories. All / of them end with "invasion".
 TABITHA: The fleet sails openly. We kept / the fishing lanes clear. I was bored.
@@ -274,28 +274,28 @@ LILI: Mr. Bear says the spider is nice / too. Right up until dinner. Tee hee.
 NARRATION: Ironhold, Orange Star. A ring of / crags on an open plain.
 TABITHA: Ironhold. Crags round Max's HQ, / the Brimwater canal, a causeway.
 TABITHA: Front gate in the west, rear gate / in the east. Three ways over the canal.
-TABITHA: Ironhold is the gate to Orange / Star. Take it, and the frontier moves.
+TABITHA: Ironhold is the gate to Orange / Star. Take it, and trample what is left.
 LILI: A missile silo is by the causeway, / Sister! It belongs to nobody!
 TABITHA: One shot, three points from every / unit around it. Whoever fires first.
 LILI: It sits at the causeway head, east / bank. Whoever stands on it fires it!
-TABITHA: Stand on it when the enemy is / thick, not before. Not for the noise.
+TABITHA: Stand on it when the enemy is / thick, not before. Not for fun, Lili.
 NARRATION: Rain on the crags. A grey fog / lies along the plain.
 LILI: Fog! The northern road is a ghost / road. Nobody will see me coming!
-TABITHA: Nor will you see them. The fog / covers both flanks. Keep to the road.
+TABITHA: Nor will you see them. The fog / covers both flanks. Stay on the road.
 LILI: Then I take the plain, Sister! A / flank run, by the northern road!
 TABITHA: No. You hold the northern road and / wait for the line. Stay put.
 LILI: Wait? Mr. Bear does not like to / wait. He is bored already.
-TABITHA: Father has made us one pair. We / share a plan or we lose.
+TABITHA: Father has made us one pair. I / am stuck with you. Do not drag me down.
 LILI: One pair? We could not share one / fig, Sister. You ate it. I cried.
 LILI: I made a list of all our weak / bits. Can I read it? Pretty please?
-TABITHA: No.
+TABITHA: No. Never. Not one word.
 LILI: Thank you! I will. Tabitha calls / everyone weak. Lili calls
 LILI: everyone a toy. Tabitha trusts no / one with the second half of a plan.
 LILI: Lili trusts no one with the first. / Mr. Bear drew the little pictures.
 LILI: Together, one holds and one plays. / That is a pair! Isn't it?
-TABITHA: Fine. I hold the front gate. You / do whatever you do in the fog.
+TABITHA: Fine. I hold the front gate. You / do whatever you do in the fog. Hush.
 LILI: I play! Slowly, in the fog, on the / road nobody is watching. Hee hee.
-TABITHA: Two hands. One closes on the / enemy, one does the work behind.
+TABITHA: Two hands. One crushes the / enemy, one cleans up behind.
 LILI: If a hand lands on you, Sister, / I will hold your hand. I counted.
 TABITHA: ...Two Hands. Fine. It will do.
 MAX: Who commands on the field of / Ironhold? Come out and say it!
@@ -309,12 +309,12 @@ TABITHA: We will see. Little people always / say that.
 
 == m08_day3
 LILI: Sister! Both of our gauges are / full! The Tag is ready!
-TABITHA: The Tag. Both of us, one power, at / once. Listen, Lili.
-TABITHA: When both gauges are full, we may / fire both powers together.
+TABITHA: The Tag. Both of us, one power, at / once. Listen, Lili. For once.
+TABITHA: When both gauges are full, we may / fire both powers together. Ruinous.
 LILI: Both? Yours and mine? Mr. Bear is / thrilled! He is clapping.
-TABITHA: It is the rule of the pair. Change / swaps who leads. Tag fires.
+TABITHA: It is the rule of the pair. Change / swaps who leads. Tag fires. Simple.
 LILI: Then fire it, Sister! I will / lead the first half. You do the rest.
-TABITHA: Two Hands. Now.
+TABITHA: Two Hands. Now. Burn them.
 NARRATION: The barrage strikes the line. / The sky above it turns its mind.
 
 == m08_post
@@ -324,7 +324,7 @@ MAX: Hmph. I lost. To two people who / argued the whole time.
 SASHA: The timing was precise. The / weather was irritating. I note it.
 MAX: Sasha. Quiet. Commander Tabitha. I / fought with everything I had.
 MAX: You beat me clean. I respect that. / I respect the corps.
-TABITHA: Commander Max. Your men fought / well. They are broken. That is all.
+TABITHA: Commander Max. Your men fought / well. Now they are broken. Delightful.
 MAX: Don't be sorry. I'd have done the / same. What do you want?
 TABITHA: Ironhold, and the road north. And / to know who feeds my people.
 MAX: Bread? That's your war? Huh. Nell / would call that honest.
@@ -344,13 +344,13 @@ LILI: A letter from the Accord, in orange / wax! For you, Sister! Ooh, sticky!
 TABITHA: "The Allied Accord invites / Commander Tabitha to its council."
 TABITHA: "It will hear her. It will hear / about the grain. It asks for peace."
 LILI: A table! At last! With chairs, and / no catapults. Mr. Bear is excited!
-TABITHA: A table is where weak people / decide what they decided yesterday.
+TABITHA: A table is where cowards / decide what they decided yesterday.
 LILI: You do not want to go?
 TABITHA: I did not say that. I say it is / a trap with a nice tablecloth.
 LILI: The Chair also sent a present! A / book of all the Accord's ports.
-TABITHA: The stencil. It appears. Kite / Hill. An air depot.
+TABITHA: The stencil. It appears. Kite / Hill. An air depot. At last.
 LILI: The freight yards run it. Our / crates go through it twice a year.
-TABITHA: Then we do not sit down yet. We go / and look at the depot.
+TABITHA: Then we do not sit down yet. We go / and look at the depot. And its owners.
 LILI: Yes! The trail first. Then the / table. I will tell Nell so. Hee hee.
 TABITHA: Lili. You have been quiet since / the stencil. Out with it.
 LILI(s): ...Sister. About the table. I / should say something.
