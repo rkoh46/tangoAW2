@@ -28,8 +28,8 @@ CO_NAMES = {
 }
 OTHER_NAMES = {"NARRATION", "LEGIONARY", "SOLDIER", "SOLDIER OS", "SOLDIER BM", "SOLDIER GE", "SOLDIER YC", "SOLDIER BH", "[CO]", "[CO2]"}
 ROSTER = ["TABITHA", "LILI", "KANBEI", "COLIN"]
-NO_CONTRACTIONS = {"TABITHA", "LILI", "CAULDER", "KANBEI", "SASHA", "JAVIER"}
-NO_BANG = {"TABITHA", "LILI", "CAULDER"}
+NO_CONTRACTIONS = {"CAULDER", "KANBEI", "SASHA", "JAVIER"}
+NO_BANG = {"CAULDER"}
 # the user's own signature lines (the CO pages' quotes) keep their "!" and "Let's"
 SIGNATURE = ("Stupid weak people!", "Let's go, Mr. Bear!", "Tee hee! Let's go, Mr. Bear!", "Tee hee! Let's go,", "Mr. Bear!", "Fascinating...", "Tee hee!")
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)

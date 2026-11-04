@@ -59,21 +59,21 @@ NARRATION: Closed, not locked. Beyond it, / a storm listens. And waits.
 @SONG co:caulder
 NARRATION: Black Hole's home island. / Desert, wind, and strange sails.
 CAULDER: Doctor Caulder, of the Silver / Nova. We followed the black light.
-CAULDER: It carried us the last leagues. / We did not choose this shore.
+CAULDER: It carried us the last leagues. An / unplanned variable. Charming.
 ASUKA: Caulder. This is Black Hole's / island. You are trespassing.
 TABITHA: Stupid weak people! The stencil / leads here. It reads HOBB.
 CRUMB CO: That's me, sir! I'm the Hobb! / Hello! Gerald says hello!
-LILI: Tee hee! The stamp on your / crates is on our freight bills.
-LILI: Three years of grain. Paid for by / nobody. Signed by no creditor.
-LILI: Mr. Bear counted the nails, too. / They match. Nails never lie.
-CAULDER: The vanguard is restless, my / girls. It wishes to fight.
-TABITHA: Father. We are guests. For now.
-CAULDER: Guests with a vanguard. A very / courteous kind of threat.
+LILI: Tee hee! The stamp on your crates / is on our freight bills! Look!
+LILI: Three years of grain! Paid for by / nobody! Signed by no creditor!
+LILI: Mr. Bear counted the nails, too. / They match. Nails do not tell fibs.
+CAULDER: The vanguard is restless, girls. / It wishes to fight. Let it.
+TABITHA: Father. We are guests. For now. / Keep your toys on their leash.
+CAULDER: Guests with a vanguard. A very / polite kind of threat. Do go on.
 ASUKA: You came a long way.
 TABITHA: Eleven days of sea in a single / night. Lili counted it.
-LILI: Twice. Tee hee. The answer was / still wrong.
+LILI: Twice! Hee hee. The answer was / still wrong. Mr. Bear got dizzy.
 ASUKA: That was the door. It is closed / now.
-TABITHA: We noticed. We cannot go back / the way we came. Fix it.
+TABITHA: We noticed. We cannot go back / the way we came. Fix it. Now.
 @IF ASUKA
 ASUKA: A corps at my door with the / same stencil. I do enjoy a coincidence.
 @IF CRUMB CO
@@ -123,47 +123,47 @@ CLONE ANDY: Okay! Visitors! I can fix / any-- ...any misunderstanding!
 WICK: Sergeant. One of ours fired on / a landing boat. By accident.
 MORTAR: Wick. Tell me it was not you.
 WICK: ...Is it all right if it was?
-CAULDER: Fascinating. They fired. Then / the vanguard may advance, my girls.
+CAULDER: Fascinating. They fired. Then / the vanguard may advance, girls.
 TABITHA: Father, wait. ...Too late. / He has already sent the order.
 ASUKA: Then we fight. Hold the depot, / whoever they are.
 
 == m32_day3
 @SONG co:caulder
 CAULDER: The Second Corps' vanguard. / Riders, banners, and haste.
-CAULDER: I told them to wait. They / preferred the experiment.
-LILI: Daddy. That is a remarkably / expensive charge.
-TABITHA: The depot has walls. Riders / do not climb. Stupid weak people.
-CAULDER: Then they will learn to. It is / most instructive. Fascinating.
-LILI: Tee hee! The first rider will / ride into the moat. Watch.
+CAULDER: I told them to wait. They / preferred to run the test early.
+LILI: Daddy! That is a very expensive / charge! Whee!
+TABITHA: The depot has walls. Riders do / not climb. Idiots.
+CAULDER: Then they will learn to, or / fail. Either result is of use.
+LILI: Ooh! The first rider will ride / into the moat! Watch! Watch!
 TABITHA: I know. Let him drown.
 LEGIONARY: Ow. The moat is WET.
 ASUKA: Sergeant, note it. The moat has / claimed a corps soldier.
 
 == m32_day5
 @SONG co:lili
-LILI: Tee hee! Toys are up, Daddy. / Big rams at forty paces.
-LILI: The depot walls are old. Good / stone, two metres, and no mortar.
-LILI: Who builds without mortar? Silly.
+LILI: Toys are up, Daddy! Big rams at / forty paces! Boom, boom!
+LILI: The depot walls are old! Good / stone, two metres, and no mortar!
+LILI: Who builds without mortar? Silly. / Silly, silly man.
 ASUKA: A quartermaster who wanted a / basement, not a wall.
-LILI: I like him. I am sorry about / his wall. Tee hee!
+LILI: I like him. I am sorry about / his wall. Mr. Bear is sorry too.
 TABITHA: Fire. The walls only. Not the / depot. I want what is inside.
-LILI: Okay. The walls are pretty. / They will fall beautifully.
+LILI: Okay! The walls are pretty. / They will fall so nicely!
 CRUMB CO: Miss Lili? Would you like a / biscuit while you work?
-LILI: ...Me? Yes. Thank you. Mr. Bear / says thank you. Oh. It is hard.
+LILI: ...Me? Thank you. Nobody gives me / biscuits. Mr. Bear says thank you.
 CRUMB CO: It's from my grandpa. It's very, / very old!
-LILI: ...It is quite a good biscuit, / actually.
+LILI: ...It is a very good biscuit. Is / it okay if I like it, Sister?
 
 == m32_day7
 @SONG co:lili
-LILI: The fleet has arrived. Every / ship, on time. Good toys.
+LILI: The fleet is here! Every ship, on / time! Good toys! Good, good toys!
 LILI: Your shoreline is under our / guns. Daddy says we may talk.
 VON BOLT: Terms! Kehh-heh! A lady who / speaks my language!
-LILI: Colonel. Your fence rates on the / Cinder Coast were eleven percent.
-LILI: That would be illegal in Novaria.
+LILI: Colonel! Your fence rates on the / Cinder Coast were eleven percent!
+LILI: That would be naughty in Novaria.
 VON BOLT: Novaria? Where is Novaria? Does / it have a market?
 LILI: It has a Directorate, and a ledger.
 VON BOLT: A ledger! Show me! Kehh... / show me, show me!
-LILI: ...Tee hee. You are the first man / to ask me that with joy.
+LILI: ...Hee hee. You are the first man / to ask me that with joy. I like you.
 VON BOLT: I am old. Joy is cheap. I / recommend it.
 CRUMB CO: Ma'am, she wants to talk.
 ASUKA: She wants to be paid. It is a / fine instinct.
@@ -173,28 +173,28 @@ ASUKA: She wants to be paid. It is a / fine instinct.
 TABITHA: The depot holds. The shore / holds. ...Annoying.
 ASUKA: Tabitha. Enough. Both armies / stand. Neither wins.
 TABITHA: I know. Father has lost / three horses.
-CAULDER: Two, my girl. The third / merely declined.
+CAULDER: Two, Tabitha. The third / merely declined. A useful result.
 FLAK: Flak sorry. Flak ate horse's / oats. Oats good.
-CAULDER: You ate the oats. ...Were they / good oats?
+CAULDER: You ate the oats. ...Were they / good oats? Describe the taste.
 FLAK: Best oats. Flak thanks horse.
 CAULDER: Fascinating... I find him / instructive.
-LILI: Your Doctor built a catapult out of / a typewriter. Tee hee.
+LILI: Your Doctor built a catapult out of / a typewriter! Hee hee!
 LASH: It had good bones! Heehee! It / threw a very small anvil!
-LILI: Eleven paces. Mr. Bear is / jealous. Let's go, Mr. Bear!
-LILI: Marshal. Your ledgers are / very neat. Can I read them?
+LILI: Eleven paces! Mr. Bear is / jealous. Let's go, Mr. Bear!
+LILI: Marshal! Your ledgers are very / neat! Can I read them? Please?
 HAWKE: Child. Mine belong to the / army, yours to the Directorate?
-LILI: ...Okay. Tee hee.
+LILI: ...Okay. Hee hee.
 TABITHA: Asuka. I will ask once. Who / is Hobb? Answer, weakling.
 CRUMB CO: Me, sir! And my grandpa! He / built a door. Then they erased him.
 CRUMB CO: He left a reserve in the depot. / I think he fed you, too.
-LILI: Three grey harvests. Grain from / a freighter with no owner.
-LILI: Someone fed us on purpose, and / never sent a bill.
-LILI: He was a quartermaster. Not / a general. Tee hee.
-TABITHA: A weak man who fed an army / he never met. Stupid.
+LILI: Three grey harvests! Grain from / a ship with no owner!
+LILI: Someone fed us on purpose, and / never sent a bill! Who does that?
+LILI: He was a quartermaster. Not / a general. A nice one.
+TABITHA: A weak man who fed an army / he never met. Pathetic.
 CRUMB CO: Sir. That's what we do. Hobbs.
 TABITHA: ...Hobb. Your family holds a / debt of mine. I hate that.
-LILI: I have coins. Tee hee. We / can talk terms.
-CAULDER: Everything is an account, my / girls. I shall keep this one.
+LILI: I have coins! Hee hee. We / can talk terms.
+CAULDER: Everything is an account, girls. / I shall keep this one. Open.
 TABITHA: Father. Not this one.
 ASUKA: Tabitha. The door is closed, not / locked. You may leave when you wish.
 HAWKE: Tabitha. You fought / for a shore you did not choose.
@@ -206,11 +206,11 @@ ASUKA: I look forward to being asked.
 == m32_epilogue
 @SONG ending2
 NARRATION: The edge of the map at dusk. / A Silver Nova camp on a cliff.
-LILI: Sister. The nova has dimmed / on us twice already. Tee hee.
+LILI: Sister? The nova has dimmed on / us twice already. Hee hee.
 TABITHA: The nova does not set, Lili. / It waits. Stupid weak people!
 LILI: For what, Sister?
 TABITHA: For the door to be asked again.
-CAULDER: And if it is not, my girls?
+CAULDER: And if it is not, girls? A / test needs a result.
 TABITHA: Then we ask it ourselves.
 NARRATION: Far away, in a depot, a key / hums once. Gerald's mark warms.
 NARRATION: The nova does not set. It waits.

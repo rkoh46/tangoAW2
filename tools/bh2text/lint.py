@@ -28,7 +28,7 @@ CO_NAMES = {
 }
 OTHER_NAMES = {"LEGIONARY", "NARRATION", "CRUMB", "MORTAR", "WICK", "SOLDIER", "SOLDIER OS", "SOLDIER BM", "SOLDIER GE", "SOLDIER YC", "[CO]", "[CO2]"}
 ROSTER = ["STURM", "VON BOLT", "HAWKE", "KOAL", "KINDLE", "JUGGER", "FLAK", "LASH", "ADDER", "CLONE ANDY", "SONJA", "CRUMB CO"]
-NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL", "ASUKA", "SONJA", "TABITHA", "LILI", "CAULDER"}
+NO_CONTRACTIONS = {"STURM", "HAWKE", "KANBEI", "JUGGER", "SASHA", "JAVIER", "KOAL", "ASUKA", "SONJA", "CAULDER"}
 # the user's own signature lines (the CO pages' quotes) keep their "!" and "Let's"
 SIGNATURE = ("Stupid weak people!", "Let's go, Mr. Bear!", "Tee hee! Let's go, Mr. Bear!", "Tee hee! Let's go,", "Mr. Bear!", "Fascinating...", "Tee hee!")
 CONTRACTION = re.compile(r"\b\w+(n't|'ll|'re|'ve|'m|'d)\b|\b(I|it|that|there|what|he|she|let|here|who)'s\b", re.I)
@@ -135,9 +135,9 @@ def lint_file(name, errors, warns, counts):
         voice_plain = plain
         for sig in SIGNATURE:
             voice_plain = voice_plain.replace(sig, "")
-        if who in ("STURM", "TABITHA", "LILI", "CAULDER") or (who in ("[CO]", "[CO2]") and False):
+        if who in ("STURM", "CAULDER") or (who in ("[CO]", "[CO2]") and False):
             if "!" in voice_plain:
-                warns.append(f"{where}: Sturm shouts: {plain!r}")
+                warns.append(f"{where}: {who.title()} shouts: {plain!r}")
         if who in NO_CONTRACTIONS and CONTRACTION.search(voice_plain):
             warns.append(f"{where}: {who} uses a contraction: {plain!r}")
         if who == "JUGGER" and re.search(r"[a-z]", plain):

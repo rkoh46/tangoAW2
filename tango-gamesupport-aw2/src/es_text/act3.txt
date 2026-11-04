@@ -5,36 +5,36 @@
 == m09_pre
 @SONG ally2
 NARRATION: Kite Hill, on the northern / coast. Ten days until the tide.
-LILI: Three barges in the east bay, by a / grain isle. They sail on day eleven.
-LILI: The bay glows red, Commander. I will / not guess what the water is.
-LILI: Mr. Bear says it is lava. The green / one says soup. Tee hee. No wading.
-LILI: The bill of lading says grain. The / creditor's stamp is the usual one.
+LILI: Three barges in the east bay, by a / grain isle! They sail on day eleven!
+LILI: The bay glows red, Sister! I will / not guess what the water is.
+LILI: Mr. Bear says lava. I say soup. / Hee hee. Nobody go swimming!
+LILI: The bill of lading says grain. The / stamp on it is the usual one.
 TABITHA: Then the barges are the road. / Whoever loads them, I will find him.
-LILI: Kite Hill is a plateau with a depot. / One river, four bridges. I counted.
+LILI: Kite Hill is a plateau with a depot. / One river, four bridges. I counted!
 LILI: Take the hill and you own every / approach. The whole shore leans on it.
 NARRATION: Kite Hill is scorched wasteland. / Ash, cinders, ruins, rough rock.
-LILI: Cinders and ruins for cover. Rock / that rings when it is struck.
-LILI: Mr. Bear likes rock that rings. / The green one likes to be carried.
+LILI: Cinders and ruins for cover! And / rock that goes ding when you hit it!
+LILI: Mr. Bear likes rock that goes ding. / He wants to carry one home.
 TABITHA: The air is clear. Our wing will / see far from the plateau.
 TABITHA: A hill, a depot, a coast. Take / them and the northern shore falls.
-LILI: The river holds four bridges, / Commander. Someone must hold them.
+LILI: The river has four bridges, Sister! / Somebody must hold them!
 TABITHA: Our ground columns hold the river. / The wing takes the plateau.
-LILI(h): Gates are paid by the day. I will / see to the wages. Mr. Bear insists.
-LILI: Now look at the ridge. Missiles, and / flak tanks at the gate.
-LILI: If the sky is theirs, we are / standing on stone, and stone is quiet.
+LILI(h): Gates are paid by the day! I will / do the wages. Mr. Bear insists!
+LILI: Now look at the ridge! Missiles, and / flak tanks at the gate. Ooh, scary.
+LILI: If the sky is theirs, we are / standing on stone. Stone is quiet.
 TABITHA: Then we crush the ground first, / and the sky second.
-LILI: Bombs have a trajectory too. Give / me the angle and a map.
-LILI: A bomber is only a very pretty, / very hurried toy. It breaks so nicely.
+LILI: Bombs fall in curves, too! Give / me the angle and a map. I like maps.
+LILI: A bomber is a very pretty, very / hurried toy. It breaks so nicely!
 LILI: Now the freight yard. A pipeline / walls it off from the road.
-LILI: One seam in the pipe. One hit on / the seam and the yard opens.
-LILI: A Black Hole Piperunner guards it. / Fast, armoured, it runs along the pipes.
-LILI: The base beside the pipe builds / more. Rockets and Tanks answer it.
-LILI: Bombers answer it from above. Pick / your answer, Commander.
+LILI: One seam in the pipe. One hit on / the seam and the yard opens. Pop!
+LILI: A Black Hole Piperunner guards it. / Fast and armoured. It slides on pipes!
+LILI: The base by the pipe builds more. / Rockets and Tanks answer it.
+LILI: Bombers answer it from above. Pick / your answer, Sister. Pick, pick!
 TABITHA: Break the seam early, Lili, / before a second one rolls out.
 TABITHA: You will have both. These are / not raiders. They are merchants.
 TABITHA: Black Hole's HQ, quay and / inventions lie east. It sells to anyone.
-LILI: I made an offer. They declined, / politely, and in advance.
-TABITHA: Then it is a hill. Take the depot. / Sink the barges. Stupid weak people!
+LILI: I made them an offer. They said / no. Politely. Before I even asked!
+TABITHA: Then it is a hill. Take the depot. / Sink the barges. Do not dawdle.
 
 == m09_pre2
 @SONG enemy1
@@ -50,7 +50,7 @@ TABITHA: Because your barges carry a / stencil I have followed across an ocean.
 ADDER: Ah. The stencil. A lovely account. / It pays well, and early.
 ADDER: Early is the finest virtue. We / guard what early money buys.
 FLAK: Flak guards Adder. And the / sandwiches. Both in danger.
-LILI: Quartermaster. Name the buyer and / I will pay you double. Mr. Bear agrees.
+LILI: Mister Quartermaster, name the buyer / and I pay double! Mr. Bear agrees.
 ADDER: Madam, I would sell my own cape / for double. I do not know him.
 ADDER: Nobody does. The crates simply / arrive. The coin simply clears.
 TABITHA: Then I will read the crates / myself. Over your wreckage.
@@ -60,8 +60,8 @@ ADDER: Metaphorically, Flak. Fire.
 
 == m09_day4
 NARRATION: Day four. The harbour lamps come / on, three at a time.
-LILI: Commander, the barges have lit their / lamps. All three of them.
-LILI: A signal. They are asking the tide / to come early.
+LILI: Sister, the barges lit their / lamps! All three of them. Pretty.
+LILI: It is a signal! They are asking the / tide to come early. Rude tide.
 ADDER: Our clients are impatient. Three / lamps, three hulls.
 ADDER: A bargain: sink one and I will / tell you which crate to open.
 TABITHA: I will sink all three and open / them myself.
@@ -70,44 +70,44 @@ FLAK: Adder? That was a good bargain. / Flak would take it.
 == m09_post
 @SONG hagevolt
 NARRATION: Kite Hill. The depot is ours. / The third barge burns.
-LILI: Hull three is down. Hull one came / up in two pieces.
-LILI: Tee hee. I did say so. Broken / toys everywhere. I like this one.
+LILI: Hull three is down. Hull one came / up in two pieces! Crunch!
+LILI: Hee hee. I did say so. Broken / toys everywhere. I like this one.
 TABITHA: Boarding party. Lamps out. Open / the holds one at a time.
 LEGIONARY: Commander! The crates carry the / stencil. The same mark.
 LEGIONARY: But they are light for grain. / Nothing shifts, nothing pours.
-LILI: Open one. Slowly. I want the seal / whole for the ledger.
+LILI: Open one. Slowly! I want the seal / whole for my book. Pretty seal.
 LEGIONARY: It is jars, Quartermaster. / Sealed jars, forty to a crate.
 LEGIONARY: One cracked. Look what came out. / It is grey. It is fine as dust.
-LILI: That is ash. That is the ash that / fell on our fields.
+LILI: That is ash. That is the ash that / fell on our fields. Oh. Oh no.
 TABITHA: Close it. Do not breathe it. Put / it under guard.
-LILI: Barge one carried two hundred / crates. Barge two, three hundred.
-LILI: That is a harvest of ash. Somebody / paid to move it. In advance.
+LILI: Barge one had two hundred crates. / Barge two, three hundred. Lots.
+LILI: That is a harvest of ash! Somebody / paid to move it. Early. Always early.
 TABITHA: Not grain. Not one sack.
 ADDER: Ah. You found the jars. I regret / that I cannot be surprised.
 ADDER: We never open the crates, / Commander. It is bad manners.
 FLAK: Flak opened one once. Sad. Flak / closed it. Gave it back.
 TABITHA: Quartermaster. Who ships it into / Novaria?
 ADDER: A very large account and a very / small stencil. Good day.
-LILI: I will check every bill we have / paid since the first spring.
-TABITHA: Raise the nova over the depot. The / northern coast is ours. Burn the rest.
+LILI: I will check every bill we paid / since the first spring. All of them!
+TABITHA: Raise the nova over the depot. The / northern coast is mine. Burn the rest.
 
 == m09_map
 @SONG hagevolt
 NARRATION: The harbour office at Kite Hill. / Forty jars under one lamp.
 TABITHA: Forty jars on the table. Nobody / touch them.
-LILI: I counted them twice. Forty. It is / the only line that has not been
-LILI: marked up. Mr. Bear finds that restful.
+LILI: I counted them twice. Forty! It is / the only number that did not go up.
+LILI: Mr. Bear finds that restful. He / likes numbers that sit still.
 TABITHA: You say that like a joke.
-LILI: It is a joke, Tabitha. A very / small one. The green one did not laugh.
+LILI: It is a joke, Sister! A very / small one. Mr. Bear did not laugh.
 TABITHA: Look at the stencil. A circle, a / bar, a double stroke.
-LILI: I have seen it on bills. I believe / I have seen it elsewhere too.
+LILI: I saw it on the bills. I think I / saw it somewhere else too. Where?
 TABITHA: You looked at it too long to have / seen it only once.
 TABITHA: Where?
-LILI: I do not yet know that I am right. / When I do, you will know.
-LILI: A letter from Papa came this / morning. He is pleased.
-LILI: He asks that the jars be sent home / to Port Argent, unopened.
+LILI: I do not know if I am right yet. / When I do, you will know. Promise.
+LILI: A letter from Daddy came this / morning! He is pleased!
+LILI: He asks that the jars be sent home / to Port Argent, unopened. Why?
 TABITHA: My report left at dawn. Father's / letter is dated yesterday.
-LILI: I noticed. I drew a circle round / the date. Mr. Bear helped.
+LILI: I saw! I drew a circle round the / date. Mr. Bear helped. Squiggly!
 TABITHA: The jars stay with me. Father / may ask for them in person.
 
 # ---------------------------------------------------------------- M10 The Quiet Pass (Yellow Comet: Kanbei, Sonja; fog)
@@ -115,21 +115,21 @@ TABITHA: The jars stay with me. Father / may ask for them in person.
 == m10_pre
 @SONG aw2:422
 NARRATION: The Comet Mountains. Fog lies in / the pass like milk.
-LILI: I can see my own boots and / nothing else. Mr. Bear has vanished.
-LILI: The green one is here. Always here. / A wall I can measure. Fog is a wall
-LILI: that moves. I do not care for / walls that move.
+LILI: I can see my own boots and / nothing else! Mr. Bear is lost!
+LILI: Oh, there he is. He was under / my arm. Fog is a wall
+LILI: that moves. I do not like walls / that move. They are cheaters.
 TABITHA: Three pass roads over a river: / west, centre, east. One summit, north.
 TABITHA: A goat track in the far west, foot / only. Whoever holds the summit wins.
-TABITHA: We have taken a coast, a fort and / an island. This is the frontier's roof.
-LILI: And the road to the next ledger. / The trail goes north.
+TABITHA: I have taken a coast, a fort and / an island. This is the frontier's roof.
+LILI: And the road to the next ledger! / The trail goes north.
 LILI: A free port in the north buys its / grain through this pass.
 TABITHA: Then we climb. Recons first. / Copters above the ridge line.
-LILI: Fog grounds the copters at the / third cloud. I counted.
+LILI: Fog grounds the copters at the / third cloud. I counted. Boo.
 TABITHA: Then we climb on foot, and break / the mountain's name.
 NARRATION: Snow begins to fall on the pass, / thin and steady. Winter has come.
-LILI(s): Snow too. At home we have the / decency to rain.
-LILI: Thin air and cold. Fuel burns / twice as fast. Count your tanks.
-TABITHA: Then we march short and slow. / The weak freeze. We will not.
+LILI(s): Snow too. At home we have the / manners to rain.
+LILI: Thin air and cold. Fuel burns / twice as fast. Count your tanks!
+TABITHA: Then we march short and slow. / The weak freeze. I will not.
 KANBEI: Strangers on the Comet Road. And / in Kanbei's fog.
 KANBEI: Kanbei commands the Yellow Comet / border.
 KANBEI: You are the silver star from / Grimm's complaints.
@@ -139,7 +139,7 @@ TABITHA: The roads are steep. We bring / what we can carry.
 KANBEI: A fair answer. It does not open / Kanbei's pass.
 KANBEI: For eleven years Kanbei has kept / this summit. He will not give it to
 KANBEI: a flag nobody has seen. Not for / courtesy. Not for coin.
-LILI: Your Grimm shouted at us on the / Comet Road. Mr. Bear cried. Tee hee.
+LILI: Your Grimm yelled at us on the / Comet Road! Mr. Bear cried. Hee hee.
 KANBEI: Grimm shouts at everyone. That is / his gift to us.
 KANBEI: Kanbei is quieter. You will find / his walls quieter still.
 TABITHA: I do not seek your walls. I will / walk through them.
@@ -147,14 +147,14 @@ KANBEI: Then we agree on the difficulty. / Kanbei waits at the top.
 SAMI: Kanbei! Don't scare them off / before I've had a go at them!
 SAMI: Sami, Orange Star infantry. The / Accord sent me to hold your west road.
 SAMI: Fog's no trouble. Boots find the / road. Infantry never needed eyes.
-TABITHA: Commander Sami. We seek no quarrel / with Orange Star.
+TABITHA: Commander Sami. I seek no quarrel / with Orange Star. Yet.
 SAMI: Then stay off my road, Commander. / I'll be polite once. After that, no.
-LILI: Politeness, Commander, is a debt / too. Mine are in cipher.
+LILI: Politeness is a debt too! I owe / lots. I hid them in a secret place.
 SAMI: Ha! I keep a march roll. You're on / it. All of you. Names, ranks.
-LILI: Please put me on line one. The / green one signs for himself.
+LILI: Put me on line one, please! Mr. / Bear signs for himself. With a paw.
 SAMI: You're on line one, little miss. / Under "creepy".
 TABITHA: We climb at first light. Lili, / set the guns on the spur.
-LILI: Setting them. If the fog lifts, I / want to see him first.
+LILI: Setting them! If the fog lifts, I / want to see him first. Peekaboo!
 KANBEI: Come, then. The pass has been / quiet for eleven years.
 KANBEI: Let us see who breaks the silence. / It will not be Kanbei.
 
@@ -180,9 +180,9 @@ KANBEI: He held the last year badly. He / knew it, and held on anyway.
 KANBEI: His men trusted his face. Kanbei / wronged them.
 TABITHA: Spare me the tears. Your men are / alive. That is all that matters.
 KANBEI: That is the only honour Kanbei / has left. He will keep it.
-LILI: Commander Tabitha, he is crying. Is / that allowed in the Comet army?
+LILI: Sister, he is crying! Is that / allowed in the Comet army? Poor man.
 KANBEI: In Kanbei's army, tears are a / courtesy to the dead. No shame.
-LILI: Tee hee. Mr. Bear cries at every / funeral. He has attended so many.
+LILI: Mr. Bear cries at every funeral. / He has been to so many. I forget why.
 SAMI: The pass is yours, Commander. / Infantry don't cry. We march and eat.
 SAMI: Good fight, though. Next time bring / more soup. It's cold up here.
 KANBEI: Tabitha. Kanbei heard you on the / radio, through the fog.
@@ -192,7 +192,7 @@ KANBEI: have not borne wheat for two / summers. Ash. On the wind.
 TABITHA: You have seen it too.
 KANBEI: Kanbei has buried it. A farmer / brought him a sack, weeping.
 KANBEI: The Allies call it weather. / Kanbei calls it a debt with no creditor.
-LILI: That is exactly what it is. I / should like to borrow your phrase.
+LILI: That is exactly what it is! May I / borrow your words? I will return them.
 KANBEI: Then more than words. Kanbei asks / to follow your banner.
 TABITHA: You have a nation.
 KANBEI: A nation that sent Kanbei to hold / a pass. He held it.
@@ -200,7 +200,7 @@ KANBEI: Now Kanbei chooses where to stand. / Two banners, Commander. One road.
 TABITHA: Two banners. I accept. On the day / you fail me,
 TABITHA: I will break you aloud, in front of / everyone. That is the price.
 KANBEI: That is the least Kanbei would do. / He accepts gladly.
-LILI(h): Mr. Bear says a new toy is coming. / Tee hee. The green one sulks.
+LILI(h): Mr. Bear says a new toy is coming! / Hee hee. Is it a bigger one?
 TABITHA: He has the Tag. A useful tool. Do / not put him in a bear's hands.
 SOLDIER YC: Commander! A rider from the / ridge. A letter for Commander Tabitha.
 KANBEI: From Sonja. She never signs. She / only initials.
@@ -208,23 +208,23 @@ TABITHA: "The grey falls on my mountains / too. You are not alone.
 TABITHA: Ask who clears the crates at the / northern Free Port. Not the yards.
 TABITHA: Your name is in my black book, / Commander. Do not make me cross it
 TABITHA: out. S."
-LILI: A signed warning. How unusually / generous of her.
+LILI: A signed warning! How unusually / nice of her. Is she nice?
 KANBEI: She is generous when she chooses. / She chooses rarely.
 
 == m10_map
 @SONG ally2
 NARRATION: Camp on the summit. Two banners / fly side by side.
 KANBEI: Lili, Kanbei has studied your / siege lines. Elegant.
-LILI: Thank you. They are also the only / thing I own. And my bears.
+LILI: Thank you! They are the only thing / I own. And Mr. Bear. And my crayons.
 KANBEI: In Kanbei's country, a general / takes a banner. You took two.
 TABITHA: The second one will answer back. / I will teach him to stop.
 KANBEI: It answers truthfully. That is a / different thing.
 LILI: Please. If there are two banners, / Mr. Bear would like a third. Pink.
 TABITHA: The banner budget is closed. You / closed it, Lili. Stop asking.
-LILI: So I did. Tee hee. I am very strict.
+LILI: So I did! I am very strict. Hee hee.
 TABITHA: Lili. This note from Sonja. / Read it. Quickly.
-LILI: A black book. Her black book is a / ledger in all but name.
-LILI: A creditor who writes down every / debt of honour. How elegant.
+LILI: A black book! A black book is a / ledger with a scary name.
+LILI: A creditor who writes down every / debt of honour. Oooh. Elegant.
 KANBEI: She does not forgive. She does not / forget. Kanbei trusts her.
 TABITHA: You trust Sonja.
 KANBEI: Kanbei trusts her to do exactly / what she says.
@@ -236,30 +236,30 @@ TABITHA: Then it is settled. The road runs / to the Free Port. Blockers break.
 == m11_pre
 @SONG ally2
 NARRATION: The Pinewood road, in the north. / Forty tiles to the relay camp.
-LILI: Four APCs. One chest. Eleven / ledgers from Kite Hill.
+LILI: Four APCs! One chest! Eleven / ledgers from Kite Hill!
 LILI: The Directorate's relay camp is at / the far east end. We deliver.
-TABITHA: A conquest eats grain. Behind us / lie five provinces, all hungry.
+TABITHA: A conquest eats grain. Behind me / lie five provinces, all hungry.
 TABITHA: The chest feeds the garrisons. It / arrives, or I punish someone.
 TABITHA: You will ride with the ledgers, / Lili. In the second truck. Do not wander.
-LILI: A truck is dignified, Commander. It / has a roof, and a ledger rail.
-LILI: Mr. Bear has the window. The green / one has the other window.
+LILI: A truck is fancy, Sister! It has a / roof, and a little ledger rail!
+LILI: Mr. Bear gets one window. I get / the other. I hope there are snacks.
 LILI: The road winds through the / Pinewood: a hamlet, a ford, a ruin.
 LILI: The ford is the knot: the Marrow / road's bridge, mid-map.
-LILI: An APC stalled on the bridge / blocks all the others. Remember that.
+LILI: An APC stalled on the bridge / blocks all the others. Remember that!
 LILI: Three roads cross the Marrow: the / north road, ours, and the south.
 LILI: Each has a bridge, and a camp road / joins all three near the camp.
-LILI: The ford is not the only crossing. / The convoy can choose.
+LILI: The ford is not the only crossing! / The convoy can choose!
 NARRATION: The pines give out. Sand, scrub, / a ruin by the ford. A storm blows.
-LILI: Grit in the engines of four grain / carriers. I have opened a column.
+LILI: Grit in the engines of four grain / carriers! Gritty, gritty. A column!
 LILI: Few trees, so little cover. The / ruin is only a ruin in sand.
 LILI: And the dust takes a square of / range off my guns. Plan for that.
 TABITHA: Then the ford is the hinge. Hold / it, or I will know why.
-LILI: I can put guns on the east bank. / They will cover the crossing.
+LILI: I can put guns on the east bank! / They will cover the crossing.
 TABITHA: I will screen the road ahead of / the convoy myself.
-LILI: A screen. How brave. Mr. Bear says / screens are for being shot. Tee hee.
+LILI: A screen. How brave. Mr. Bear says / screens are for being shot. Hee hee.
 TABITHA: Marauders. Lash holds the / north-east, Flak the south-east.
 TABITHA: One wears Yellow Comet coats, one / Green Earth. Neither army owns them.
-LILI: Somebody is paying them. I have / heard the price. It is very good.
+LILI: Somebody pays them! I heard the / price! It is a very good price!
 FLAK: Hello, Novarians! Flak is Flak. / Convoy! Flak likes convoys!
 FLAK: Adder sold Flak's contract. The / company feeds Flak. Flak says yes.
 LASH: Flak! Don't greet the targets! It / ruins the calculation! Heehee!
@@ -267,75 +267,75 @@ LASH: Four trucks, forty tiles, one / ford! Ooh, it's a lovely proof!
 LASH: I measured this road with a ruler! / You're going to lose it!
 LASH: I'm Lash, and I've read the map / twice. Have you?
 LASH: A convoy can't wait, and a road / can't move. Q.E.D.! Heehee!
-TABITHA: We will see which of us has read / the map better. Stupid weak people!
+TABITHA: We will see who read the map / better, little man.
 TABITHA: Move out. The chest does not stop, / and neither do we.
 
 == m11_day5
 NARRATION: Day five. The ford. The river / runs high and brown.
-LILI: Commander, the ruin is a shortcut. / A hundred paces and no water.
-LILI: Lash is on the road. If we break / through the ruin, we beat him.
-LILI: The shortcut saves nine hours. / Hours are interest. I dislike waste.
+LILI: Sister, the ruin is a shortcut! A / hundred paces and no water!
+LILI: Lash is on the road! If we break / through the ruin, we beat him!
+LILI: The shortcut saves nine hours! / Hours are interest. I hate waste.
 TABITHA: And a ruin is a wall with holes. / Lash chose it for you.
-LILI: ...Mr. Bear says the same. He is / never wrong. The green one wanted it.
+LILI: ...Mr. Bear says the same. He is / never wrong. He is also stuffed.
 LILI: Then I take the road. Slowly. I / took the clever way once, at the Wall.
-LILI: I will not break that toy twice. / Drive on, Tabitha.
+LILI: I will not break that toy twice. / Drive on, Sister.
 LASH: He chose the road! Boo! Fine, the / ford it is. Fire!
 
 == m11_post
 @SONG ally2
 NARRATION: The Directorate's relay camp. The / convoy rolls in at dusk.
-LILI: Four APCs in, four out. I counted / them into the camp.
-LILI: A quartermaster who loses count of / anything has nothing left.
+LILI: Four APCs in, four out! I counted / them into the camp. Like sheep!
+LILI: If you lose count of anything, / you have nothing left. Mr. Bear says.
 TABITHA: You rode in that truck the whole / way. Did you behave?
-LILI: It was restful. I read the eleven / ledgers. I recommend it.
+LILI: It was so nice! I read the eleven / ledgers. They are boring. I loved them.
 TABITHA: What do they say?
-LILI: That the Directorate's grain / contracts were all signed on one day.
-LILI: Each bears the Finance Board's / seal, on the Director's authority.
+LILI: That the Directorate's grain / contracts were all signed on one day!
+LILI: Each has the Finance Board's seal, / on the Director's say-so.
 LILI: The payee is the stencil, care of / a harbour office at the Free Port.
 TABITHA: The Free Port. The same port / Sonja wrote about.
 LILI: The first contract is dated eleven / days after the grey harvest.
-LILI: No freight house in the world finds / that much grain in eleven days.
-LILI: It was already in the barn. It was / waiting for us to be hungry.
+LILI: Nobody finds that much grain in / eleven days! Not one single person!
+LILI: It was already in the barn. It was / waiting for us to get hungry. Oh.
 TABITHA: Father signed every one.
-LILI: His seal is on every one. I do not / say he read them. Tee hee.
-LILI: Papa reads everything. Mr. Bear says / he has read his stitching.
+LILI: His seal is on every one. I do not / say he read them. Hee hee. Oops.
+LILI: Daddy reads everything. He read / Mr. Bear's stitching. It tickled.
 TABITHA: Lili.
-LILI: It is a joke. A poor one. The / green one is not laughing.
+LILI: It is a joke. A bad one. Mr. Bear / is not laughing. He is thinking.
 TABITHA: Lash and Flak have gone home. The / road is clear.
 
 == m11_map
 @SONG co:lili
 NARRATION: The relay camp. A single lamp, a / sealed letter, past midnight.
 TABITHA: You are reading that letter / again, Lili. Put it away.
-LILI: It is a good letter. The hand is / firm. The seal is pretty.
+LILI: It is a nice letter. The writing / is firm. The seal is pretty.
 TABITHA: And what does the firm hand say?
 LILI: Take the north's granaries. By the / sword. If Tabitha fails.
-LILI: It came to my desk in the Second / Corps pouch, as all copies do.
-LILI: I counted the granaries. I wrote the / tonnage in the margin. In red.
+LILI: It came to my desk in the Second / Corps pouch, like all the copies.
+LILI: I counted the granaries. I wrote the / tonnage in the margin. In red crayon.
 LILI: Full of ash, if the jars mean / anything. I would have counted
-LILI: a country into a barn full of dust. / Tee hee. And I was so exact.
+LILI: a country into a barn full of dust! / Hee hee. I was so exact. Silly me.
 TABITHA: I know what it says, Lili.
-LILI: Of course you do. I showed you, in / the fog, with a bear over my eyes.
+LILI: Of course! I showed you in the fog, / with a bear over my eyes.
 TABITHA: I know what it says. I also know / what you did at the ford.
 TABITHA: You took the road because the ruin / was a lie. That was well done.
-LILI: ...Please do not make it a speech, / Tabitha.
+LILI: ...Please do not make it a speech, / Sister. I will cry. And then Mr. Bear.
 TABITHA: I will not. Go to sleep. And do / not count in your sleep again.
-LILI: I will keep the letter. In case I / need to remember how well I counted.
-LILI: Mr. Bear says burn it. The green / one says evidence. It is cleverer.
+LILI: I will keep the letter. In case I / forget how well I counted.
+LILI: Mr. Bear says burn it. I say keep / it. He is just a bear. I am cleverer.
 
 # ---------------------------------------------------------------- M12 The Iron Bastion (Blue Moon: Olaf, Andy; Tabitha + Lili)
 
 == m12_pre
 @SONG aw2:423
 NARRATION: The Iron Bastion, Blue Moon. / Snow to the knee, rings on rings.
-LILI: Two rings, Commander. The outer one / is iron: a pipeline wall.
+LILI: Two rings, Sister! The outer one / is iron: a pipeline wall.
 LILI: Five gates in it. The inner ring is / the keep's rock, four gates.
-LILI: The gaps are staggered. I have never / wanted to be a rock more.
+LILI: The gaps are staggered. I wish I / were a rock. Rocks do not worry.
 LILI: The town lies between. The wall / has one seam, on the south road.
-LILI: Break the seam and the road is / open. Foot can climb the keep's
+LILI: Break the seam and the road is / open. Feet can climb the keep's
 LILI: rock anywhere. And a missile silo / guards the east approach.
-TABITHA: You are not a rock. You are the / one who breaks rocks.
-TABITHA: It is a Tag. You swing the hammer, / and I hold the line.
+TABITHA: You are not a rock. You are the / one who breaks rocks. Stop whining.
+TABITHA: It is a Tag. You swing the hammer, / and I hold the line. Obey me.
 OLAF: Wah-ha-ha! Visitors! Snow and / visitors! Olaf's two favourites!
 OLAF: Olaf of Blue Moon! Welcome to the / Bastion! Mind the cold!
 OLAF: Olaf hears you bought half of / Colin's market. Wonderful!
@@ -349,22 +349,22 @@ ANDY: Hit a wall today, and tomorrow / it's good as new. No trouble at all!
 ANDY: Every corridor between the rings / is covered. And a missile silo guards
 ANDY: the eastern approach. One big / shot! Three points off everything near.
 NARRATION: Snow is falling now, thick across / both rings.
-LILI: Snowfall. The march slows, and fuel / burns twice as fast.
+LILI: Snowfall! The march slows, and fuel / burns twice as fast. Brr!
 ANDY: The cold's easy on the guns, / ma'am! Snow slows you. Never a wrench.
 TABITHA: Then we climb in the snow and let / them count their dead.
-LILI: A hobby, Commander Andy. How / expensive are your repairs?
+LILI: A hobby, Commander Andy! How / much do your repairs cost?
 ANDY: Cheaper than you'd think, ma'am! / Spare parts, elbow grease, a smile!
-LILI: I see. I shall bill you for the / delay. Mr. Bear will write it. Tee hee.
+LILI: I see. I will bill you for the / delay. Mr. Bear will write it. Hee hee.
 OLAF: Olaf knows, Olaf knows! But the / Bastion's on a map. Maps are his job!
 OLAF: Take the hill if you can! Olaf / will wave to you from the top!
 TABITHA: Lili. Plan the climb.
-LILI: Tee hee! Let's go, Mr. Bear!
+LILI: Okay, Sister! Mr. Bear and I are / ready!
 
 == m12_day5
 NARRATION: Day five. The outer ring is / passed. The guns answer.
 ANDY: There! The gun's back up! A little / oil and it sings. Bless you, ma'am!
-LILI: Commander, he mended the gun I / broke at noon. In one afternoon.
-LILI: Fine. A toy that mends itself is a / toy you can break twice a day.
+LILI: Sister, he mended the gun I broke / at noon! In one afternoon!
+LILI: Fine. A toy that mends itself is a / toy you can break twice a day. Yay!
 LILI: Recons to the flanks. Mark every / flash. Break the walls by dusk.
 LILI: Then the crews cannot mend them / overnight. Hit the repairmen first.
 TABITHA: Tag Power on my word. You swing / the hammer. I hold the line.
@@ -378,7 +378,7 @@ OLAF: Honestly, Olaf thought you'd / sneeze at the outer gap.
 TABITHA: We did not sneeze. We crushed it.
 ANDY: That was a great siege! I fixed / that wall five times. Five!
 ANDY: Ma'am, your guns hit my walls so / well, I'm a little jealous.
-LILI: The walls mend overnight, he tells / me. Not these. I broke them well.
+LILI: The walls mend overnight, he says. / Not these. I broke them well!
 OLAF: Olaf surrenders! Consider it a / kindness! The snow is melting!
 OLAF: A commander who loses a hill / learns the price of hills!
 OLAF: Olaf has an Accord to explain to. / They are not so merry.
@@ -386,7 +386,7 @@ TABITHA: Commander Olaf. I will tell the / Accord you held. Briefly.
 OLAF: Tell them Olaf held badly and / laughed! It's more truthful! Wah-ha!
 ANDY: I'll vouch for you too, friend. / You never shot my repair crews.
 ANDY: That's good manners. I counted. / Twice. Well, once. I got busy!
-LILI: Commander Andy. The invoice for / the delay. Mr. Bear signed it.
+LILI: Commander Andy! The bill for the / delay! Mr. Bear signed it. Wobbly.
 ANDY: I'll frame it, ma'am! Right next to / my favourite wrench!
 OLAF: Go to the council! Nell is / waiting! Tell her Olaf sent you!
 OLAF: Tell her Olaf lost the Bastion to / honest folk. She will smile.
@@ -401,7 +401,7 @@ TABITHA: Three summers ago our harvest / failed. Ash fell on our fields.
 TABITHA: Relief came from a freight house. / We followed its stencil.
 TABITHA: It led to Black Hole's yards. Jars / of ash, not grain.
 SASHA: Counterfeit coin. A counterfeit / story. Your quartermaster is charming.
-LILI: Commander Sasha. I would be glad / to compare ledgers. Mr. Bear has his.
+LILI: Commander Sasha! I would love to / compare ledgers. Mr. Bear has his!
 SASHA: ...That will not be necessary.
 JESS: She kept the lanes clean at Isle / Verdant. Drake said so. I believe it.
 MAX: I don't trust talkers. I saw her at / Ironhold. She fights fair.
