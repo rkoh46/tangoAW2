@@ -8,6 +8,8 @@
   co portrait powers CO [--out PNG]        the contact sheet of the CO's powers working in the real game: screens, power bar, activations, HP before / after, the Tag Power, Counter Break, fog
   co portrait sheet [CO ...] [--out PNG]   the review sheet: source, large art 1x and 2x beside AW2's own, faces, the CO select and HUD strips with real COs, the game's own screens
   co portrait ingame CO                    start the real app on a boot checkpoint and photograph the CO page, CO select and HUD with the CO (phase 2 wiring needed)
+  co consistency CO [--out PNG]            one sheet of the CO's committed art plus its real-game pictures (`co portrait ingame`), and the static checks that its portrait agrees with itself
+                                           (no two pictures leaning clearly opposite ways); then `aw2dev gauntlet faces` for the dialogue-box face beside the army screen
   co balance [CO ...] [--vs Kanbei Hawke ...]   the CO's day-to-day, CO Power and Super Power averaged over a typical army, next to Dual Strike's own COs read from the .nds
   co verify sonja [--build-baseline]       Sonja's rows, pictures, texts, numbers, Tag page and screens against the v0.8.7 build: any difference fails
   co check [CO ...]                        the CO data files: fields, stars and numbers inside AW2's design space, name plates, tag pairs
@@ -25,6 +27,10 @@ from .. import cfg, util
 def register(sub):
     p = sub.add_parser("co", help="custom COs: portrait compose/options, data check (docs/dev/co-kit.md)")
     ps = p.add_subparsers(dest="cocmd", required=True)
+    cc = ps.add_parser("consistency", help="a CO's art and in-game pictures on one sheet, and the static checks that its portrait agrees with itself")
+    cc.add_argument("co")
+    cc.add_argument("--out")
+    cc.set_defaults(fn=consistency)
     pp = ps.add_parser("portrait", help="portraits imported from the supplied pictures")
     pq = pp.add_subparsers(dest="pcmd", required=True)
     a = pq.add_parser("import", help="picture -> AW2 CO art")
@@ -295,3 +301,11 @@ def sheet_hq(a):
     powersheet.hq_sheet(raw, out / "hq_check.png")
     util.say("wrote", out / "hq_check.png")
     return 0
+
+
+def consistency(a):
+    from ..colib import consistency as cs
+    ok, lines, _ = cs.run(a.co.lower(), a.out)
+    for l in lines:
+        util.say(l)
+    return 0 if ok else 1

@@ -8,6 +8,9 @@
                                             the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
   campaign playthrough bh2 N [--player cpu|bot] [--days D]   a BH2 mission played to its end in the harness (the computer on every side, or the test player for the player's army), with a report (days, outcome,
                                             takeovers and stage switches, units and funds by day, stalls) and a contact sheet of the key moments (docs/dev/playthrough.md)
+  campaign text-lint [es|bh2|all]           the dialogue lints (tools/estext/lint.py for Silver Nova, tools/bh2text/lint.py for BH2: grammar, 176 px boxes, voice rules); fails on an error or a warning
+  campaign scene-check [--no-run]           the scene lessons on every Gauntlet map and BH2 M31, reported per map: every box of an arrival scene is shown and clean, and every box's face has its
+                                            speaker's own palette (a five-army battle's moved-unit grey shares BG palette 9 with the faces); docs/dev/campaign-scenes.md
   campaign worldmap [--out PNG] [--no-run]  the world-map tests with pictures, then es_world_map.png: the map at three stages with the nodes labelled, the flag states, the unlock moments
   campaign trace [--mission N ...]          play the missions in the offline harness (CO screen, card, intro, forced win, victory, results, map scenes) and
                                             sample every 20 frames: song, fade, text, screen, the sound's loudness; prints scene -> song and flags silent gaps
@@ -27,6 +30,12 @@ def register(sub):
     a.add_argument("--mission")
     a.add_argument("--campaign", default="bh", choices=["bh", "es", "bh2"])
     a.set_defaults(fn=scenes)
+    a = cs.add_parser("text-lint", help="the Silver Nova and BH2 dialogue lints (grammar, 176 px boxes, voices); fails on an error or warning")
+    a.add_argument("which", nargs="?", default="all", choices=["es", "bh2", "all"])
+    a.set_defaults(fn=text_lint)
+    a = cs.add_parser("scene-check", help="arrival boxes shown and clean, faces in their speaker's own palette: every Gauntlet map and BH2 M31, per map")
+    a.add_argument("-j", "--jobs", type=int, default=4)
+    a.set_defaults(fn=scene_check)
     a = cs.add_parser("menu", help="photograph the Campaign sub-menu of the real app")
     a.add_argument("--out")
     a.set_defaults(fn=menu)
@@ -241,3 +250,63 @@ def check_with_hq(a):
         print("\n".join(l for l in r.stdout.splitlines() if l.startswith(("PASS", "FAIL")) or l.strip().startswith("-") or "passed" in l))
         rc = rc or r.returncode
     return rc
+
+
+LINTS = {"es": "tools/estext/lint.py", "bh2": "tools/bh2text/lint.py"}
+
+
+def text_lint(a):
+    """Runs the lint scripts (they read the AW2 ROM's font widths; nothing is kept); a warning fails too (voice rules are the owner's: tools/estext/BIBLE.md)."""
+    bad = 0
+    for k in (["es", "bh2"] if a.which == "all" else [a.which]):
+        r = subprocess.run([sys.executable, str(cfg.REPO / LINTS[k])], capture_output=True, text=True)
+        out = r.stdout.strip().splitlines()
+        for l in out:
+            if l.startswith(("ERROR", "warn", "WARN")) or " error" in l and not l.endswith(" 0 errors, 0 warnings"):
+                print(f"{k}: {l}")
+        summary = out[-1] if out else r.stderr[-300:]
+        failed = r.returncode != 0 or not summary.endswith(" 0 errors, 0 warnings")
+        util.say(f"text-lint {k}: {summary}" + (" FAILED" if failed else ""))
+        bad |= failed
+    return 1 if bad else 0
+
+
+RESULT = re.compile(r"^(PASS|FAIL)\s+\S+\s+(\S+)\s+(\d+) checks")
+
+
+def parse_results(text):
+    """{test name: (True/False, checks)} from run.py's PASS/FAIL lines."""
+    out = {}
+    for l in text.splitlines():
+        m = RESULT.match(l)
+        if m:
+            out[m.group(2)] = (m.group(1) == "PASS", int(m.group(3)))
+    return out
+
+
+def scene_table(results):
+    """[(map label, {check: ok})] from the results of the scene tests (gauntlet_lines_<key>_<check> and bh2_scene_check_m31)."""
+    rows = {}
+    for name, (ok, n) in results.items():
+        m = re.match(r"gauntlet_lines_(gauntlet_\w+?)_(arrival_boxes_are_all_shown_and_clean|intro_and_victory_faces_have_their_own_palette)$", name)
+        if m:
+            rows.setdefault(m.group(1), {})["arrival" if m.group(2).startswith("arrival") else "intro/victory"] = ok
+        elif name == "bh2_scene_check_m31":
+            rows.setdefault("bh2 M31", {})["scenes"] = ok
+    return sorted(rows.items())
+
+
+def scene_check(a):
+    """The Gauntlet maps' two scene tests and BH2 M31's `bh2_scene_check_m31` (tools/aw2test/tests/test_scene_check_bh2.py): the lessons of docs/dev/campaign-scenes.md; run it after any scene or dialogue work."""
+    run = str(cfg.REPO / "tools" / "aw2test" / "run.py")
+    results, rc = {}, 0
+    for k in ("arrival_boxes_are_all_shown_and_clean", "intro_and_victory_faces_have_their_own_palette", "bh2_scene_check_m31"):
+        r = subprocess.run([sys.executable, run, "-k", k, "--mode", "ds", "-j", str(a.jobs)], capture_output=True, text=True, cwd=cfg.REPO)
+        results.update(parse_results(r.stdout))
+        rc |= r.returncode
+    rows = scene_table(results)
+    for label, checks in rows:
+        util.say(f"{label}: " + ", ".join(f"{c} {'ok' if ok else 'FAILED'}" for c, ok in sorted(checks.items())))
+    bad = [l for l, c in rows if not all(c.values())]
+    util.say(f"scene-check: {len(rows)} maps, " + ("all clean" if not bad and not rc else f"FAILED: {bad or 'a run failed'}"))
+    return 1 if (bad or rc or not rows) else 0

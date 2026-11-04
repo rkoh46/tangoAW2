@@ -23,3 +23,5 @@ description: Pick and run the right tangoAW2 checks for a change (lib tests, off
 `aw2dev save inspect FILE.sav` (a save the harness left, e.g. `tools/aw2test/out/ds/<test>/saved.sav`) lists the suspended games and, for a five-army battle, the record after AW2's block (`docs/dev/five-suspend.md`):
 whether its hash matches the block (a record that does not is never applied), each army's funds / CO / unit count and the Flash sectors used. A new suspend-and-resume test compares the battle byte for byte
 (`tests/test_five_suspend.py` `whole_battle`, `compare_whole`).
+7. Before pushing a dependency, feature or formatting change: `./aw2dev ci` (every command of the GitHub checks workflow, run locally; `--fast` skips the cargo tests). Test profiles: `./aw2dev profiles` (create or `--reset` them) and `./aw2dev runs` (list the recent live runs); both are described in docs/dev/testing.md.
+8. Scenes and dialogue: `./aw2dev campaign scene-check` and `./aw2dev campaign text-lint`; Gauntlet maps: `./aw2dev gauntlet cos` and `./aw2dev gauntlet test`.

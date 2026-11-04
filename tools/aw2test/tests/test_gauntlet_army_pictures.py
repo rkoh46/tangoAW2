@@ -23,6 +23,20 @@ MAPS = (("Dustwind Basin", 2, ga.ARIA), ("Harvest Run", 5, ga.ASUKA), ("Chrome M
 STATES = ("default", "co_changed", "colour_changed")
 
 
+def chosen_maps():
+    """`AW2TEST_ARMY_MISSIONS=2,5` (mission indices, as `aw2dev gauntlet army-sheet --map NN` passes them): only those maps (a map outside MAPS changes to Aria, or Asuka when Aria fights on it); the Versus Teams
+    comparison is left out then. Without it the six maps above and the Versus sheet."""
+    want = os.environ.get("AW2TEST_ARMY_MISSIONS")
+    if not want:
+        return MAPS, True
+    out = []
+    for m in (int(x) for x in want.split(",") if x.strip()):
+        known = [t for t in MAPS if t[1] == m]
+        title = ga.SELECTOR_TITLES[ga.SELECTOR_ORDER.index(m)] if m in ga.SELECTOR_ORDER else f"Map {m}"
+        out.append(known[0] if known else (title, m, ga.ARIA))
+    return tuple(out), False
+
+
 def grab(ctx, e, out, name):
     path = os.path.join(ctx.out, name)
     e.shot(path)
@@ -50,7 +64,8 @@ def gauntlet_army_pictures(ctx):
     out = os.environ.get("AW2TEST_ARMY_PICS") or ctx.out
     os.makedirs(out, exist_ok=True)
     rows, names = [], []
-    for title, mission, co in MAPS:
+    maps, with_versus = chosen_maps()
+    for title, mission, co in maps:
         for look, env in LOOKS:
             e = Emu(save=paths.base_save(), ds=ctx.ds, env=env)
             g = Game(e, ctx.image)
@@ -79,6 +94,8 @@ def gauntlet_army_pictures(ctx):
             names.append(f"{title} / {look}")
             e.close()
     sheet_of(rows, STATES, names, STATES, os.path.join(out, "army_screen_sheet.png"))
+    if not with_versus:
+        return
     # Versus' own Teams screen, two and four armies, in the same looks
     vrows = []
     for look, env in LOOKS:

@@ -21,3 +21,20 @@ Read docs/dev/co-kit.md first. The worked engine example is Crumb (`co_new.rs`, 
    `aw2dev co sheet powers <id>` makes the real-game pictures (select card, CO page, HUD, each power and Tag Power, the effect): look at every one. docs/dev/co-verify.md.
 6. A CO whose picture is a clean illustration (not pixel art): `illustration = true` in `art-src/cos/<id>_v1.toml` (docs/dev/co-kit.md, "The illustration import"); find the frame, the mug and the eyes by looking at `devkit/work` previews, never draw. A CO built from existing pieces (Asuka: Sonja's Dual Strike block + Hawke's power procedures) needs no new engine code beyond `co_new.rs` (id, `all()`, `like`, `is_own`), `co_roster.rs` (`ds_co`, the power words, the stars), `es_cos.rs` (art + texts table), `ds_co_page.rs` (page texts), `sturm_pairs.rs` (pairs), a song in `es_music::SOURCES`, `tools/aw2test/tests/test_asuka.py` as the template for proving every ability with numbers, and a bump of `inspect::SIM_VERSION`. A CO with only a Super Power and an Orange Star look (Aria, docs/dev/aria.md): `stars.cop = 0`, her row copies Nell's style bytes and Sturm's CPU settings, `ds_ai::template_of` Von Bolt's profile, and a picture on a baked-in checkerboard background needs the pixel-art mode's `checker` options.
 7. A rule players cannot see (Aria's Vengeance) gets a sign: docs/dev/aria.md "The signs" (`aria_sign.rs`: a ramp on the map's HP numbers in a borrowed BG palette bank and BG tiles, a strip on the unit window and above the damage forecast from the window's own letters), proved by `tests/test_aria_vengeance_signs.py` against a twin game (the same scene with another CO) and the review sheets of `python3 -m aw2.colib.vengeance_signs_sheet` (look at them before showing anyone).
+
+## Writing a CO's voice
+The owner provides the reference personalities (`tools/estext/BIBLE.md` holds Caulder, Lili and Tabitha's; add the new CO's there when the owner gives it). Read it before writing any line. Write original lines in that voice; use a signature quote rarely (a CO who says it every scene is a parody). Then `./aw2dev campaign text-lint all`.
+
+## Worked example: Caulder, start to finish (docs/dev/co-kit.md "Worked example")
+1. `cos/caulder.toml` from `tabitha.toml`; the owner's picture `art-src/cos/caulder_v1.jpg` with `caulder_v1.toml` (fields: `flip` = mirror so the CO faces right, `mug` = the 24 x 24 head square, `eyes` = the four-number eye box, `keep_off` = cells the importer must not clean; `pixelart` / `illustration` mode).
+2. `./aw2dev co portrait import caulder` -> `lint` -> `sheet`; if the figure faces the wrong way set `flip` and re-import (the faces mirror with it: that was the mirroring fix).
+3. Engine ids and texts (`co_new.rs` / `es_co.rs`, `es_cos.rs`, `ds_co_page.rs`, music slot), `./aw2dev co check`, `./aw2dev co verify caulder`.
+4. In the game: `./aw2dev co portrait ingame caulder`, then `./aw2dev co consistency caulder` (one sheet: art + CO select, HUD, CO page, dialogue; a CO that leans opposite ways is mirrored on one picture only).
+
+## Checklist (ends with the face checks)
+- [ ] data file, picture imported, lint clean, sheet looked at beside real COs
+- [ ] powers verified (`co verify`), page texts, music slot
+- [ ] `./aw2dev co consistency <co>` looked at: same direction on every screen
+- [ ] `./aw2dev gauntlet faces --map NN` (the dialogue-box face beside the army screen) when a Gauntlet map uses the CO
+- [ ] `./aw2dev campaign scene-check` (the face keeps its own palette in scenes) and `./aw2dev campaign text-lint all`
+- [ ] `./aw2dev kit check`, `./aw2dev test`

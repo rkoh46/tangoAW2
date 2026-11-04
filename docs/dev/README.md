@@ -19,6 +19,11 @@ session scratchpad.
 ./aw2dev install-mac                 # to /Applications/TangoAW2.app, never closes the running game
 ./aw2dev release 0.8.6 --notes notes.txt --dry-run       # never pushes without --yes (needs the user's approval)
 ./aw2dev clean                       # dry run: what would free disk
+./aw2dev profiles                    # (re)create the test profiles; ./aw2dev runs lists the newest live runs
+./aw2dev gauntlet cos                # the Gauntlet's enemy COs per map, reuse, unused COs (also: new-map, army-sheet, faces)
+./aw2dev campaign scene-check        # arrival boxes and face palettes of every Gauntlet map and BH2 M31; campaign text-lint for the dialogue
+./aw2dev bh2 waves --mission 32      # a mission's day waves, pictured in the AW2 and DS-tilt looks
+./aw2dev co consistency caulder      # a CO's art and in-game pictures on one sheet
 ```
 Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_<SECTION>_<KEY>`). ROMs are read from
 `~/Documents/TangoAW2/roms` and only copied into `devkit/work/profiles/*`.
