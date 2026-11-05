@@ -1548,6 +1548,35 @@ pub fn arrows(core: &mut Core, on: bool, keys: u32, pressed: u32) -> u32 {
 // --- The frame --------------------------------------------------------------------------------------------
 
 /// Draws the screen over the finished picture, if one of ours is up.
+/// Whether Versus' Teams screen is drawn as army cards now ([`offline_cards`]).
+pub fn cards_shown(core: &Core) -> bool {
+    std::env::var_os("AW2_TEAMS_OWN").is_none()
+        && crate::ds_pack::pack().is_some()
+        && !crate::online::in_room_match(core)
+        && versus_view(core).is_some()
+}
+
+/// The army cards' keys are the online army page's: UP and DOWN go from field to field (the game's LEFT and RIGHT: an
+/// army's CO, its Player / CPU tag, the next army's CO), LEFT and RIGHT change the field (the game's UP and DOWN: the
+/// CO, the partner, Player or CPU), as the "< CO >" arrows on the card show.
+pub fn card_keys(k: u32) -> u32 {
+    let (lr, ud) = (k & (KEY_LEFT | KEY_RIGHT), k & (KEY_UP | KEY_DOWN));
+    let mut out = k & !(KEY_LEFT | KEY_RIGHT | KEY_UP | KEY_DOWN);
+    if lr & KEY_RIGHT != 0 {
+        out |= KEY_DOWN;
+    }
+    if lr & KEY_LEFT != 0 {
+        out |= KEY_UP;
+    }
+    if ud & KEY_DOWN != 0 {
+        out |= KEY_RIGHT;
+    }
+    if ud & KEY_UP != 0 {
+        out |= KEY_LEFT;
+    }
+    out
+}
+
 /// Versus' Teams screen offline with the pack, drawn as the online army page is ([`crate::army_cards`]): AW2's own screen
 /// keeps running underneath (its cursor, its keys, its stages: nothing is written) and is drawn over with a card and a
 /// window for every army. `false` when it is not on (the game's own picture, or Dual Strike's, stays).
@@ -1599,19 +1628,36 @@ fn offline_cards(core: &Core, rgba: &mut [u8]) -> bool {
         })
         .collect();
     let tag_pairs = crate::ds_weather::is_on(core);
-    // (AW2's own keys here: Up and Down change the CO on the cards' arrows, Left and Right go to the next army)
+    // (the keys are the online page's, [`card_keys`]: Up and Down the field, Left and Right change it)
+    let fits = |t: &str| crate::online::text_width(core, t) <= 228;
+    let pick = |a: &str, b: &str| if fits(a) { a.to_string() } else { b.to_string() };
     let (first, keys) = match stop {
-        Stop::Partner(_) => ("Choose a partner CO.", "Up Down: Partner  B: Back"),
-        Stop::Tab(_) => ("Choose Player or CP.", "Up Down: Change  B: Back"),
-        _ if tag_pairs => ("Choose a CO. START: partner.", "Up Down: CO  Left Right: Army  R: Colour"),
-        _ => ("Choose a CO.", "Up Down: CO  Left Right: Army  R: Colour"),
+        Stop::Partner(_) => ("Choose a partner CO.".to_string(), "Left Right: Partner  B: Back".to_string()),
+        Stop::Tab(_) => ("Choose Player or CP.".to_string(), "Up Down: Field  Left Right: Change".to_string()),
+        _ if tag_pairs => (
+            // (one line here: the partner windows make the cards tall; with Dual Strike's arrows the partner is a field)
+            if crate::wasteland::ds_graphics(core) && core.raw_read_8(crate::tag::AW2_ARROWS, -1) == 0 {
+                pick("Left Right: CO  Up Down: Field  SELECT: Skills", "Left Right: CO  Up Down: Field")
+            } else {
+                pick("Left Right: CO  START: Partner  SELECT: Skills", "Left Right: CO  START: Partner")
+            },
+            "Up Down: Field  Left Right: CO  R: Colour".to_string(),
+        ),
+        _ => (
+            pick("Choose a CO. SELECT: skills.", "Choose a CO."),
+            "Up Down: Field  Left Right: CO  R: Colour".to_string(),
+        ),
     };
-    let lines = vec![first.to_string(), keys.to_string()];
+    let lines = vec![first, keys];
     crate::army_cards::draw(core, rgba, &seats, tag_pairs, &Help { lines }, true);
     true
 }
 
 pub fn apply(core: &Core, rgba: &mut [u8]) {
+    // The Set Skills screen and the CO page are drawn by the game itself (BG0): nothing goes over them.
+    if crate::ds_co_page::is_open() || crate::skills_panel::is_open(core) {
+        return;
+    }
     // The Gauntlet's map selector and army screen (crate::gauntlet_ui).
     if crate::gauntlet_ui::draw(core, rgba) {
         return;
@@ -1620,9 +1666,6 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
         return;
     }
     if rgba.len() != W * H * 4 || !ds_graphics(core) {
-        return;
-    }
-    if crate::ds_co_page::is_open() || crate::skills_panel::is_open(core) {
         return;
     }
     let Some(a) = art() else { return };

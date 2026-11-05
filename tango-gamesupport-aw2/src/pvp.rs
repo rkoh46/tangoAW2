@@ -996,6 +996,19 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // Dual Strike's CO page over AW2's (crate::ds_co_page): offline, with
         // the Dual Strike map graphics setting.
         keys = crate::ds_co_page::tick(core, ds && mode.is_none(), keys, prev);
+        // The army cards' keys (crate::ds_coselect::card_keys): Up and Down the field, Left and Right change it.
+        let prev = if ds
+            && mode.is_none()
+            && !crate::skills_panel::is_open(core)
+            && !crate::ds_co_page::is_open()
+            && core.raw_read_8(crate::tag::AW2_ARROWS, -1) == 0
+            && crate::ds_coselect::cards_shown(core)
+        {
+            keys = crate::ds_coselect::card_keys(keys);
+            crate::ds_coselect::card_keys(prev)
+        } else {
+            prev
+        };
         // CO tag pairs: the partners picked on the Teams screen (crate::tag_ui).
         keys = crate::tag_ui::teams_tick(core, ds, ds && dual_strike_arrows(core, mode), keys, prev);
         // Dual Strike's cursor on the CO screens' grid (crate::ds_coselect): offline, with the Dual Strike map graphics setting.

@@ -118,7 +118,7 @@ pub fn first_id() -> u8 {
 pub const SELECT: u8 = 1;
 pub const ARMY: u8 = 2;
 
-use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_L, KEY_R, KEY_UP};
+use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_L, KEY_LEFT, KEY_R, KEY_RIGHT, KEY_UP};
 
 pub fn step(core: &Core) -> u8 {
     core.raw_read_8(STEP, -1)
@@ -412,8 +412,14 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
                 c = (c + n - 1) % n;
             }
             core.raw_write_8(COLOUR_CURSOR, -1, c);
-            // UP and DOWN walk the roster, a held key repeating as AW2's cursors do.
-            let dir = if keys & KEY_DOWN != 0 { 1u8 } else if keys & KEY_UP != 0 { 2 } else { 0 };
+            // LEFT and RIGHT (the card's arrows) or UP and DOWN walk the roster, a held key repeating as AW2's cursors do.
+            let dir = if keys & (KEY_DOWN | KEY_RIGHT) != 0 {
+                1u8
+            } else if keys & (KEY_UP | KEY_LEFT) != 0 {
+                2
+            } else {
+                0
+            };
             let (held, was) = (core.raw_read_8(HELD, -1), core.raw_read_8(HELD_DIR, -1));
             let held = if dir != was { 0 } else { held.saturating_add(1) };
             core.raw_write_8(HELD, -1, held);
@@ -499,7 +505,7 @@ pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
         .collect();
     let full = format!("{}: choose your CO and colour.", e.title);
     let first = if online::text_width(core, &full) <= 228 { full } else { e.title.to_string() };
-    let lines = vec![first, "Up Down: CO  R: Colour  A: Start  B: Back".to_string()];
+    let lines = vec![first, "Left Right: CO  R: Colour  A: Start  B: Back".to_string()];
     crate::army_cards::draw(core, cv.0, &seats, false, &Help { lines }, false);
 }
 

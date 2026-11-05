@@ -1,8 +1,9 @@
 """Dual Strike's arrows on its CO screens (`ds_coselect.rs` / `tag_ui.rs`), offline with "Dual Strike map graphics" on.
 
-Versus' Teams screen: LEFT and RIGHT go cell to cell as clean Dual Strike's NORMAL BATTLE does (an army's CO, its partner,
-the next army's CO ..., then the P1 / CPU tabs, round again), UP and DOWN change what the cell holds; the game's own cursor does
-the walking, so the Teams record, partners and controllers are what AW2's own controls make. The CO screen (War Room,
+Versus' Teams screen: drawn as army cards with the pack, its keys are the online army page's (crate::ds_coselect::card_keys):
+UP and DOWN go cell to cell (an army's CO, its partner, its P1 / CPU tab, the next army's CO ..., round again), LEFT and RIGHT
+change what the cell holds, as the cards' "< CO >" arrows show ([`CARD`] turns the keys written below, Dual Strike's arrows, into
+them); the game's own cursor does the walking, so the Teams record, partners and controllers are what AW2's own controls make. The CO screen (War Room,
 campaigns): the arrows move one cell of the drawn grid (four to a row, by country), the game's cursor is walked to that CO, so
 A picks the CO the picture shows; a locked cell takes the cursor but not the pick."""
 
@@ -30,6 +31,14 @@ def tap(e, key, wait=30):
     e.wait(wait)
 
 
+# The army cards' keys for the moves below: a move (Dual Strike's RIGHT / LEFT) is DOWN / UP, a change (its DOWN / UP) RIGHT / LEFT.
+CARD = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
+
+
+def card_tap(e, key, wait=30):
+    tap(e, CARD.get(key, key), wait)
+
+
 def cursor(e, five):
     return e.u8((ram.TEAMS_FIVE if five else ram.TEAMS) + 0x32)
 
@@ -44,20 +53,20 @@ def versus_picks(armies):
 
 
 def aw2_controls(e, armies, picks):
-    """The same picks with AW2's own controls (START opens the partner pick, RIGHT RIGHT moves to the next army), the setting off."""
+    """The same picks with AW2's own controls (START opens the partner pick, RIGHT RIGHT moves to the next army), the setting off (through the cards' keys)."""
     for a, (cos, partner) in enumerate(picks):
         for _ in range(cos):
-            tap(e, "DOWN", 20)
-        tap(e, "START", 20)
+            card_tap(e, "DOWN", 20)
+        card_tap(e, "START", 20)
         for _ in range(partner):
-            tap(e, "DOWN", 20)
-        tap(e, "START", 20)
+            card_tap(e, "DOWN", 20)
+        card_tap(e, "START", 20)
         if a < armies - 1:
-            tap(e, "RIGHT", 14)
-            tap(e, "RIGHT", 14)
+            card_tap(e, "RIGHT", 14)
+            card_tap(e, "RIGHT", 14)
     # the last army's controller: its tab stop, DOWN
-    tap(e, "RIGHT", 14)
-    tap(e, "DOWN", 20)
+    card_tap(e, "RIGHT", 14)
+    card_tap(e, "DOWN", 20)
 
 
 def ds_controls(e, armies, picks, ctx=None):
@@ -65,20 +74,20 @@ def ds_controls(e, armies, picks, ctx=None):
     first army's tab: RIGHT (over the last partner) and DOWN."""
     for a, (cos, partner) in enumerate(picks):
         for _ in range(cos):
-            tap(e, "DOWN", 20)
-        tap(e, "RIGHT")
+            card_tap(e, "DOWN", 20)
+        card_tap(e, "RIGHT")
         if ctx:
             ctx.check(editing(e) == a, f"army {a + 1}: the partner cell is open (editing {editing(e)})")
         for _ in range(partner):
-            tap(e, "DOWN", 20)
+            card_tap(e, "DOWN", 20)
         if a < armies - 1:
-            tap(e, "RIGHT")  # its tab
-            tap(e, "RIGHT")
+            card_tap(e, "RIGHT")  # its tab
+            card_tap(e, "RIGHT")
             if ctx:
                 ctx.check(editing(e) == 0xFF, f"army {a + 2}: its CO cell")
     # from the last army's partner cell: RIGHT is its tab
-    tap(e, "RIGHT")
-    tap(e, "DOWN", 20)
+    card_tap(e, "RIGHT")
+    card_tap(e, "DOWN", 20)
 
 
 def run_versus(ctx, on, armies):
@@ -147,26 +156,30 @@ def ds_coselect_arrows_versus_wrap(ctx):
         order = [(k, a) for a in range(armies) for k in ("co", "partner", "tab")]
         seen = [cell()]
         for _ in range(len(order)):
-            tap(e, "RIGHT")
+            card_tap(e, "RIGHT")
             seen.append(cell())
-        ctx.eq(seen, order + [order[0]], f"{armies} armies: RIGHT goes through every cell and wraps")
+        ctx.eq(seen, order + [order[0]], f"{armies} armies: DOWN goes through every cell and wraps")
         back = [cell()]
         for _ in range(len(order)):
-            tap(e, "LEFT")
+            card_tap(e, "LEFT")
             back.append(cell())
-        ctx.eq(back, [order[0]] + order[::-1], f"{armies} armies: LEFT goes the other way and wraps")
+        ctx.eq(back, [order[0]] + order[::-1], f"{armies} armies: UP goes the other way and wraps")
     shot(ctx, e, "arrows_wrap")
 
 
 @test(modes=("ds",))
 def ds_coselect_arrows_off_and_online_keep_aw2(ctx):
-    """With the setting off, RIGHT is AW2's: army 1's CO to its tab (and no partner opens)."""
+    """With the setting off, the move is AW2's: army 1's CO to its tab (and no partner opens); the cards' DOWN is AW2's RIGHT."""
     g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
     e = g.e
     e.w8(DS_GRAPHICS, 0)
     e.wait(10)
-    tap(e, "RIGHT", 20)
+    card_tap(e, "RIGHT", 20)
     ctx.eq((cursor(e, False), editing(e)), (1, 0xFF), "AW2's RIGHT (the army's tab, no partner cell)")
+    card_tap(e, "LEFT", 20)
+    co = e.u8(ram.TEAMS + ram.T_CO_INDEX)
+    tap(e, "RIGHT", 20)
+    ctx.check(e.u8(ram.TEAMS + ram.T_CO_INDEX) != co and cursor(e, False) == 0, "the cards' RIGHT changes the CO (AW2's DOWN)")
 
 
 # --- The CO screen's grid ----------------------------------------------------------------------------------
@@ -345,22 +358,22 @@ def ds_coselect_arrows_versus_press_edges(ctx):
     # (frames held, cells): the press, then 12, 16, 20 ... 56 for the 60 frames (13 cells; the ring has 6)
     for frames, cells in ((2, 1), (8, 1), (11, 1), (13, 2), (15, 2), (60, 13)):
         e = fresh_versus(ctx)
-        e.hold("RIGHT", frames)
+        e.hold(CARD["RIGHT"], frames)
         e.wait(120)
         ctx.eq(virtual_cell(e, 2), cells % 6, f"RIGHT held {frames} frames: {cells} cells")
         ctx.eq(e.u8(tag.ARROWS + 1), 0, f"RIGHT held {frames} frames: the walk is over")
     for gap in (10, 6):
         e = fresh_versus(ctx)
         for _ in range(3):
-            e.hold("RIGHT", 4)
+            e.hold(CARD["RIGHT"], 4)
             e.wait(gap - 4)
         e.wait(120)
         ctx.eq(virtual_cell(e, 2), 3, f"RIGHT three times, {gap} frames apart")
     e = fresh_versus(ctx)
     for _ in range(3):
-        e.hold("RIGHT", 8)
+        e.hold(CARD["RIGHT"], 8)
         e.wait(3)
-    e.hold("LEFT", 8)
+    e.hold(CARD["LEFT"], 8)
     e.wait(120)
     ctx.eq(virtual_cell(e, 2), 2, "RIGHT three times, LEFT once, in a hurry")
 

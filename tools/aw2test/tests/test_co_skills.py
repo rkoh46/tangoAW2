@@ -528,9 +528,16 @@ def skills_panel_teams_and_rule(ctx):
         e.w32(DATA + 4 + CO_LEN * co_slot(c), 1000)
         e.write(DATA + 4 + CO_LEN * co_slot(c) + 16, bytes([0x25, 0, 0, 0]))  # Versus set 0: Slam Guard
     ctx.eq(e.u8(VERSUS_RULE), 0, "the rule: off by default")
+    shot(ctx, e, "teams_cards")
     e.press("SELECT", 4)
     e.wait(10)
     ctx.eq(e.u8(PANEL), 1, "SELECT: the panel is up")
+    # The army cards drawn over the finished picture (crate::ds_coselect) stay off while the panel is up: the
+    # panel's red help rule runs the screen's width and the board's first column of icons is there.
+    from aw2test import shots
+    rows = shots.read_bmp(e.shot(os.path.join(ctx.out, "teams_panel_check")))
+    rule = [rows[136][x] for x in range(0, 240, 8)]
+    ctx.check(all(p[0] > 180 and p[1] < 120 and p[2] < 120 for p in rule), f"the panel's help rule is whole (no army card over it): {rule[:4]}")
     ctx.eq((e.u8(PANEL + 3), e.u8(PANEL + 8)), (3, 1), "the Versus set, on the Teams screen")
     e.press("L", 4)
     e.wait(6)
