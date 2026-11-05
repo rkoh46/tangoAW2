@@ -43,8 +43,14 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
      `SetArmyCoIdsFromList` with the list the CO screen reads (`0x030058D4`), after `tag::set_cos` (a jump to the function runs none of the traps on it) which moves a five-army map's pick to the
      player's fifth army; `gauntlet_ui::keep_pick` puts it back after `mission_start`, which sets army 5's CO to the mission's own, none.
    - BG0 emptied, `ResetRulesAfterCampaignMap`, AW2's mission proc (`0x0849EBFC`: **the mission card** "MISSION 1 / Cinder Sea" (the map's name under it), the intro scene, the Setup phase if the mission
-     has one, the battle). The card is AW2's campaign card, drawn by the mission proc itself with the mission's number; the War Room has no card at all (its battle starts at once), so
-     there is no "War Room card" to borrow, and dropping the card would mean cutting AW2's mission proc apart.
+     has one, the battle). The card is AW2's campaign card, drawn by the mission proc itself; the War Room has no card at all (its battle starts at once), so
+     there is no "War Room card" to borrow, and dropping the card would mean cutting AW2's mission proc apart. **The Gauntlet's card says GAUNTLET** (`gauntlet_card.rs`, only while `gauntlet::session`): the word
+     above the name (OBJ tiles 0..23, three 32x16 sprites) is repainted as GAUNTLET from the title font's letters (columns as they are, rows area-averaged to 15) and drawn 18 px right (traps at the two
+     template draw calls, `0x0807C362` / `0x0807C47A`), the number's digit tiles (28..67) are blanked (the number was the map's place in the definition, meaningless in the selector's order), and the seal's
+     band ("MISSION START", BG2 affine 8 bit tiles, rows 74..85) is cleared and set as GAUNTLET in the stamp's own red ramp (12 rows). The art is made from the ROM's font when the card runs (a trap at
+     each frame routine `0x0807C034`/`0x0807C2D4`/`0x0807C46C` writes it when VRAM does not have it yet: the card's own loads are not at a fixed point); nothing is stored. The seal is only edited when every
+     band cell's tile is used by that cell alone, else the stamp keeps its words. Every real campaign's card is untouched. Pictures: `aw2dev gfx audit --scenes mission_card` (`gauntlet/mission_card` and
+     `bh_campaign/mission_card`, three looks); tests `gauntlet_card_says_gauntlet`, `gauntlet_card_campaigns_keep_mission` (`-k gauntlet_card`). No `SIM_VERSION` bump: offline only, VRAM only.
 3. The player's army wears the colour it picked (`gauntlet::keep_colour`, at the map's start): AW2's rules give an army the colour of its CO's country, which would make a Drake pick Green Earth
    like the enemy's Drake. A pick of **Silver Nova** (a skin: `army_skin::SKIN + i`) sits on the lowest AW2 colour no army has (`army_skin::assign`; Cinder Sea: Orange Star's) from the pick on
    (`gauntlet::player_skin`, read by `army_skin::sync`: the ROM's palettes must hold it before the map's graphics load, a palette the game has loaded keeps the colours it was loaded with). The
