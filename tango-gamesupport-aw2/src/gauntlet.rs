@@ -109,6 +109,85 @@ pub fn consumed(core: &mut Core) {
     core.raw_write_8(PICKED, -1, 0);
 }
 
+// --- Rules AW2's campaign applies that a Gauntlet run does not want ------------------------------------------------------------------------------------------------------------------------
+
+/// `sub_080261E8(army)`: in campaign mode AW2 offers the Neotank only when the army's colour has its story flag (0x65..0x68; Black Hole's colour none), which a Gauntlet session (every run a
+/// first play, no story) never has. Called by the build menu (`0x0802D6CA`). In a Gauntlet session the answer is yes, so every map's bases offer the Neotank as a Versus map with the pack does.
+pub const NEOTANK_OPEN: u32 = 0x0802_61E8;
+pub fn neotank_open(core: &mut Core) {
+    if !session(core) {
+        return;
+    }
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(0, 1);
+    let lr = cpu.gpr(14) as u32;
+    cpu.set_thumb_pc(lr & !1);
+}
+
+/// `BattleScore_Power`'s sum of the units the other teams built (r5, at `0x0802647C`, after its loop): Power is the most units destroyed in one turn, times 1000, over that sum. A Gauntlet run
+/// fights N lines one after another, each with its wave and its production, so the sum is N times what one map's enemy builds and the same play would score a Power N times lower. In a
+/// Gauntlet session the sum is divided by the map's number of lines ([`crate::gauntlet_mode::lines_of`]), rounded up: the power of a run is what it would be against an average line.
+pub const POWER_SUM: u32 = 0x0802_647C;
+pub fn power_sum(core: &mut Core) {
+    if !session(core) {
+        return;
+    }
+    let lines = crate::gauntlet_mode::lines_of(crate::ds_campaign::mission(core) as usize);
+    let sum = core.gba().cpu().gpr(5) as u32;
+    core.gba_mut().cpu_mut().set_gpr(5, power_sum_per_line(sum, lines) as i32);
+}
+
+/// A Gauntlet stage switch begins ([`crate::stage`]'s snapshot of the survivors): the battle's counters, which the switch resets with the stage's new player records, are kept for the stage that
+/// follows, so the run's Technique and Power are the whole run's and not the last stage's (Iron Crown: the player's units built and lost, his most kills in a turn and the units the four
+/// first lines built; without this stage two alone was scored, and a player who built nothing there scored 0 Technique: no units built).
+pub fn carry_score_out(core: &mut Core, army: u32) {
+    if !session(core) {
+        return;
+    }
+    let players = crate::five::players(core);
+    let at = crate::stage::SCORE_CARRY;
+    let p = players + 0x3C * army;
+    core.raw_write_8(at, -1, core.raw_read_8(p + P_BUILT, -1));
+    core.raw_write_8(at + 1, -1, core.raw_read_8(p + P_LOST, -1));
+    core.raw_write_16(at + 2, -1, core.raw_read_16(p + P_KILLS, -1));
+    let enemy: u32 = (1..=5u32)
+        .filter(|&a| a != army && core.raw_read_8(players + 0x3C * a + P_ARMY_IN, -1) != 0)
+        .map(|a| core.raw_read_8(players + 0x3C * a + P_BUILT, -1) as u32)
+        .sum();
+    core.raw_write_16(at + 4, -1, enemy.min(0xFFFF) as u16);
+}
+
+/// The stage's player army is set up ([`crate::stage`]'s arrival): the counters kept by [`carry_score_out`] go into the player's new record (units built and lost, the most kills in a turn)
+/// and the units the earlier stage's enemies built are added to the new enemy's (byte counters stop at 255, as the game's do).
+pub fn carry_score_in(core: &mut Core, army: u32) {
+    if !session(core) {
+        return;
+    }
+    let players = crate::five::players(core);
+    let at = crate::stage::SCORE_CARRY;
+    let p = players + 0x3C * army;
+    let (built, lost, kills, enemy) = (core.raw_read_8(at, -1), core.raw_read_8(at + 1, -1), core.raw_read_16(at + 2, -1), core.raw_read_16(at + 4, -1) as u32);
+    core.raw_write_8(p + P_BUILT, -1, built.saturating_add(core.raw_read_8(p + P_BUILT, -1)));
+    core.raw_write_8(p + P_LOST, -1, lost.saturating_add(core.raw_read_8(p + P_LOST, -1)));
+    core.raw_write_16(p + P_KILLS, -1, kills.max(core.raw_read_16(p + P_KILLS, -1)));
+    if let Some(foe) = (1..=5u32).find(|&a| a != army && core.raw_read_8(players + 0x3C * a + P_ARMY_IN, -1) != 0) {
+        let q = players + 0x3C * foe + P_BUILT;
+        core.raw_write_8(q, -1, (core.raw_read_8(q, -1) as u32 + enemy).min(255) as u8);
+    }
+}
+
+/// The player record's counters AW2's end-of-battle score reads: units built, units lost (bytes, stopping at 255), the most units destroyed in one turn (u16) and whether the army is in the
+/// battle (the controller byte).
+const P_BUILT: u32 = 0x3A;
+const P_LOST: u32 = 0x3B;
+const P_KILLS: u32 = 0x18;
+const P_ARMY_IN: u32 = 0x1B;
+
+/// The enemy build sum Power divides by in a Gauntlet run of `lines` lines: the sum over the lines, rounded up (a sum of 0 stays 0: no Power then).
+pub fn power_sum_per_line(sum: u32, lines: usize) -> u32 {
+    sum.div_ceil(lines.max(1) as u32)
+}
+
 /// A best result as AW2 keeps it (`best_score`'s word: CO | days << 8 | score << 20), by mission.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Best {

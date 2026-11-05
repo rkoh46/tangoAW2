@@ -131,6 +131,33 @@ the winning scene (those scenes were not hit: the grey is written only while mov
 ## The rout rule
 Capturing a line's HQ routes that army at once (all its units destroyed by AW2's own `DefeatArmy`, every property it owns neutral), then the next line comes; the last line's HQ wins as before. It is the shared engine's, so every map has it by default: list every line but the last in `cut_off` ([gauntlet.md](gauntlet.md), "The rout"). Tests `-k gauntlet_rout`.
 
+## Scoring (the rank and points of a run of several lines)
+AW2's end-of-battle score is Speed + Power + Technique (each 0..100); the rank is C up to 199, B to 249, A to 279, S above. It was written for one map against one army, and a Gauntlet is N lines in one battle,
+so each part is judged per line here (the rules are the ROM's, `aw2test/gauntlet_score.py` writes them out; the part of the ROM: `0x080263A4` Speed, `0x08026424` Power, `0x080264BC` Technique):
+- **Speed** = 100 up to the map's **par days**, then 100 - 100 x (day - par) / (3 x par), 0 at four times par. The par is the map header's (`MissionDef::rank_days`) and is data per map: `gauntlet_mode::par_days` =
+  `PAR_PER_LINE` (12) days for each enemy line (`line_count`: every fixed CO of the map and its stages; Iron Crown's four lines and Asuka are five: 60), unless the map is in `PAR_OVERRIDES` (Blue Bastion and Last Eclipse, the two
+  biggest, 52). No map's par got stricter than it was (22..44 before). A new map needs nothing: its par follows its lines; add an override only for a map that costs more days a line.
+- **Power** = min(100, 1000 x the most units the player destroyed in one turn / the units the enemy armies built). Every line's wave and production counts in that sum, so a four-line run scored a quarter of what the same
+  turn scored on one map. `gauntlet::power_sum` (a trap in the middle of AW2's Power, `POWER_SUM`) divides the sum by the map's lines (`lines_of`, rounded up) in a Gauntlet session.
+- **Technique** (campaign: 120 - 100 x units lost / units built, 0 when nothing was built) is a ratio and needs no change on one stage. Iron Crown's **stage switch** used to reset the player's records (units built and lost,
+  most kills, the enemy's builds) so the score judged Asuka's Keep alone (Technique 0 unless the player built something there). `gauntlet::carry_score_out` (at the survivors' snapshot, `stage::snapshot`) keeps them in
+  `stage::SCORE_CARRY` and `carry_score_in` (at the arrival) adds them to the new records: the whole run is scored. (The game's counters are bytes that stop at 255.)
+- **The record and EXP** are read from the same total (`InsertBestScoreRecord`'s score), so the top five, the days and `battle_points::results` (EXP: the mission's previous best taken off) follow the new score. Results saved
+  before the rework keep their old scores in the top five (they were lower: a new run replaces them in place).
+- Real campaigns, the War Room and Versus are untouched: every trap here begins with `gauntlet::session`, and nothing it changes is simulation state of a Versus battle (no `SIM_VERSION` bump).
+- Tools: `aw2dev gauntlet score [--markdown]` (par per map, a quick/steady/slow run's score before and now), tests `-k gauntlet_score` (the real ROM's fields on Cinder Sea and Iron Crown against the formula; run against an older build
+  with `AW2TEST_RUNNER_DIR` to see its numbers), cargo `par_days_grow_with_the_lines_of_the_run`.
+
+## Units on offer
+AW2's build menu asks `sub_080261E8` (`0x0802D6CA`) before it lists the Neotank, and in campaign mode that function says yes only when the army's colour has its story flag (0x65..0x68, Black Hole's colour never): a Gauntlet run is
+a campaign session with no story, so bases offered no Neotank (the factory read Recon, Tank, Md Tank, Megatank...). `gauntlet::neotank_open` (`NEOTANK_OPEN`) answers yes in a Gauntlet session, so every map offers what a Versus
+map with the pack offers (airports and ports never had the gate; the computer's armies buy by the pack's production, not by this menu). Test `-k gauntlet_build_menu` (every map's base, airport and port against a Versus battle's).
+
+## A run of several maps (Iron Crown)
+A mission with stages (`MissionDef::stages`) is several maps in one run. The selector's list shows such a mission under `MissionDef::list_title` ("Iron Crown 2 maps": a second text id, `Built::list_names`,
+`ds_campaign::list_name`, put in the map-table entry's name by `gauntlet_ui::entries_in_table`; the mission card keeps the title) and the army screen's help plate names the maps (`stage_titles`: "Iron Crown + Asuka's Keep: 2 maps").
+The selector's picture is still the first map's (a swapped picture pointer is not redrawn until the cursor moves). Pictures: `aw2dev gauntlet two-maps`, `-k gauntlet_two_maps`.
+
 ## Adding a map
 The steps to add `gauntlet_NN` (NN = the next number; its record key, never reused):
 1. Spec `five/gauntlet/spec/gauntlet_NN.py`; `aw2dev maps gen --campaign gauntlet` (writes `five/gauntlet/gauntlet_NN.txt` and `gauntlet_map_data.rs`); `aw2dev maps lint --source gauntlet` clean. Keep a map to about 110 properties (Neon Row with 150 stalled the computer's turn on day 1, with 210 some properties stayed owned after a rout; 108 is clean).
@@ -152,6 +179,8 @@ map that fixes other colours changes the offer with no other edit. The enemy arm
 - `aw2dev gauntlet cos`: every map's enemy COs in order, read from `gauntlet_mode.rs` (`CoSpec::Fixed`), the reused ones next to the `allowed` list of the unit test `no_two_maps_share_an_enemy_co_but_the_named_exceptions` (fails on an unnamed repeat), and the COs of `ROSTER` no map uses yet.
 - `aw2dev gauntlet army-sheet [--map NN ...]`: the army screen (as it opens, CO changed, R pressed) of the chosen maps in the three looks as one sheet (`-k gauntlet_army_pictures`, env `AW2TEST_ARMY_MISSIONS`).
 - `aw2dev gauntlet faces [--map NN ...]`: each CO's dialogue-box face beside the same CO on the army screen (`-k gauntlet_faces_vs_army_screen` + `tools/aw2test/compose_faces.py`, env `AW2TEST_FACES_MAPS`).
+- `aw2dev gauntlet score [--markdown]`: every map's par days and a quick, a steady and a slow run's total and rank before the rework and now (`aw2test/gauntlet_score.py`; "Scoring").
+- `aw2dev gauntlet two-maps [--out FILE]`: Iron Crown's selector (as it opens, 2 and 4 seconds later) and army screen in the three looks as one sheet (`-k gauntlet_two_maps`; "A run of several maps").
 - `aw2dev campaign scene-check`: the arrival-box and face-palette tests of every map and BH2 M31, per map (docs/dev/campaign-scenes.md). Run it after any scene or dialogue work.
 
 ## Aids and tests

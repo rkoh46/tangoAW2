@@ -134,7 +134,6 @@ fn cinder_sea() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::HAWKE)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_01");
-    m.rank_days = 24;
     // (the player's army has no team of its own written here: team 0 is its own army number, 1; the three enemies share team 2: with team 1 they were the player's allies)
     // the gauntlet: Drake's and Sensei's HQs are held (taking one routes that line at once: the engine's rout rule, custom_campaign::rout_army); Hawke's is the last
     m.held_hq = Some(CINDER_DRAKE);
@@ -278,6 +277,9 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
 /// the battle in place to Asuka's Keep (stage two). Every enemy colour is fixed in its army's data (a colour pick for the player offers the colour the enemies leave free: Black Hole's here, `player_colours`).
 fn iron_crown() -> MissionDef {
     let mut m = MissionDef::new("gauntlet_02", "Iron Crown");
+    // (a two-map run: the selector's list and the army screen say so)
+    m.list_title = "Iron Crown 2 maps";
+    m.stage_titles = &["Asuka's Keep"];
     m.objective = "Break Grit's river line, then Jess's, Kanbei's and Rachel's, and take Asuka's Keep.";
     m.map = MapSrc::Built("gauntlet_02");
     m.armies = vec![
@@ -288,7 +290,6 @@ fn iron_crown() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
     ];
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_02"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
-    m.rank_days = 40;
     m.held_hq = Some(IRON_GRIT);
     m.held_more = vec![IRON_JESS, IRON_KANBEI, IRON_RACHEL];
     m.sleepers = vec![(2, vec![IRON_GRIT]), (3, vec![IRON_GRIT, IRON_JESS]), (4, vec![IRON_GRIT, IRON_JESS, IRON_KANBEI])];
@@ -478,7 +479,6 @@ fn dustwind_basin() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::LASH)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_03");
-    m.rank_days = 22;
     m.look = 2; // the Desert look: rock and canyon walls, sand
     let lines = [Wire { army: 2, hq: DUST_KOAL, zone: Rect::new(20, 3, 29, 17) }, Wire { army: 3, hq: DUST_LASH, zone: Rect::new(0, 0, 12, 9) }];
     wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &LASH_WAVE, lash_arrives())]);
@@ -540,7 +540,6 @@ fn brass_canal() -> MissionDef {
         ArmyDef::new(colour::GREEN_EARTH, CoSpec::Fixed(co::JAVIER)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_04");
-    m.rank_days = 22;
     let lines = [Wire { army: 2, hq: CANAL_SASHA, zone: Rect::new(0, 0, 13, 9) }, Wire { army: 3, hq: CANAL_JAVIER, zone: Rect::new(17, 12, 29, 21) }];
     wire(&mut m, &lines, vec![arrival(&lines, 1, chest::<3, 15000, 1000>, &JAVIER_WAVE, javier_arrives())]);
     m.intro = Scene::new(vec![
@@ -621,7 +620,6 @@ fn granite_spine() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::VON_BOLT)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_05");
-    m.rank_days = 26;
     let lines = [
         Wire { army: 2, hq: SPINE_JAKE, zone: Rect::new(19, 8, 31, 21) },
         Wire { army: 3, hq: SPINE_GRIMM, zone: Rect::new(0, 0, 12, 10) },
@@ -755,7 +753,6 @@ fn harvest_run() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
     ];
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_06"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
-    m.rank_days = 40;
     let lines = [
         Wire { army: 1, hq: HARVEST_ANDY, zone: Rect::new(0, 0, 16, 12) },
         Wire { army: 2, hq: HARVEST_MAX, zone: Rect::new(20, 0, 35, 9) },
@@ -900,7 +897,6 @@ fn chrome_meridian() -> MissionDef {
     ];
     m.skin = Some((CHROME_SKIN_ARMY, 0));
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_07"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
-    m.rank_days = 40;
     let lines = [
         Wire { army: 1, hq: CHROME_FLAK, zone: Rect::new(2, 9, 18, 18) },
         Wire { army: 2, hq: CHROME_CAULDER, zone: Rect::new(26, 2, 35, 7) },
@@ -988,7 +984,6 @@ fn tidewater_atoll() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::ADDER)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_08");
-    m.rank_days = 24;
     let lines = [
         Wire { army: 2, hq: TIDE_EAGLE, zone: Rect::new(19, 0, 29, 9) },
         Wire { army: 3, hq: TIDE_ADDER, zone: Rect::new(18, 10, 29, 19) },
@@ -1051,7 +1046,6 @@ fn silverpine_ford() -> MissionDef {
         ArmyDef::new(colour::BLUE_MOON, CoSpec::Fixed(co::SONJA)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_09");
-    m.rank_days = 24;
     let lines = [
         Wire { army: 2, hq: SILVER_HACHI, zone: Rect::new(17, 0, 31, 21) },
         Wire { army: 3, hq: SILVER_SONJA, zone: Rect::new(0, 0, 14, 8) },
@@ -1140,7 +1134,6 @@ fn neon_row() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Fixed(co::JUGGER)).team(2).funds(0),
     ];
     m.units = crate::es_campaign::deployment("gauntlet_10");
-    m.rank_days = 26;
     let lines = [
         Wire { army: 2, hq: NEON_COLIN, zone: Rect::new(16, 8, 31, 14) },
         Wire { army: 3, hq: NEON_KINDLE, zone: Rect::new(0, 0, 14, 7) },
@@ -1268,7 +1261,6 @@ fn blue_bastion() -> MissionDef {
         ArmyDef::new(colour::BLACK_HOLE, CoSpec::Pick).funds(20000),
     ];
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_11"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
-    m.rank_days = 40;
     let lines = [
         Wire { army: 1, hq: BASTION_OLAF, zone: Rect::new(13, 5, 39, 22) },
         Wire { army: 2, hq: BASTION_GRIT, zone: Rect::new(18, 10, 21, 17) },
@@ -1411,7 +1403,6 @@ fn last_eclipse() -> MissionDef {
     ];
     m.units = crate::bh_ai::orders(crate::bh_ai::built_units("gauntlet_12"), 5, crate::bh_ai::ATTACK, |u| u.ai == 1);
     m.look = 3; // the Wasteland look: a stronghold on blasted ground
-    m.rank_days = 44;
     let lines = [
         Wire { army: 1, hq: ECLIPSE_STURM, zone: Rect::new(14, 0, 23, 25) },
         Wire { army: 2, hq: ECLIPSE_VON_BOLT, zone: Rect::new(25, 0, 33, 12) },
@@ -1475,6 +1466,8 @@ pub struct Entry {
     /// An enemy line wears a skin (Silver Nova's Caulder, Lili and Tabitha): the skin is on the battlefield already, so the player cannot wear it too (a skin sits on one colour). The enemy
     /// colour (an army of that colour wears the skin, whichever line) and the skin's index.
     pub enemy_skin: Option<(u8, usize)>,
+    /// The titles of the maps the run moves to after the first (Iron Crown: Asuka's Keep); empty on a one-map run.
+    pub stage_titles: &'static [&'static str],
 }
 
 impl Entry {
@@ -1539,6 +1532,7 @@ pub fn entries() -> &'static [Entry] {
                     enemies: stages.iter().flatten().copied().collect(),
                     stages: stages.iter().map(|v| v.iter().map(|e| e.1).collect()).collect(),
                     enemy_skin: m.skin.and_then(|(army, skin)| Some((m.armies.get(army as usize - 1)?.colour, skin))),
+                    stage_titles: m.stage_titles,
                 }
             })
             .collect()
@@ -1614,11 +1608,35 @@ fn add_music(m: &mut MissionDef) {
     }
 }
 
+// --- Par days: the speed score (docs/dev/gauntlet-mode.md "Scoring") -------------------------------------------------------------------------------------------------
+
+/// Days a well-played run needs for each enemy line (AW2's Speed is 100 up to the map's par day, then falls to 0 at four times the par: a Gauntlet's par is a run's days, not one line's).
+pub const PAR_PER_LINE: u16 = 12;
+/// Maps whose par is not [`PAR_PER_LINE`] times their lines: the two largest, whose walls and distances cost more days a line (the data: add a map here to give it its own par).
+pub const PAR_OVERRIDES: &[(&str, u16)] = &[("gauntlet_11", 52), ("gauntlet_12", 52)];
+
+/// The enemy lines a mission fights: every CO the map fixes, the first stage's and each later stage's (Iron Crown's four and Asuka: five). The same count the selector lists as enemies.
+pub fn line_count(m: &MissionDef) -> usize {
+    let fixed = |armies: &[ArmyDef]| armies.iter().filter(|a| matches!(a.co, CoSpec::Fixed(_))).count();
+    fixed(&m.armies) + m.stages.iter().map(|s| fixed(&s.armies)).sum::<usize>()
+}
+
+/// The lines of the Gauntlet map at mission index `mission` (at least 1).
+pub fn lines_of(mission: usize) -> usize {
+    entries().get(mission).map_or(1, |e| e.enemies.len()).max(1)
+}
+
+/// A mission's par days (the map header's, which AW2's Speed reads): its override, else [`PAR_PER_LINE`] days for each line.
+pub fn par_days(m: &MissionDef) -> u16 {
+    PAR_OVERRIDES.iter().find(|o| o.0 == m.key).map_or(PAR_PER_LINE * line_count(m) as u16, |o| o.1)
+}
+
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
     let mut missions = vec![cinder_sea(), iron_crown(), dustwind_basin(), brass_canal(), granite_spine(), harvest_run(), chrome_meridian(), tidewater_atoll(), silverpine_ford(), neon_row(), blue_bastion(), last_eclipse()];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     missions.iter_mut().for_each(add_music);
+    missions.iter_mut().for_each(|m| m.rank_days = par_days(m));
     CampaignDef {
         source: SOURCE,
         roster: ROSTER.to_vec(),
@@ -1968,6 +1986,26 @@ mod tests {
                 assert!(ok, "CO {c} is on {maps:?}: only the named repeats are allowed");
             }
         }
+    }
+
+    #[test]
+    fn par_days_grow_with_the_lines_of_the_run() {
+        let d = def();
+        for (m, e) in d.missions.iter().zip(entries()) {
+            assert_eq!(line_count(m), e.enemies.len(), "{}: the lines are the selector's enemies", m.key);
+            assert_eq!(lines_of(e.mission), e.enemies.len());
+            assert_eq!(m.rank_days, par_days(m), "{}: the header's par is the Gauntlet's", m.key);
+            let natural = PAR_PER_LINE * e.enemies.len() as u16;
+            match PAR_OVERRIDES.iter().find(|o| o.0 == m.key) {
+                Some(o) => assert!(o.1 >= natural, "{}: an override only gives more days", m.key),
+                None => assert_eq!(m.rank_days, natural, "{}", m.key),
+            }
+        }
+        let par = |k: &str| d.missions.iter().find(|m| m.key == k).unwrap().rank_days;
+        assert_eq!((par("gauntlet_03"), par("gauntlet_01"), par("gauntlet_06"), par("gauntlet_02")), (24, 36, 48, 60), "two, three, four and (Iron Crown) five lines");
+        assert!(par("gauntlet_11") > par("gauntlet_06") && par("gauntlet_12") > par("gauntlet_06"));
+        // AW2's Speed: 100 up to par, 0 at four times par: a run of every map's par days is a perfect Speed
+        assert!(d.missions.iter().all(|m| m.rank_days >= 24), "no map got stricter than before: the old pars were 22..44");
     }
 
     #[test]

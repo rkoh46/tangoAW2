@@ -958,6 +958,11 @@ pub fn write_header(core: &mut Core, header: &[u8; 0x5C]) {
 }
 
 /// The compiled header of the Gauntlet's mission `m` (what the map selector's table entry for it holds).
+/// The text id of the name a map list shows for mission `m` when it is not the mission's own title ([`crate::custom_campaign::MissionDef::list_title`]).
+pub fn list_name(core: &Core, m: usize) -> Option<u16> {
+    campaign(core)?.model.built.list_names.iter().find(|h| h.0 as usize == m).map(|h| h.1)
+}
+
 pub fn mission_header(core: &Core, m: usize) -> Option<[u8; 0x5C]> {
     campaign(core)?.model.built.headers.iter().find(|h| h.0 as usize == m).map(|h| h.1)
 }
@@ -1438,6 +1443,8 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         ),
         (SAVE_GAME, Box::new(save_game)),
         (BEST_SCORE, Box::new(best_score)),
+        (crate::gauntlet::NEOTANK_OPEN, Box::new(crate::gauntlet::neotank_open)),
+        (crate::gauntlet::POWER_SUM, Box::new(crate::gauntlet::power_sum)),
         (SCRIPT_END_MATCH, Box::new(script_end_match)),
         (MAP_CURSOR_LOOP, Box::new(cursor_loop)),
         (SELECT_MODE_START, Box::new(select_mode_start)),

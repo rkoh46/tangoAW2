@@ -1626,6 +1626,7 @@ pub fn build(ds: &Ds, base: u32, widths: &[u8]) -> Option<Built> {
         base,
         texts: cx.texts,
         headers,
+        list_names: Vec::new(),
         magic: cx.magic,
         stubs: cx.stubs,
         missions,

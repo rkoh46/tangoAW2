@@ -227,6 +227,10 @@ fn entries_in_table(core: &mut Core, shown: bool) {
         let Some(mut h) = crate::ds_campaign::mission_header(core, e.mission) else { continue };
         let tab = if shown { crate::survival::TAB } else { crate::five_map::HIDDEN_TAB };
         h[0x1A..0x1C].copy_from_slice(&tab.to_le_bytes());
+        // (a two-map run is listed under its own name, "Iron Crown: 2 maps"; the battle's mission card keeps the title)
+        if let Some(name) = crate::ds_campaign::list_name(core, e.mission) {
+            h[0x14..0x16].copy_from_slice(&name.to_le_bytes());
+        }
         // (the list's own form of a War Room map: the player's slot, then the enemies' COs in the order they come, as many as the screen has faces for)
         h[0x16] = 1;
         h[0x3C] = 0xFF;
@@ -503,10 +507,25 @@ pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
             tag: Some(if k == 0 { "1P" } else { "CP" }),
         })
         .collect();
-    let full = format!("{}: choose your CO and colour.", e.title);
-    let first = if online::text_width(core, &full) <= 228 { full } else { e.title.to_string() };
+    let first = help_title(core, e);
     let lines = vec![first, "Left Right: CO  R: Colour  A: Start  B: Back".to_string()];
     crate::army_cards::draw(core, cv.0, &seats, false, &Help { lines }, false);
+}
+
+/// The help plate's first line: the map's name and what to do ("Dustwind Basin: choose your CO and colour."), or, on a run over several maps, the maps ("Iron Crown + Asuka's Keep: 2 maps"); the name
+/// alone when the line would not fit the plate.
+fn help_title(core: &Core, e: &Entry) -> String {
+    let full = if e.stage_titles.is_empty() {
+        format!("{}: choose your CO and colour.", e.title)
+    } else {
+        let maps: Vec<&str> = std::iter::once(e.title).chain(e.stage_titles.iter().copied()).collect();
+        format!("{}: {} maps", maps.join(" + "), maps.len())
+    };
+    if online::text_width(core, &full) <= 228 {
+        full
+    } else {
+        e.title.to_string()
+    }
 }
 
 /// The army screen's picture over the finished one. `true` when one is up.

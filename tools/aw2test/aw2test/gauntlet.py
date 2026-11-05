@@ -57,7 +57,8 @@ def shown(e):
 # The selector lists the maps by their number of enemy COs, fewest first (crate::gauntlet_mode::order; ties in the definition's order): the missions by row and their names. A map's identity is its
 # mission (the record, `Gauntlet.open(map=<mission>)`), never its row.
 SELECTOR_ORDER = [2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
-SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown"]
+# (the names the list shows: a two-map run is listed under `MissionDef::list_title`)
+SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown 2 maps"]
 
 
 def list_ids(span=0):
