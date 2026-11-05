@@ -5,6 +5,7 @@
 
 use mgba::core::Core;
 
+use crate::campaign_music::Track;
 use crate::custom_campaign::{co, colour, unit, *};
 
 /// The Gauntlet's index in [`crate::campaign_model::SOURCES`].
@@ -1566,10 +1567,58 @@ pub fn rank_of(mission: usize) -> usize {
     order().iter().position(|&m| m == mission).unwrap_or(mission)
 }
 
+/// The song of a map's opening scene, by mission key (a role of `campaign_music::NAMED`). A map not listed gets [`DEFAULT_OPENING`], so a new map is never silent; add a row to give it its own.
+/// Every other scene (a line falling and the next CO arriving, a day scene, the victory) plays the CO's theme who speaks last in it: the arriving CO's own song.
+pub const OPENING: &[(&str, &str)] = &[
+    ("gauntlet_01", "enemy2"),   // Cinder Sea: Drake's waters, the grumbling volcano
+    ("gauntlet_02", "ally1"),    // Iron Crown: Blue Moon's council on the river
+    ("gauntlet_03", "red"),      // Dustwind Basin: Koal's mesa
+    ("gauntlet_04", "enemy2"),   // Brass Canal: Sasha's toll
+    ("gauntlet_05", "hagevolt"), // Granite Spine: Von Bolt's mountain
+    ("gauntlet_06", "ally2"),    // Harvest Run: Orange Star at home
+    ("gauntlet_07", "enemy1"),   // Chrome Meridian: Flak's noise
+    ("gauntlet_08", "blue"),     // Tidewater Atoll: Eagle's sky
+    ("gauntlet_09", "ally2"),    // Silverpine Ford: Hachi's tables
+    ("gauntlet_10", "red"),      // Neon Row: Colin's street
+    ("gauntlet_11", "ally1"),    // Blue Bastion: Blue Moon's walls
+    ("gauntlet_12", "sturm"),    // Last Eclipse: Sturm's door
+];
+pub const DEFAULT_OPENING: &str = "enemy1";
+
+/// The song of a scene that has none: the theme of the CO speaking last in it (a trooper or narrator: `fallback`).
+fn scene_song(sc: &Scene, fallback: Track) -> Track {
+    match sc.lines.last().map(|l| l.who) {
+        Some(Speaker::Co(c, _)) => Track::Co(c),
+        _ => fallback,
+    }
+}
+
+/// Gives every scene of the map music (the dialogue is never silent): the opening its role from [`OPENING`], every other scene (the triggers', the victory) its last speaker's theme.
+fn add_music(m: &mut MissionDef) {
+    let role = OPENING.iter().find(|o| o.0 == m.key).map_or(DEFAULT_OPENING, |o| o.1);
+    let opening = crate::campaign_music::named(role).unwrap_or(Track::Aw2(411));
+    if m.intro.song.is_none() {
+        m.intro.song = Some(opening);
+    }
+    if m.victory.song.is_none() {
+        m.victory.song = Some(scene_song(&m.victory, opening));
+    }
+    for t in m.triggers.iter_mut() {
+        for a in t.then.iter_mut() {
+            if let Action::Scene(sc) = a {
+                if sc.song.is_none() {
+                    sc.song = Some(scene_song(sc, opening));
+                }
+            }
+        }
+    }
+}
+
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
     let mut missions = vec![cinder_sea(), iron_crown(), dustwind_basin(), brass_canal(), granite_spine(), harvest_run(), chrome_meridian(), tidewater_atoll(), silverpine_ford(), neon_row(), blue_bastion(), last_eclipse()];
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
+    missions.iter_mut().for_each(add_music);
     CampaignDef {
         source: SOURCE,
         roster: ROSTER.to_vec(),
@@ -1588,6 +1637,24 @@ pub fn def() -> CampaignDef {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_scene_has_music() {
+        for m in &def().missions {
+            assert!(m.intro.song.is_some() && m.victory.song.is_some(), "{}: opening and victory", m.key);
+            for t in &m.triggers {
+                for a in &t.then {
+                    if let Action::Scene(sc) = a {
+                        assert!(sc.song.is_some(), "{}: a trigger's scene is silent", m.key);
+                    }
+                }
+            }
+        }
+        for o in OPENING {
+            assert!(crate::campaign_music::named(o.1).is_some(), "{}: unknown role {}", o.0, o.1);
+        }
+        assert!(crate::campaign_music::named(DEFAULT_OPENING).is_some());
+    }
 
     #[test]
     fn cinder_sea_is_a_gauntlet_of_three() {

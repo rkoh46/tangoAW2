@@ -7,6 +7,7 @@ description: Pick and wire music for scenes or battles (AW2 / Dual Strike songs,
 1. `./aw2dev sound list` (scene roles), `--source aw2` (AW2 ids with CO themes and event-script uses: the mood each is used for), `--source ds` (Dual Strike sequence names; only the pack's story songs, power themes and new COs' themes are converted: `ds_music.rs STORY_SONGS`).
 2. A scene: `@SONG role | aw2:<id> | co:<name>` in `bh_text/*.txt` / `es_text/*.txt` (`co:tabitha`, `co:lili`, `co:caulder` are the Silver Nova COs' own themes); a new role: `campaign_music.rs NAMED` (an AW2 stand-in below id 505 for packs without the song).
 3. A battle's theme: `MissionDef::music`. Ops: 0x41 plays (crossfade), 0x42 fades out.
+3b. Gauntlet maps: `gauntlet_mode.rs OPENING` (a role per map; other scenes play the speaker's own theme); list with `./aw2dev campaign scenes --campaign gauntlet`, test `-k gauntlet_music` (docs/dev/gauntlet-mode.md).
 4. Verify: `./aw2dev campaign trace --mission N` (song per scene, silent samples), tests `-k story_trace`. Docs: docs/dev/campaign-scenes.md.
 
 ## B. Compose a song of our own (docs/dev/music-kit.md)

@@ -5,7 +5,7 @@
   campaign menu [--out DIR]                 start the real app offline with the Dual Strike pack through the AI debug channel, open Select Mode > Campaign and
                                             photograph the chooser at each entry (AW2, DS, BH, Silver Nova and BH2)
   campaign sheets | sim | difficulty | check | dialogue   the Silver Nova Campaign (docs/dev/es-campaign.md): review pictures, the mission sim, the difficulty score,
-                                            the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`
+                                            the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`; `scenes` also `--campaign gauntlet` (the Gauntlet maps: opening, falls, victory)
   campaign playthrough bh2 N [--player cpu|bot] [--days D]   a BH2 mission played to its end in the harness (the computer on every side, or the test player for the player's army), with a report (days, outcome,
                                             takeovers and stage switches, units and funds by day, stalls) and a contact sheet of the key moments (docs/dev/playthrough.md)
   campaign text-lint [es|bh2|all]           the dialogue lints (tools/estext/lint.py for Silver Nova, tools/bh2text/lint.py for BH2: grammar, 176 px boxes, voice rules); fails on an error or a warning
@@ -28,7 +28,7 @@ def register(sub):
     a = cs.add_parser("scenes", help="every scene with its song")
     a.add_argument("--md", action="store_true")
     a.add_argument("--mission")
-    a.add_argument("--campaign", default="bh", choices=["bh", "es", "bh2"])
+    a.add_argument("--campaign", default="bh", choices=["bh", "es", "bh2", "gauntlet"])
     a.set_defaults(fn=scenes)
     a = cs.add_parser("text-lint", help="the Silver Nova and BH2 dialogue lints (grammar, 176 px boxes, voices); fails on an error or warning")
     a.add_argument("which", nargs="?", default="all", choices=["es", "bh2", "all"])
@@ -119,7 +119,7 @@ def scenes(a):
     rows = scene_rows(a.campaign)
     if a.mission:
         rows = [r for r in rows if r[0] == a.mission]
-    bad = [r for r in rows if r[1] != "trigger" and r[3] == "-"]
+    bad = [r for r in rows if r[1] != "trigger" and r[3] == "-" and r[2] != "0"]   # (a campaign with no prologue, the Gauntlet, has none to sing)
     if a.md:
         print("| Mission | Scene | Boxes | Track | AW2 song |\n|---|---|---|---|---|")
     for m, kind, n, label, sid in rows:

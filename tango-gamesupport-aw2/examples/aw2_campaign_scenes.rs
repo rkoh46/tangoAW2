@@ -26,12 +26,13 @@ fn main() {
     let rom = std::fs::read(
         std::env::args()
             .nth(1)
-            .expect("usage: aw2_campaign_scenes <aw2.gba> [bh|es|bh2]"),
+            .expect("usage: aw2_campaign_scenes <aw2.gba> [bh|es|bh2|gauntlet]"),
     )
     .unwrap();
     let def = match std::env::args().nth(2).as_deref() {
         Some("es") => tango_gamesupport_aw2::es_campaign::def(),
         Some("bh2") => tango_gamesupport_aw2::bh2_campaign::def(),
+        Some("gauntlet") => tango_gamesupport_aw2::gauntlet_mode::def(),
         _ => tango_gamesupport_aw2::bh_campaign::def(),
     };
     println!(
