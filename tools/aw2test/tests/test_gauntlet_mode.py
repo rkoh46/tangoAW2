@@ -677,7 +677,7 @@ def gauntlet_mode_army_screen_offers_only_the_colours_the_enemies_do_not_wear(ct
 
 @test(modes=("ds",))
 def gauntlet_mode_the_enemies_on_the_army_screen_cannot_be_edited(ctx):
-    """The enemies' cards are the map's: LEFT, RIGHT and the shoulder keys that are not the colour's change neither the CO nor the colour nor the enemies shown, and the screen stays up; A then
+    """The enemies' cards are the map's: LEFT and RIGHT (the player's card's arrows) walk only the player's CO, never the colour or the enemies shown, and the screen stays up; A then
     starts the battle with the CO and colour of the player's card, the enemies' COs and colours as the map has them."""
     e, g, d = boot(ctx)
     d.open(map=0)
@@ -687,7 +687,8 @@ def gauntlet_mode_the_enemies_on_the_army_screen_cannot_be_edited(ctx):
         e.press(key, 4)
         e.wait(10)
     after = (e.u8(ga.UI_CO), e.u8(ga.UI_CO_CURSOR), e.u8(ga.UI_COLOUR_CURSOR), ga.shown(e))
-    ctx.eq(after, before, "LEFT and RIGHT change nothing")
+    ctx.eq(after[2:], before[2:], "LEFT and RIGHT leave the colour and the enemies")
+    ctx.check(after[1] != before[1], f"three RIGHTs and two LEFTs: one CO on ({before[1]} -> {after[1]})")
     ctx.eq(e.u8(ga.UI_STEP), ga.ARMY, "the army screen is still up")
     ctx.eq(before[3][1], [(9, ga.GREEN_EARTH), (18, ga.YELLOW_COMET), (14, ga.BLACK_HOLE)], "the enemies shown are Cinder Sea's, in the order they come")
     e.close()

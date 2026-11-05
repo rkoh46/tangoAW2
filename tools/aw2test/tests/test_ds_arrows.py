@@ -411,6 +411,6 @@ def ds_coselect_arrows_survive_the_rules_screen(ctx):
     ctx.require(e.wait_until(g.on_teams, 400, step=10), "back on the Teams screen")
     e.wait(60)
     start = virtual_cell(e, 2)
-    e.hold("RIGHT", 8)
+    e.hold(CARD["RIGHT"], 8)
     e.wait(80)
-    ctx.eq(virtual_cell(e, 2), (start + 1) % 6, "RIGHT: one Dual Strike cell")
+    ctx.eq(virtual_cell(e, 2), (start + 1) % 6, "a move (the cards' DOWN): one Dual Strike cell")
