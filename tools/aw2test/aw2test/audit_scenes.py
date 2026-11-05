@@ -804,7 +804,7 @@ def gauntlet_selector(rec):
 
 @scene("gauntlet", "iron_crown_two_maps", pack=True)
 def gauntlet_two_maps(rec):
-    """Gauntlet: Iron Crown, the two-map run: its row in the selector ("Iron Crown 2 maps") and the army screen's plate ("Iron Crown + Asuka's Keep: 2 maps")."""
+    """Gauntlet: Iron Crown, the two-map run: its row in the selector ("Iron Crown *": the mark of a map with a hidden second one) and the army screen's plate ("Iron Crown + Asuka's Keep: 2 maps")."""
     from . import gauntlet as ga
     e, g = rec.emu()
     d = ga.Gauntlet(g)
@@ -823,6 +823,52 @@ def gauntlet_two_maps(rec):
     d.wait_army()
     e.wait(60)
     rec.snap(e, "army_iron_crown", ["menu", "army"])
+
+
+@scene("gauntlet", "iron_crown_map2", looks=("ds_flat",), pack=True)
+def gauntlet_map2(rec):
+    """Gauntlet: the selector on Iron Crown, SELECT flipping its picture and faces to the second map (Asuka's Keep, Asuka alone) and back to the first. Menus: one look is enough, the picture is
+    the game's own map picture in every graphics mode."""
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "gauntlet")
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    d.go_to_row(ga.row_of(1))
+    e.wait(60)
+    rec.snap(e, "map1", ["menu", "maplist"])
+    d.flip(90)
+    rec.snap(e, "map2", ["menu", "maplist"])
+    d.flip(90)
+    rec.snap(e, "map1_again", ["menu", "maplist"])
+
+
+@scene("gauntlet", "army_skills", looks=("ds_flat",), pack=True)
+def gauntlet_army_skills(rec):
+    """Gauntlet: SELECT on the army screen opens Set Skills for the CO picked (the Campaign set); B closes it back to the army screen."""
+    from . import gauntlet as ga
+    from tests.test_co_skills import CO_SLOTS, DATA, co_at
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    d.open()
+    d.wait_army()
+    e.w32(DATA, 0x314C4B53)
+    for c in CO_SLOTS:
+        e.w32(co_at(c), 4000)
+    d.pick_co(ga.SAMI)
+    e.wait(30)
+    rec.snap(e, "army", ["menu", "army"])
+    e.press("SELECT", 4)
+    e.wait(12)
+    rec.snap(e, "skills", ["menu", "skills"])
+    e.press("A", 4)
+    e.wait(8)
+    rec.snap(e, "skills_one_on", ["menu", "skills"])
+    e.press("B", 4)
+    e.wait(20)
+    rec.snap(e, "army_back", ["menu", "army"])
 
 
 @scene("gauntlet", "wheel_box", pack=True)

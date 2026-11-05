@@ -14,6 +14,8 @@
 //!   army's CO, editing its Versus set (R and L there change the army's
 //!   colour, crate::pvp). The Versus rule Skills (crate::co_skills::VERSUS_RULE)
 //!   is a row of the Rules screen (crate::versus_rules).
+//!   On the Gauntlet's army screen (crate::gauntlet_ui) SELECT opens it for the CO picked there, editing the Campaign set (the Gauntlet is a campaign session for
+//!   skills: its battle gives the player's army that set); B closes back to the army screen.
 //! - The screen, as Dual Strike's (its bottom screen's SKILLS RANK board,
 //!   its top screen's CO bar and set, its help bar), converted at run time
 //!   from the .nds: the skill icons (`ohashi/res_skill`: a palette and
@@ -58,8 +60,10 @@ const CO: u32 = STATE + 2;
 /// The set being edited: 0 Campaign, 1 Survival, 2 War Room, 3 Versus 0.
 const WHICH: u32 = STATE + 3;
 const IDS: u32 = STATE + 4;
-/// 1 on the Teams screen (the rule's line).
+/// Which screen opened it: 0 a CO screen, 1 Versus' Teams screen (the rule's line), 2 the Gauntlet's army screen ([`FROM_GAUNTLET`]).
 const ON_TEAMS: u32 = STATE + 8;
+const FROM_TEAMS: u8 = 1;
+const FROM_GAUNTLET: u8 = 2;
 /// The cursor's row.
 const ROW: u32 = STATE + 9;
 /// 1 while what the screen covers is copied aside; the layers' bits of
@@ -160,6 +164,15 @@ fn teams(core: &Core) -> Option<u8> {
     co_skills::co_slot(co).map(|_| co)
 }
 
+/// The Gauntlet's army screen ([`crate::gauntlet_ui`]): the CO picked on it. The Gauntlet is a campaign session for skills (its battle gives the player's army the Campaign set, `co_skills::ids_for`).
+fn gauntlet_army(core: &Core) -> Option<u8> {
+    if !crate::gauntlet::session(core) || crate::gauntlet_ui::step(core) != crate::gauntlet_ui::ARMY {
+        return None;
+    }
+    let co = core.raw_read_8(crate::gauntlet_ui::CO_PICK, -1);
+    co_skills::co_slot(co).map(|_| co)
+}
+
 // --- Input -----------------------------------------------------------------------
 
 const KEY_A: u32 = 1 << 0;
@@ -216,11 +229,16 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
     if !is_open(core) {
         let target = co_select(core)
             .filter(|_| pressed & KEY_SELECT != 0)
-            .map(|(co, s)| (co, s, false))
+            .map(|(co, s)| (co, s, 0))
             .or_else(|| {
                 teams(core)
                     .filter(|_| pressed & KEY_SELECT != 0)
-                    .map(|co| (co, Set::Versus(0), true))
+                    .map(|co| (co, Set::Versus(0), FROM_TEAMS))
+            })
+            .or_else(|| {
+                gauntlet_army(core)
+                    .filter(|_| pressed & KEY_SELECT != 0)
+                    .map(|co| (co, Set::Campaign, FROM_GAUNTLET))
             });
         if let Some((co, set, on_teams)) = target {
             crate::ds_campaign::skills_loaded(core);
@@ -230,15 +248,20 @@ pub fn tick(core: &mut Core, ds: bool, keys: u32, prev: u32) -> u32 {
             core.raw_write_8(CO, -1, co);
             core.raw_write_8(WHICH, -1, set_code(set));
             core.raw_write_range(IDS, -1, &co_skills::set_of(core, co, set));
-            core.raw_write_8(ON_TEAMS, -1, on_teams as u8);
+            core.raw_write_8(ON_TEAMS, -1, on_teams);
             draw(core);
             return keys & !ALL_KEYS;
         }
         return keys;
     }
     // The screen went away under the panel: it closes as it was.
-    let on_teams = core.raw_read_8(ON_TEAMS, -1) == 1;
-    if (on_teams && teams(core).is_none()) || (!on_teams && co_select(core).is_none()) {
+    let from = core.raw_read_8(ON_TEAMS, -1);
+    let gone = match from {
+        FROM_TEAMS => teams(core).is_none(),
+        FROM_GAUNTLET => gauntlet_army(core).is_none(),
+        _ => co_select(core).is_none(),
+    };
+    if gone {
         close(core);
         return keys & !ALL_KEYS;
     }
@@ -742,7 +765,8 @@ fn palettes(a: &Art) -> Vec<u8> {
 
 const DISP_CT: u32 = 0x0300_30CC;
 const BG0CNT: u32 = 0x0400_0008;
-const LAYERS: u16 = 0x1F00;
+/// The layers (BG0..3, sprites) and the window enables of DISPCNT: the panel shows BG0 alone with no window (the Gauntlet's army screen leaves windows on, which would cut it out).
+const LAYERS: u16 = 0xFF00;
 const BG0_ONLY: u16 = 0x0100;
 const PAL_BUFFER: u32 = 0x0300_20C0;
 const PAL_RAM: u32 = 0x0500_0000;

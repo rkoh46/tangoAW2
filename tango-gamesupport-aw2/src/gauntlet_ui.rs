@@ -22,6 +22,7 @@
 
 use mgba::core::Core;
 
+use crate::fog_view;
 use crate::gauntlet_mode::{self as gm, Entry};
 use crate::online::{self, Rgba, W};
 
@@ -46,6 +47,8 @@ const HELD_DIR: u32 = STATE + 9;
 /// AW2's cursor repeat: frames from the press to the second step, and between the following ones.
 const REPEAT_DELAY: u8 = 10;
 const REPEAT_RATE: u8 = 4;
+/// Which map of a two-map run the selector shows (0 the first map; SELECT steps on to the run's later maps and round again): set by [`flip`], back to 0 when the cursor moves or the selector ends.
+pub const STAGE_SHOWN: u32 = STATE + 0x0A;
 /// The play state's game mode as it was before the selector set the War Room's.
 const SAVED_MODE: u32 = STATE + 6;
 /// The last choice on each map (an army code, 0 none), [`MAX_MAPS`] maps, by mission.
@@ -118,7 +121,7 @@ pub fn first_id() -> u8 {
 pub const SELECT: u8 = 1;
 pub const ARMY: u8 = 2;
 
-use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_L, KEY_LEFT, KEY_R, KEY_RIGHT, KEY_UP};
+use crate::online::{KEY_A, KEY_B, KEY_DOWN, KEY_L, KEY_LEFT, KEY_R, KEY_RIGHT, KEY_SELECT, KEY_UP};
 
 pub fn step(core: &Core) -> u8 {
     core.raw_read_8(STEP, -1)
@@ -134,6 +137,7 @@ pub fn begin_select(core: &mut Core) {
     core.raw_write_8(ANSWER, -1, 0);
     core.raw_write_8(STEP, -1, SELECT);
     core.raw_write_8(MAP_CURSOR, -1, 0);
+    core.raw_write_8(STAGE_SHOWN, -1, 0);
     // (the screen opens on the first map; it records its pick in the play state's map id, 0 until A)
     core.raw_write_32(LIST_FIRST, -1, 0);
     core.raw_write_32(LIST_CURSOR, -1, 0);
@@ -181,37 +185,67 @@ const PREVIEW_ROM: u32 = 0x08E2_0000;
 const PREVIEW_SIZE: u32 = 0x800;
 const PREVIEW_CELLS: (usize, usize) = (32, 22);
 
-/// The cropped picture's blob for `mission` (LZ77 of width, height, tiles), or None when the whole map fits.
-fn preview_blob(e: &Entry) -> Option<&'static Vec<u8>> {
-    static B: std::sync::OnceLock<Vec<Option<Vec<u8>>>> = std::sync::OnceLock::new();
+/// The picture's LZ77 blob (width, height, tiles) of a built map: cropped to its middle part when it is bigger than the picture area. `whole`: also a map that fits (a later stage's picture has no
+/// compiled copy of its own to point at, as the first map's header has).
+fn blob_of(m: &crate::custom_campaign::BuiltMap, whole: bool) -> Option<Vec<u8>> {
+    let (w, h) = (m.width as usize, m.height as usize);
+    if !whole && w <= PREVIEW_CELLS.0 && h <= PREVIEW_CELLS.1 {
+        return None;
+    }
+    let (cw, ch) = (w.min(PREVIEW_CELLS.0), h.min(PREVIEW_CELLS.1));
+    let (x0, y0) = ((w - cw) / 2, (h - ch) / 2);
+    let mut raw = vec![cw as u8, ch as u8];
+    for y in 0..ch {
+        for x in 0..cw {
+            raw.extend_from_slice(&m.tiles[(y0 + y) * w + x0 + x].to_le_bytes());
+        }
+    }
+    let mut lz = crate::lz77::compress(&raw);
+    while lz.len() % 4 != 0 {
+        lz.push(0);
+    }
+    assert!(lz.len() <= PREVIEW_SIZE as usize);
+    Some(lz)
+}
+
+/// The cropped pictures: for each map (by mission) and each of its stages (0 the first map), the ROM place and the blob, or None when the picture is the map's own (the first map when it fits the
+/// area; a stage whose map is not a built one). The places are the 0x800-byte slots of [`PREVIEW_ROM`] in this order, the first map's (when it needs one) and then its later stages'; the slots of all
+/// maps and stages together are at most [`MAX_MAPS`] (`previews_fit_their_slots`).
+fn previews() -> &'static Vec<Vec<Option<(u32, Vec<u8>)>>> {
+    static B: std::sync::OnceLock<Vec<Vec<Option<(u32, Vec<u8>)>>>> = std::sync::OnceLock::new();
     B.get_or_init(|| {
+        let mut slot = 0u32;
+        let mut take = |lz: Vec<u8>| {
+            let at = PREVIEW_ROM + PREVIEW_SIZE * slot;
+            slot += 1;
+            assert!(slot as usize <= MAX_MAPS, "the pictures need more room than PREVIEW_ROM's {MAX_MAPS} slots");
+            Some((at, lz))
+        };
         gm::entries()
             .iter()
             .map(|e| {
-                let m = crate::custom_campaign::built_map(e.key)?;
-                let (w, h) = (m.width as usize, m.height as usize);
-                if w <= PREVIEW_CELLS.0 && h <= PREVIEW_CELLS.1 {
-                    return None;
-                }
-                let (cw, ch) = (w.min(PREVIEW_CELLS.0), h.min(PREVIEW_CELLS.1));
-                let (x0, y0) = ((w - cw) / 2, (h - ch) / 2);
-                let mut raw = vec![cw as u8, ch as u8];
-                for y in 0..ch {
-                    for x in 0..cw {
-                        raw.extend_from_slice(&m.tiles[(y0 + y) * w + x0 + x].to_le_bytes());
-                    }
-                }
-                let mut lz = crate::lz77::compress(&raw);
-                while lz.len() % 4 != 0 {
-                    lz.push(0);
-                }
-                assert!(lz.len() <= PREVIEW_SIZE as usize);
-                Some(lz)
+                let first = crate::custom_campaign::built_map(e.key).and_then(|m| blob_of(m, false)).and_then(&mut take);
+                std::iter::once(first)
+                    .chain(e.stage_maps.iter().map(|k| k.and_then(crate::custom_campaign::built_map).and_then(|m| blob_of(m, true)).and_then(&mut take)))
+                    .collect()
             })
             .collect()
     })
-    .get(e.mission)?
-    .as_ref()
+}
+
+/// The picture of map `stage` of entry `e` (0 the first), from the first map's where a stage has none of its own.
+fn preview_of(e: &Entry, stage: usize) -> Option<&'static (u32, Vec<u8>)> {
+    let p = previews().get(e.mission)?;
+    p.get(stage).and_then(|x| x.as_ref()).or_else(|| p.first().and_then(|x| x.as_ref()))
+}
+
+/// The map of the run the selector shows now: the stage ([`STAGE_SHOWN`]) of the map under the cursor, 0 for every other map.
+fn shown_stage(core: &Core, mission: usize) -> usize {
+    if core.raw_read_8(MAP_CURSOR, -1) as usize == mission {
+        core.raw_read_8(STAGE_SHOWN, -1) as usize
+    } else {
+        0
+    }
 }
 
 /// The Gauntlet's map entries in the map table: each mission's compiled header with the tab the list shows ([`TAB`] while the selector is up, a tab no list shows otherwise).
@@ -234,11 +268,17 @@ fn entries_in_table(core: &mut Core, shown: bool) {
         // (the list's own form of a War Room map: the player's slot, then the enemies' COs in the order they come, as many as the screen has faces for)
         h[0x16] = 1;
         h[0x3C] = 0xFF;
+        // (the map shown: on a later map of the run, its own enemy lines and picture)
+        let stage = if shown { shown_stage(core, e.mission) } else { 0 };
+        let lines = e.stage_lines.get(stage).unwrap_or(&e.enemies);
         for k in 0..3 {
-            h[0x3D + k] = e.enemies.get(k).map_or(0, |en| en.0);
+            h[0x3D + k] = lines.get(k).map_or(0, |en| en.0);
         }
-        if let Some(blob) = preview_blob(e) {
-            let rom = PREVIEW_ROM + PREVIEW_SIZE * e.mission as u32;
+        if stage > 0 {
+            // (the screen draws a face for each player past the first, up to three: a later map's own count, the player's army and its lines)
+            h[0x18] = 1 + lines.len().min(3) as u8;
+        }
+        if let Some((rom, blob)) = preview_of(e, stage).map(|(r, b)| (*r, b)) {
             let mut have = vec![0u8; blob.len()];
             core.raw_read_range(rom, -1, &mut have);
             if &have != blob {
@@ -290,12 +330,40 @@ pub fn chosen(core: &mut Core) {
     }
 }
 
+/// The selector's list proc (the child script of `ProcScr_PreviewMap`: it keeps the cursor's list index at +0x58, the picture's change at +0x4C (frame) and +0x4E (direction, 0 when none)).
+const LIST_SCRIPT: u32 = 0x0861_6CF4;
+/// The game's own redraw of the faces of list index r0 (`0x08087B60`: what a cursor move calls first).
+const REDRAW_FACES: u32 = 0x0808_7B60;
+/// The proc pool ([`crate::survival`]'s `PROCS`, 0x6C bytes a record, the script at +0).
+const PROCS: u32 = 0x0200_D610;
+const PROCS_END: u32 = 0x0200_E418;
+const PROC_SIZE: u32 = 0x6C;
+
+/// SELECT on the selector: the map under the cursor shows its run's next map (the picture and the enemies' faces; the first map again after the last), a one-map entry nothing. The game redraws as it
+/// does when the cursor moves: the faces at once (`0x08087B60`, run at the next sprite flush) and the picture by the change it starts with its frame counter at 0 (the picture is loaded from the
+/// entry at frame 12 of it, after the old one has gone).
+fn flip(core: &mut Core) {
+    let Some(e) = gm::entries().get(core.raw_read_8(MAP_CURSOR, -1) as usize) else { return };
+    if e.stage_titles.is_empty() {
+        return;
+    }
+    let next = (core.raw_read_8(STAGE_SHOWN, -1) as usize + 1) % (1 + e.stage_titles.len());
+    core.raw_write_8(STAGE_SHOWN, -1, next as u8);
+    frame(core);
+    let Some(proc) = (PROCS..PROCS_END).step_by(PROC_SIZE as usize).find(|&p| core.raw_read_32(p, -1) == LIST_SCRIPT) else { return };
+    let index = core.raw_read_32(proc + 0x58, -1);
+    core.raw_write_16(proc + 0x4C, -1, 0);
+    core.raw_write_16(proc + 0x4E, -1, 0xFFFF);
+    fog_view::start_program(core, &[(REDRAW_FACES, index as i32, 0)]);
+}
+
 /// The selector is over (or the session is not): the game mode as it was, our entries off every list.
 fn leave(core: &mut Core) {
     if step(core) == SELECT {
         let saved = core.raw_read_8(SAVED_MODE, -1);
         core.raw_write_8(PLAY_MODE, -1, saved);
     }
+    core.raw_write_8(STAGE_SHOWN, -1, 0);
     entries_in_table(core, false);
     core.raw_write_8(STEP, -1, 0);
 }
@@ -400,12 +468,20 @@ pub fn tick(core: &mut Core, on: bool, keys: u32, prev: u32) -> u32 {
     }
     match s {
         SELECT => {
-            // The game's own screen takes the pad (A and B end it); only what it reads is kept as the Gauntlet wants it.
-            frame(core);
+            // The game's own screen takes the pad (A and B end it); only what it reads is kept as the Gauntlet wants it. SELECT is ours: it flips a two-map run's picture and faces.
             let list_at = crate::five_map::LIST_IDS + (core.raw_read_32(LIST_FIRST, -1) + core.raw_read_32(LIST_CURSOR, -1)).min(crate::five_map::LIST_CAP - 1);
             if let Some(m) = mission_of(core.raw_read_8(list_at, -1)) {
+                if core.raw_read_8(MAP_CURSOR, -1) != m as u8 {
+                    // (the cursor moved: the game draws the new map's first picture, the entry of the one left is the first map's again)
+                    core.raw_write_8(STAGE_SHOWN, -1, 0);
+                }
                 core.raw_write_8(MAP_CURSOR, -1, m as u8);
             }
+            fog_view::program_done(core);
+            if pressed & KEY_SELECT != 0 {
+                flip(core);
+            }
+            frame(core);
             mirror(core);
             return keys;
         }
@@ -490,6 +566,9 @@ fn cards(e: &Entry, co: u8, colour: u8) -> Vec<(u8, u8)> {
     std::iter::once((co, colour)).chain(e.enemies.iter().take(MAX_ENEMIES).map(|&(co, c)| (co, e.shown_colour(c)))).collect()
 }
 
+/// The help plate's width in pixels (a line wider is cut).
+const HELP_WIDTH: i32 = 228;
+
 /// The army screen's picture for map `e` with CO `co` in army colour `colour` (also the text audit's page): the Teams screen's own frame (its ground, GAUNTLET in its title banner), the
 /// cards, windows and help plate of AW2's Teams screen ([`crate::army_cards`]); the map's name leads the help plate.
 pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
@@ -512,7 +591,8 @@ pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
         })
         .collect();
     let first = help_title(core, e);
-    let lines = vec![first, "Left Right: CO  R: Colour  A: Start  B: Back".to_string()];
+    // (the keys line the plate holds: A and B are the screen's own, as on every Teams screen; the audit checks it fits)
+    let lines = vec![first, "Left Right: CO  R: Colour  SELECT: Skills".to_string()];
     crate::army_cards::draw(core, cv.0, &seats, false, &Help { lines }, false);
 }
 
@@ -525,7 +605,7 @@ fn help_title(core: &Core, e: &Entry) -> String {
         let maps: Vec<&str> = std::iter::once(e.title).chain(e.stage_titles.iter().copied()).collect();
         format!("{}: {} maps", maps.join(" + "), maps.len())
     };
-    if online::text_width(core, &full) <= 228 {
+    if online::text_width(core, &full) <= HELP_WIDTH {
         full
     } else {
         e.title.to_string()
@@ -601,6 +681,28 @@ mod tests {
         // keys: gauntlet_01..gauntlet_32 have record ids 1..32, so a map added later never moves another's
         for n in 1..=MAX_MAPS {
             assert_eq!(crate::gauntlet::record_id(&format!("gauntlet_{n:02}")), Some(n as u8));
+        }
+    }
+
+    /// The pictures of every map and stage take distinct 0x800-byte slots inside PREVIEW_ROM's room, and a map with a later stage has a picture and enemy lines for each of its maps (SELECT shows them).
+    #[test]
+    fn previews_fit_their_slots_and_a_two_map_run_has_a_picture_and_lines_for_each_map() {
+        let all: Vec<u32> = previews().iter().flatten().flatten().map(|p| p.0).collect();
+        let mut distinct = all.clone();
+        distinct.sort();
+        distinct.dedup();
+        assert_eq!(distinct.len(), all.len(), "one slot a picture");
+        assert!(all.iter().all(|&a| a >= PREVIEW_ROM && a + PREVIEW_SIZE <= PREVIEW_ROM + PREVIEW_SIZE * MAX_MAPS as u32));
+        let two: Vec<&Entry> = gm::entries().iter().filter(|e| !e.stage_titles.is_empty()).collect();
+        assert!(!two.is_empty(), "a two-map run exists today (Iron Crown)");
+        for e in two {
+            let n = 1 + e.stage_titles.len();
+            assert_eq!(previews()[e.mission].len(), n);
+            assert!(previews()[e.mission][1..].iter().all(|p| p.is_some()), "{}: every later map has its own picture", e.title);
+            assert_eq!(e.stage_lines.len(), n, "{}: enemy lines map by map", e.title);
+            assert!(e.stage_lines.iter().all(|l| !l.is_empty()));
+            assert_eq!(e.stage_lines.concat(), e.enemies, "the lines map by map are the run's enemies in order");
+            assert_eq!(e.stage_lines.last().unwrap()[0].0, crate::co_new::ASUKA, "Iron Crown's second map is Asuka's");
         }
     }
 

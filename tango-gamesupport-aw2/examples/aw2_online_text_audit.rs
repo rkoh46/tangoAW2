@@ -884,6 +884,8 @@ fn gauntlet(c: &mut Ctx) {
         stages: vec![colours[..n.min(6)].to_vec()],
         enemy_skin: None,
         stage_titles: &[],
+        stage_lines: vec![widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect()],
+        stage_maps: Vec::new(),
     };
     // (a run over two maps names both on the help plate)
     {

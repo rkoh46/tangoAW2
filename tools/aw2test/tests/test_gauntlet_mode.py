@@ -375,6 +375,16 @@ def region_pixels(path_bmp, box):
     return list(Image.open(path_bmp).convert("RGB").crop(box).getdata())
 
 
+def region_diff(path_a, path_b, box):
+    """The share of the pixels of a box that two BMPs draw differently (the map picture's water and flags animate: the same picture differs by a few percent, another map's by half)."""
+    pa, pb = region_pixels(path_a, box), region_pixels(path_b, box)
+    return sum(1 for x, y in zip(pa, pb) if x != y) / max(1, len(pa))
+
+
+# the part of the selector's screen the map's picture is drawn in (x0, y0, x1, y1)
+PICTURE_BOX = (108, 36, 236, 126)
+
+
 def hue_share(px, want):
     """The share of the pixels `want(r, g, b)` accepts."""
     return sum(1 for r, g, b in px if want(r, g, b)) / max(1, len(px))
@@ -444,6 +454,78 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq(e.u8(ga.PLAY_ST + 1), 1, "the game mode is the campaign's again")
     ctx.eq(e.u8(ga.UI_STEP), ga.ARMY, "the selector's step is over: the army screen's is up")
     ctx.eq(d.entry_tab(ga.list_ids()[0]), 0x7F, "the Gauntlet's entries are on no list any more")
+    e.close()
+
+
+def entry_bytes(d, map_id):
+    return bytes(d.e.read(d.table() + 0x5C * map_id, 0x5C))
+
+
+@test(modes=("ds",))
+def gauntlet_mode_select_flips_a_two_map_runs_picture_and_faces(ctx):
+    """Iron Crown is two maps (Asuka's Keep follows the four lines): its row carries a mark (`Iron Crown *`, no other map's does), and SELECT on the selector flips the game's picture and the enemy faces
+    between the first map (the river map, Grit's face first) and the second (Asuka's Keep, Asuka's face alone), SELECT again flips back; moving the cursor to another map and back shows the first map
+    again; SELECT on a one-map entry changes nothing (its entry, the faces and the picture stay). The game redraws on its own (the picture's change and the face tiles of its cursor move)."""
+    e, g, d = boot(ctx)
+    d.open(pick=False)
+    d.wait_step(ga.SELECTOR)
+    ids, row = d.selector_ids()
+    names = [d.entry_name(i) for i in ids]
+    ctx.eq([n for n in names if "*" in n], ["Iron Crown *"], "only the two-map run carries the mark")
+    ctx.eq(names[-1], "Iron Crown *", "the mark follows the name")
+    # a one-map entry: SELECT does nothing
+    first = ids[0]
+    ctx.eq(row, 0, "the cursor starts on the first row")
+    entry, faces, shot0 = entry_bytes(d, first), d.face_tiles(), pic(ctx, e, "selector_one_map")
+    d.flip()
+    SAME = lambda a, b: region_diff(a, b, PICTURE_BOX) < 0.2          # (the same picture, animated)
+    DIFFERENT = lambda a, b: region_diff(a, b, PICTURE_BOX) > 0.4
+    ctx.eq(e.u8(ga.UI_STAGE), 0, "SELECT on a one-map entry shows the first map still")
+    ctx.eq(entry_bytes(d, first), entry, "its entry is untouched")
+    ctx.eq(d.face_tiles(), faces, "its faces are not redrawn")
+    ctx.check(SAME(pic(ctx, e, "selector_one_map_after"), shot0), "its picture stays")
+    # the two-map run
+    iron_row = ga.row_of(1)
+    ids, row = d.go_to_row(iron_row)
+    iron = ids[iron_row]
+    one = entry_bytes(d, iron)
+    ctx.eq(list(one[0x3C:0x40]), [0xFF, 5, 17, 6], "map 1's enemies: Grit, Jess, Kanbei (three faces)")
+    faces1, pic1 = d.face_tiles(), pic(ctx, e, "selector_iron_map1")
+    ctx.eq(e.u8(ga.UI_STAGE), 0, "the first map is shown")
+    d.flip()
+    two = entry_bytes(d, iron)
+    ctx.eq(e.u8(ga.UI_STAGE), 1, "SELECT: the second map")
+    ctx.eq(list(two[0x3C:0x40]), [0xFF, ga.ASUKA, 0, 0], "map 2's enemy: Asuka alone")
+    ctx.check(two[0x2C:0x30] != one[0x2C:0x30], "the picture's tiles are another map's (Asuka's Keep)")
+    ctx.eq(two[0x18], 2, "the screen draws one face past the player's slot")
+    ctx.eq((two[:0x18], two[0x19:0x2C], two[0x30:0x3C], two[0x40:]), (one[:0x18], one[0x19:0x2C], one[0x30:0x3C], one[0x40:]), "nothing else of the entry changed")
+    faces2, pic2 = d.face_tiles(), pic(ctx, e, "selector_iron_map2")
+    ctx.check(faces2 != faces1, "the game redrew the first face (Asuka's)")
+    ctx.check(DIFFERENT(pic2, pic1), "the game redrew the picture (Asuka's Keep)")
+    ctx.eq(d.selector_ids()[1], iron_row, "the cursor did not move")
+    ctx.eq(e.u8(ga.UI_MAP_CURSOR), 1, "the cursor's map is still Iron Crown")
+    d.flip()
+    ctx.eq((e.u8(ga.UI_STAGE), entry_bytes(d, iron)), (0, one), "SELECT again: the first map's entry back")
+    ctx.eq(d.face_tiles(), faces1, "the first map's faces are back")
+    ctx.check(SAME(pic(ctx, e, "selector_iron_map1_again"), pic1), "the first map's picture is back")
+    # the second map shown, the cursor moves away and back: the first map again
+    d.flip()
+    ctx.eq(e.u8(ga.UI_STAGE), 1, "the second map again")
+    d.go_to_row(iron_row - 1)
+    e.wait(40)
+    ctx.eq(e.u8(ga.UI_STAGE), 0, "moving the cursor resets to the first map")
+    ctx.eq(entry_bytes(d, iron), one, "Iron Crown's entry is the first map's again")
+    d.go_to_row(iron_row)
+    e.wait(60)
+    ctx.eq(d.face_tiles(), faces1, "back on Iron Crown: the first map's faces")
+    ctx.check(SAME(pic(ctx, e, "selector_iron_back"), pic1), "back on Iron Crown: the first map's picture")
+    # A takes the map whichever picture is up: the second map shown does not change the mission
+    d.flip()
+    e.press("A", 6)
+    d.wait_army()
+    ctx.eq(e.u8(ga.UI_MAP), 1, "A took Iron Crown with the second map shown")
+    ctx.eq(e.u8(ga.UI_STAGE), 0, "the selector is over: the flip is cleared")
+    ctx.eq(d.entry_tab(ids[iron_row]), 0x7F, "the entries are on no list any more")
     e.close()
 
 
@@ -1071,3 +1153,68 @@ def gauntlet_win_gives_the_co_exp(ctx):
     ctx.eq(d.win(ctx), 1, "won again")
     e.wait(60)
     ctx.eq(co_exp(e, ga.ANDY) - won, 2 * max(0, d.results(1)[0][2] - score), "the same result again: only what beats the best")
+
+
+@test(modes=("ds",))
+def gauntlet_mode_army_screen_select_opens_set_skills(ctx):
+    """SELECT on the army screen opens Set Skills for the CO picked, editing the Campaign set (the one a Gauntlet battle gives the player's army: the Gauntlet is a campaign session). While the
+    panel is up the army screen reacts to no key (the D-pad, R and L move only the panel's board) and draws nothing over it; B closes it back to the army screen with the CO and colour as they were,
+    the set kept, the layers and BG0 as they were; A then starts the battle and the player's army has the set on (and the enemies none)."""
+    from tests.test_co_skills import CO_SLOTS, DATA, PANEL, co_at, active, layers, covered, BG0_ONLY
+    e, g, d = boot(ctx)
+    d.open()
+    d.wait_army()
+    e.w32(DATA, 0x314C4B53)
+    for c in CO_SLOTS:
+        e.w32(co_at(c), 2000)           # (rank 2: two slots)
+    co = d.pick_co(ga.SAMI)
+    colour = d.pick_colour(ga.BLUE_MOON)
+    e.wait(20)
+    state = lambda: (e.u8(ga.UI_STEP), e.u8(ga.UI_CO), e.u8(ga.UI_CO_CURSOR), e.u8(ga.UI_COLOUR_CURSOR), e.u8(ga.UI_ANSWER))
+    before = state()
+    ctx.eq((before[0], before[1], colour), (ga.ARMY, ga.SAMI, ga.BLUE_MOON), "the army screen: Sami, Blue Moon")
+    ground, shown = covered(e), layers(e)
+    png(pic(ctx, e, "army_before_skills"))
+    e.press("SELECT", 4)
+    e.wait(10)
+    ctx.eq(e.u8(PANEL), 1, "SELECT: Set Skills is up")
+    ctx.eq((e.u8(PANEL + 2), e.u8(PANEL + 3), e.u8(PANEL + 8)), (ga.SAMI, 0, 2), "for the CO picked, the Campaign set, opened from the Gauntlet's army screen")
+    ctx.eq(layers(e), BG0_ONLY, "BG0 alone")
+    png(pic(ctx, e, "army_skills"))
+    # (every key goes to the panel: the D-pad and the shoulder buttons move nothing of the army screen)
+    for key in ("DOWN", "R", "L", "RIGHT", "LEFT", "UP"):
+        e.press(key, 4)
+        e.wait(6)
+    ctx.eq(state(), before, "the army screen did not react to a key while the panel was up")
+    ctx.eq(e.u8(PANEL), 1, "the panel is still up")
+    e.press("A", 4)
+    e.wait(6)
+    ctx.eq(list(e.read(PANEL + 4, 4)), [0x20, 0, 0, 0], "A put Bruiser on the set")
+    png(pic(ctx, e, "army_skills_set"))
+    e.press("B", 4)
+    e.wait(12)
+    ctx.eq(e.u8(PANEL), 0, "B closed the panel")
+    ctx.eq(state(), before, "back on the army screen: step, CO, cursors and answer as they were (B did not go back to the selector)")
+    ctx.eq(layers(e), shown, "the layers are back")
+    ctx.check(covered(e) == ground, "BG0's tiles, tilemap and the palettes as they were")
+    ctx.eq(list(e.read(co_at(co) + 4, 4)), [0x20, 0, 0, 0], "the CO's Campaign set was stored")
+    png(pic(ctx, e, "army_after_skills"))
+    # a second visit: SELECT closes it as B does, and the army screen's own keys work again
+    e.press("SELECT", 4)
+    e.wait(10)
+    ctx.eq(e.u8(PANEL), 1, "SELECT opens it again")
+    e.press("SELECT", 4)
+    e.wait(10)
+    ctx.eq((e.u8(PANEL), e.u8(ga.UI_STEP)), (0, ga.ARMY), "SELECT closes it")
+    e.press("DOWN", 4)
+    e.wait(10)
+    ctx.check(e.u8(ga.UI_CO) != ga.SAMI, "the army screen takes the D-pad again")
+    d.pick_co(ga.SAMI)
+    # the battle uses the set
+    e.press("A", 6)
+    d.into_battle()
+    ctx.eq(g.player(1)["co"], ga.SAMI, "the pick leads the player's army")
+    ctx.eq(active(e, 1), [0x20], "the player's army has the set picked on the army screen on")
+    for a in (2, 3, 4):
+        ctx.eq(active(e, a), [], f"army {a}: no skills")
+    e.close()

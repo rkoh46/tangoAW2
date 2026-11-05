@@ -44,6 +44,7 @@ BLOCK = 0x0203E800                 # crate::gauntlet::BLOCK: the record rows the
 ROWS = BLOCK
 ROW_COUNT = 0xFD - ROW_BASE + 1
 TABLE = BLOCK + 0x14 * ROW_COUNT   # crate::gauntlet::TABLE: the table in RAM
+UI_STAGE = UI + 0x0A           # crate::gauntlet_ui::STAGE_SHOWN: the map of a two-map run the selector shows (0 the first)
 UI_SHOWN = UI + 0x20          # what the step shows: +0 maps listed, +1 enemies, +2.. (CO, colour) pairs, +0x0E free count, +0x0F.. free army codes
 HOSTS = 0x0203C500            # crate::army_skin::STATE: the colour each skin sits on (0 none)
 
@@ -58,7 +59,7 @@ def shown(e):
 # mission (the record, `Gauntlet.open(map=<mission>)`), never its row.
 SELECTOR_ORDER = [2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
 # (the names the list shows: a two-map run is listed under `MissionDef::list_title`)
-SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown 2 maps"]
+SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown *"]
 
 
 def list_ids(span=0):
@@ -123,6 +124,24 @@ class Gauntlet(BhCampaign):
         last = e.u8(LIST_LAST)
         ids = list(e.read(LIST_IDS, last + 1))
         return ids, e.u32(LIST_FIRST) + e.u32(LIST_CURSOR_ROW)
+
+    def go_to_row(self, row):
+        """On the selector: DOWN or UP until the cursor is on `row` (each move given time to settle)."""
+        e = self.e
+        cur = self.selector_ids()[1]
+        for _ in range(abs(row - cur)):
+            e.press("DOWN" if row > cur else "UP", 4)
+            e.wait(40)
+        return self.selector_ids()
+
+    def flip(self, frames=60):
+        """On the selector: SELECT (the two-map run's other map), then the frames the picture takes to change."""
+        self.e.press("SELECT", 4)
+        self.e.wait(frames)
+
+    def face_tiles(self):
+        """The first enemy face's OBJ tiles (what the game's face redraw `0x08087B60` loads: 12 tiles from tile 0x90)."""
+        return bytes(self.e.read(0x06010000 + 0x90 * 32, 12 * 32))
 
     def table(self):
         """The map table the game reads now (the word `0x080196EC` points at its first entry)."""
@@ -230,6 +249,12 @@ class Gauntlet(BhCampaign):
         e, g = self.e, self.g
         self.open(from_title, map=map, box=box)
         picked = self.pick_army(co, colour)
+        self.into_battle(setup)
+        return picked
+
+    def into_battle(self, setup=True):
+        """The army screen's A is pressed: the battle's start, Setup left with Deploy, the intro read: the player in control on day 1."""
+        e, g = self.e, self.g
         for _ in range(600):
             if self.in_battle() and e.u32(0x0849_9598) != 0:
                 break
@@ -240,7 +265,6 @@ class Gauntlet(BhCampaign):
         self.leave_setup()
         self.wait_control()
         g._units_base = g._players_base = None
-        return picked
 
     def session(self):
         e = self.e

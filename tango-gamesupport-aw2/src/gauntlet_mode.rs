@@ -278,7 +278,7 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
 fn iron_crown() -> MissionDef {
     let mut m = MissionDef::new("gauntlet_02", "Iron Crown");
     // (a two-map run: the selector's list and the army screen say so)
-    m.list_title = "Iron Crown 2 maps";
+    m.list_title = "Iron Crown *";
     m.stage_titles = &["Asuka's Keep"];
     m.objective = "Break Grit's river line, then Jess's, Kanbei's and Rachel's, and take Asuka's Keep.";
     m.map = MapSrc::Built("gauntlet_02");
@@ -1468,6 +1468,10 @@ pub struct Entry {
     pub enemy_skin: Option<(u8, usize)>,
     /// The titles of the maps the run moves to after the first (Iron Crown: Asuka's Keep); empty on a one-map run.
     pub stage_titles: &'static [&'static str],
+    /// The enemy lines stage by stage, (CO, colour) in the order they come: stage one's, then each later stage's (`enemies` is these joined). The selector shows a later stage's on SELECT.
+    pub stage_lines: Vec<Vec<(u8, u8)>>,
+    /// The built map of each later stage (`stage_titles`' order; None for a stage whose map is not a built one: the selector then keeps the first map's picture).
+    pub stage_maps: Vec<Option<&'static str>>,
 }
 
 impl Entry {
@@ -1533,6 +1537,8 @@ pub fn entries() -> &'static [Entry] {
                     stages: stages.iter().map(|v| v.iter().map(|e| e.1).collect()).collect(),
                     enemy_skin: m.skin.and_then(|(army, skin)| Some((m.armies.get(army as usize - 1)?.colour, skin))),
                     stage_titles: m.stage_titles,
+                    stage_lines: stages.clone(),
+                    stage_maps: m.stages.iter().map(|s| if let MapSrc::Built(n) = &s.map { Some(*n) } else { None }).collect(),
                 }
             })
             .collect()

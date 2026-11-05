@@ -33,7 +33,7 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
      of two: `DrawMapList` draws only the rows there are (`survival::draw_map_list`, shared with Survival) and the scroll bar's track is at most its own length (`gauntlet_ui::scroll_track`, a trap at
      `0x0808731A`: a track of a hundred sprites overflowed the sprite buffer into the BG0 control shadow and garbled the screen). The game's own handler takes the pad: UP/DOWN browse, **A writes the
      map's id into the play state's map id, B zeroes it**; `chosen` reads which (as the War Room's flow does with `0x0803BD6D`), takes the mission (`ds_campaign::choose_gauntlet_map`: the session's mission and its header in
-     the battle's map-table entry, the play state's map id back to `0xF0`) or, on B, goes back to Select Mode (`gauntlet::returning`: the wheel stays on GAUNTLET). A map bigger than the picture area (32 x 22 cells; Iron Crown is 40 x 26, Harvest Run 36 x 24, Chrome Meridian 38 x 26) is shown by its middle part: header +0x2C (the picture; the battle reads +0x00) points at a cropped LZ77 copy in free ROM (`PREVIEW_ROM` 0x08E20000, 0x800 a mission), so the picture never runs over the list (the property counters at the top count the part shown). The cursor row is read from the game's
+     the battle's map-table entry, the play state's map id back to `0xF0`) or, on B, goes back to Select Mode (`gauntlet::returning`: the wheel stays on GAUNTLET). A map bigger than the picture area (32 x 22 cells; Iron Crown is 40 x 26, Harvest Run 36 x 24, Chrome Meridian 38 x 26) is shown by its middle part: header +0x2C (the picture; the battle reads +0x00) points at a cropped LZ77 copy in free ROM (`PREVIEW_ROM` 0x08E20000, a 0x800 slot each, `previews()`), so the picture never runs over the list (the property counters at the top count the part shown). The cursor row is read from the game's
      list each frame (`MAP_CURSOR`, `SHOWN` for the tests).
    - **the army screen** (step 2, one screen for the CO and the colour; the game's CO screen is not used): Versus' Teams screen laid out for one player against the map's CPUs, drawn by us over
      the finished frame (`gauntlet_ui::draw`) from the pieces the Teams screens use, nothing new of our own: `army_cards::draw`, the cards, windows and pink help plate of AW2's Teams
@@ -45,13 +45,17 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
      whole: with arrows when they fit, else without, on two lines on a narrow card (Clone Andy on five cards). `aw2dev audit text` (with the Dual Strike ROM, which it uses when it is there)
      paints the screen at two to four enemies with the six widest names of the roster and reports a name that does not fit (`audit::cut`). The first card is the player's (tag 1P, the window cream),
      then the map's enemies in the order they come, as CPU cards with their CO and the colour the map gives them (a line that wears Silver Nova shows its sun, `Entry::shown_colour`; at most four: the screen has five cards, so Iron Crown's Asuka stage is not shown).
-     **Keys:** UP / DOWN choose the CO (all 35 of `gauntlet_mode::ROSTER`, round again, a held key repeating as AW2's cursors do; the cursor keeps its place between visits), R / L the colour
+     **Keys:** SELECT opens Set Skills (below); UP / DOWN choose the CO (all 35 of `gauntlet_mode::ROSTER`, round again, a held key repeating as AW2's cursors do; the cursor keeps its place between visits), R / L the colour
      (round the colours the map leaves free, `Entry::free`, Silver Nova among them where the map allows it; a map with one free colour shows it and R changes nothing; the cursor starts
      on the colour last worn on the map, `gauntlet_ui::LAST`, per session), A starts, B goes back to the selector (the proc comes round again: `FLOW_PICK_AGAIN`). **The enemies are not
      editable:** LEFT and RIGHT do nothing (there is no other army to move to). A saves the colour in the mode's progress record (`ds_campaign::gauntlet_choice`: byte +7) and the proc
      saves (`FLOW_SAVE`) before the battle, so a run saved halfway continues in it. The CO goes to the armies as AW2's CO screen gives its picks: `gauntlet_ui::apply` calls
      `SetArmyCoIdsFromList` with the list the CO screen reads (`0x030058D4`), after `tag::set_cos` (a jump to the function runs none of the traps on it) which moves a five-army map's pick to the
      player's fifth army; `gauntlet_ui::keep_pick` puts it back after `mission_start`, which sets army 5's CO to the mission's own, none.
+     **SELECT opens Set Skills** (`skills_panel`, source `FROM_GAUNTLET`: `skills_panel::tick` runs before `gauntlet_ui::tick`, takes every key while it is up and `ds_coselect::apply` draws nothing over it) for the CO picked,
+     editing the **Campaign** set: the Gauntlet is a `ds_campaign` session, and `co_skills::ids_for` gives the player's army that set (the EXP a win earns goes to the same CO). B or SELECT closes it back to the army screen with the CO, colour
+     and cursors as they were. The panel clears DISPCNT's window enables with the layers (this screen leaves them on, which cut the board out of a white screen) and puts them back. Help line: "Left Right: CO  R: Colour  SELECT: Skills".
+     Test `-k gauntlet_mode_army_screen_select`, picture `aw2dev gfx audit --scenes army_skills`.
    - BG0 emptied, `ResetRulesAfterCampaignMap`, AW2's mission proc (`0x0849EBFC`: **the mission card** "MISSION 1 / Cinder Sea" (the map's name under it), the intro scene, the Setup phase if the mission
      has one, the battle). The card is AW2's campaign card, drawn by the mission proc itself; the War Room has no card at all (its battle starts at once), so
      there is no "War Room card" to borrow, and dropping the card would mean cutting AW2's mission proc apart. **The Gauntlet's card says GAUNTLET** (`gauntlet_card.rs`, only while `gauntlet::session`): the word
@@ -102,7 +106,7 @@ game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of 
 
 ## The map list's room (how many maps, and what limits it)
 The list takes **up to 32 maps** (`gauntlet_ui::MAX_MAPS`). Three things set that number, and all three allow 32:
-- **Missions:** each map is a mission of the Gauntlet's campaign; the campaign engine allows 32 (`campaign_model::MAX_MISSIONS`: the record words by mission in `ds_campaign::RECORDS`, one 0x800-byte cropped picture each in free ROM at `PREVIEW_ROM` 0x08E20000..0x08E30000).
+- **Missions:** each map is a mission of the Gauntlet's campaign; the campaign engine allows 32 (`campaign_model::MAX_MISSIONS`: the record words by mission in `ds_campaign::RECORDS`, one 0x800-byte cropped picture each, and one more for each later stage of a two-map run (SELECT's picture), in free ROM at `PREVIEW_ROM` 0x08E20000..0x08E30000: 32 slots in all).
 - **Map-table ids:** the game's list walks ids 0..=0xFD (0xFE is the Dual Strike battle's, the walk's counter is a byte). `gauntlet_ui::SLOT_IDS` has 51 ids, ascending: Survival's entries 0xC9..=0xEF, then the free 0xF2..=0xFD (0xF0 is the campaigns' battle entry, 0xF1 the Colonel's Vault). A list of n maps takes the **last n** of them, so the first twelve maps use only
   0xF2..0xFD and never touch Survival; map 13 and on borrow Survival's entries from the top down (0xEF, 0xEE, ...) and give them back **whole** when the selector closes (`survival::restore_entry`, which rewrites the header of the build; Survival's per-frame list is held off while the selector is up). Survival and the Gauntlet are never open together.
   The ids move when a map is added (the list is sorted by enemy count), so an id means nothing outside the selector; a map's identity is its mission and its record key `gauntlet_NN`.
@@ -164,9 +168,18 @@ a campaign session with no story, so bases offered no Neotank (the factory read 
 map with the pack offers (airports and ports never had the gate; the computer's armies buy by the pack's production, not by this menu). Test `-k gauntlet_build_menu` (every map's base, airport and port against a Versus battle's).
 
 ## A run of several maps (Iron Crown)
-A mission with stages (`MissionDef::stages`) is several maps in one run. The selector's list shows such a mission under `MissionDef::list_title` ("Iron Crown 2 maps": a second text id, `Built::list_names`,
+A mission with stages (`MissionDef::stages`) is several maps in one run. The selector's list shows such a mission under `MissionDef::list_title` ("Iron Crown *": the star, which the AW2 font has, marks a map with a hidden second one; a second text id, `Built::list_names`,
 `ds_campaign::list_name`, put in the map-table entry's name by `gauntlet_ui::entries_in_table`; the mission card keeps the title) and the army screen's help plate names the maps (`stage_titles`: "Iron Crown + Asuka's Keep: 2 maps").
-The selector's picture is still the first map's (a swapped picture pointer is not redrawn until the cursor moves). Pictures: `aw2dev gauntlet two-maps`, `-k gauntlet_two_maps`.
+
+**SELECT on the selector shows the second map** (`gauntlet_ui::flip`, generic: any entry with `stage_titles`; `Entry::stage_lines` / `stage_maps` carry each later stage's enemy lines and built map). The cursor's entry is rewritten with the stage shown
+(`STAGE_SHOWN`, `UI_STAGE` in the harness): the picture pointer (+0x2C: a blob of that map in the next free 0x800 slot of `PREVIEW_ROM`, `previews()`: slots go to the cropped first maps and the later stages' pictures in order, 32 in all) and
+the faces (+0x3D..: that stage's enemy lines, three at most; +0x18, the player count the screen draws faces from: lines + 1). The game does not redraw from a changed entry by itself: SELECT does what the game does on a cursor move
+(found in `ProcScr_PreviewMap`'s list proc, script `0x08616CF4`, whose input handler at `0x08086132` calls `0x08087B60(list index)` for the faces and sets +0x4E to -1 and +0x4C to 0, which starts the 28-frame change of the
+picture that loads it from the entry at frame 12, `0x08086EB0`): `fog_view::start_program` runs `0x08087B60` at the next sprite flush and the proc's two halfwords are set. A map-table entry other than the cursor's is always the first map's,
+the cursor moving resets to the first map (the game draws the new entry itself), SELECT on a one-map entry does nothing, and `leave` resets it. The selector has no help line of its own, so the hint is the star alone. Tests
+`-k gauntlet_mode_select_flips`, picture `aw2dev gfx audit --scenes iron_crown_map2`. No `SIM_VERSION`: offline UI state in EWRAM only.
+
+Pictures of the two-map run's army screen: `aw2dev gauntlet two-maps`, `-k gauntlet_two_maps`.
 
 ## Adding a map
 The steps to add `gauntlet_NN` (NN = the next number; its record key, never reused):
