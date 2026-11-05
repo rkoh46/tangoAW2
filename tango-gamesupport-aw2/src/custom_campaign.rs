@@ -859,6 +859,10 @@ pub struct MissionDef {
     pub day_limit: u16,
     /// The days for the S rank (0: AW2's default).
     pub rank_days: u16,
+    /// The name a map list shows for the mission when it is not [`MissionDef::title`] (the Gauntlet's selector marks a two-map run); empty: the title.
+    pub list_title: &'static str,
+    /// The titles of the maps the mission's stages move to, in order (the Gauntlet's army screen says "Iron Crown + Asuka's Keep").
+    pub stage_titles: &'static [&'static str],
     pub triggers: Vec<Trigger>,
     /// A battle on two fronts.
     pub front2: Option<FrontDef>,
@@ -1093,6 +1097,8 @@ impl MissionDef {
             fog: false,
             day_limit: 0,
             rank_days: 0,
+            list_title: "",
+            stage_titles: &[],
             triggers: Vec::new(),
             front2: None,
             front2_triggers: Vec::new(),
@@ -1463,7 +1469,7 @@ pub fn text_ids_used(def: &CampaignDef) -> usize {
         .collect();
     scene(&Scene::new(prologue));
     def.prologue_scenes.iter().for_each(&mut scene);
-    seen.len() + 2 * def.missions.len()
+    seen.len() + 2 * def.missions.len() + def.missions.iter().filter(|m| !m.list_title.is_empty()).count()
 }
 
 impl<'a> Compiler<'a> {
@@ -1787,6 +1793,7 @@ pub fn compile(core: &Core, def: &CampaignDef) -> Result<Model, Error> {
         base: crate::ds_campaign::DATA + 0x100,
         texts: Vec::new(),
         headers: Vec::new(),
+        list_names: Vec::new(),
         magic: Vec::new(),
         stubs: Vec::new(),
         missions: Vec::new(),
@@ -2444,6 +2451,10 @@ fn compile_mission(
     let units = cx.built.add(&units_bytes);
     let name_id = cx.text(crate::ds_campaign_data::plain(m.title.as_bytes()))?;
     let info_text = cx.text(crate::ds_campaign_data::two_lines(m.objective.as_bytes(), cx.widths))?;
+    if !m.list_title.is_empty() {
+        let id = cx.text(crate::ds_campaign_data::plain(m.list_title.as_bytes()))?;
+        cx.built.list_names.push((index as u8, id));
+    }
     // A recruit mission's panel shows the bond badge once its bond is earned (crate::bond_ui).
     for a in m.triggers.iter().flat_map(|t| t.then.iter()).chain(m.on_win.iter()) {
         {

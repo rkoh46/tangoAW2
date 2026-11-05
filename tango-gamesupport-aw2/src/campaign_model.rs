@@ -445,6 +445,8 @@ pub struct Built {
     pub texts: Vec<(u16, u32)>,
     /// Map headers (0x5C bytes) by record index (missions, then fronts).
     pub headers: Vec<(u8, [u8; 0x5C])>,
+    /// A mission's name as a map list shows it, when it differs from the mission's own ([`crate::custom_campaign::MissionDef::list_title`]): (record index, text id).
+    pub list_names: Vec<(u8, u16)>,
     /// Magic functions by id (the stub's r3).
     pub magic: Vec<Magic>,
     /// Stubs: id -> address of its Thumb stub.

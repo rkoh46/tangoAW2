@@ -137,6 +137,11 @@ AW2's build menu asks `sub_080261E8` (`0x0802D6CA`) before it lists the Neotank,
 a campaign session with no story, so bases offered no Neotank (the factory read Recon, Tank, Md Tank, Megatank...). `gauntlet::neotank_open` (`NEOTANK_OPEN`) answers yes in a Gauntlet session, so every map offers what a Versus
 map with the pack offers (airports and ports never had the gate; the computer's armies buy by the pack's production, not by this menu). Test `-k gauntlet_build_menu` (every map's base, airport and port against a Versus battle's).
 
+## A run of several maps (Iron Crown)
+A mission with stages (`MissionDef::stages`) is several maps in one run. The selector's list shows such a mission under `MissionDef::list_title` ("Iron Crown 2 maps": a second text id, `Built::list_names`,
+`ds_campaign::list_name`, put in the map-table entry's name by `gauntlet_ui::entries_in_table`; the mission card keeps the title) and the army screen's help plate names the maps (`stage_titles`: "Iron Crown + Asuka's Keep: 2 maps").
+The selector's picture is still the first map's (a swapped picture pointer is not redrawn until the cursor moves). Pictures: `aw2dev gauntlet two-maps`, `-k gauntlet_two_maps`.
+
 ## Adding a map
 The steps to add `gauntlet_NN` (NN = the next number; its record key, never reused):
 1. Spec `five/gauntlet/spec/gauntlet_NN.py`; `aw2dev maps gen --campaign gauntlet` (writes `five/gauntlet/gauntlet_NN.txt` and `gauntlet_map_data.rs`); `aw2dev maps lint --source gauntlet` clean. Keep a map to about 110 properties (Neon Row with 150 stalled the computer's turn on day 1, with 210 some properties stayed owned after a rout; 108 is clean).
@@ -159,6 +164,7 @@ map that fixes other colours changes the offer with no other edit. The enemy arm
 - `aw2dev gauntlet army-sheet [--map NN ...]`: the army screen (as it opens, CO changed, R pressed) of the chosen maps in the three looks as one sheet (`-k gauntlet_army_pictures`, env `AW2TEST_ARMY_MISSIONS`).
 - `aw2dev gauntlet faces [--map NN ...]`: each CO's dialogue-box face beside the same CO on the army screen (`-k gauntlet_faces_vs_army_screen` + `tools/aw2test/compose_faces.py`, env `AW2TEST_FACES_MAPS`).
 - `aw2dev gauntlet score [--markdown]`: every map's par days and a quick, a steady and a slow run's total and rank before the rework and now (`aw2test/gauntlet_score.py`; "Scoring").
+- `aw2dev gauntlet two-maps [--out FILE]`: Iron Crown's selector (as it opens, 2 and 4 seconds later) and army screen in the three looks as one sheet (`-k gauntlet_two_maps`; "A run of several maps").
 - `aw2dev campaign scene-check`: the arrival-box and face-palette tests of every map and BH2 M31, per map (docs/dev/campaign-scenes.md). Run it after any scene or dialogue work.
 
 ## Aids and tests

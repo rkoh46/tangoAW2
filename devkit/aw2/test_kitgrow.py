@@ -19,8 +19,8 @@ class Parsing(unittest.TestCase):
             a = parse(*argv)
             self.assertTrue(callable(a.fn), argv)
 
-    def test_score_parses_and_the_score_table_is_consistent(self):
-        for argv in (["gauntlet", "score"], ["gauntlet", "score", "--markdown"]):
+    def test_score_and_two_maps_parse_and_the_score_table_is_consistent(self):
+        for argv in (["gauntlet", "score"], ["gauntlet", "score", "--markdown"], ["gauntlet", "two-maps", "--out", "x.png"]):
             self.assertTrue(callable(parse(*argv).fn), argv)
         import sys
         sys.path.insert(0, str(cfg.REPO / "tools" / "aw2test"))

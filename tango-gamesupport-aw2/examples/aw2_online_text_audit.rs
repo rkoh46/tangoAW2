@@ -883,7 +883,14 @@ fn gauntlet(c: &mut Ctx) {
         enemies: widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect(),
         stages: vec![colours[..n.min(6)].to_vec()],
         enemy_skin: None,
+        stage_titles: &[],
     };
+    // (a run over two maps names both on the help plate)
+    {
+        let mut e = entry(4, "Iron Crown");
+        e.stage_titles = &["Asuka's Keep"];
+        paint(c, "gauntlet_army_two_maps", false, |core, rgba| gu::paint_army(core, rgba, &e, widest[0], 1));
+    }
     // (every card count a map gives, two to four enemies: the six widest names as the player's CO and as the enemies', each name whole on its card)
     for n in [2usize, 3, 4] {
         for (k, &co) in widest.iter().enumerate() {

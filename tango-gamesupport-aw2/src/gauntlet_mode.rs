@@ -276,6 +276,9 @@ fn on_day(d: u16, then: Vec<Action>) -> Trigger {
 /// the battle in place to Asuka's Keep (stage two). Every enemy colour is fixed in its army's data (a colour pick for the player offers the colour the enemies leave free: Black Hole's here, `player_colours`).
 fn iron_crown() -> MissionDef {
     let mut m = MissionDef::new("gauntlet_02", "Iron Crown");
+    // (a two-map run: the selector's list and the army screen say so)
+    m.list_title = "Iron Crown 2 maps";
+    m.stage_titles = &["Asuka's Keep"];
     m.objective = "Break Grit's river line, then Jess's, Kanbei's and Rachel's, and take Asuka's Keep.";
     m.map = MapSrc::Built("gauntlet_02");
     m.armies = vec![
@@ -1462,6 +1465,8 @@ pub struct Entry {
     /// An enemy line wears a skin (Silver Nova's Caulder, Lili and Tabitha): the skin is on the battlefield already, so the player cannot wear it too (a skin sits on one colour). The enemy
     /// colour (an army of that colour wears the skin, whichever line) and the skin's index.
     pub enemy_skin: Option<(u8, usize)>,
+    /// The titles of the maps the run moves to after the first (Iron Crown: Asuka's Keep); empty on a one-map run.
+    pub stage_titles: &'static [&'static str],
 }
 
 impl Entry {
@@ -1526,6 +1531,7 @@ pub fn entries() -> &'static [Entry] {
                     enemies: stages.iter().flatten().copied().collect(),
                     stages: stages.iter().map(|v| v.iter().map(|e| e.1).collect()).collect(),
                     enemy_skin: m.skin.and_then(|(army, skin)| Some((m.armies.get(army as usize - 1)?.colour, skin))),
+                    stage_titles: m.stage_titles,
                 }
             })
             .collect()

@@ -14,6 +14,7 @@
   gauntlet score [--markdown]           every map's par days (days per line, `crate::gauntlet_mode::par_days`) and what a quick, a steady and a slow run score before the rework and now (total and rank): AW2's
                                         Speed against the par, Power against an average line's builds (`aw2test/gauntlet_score.py`: the ROM's formulas; the real check is `-k gauntlet_score`)
   gauntlet test                         the Gauntlet's regression tests (`run.py -k gauntlet_mode --mode ds`)
+  gauntlet two-maps [--out FILE]        Iron Crown's selector rows and army screen (the two-map run's marks) in the three looks, as one sheet (`gauntlet_two_maps_pictures`)
 """
 import os, subprocess, sys, tempfile
 from .. import cfg, util
@@ -50,6 +51,9 @@ def register(sub):
     a = gs.add_parser("score", help="par days and example scores per map (the Gauntlet's scoring rework)")
     a.add_argument("--markdown", action="store_true", help="print the table as Markdown")
     a.set_defaults(fn=score)
+    a = gs.add_parser("two-maps", help="Iron Crown's selector and army screen in the three looks, as one sheet")
+    a.add_argument("--out", help="the sheet's PNG (default: devkit/work/gauntlet/two_maps_sheet.png)")
+    a.set_defaults(fn=two_maps)
     a = gs.add_parser("order", help="the maps in the selector's order")
     a.set_defaults(fn=order)
     a = gs.add_parser("rout-sheet", help="the rout's before/during/after in the real app, in all three looks, as one sheet")
@@ -119,6 +123,12 @@ def score(a):
             util.say(line)
     return 0
 
+
+def two_maps(a):
+    out = a.out or str(cfg.work("gauntlet") / "two_maps_sheet.png")
+    r = _run({"AW2TEST_SHEET": out}, ["-k", "gauntlet_two_maps", "--mode", "ds"])
+    util.say("sheet:", out)
+    return r.returncode
 
 
 LOOKS = [("AW2 graphics", dict(ds=True, graphics=False)), ("DS graphics, no tilt", dict(ds=True, graphics=True)), ("DS graphics + tilt", dict(ds=True, graphics=True, tilt=True))]

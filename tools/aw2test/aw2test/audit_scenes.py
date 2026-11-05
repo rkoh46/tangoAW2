@@ -726,6 +726,29 @@ def gauntlet_selector(rec):
     rec.snap(e, "army_colour", ["menu", "army"])
 
 
+@scene("gauntlet", "iron_crown_two_maps", pack=True)
+def gauntlet_two_maps(rec):
+    """Gauntlet: Iron Crown, the two-map run: its row in the selector ("Iron Crown 2 maps") and the army screen's plate ("Iron Crown + Asuka's Keep: 2 maps")."""
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "gauntlet")
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    for _ in range(len(ga.SELECTOR_ORDER) + 2):
+        if e.u8(ga.UI_MAP_CURSOR) == 1:
+            break
+        e.press("DOWN", 4)
+        e.wait(40)
+    e.wait(60)
+    rec.snap(e, "selector_iron_crown", ["menu", "maplist"])
+    e.press("A", 6)
+    d.wait_army()
+    e.wait(60)
+    rec.snap(e, "army_iron_crown", ["menu", "army"])
+
+
 @scene("gauntlet", "cinder_sea_run", pack=True)
 def gauntlet_run(rec):
     """Gauntlet on Cinder Sea with Silver Nova: Setup, day 1, a capture box, Drake's rout and arrival scene, then Sensei's."""
