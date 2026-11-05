@@ -82,7 +82,7 @@ Looks (the owner's rule: every visual in all three): `aw2` (AW2 graphics, the Du
 | Mode | Scenes (pictures per look in the report) |
 |---|---|
 | `menus` | title screen (three moments), Select Mode's wheel at every entry |
-| `versus` | Teams + Rules, SELECT MAP tabs, battle (terrain, every unit, properties, ships, map menu, CO page 1..4), CO Power and Super Power, battle animations, capture box, fog, rain / snow / sandstorm, Com Towers, five-army map, Silver Nova (units, HQ and its terrain box, battle) |
+| `versus` | Teams + Rules, SELECT MAP tabs, `asuka_stars` (the terrain panel's defence number under Asuka's terrain cut: day to day, CO Power, Super Power), battle (terrain, every unit, properties, ships, map menu, CO page 1..4), CO Power and Super Power, battle animations, capture box, fog, rain / snow / sandstorm, Com Towers, five-army map, Silver Nova (units, HQ and its terrain box, battle) |
 | `war_room`, `survival` | selector, R records box, CO screen, battle, map menu |
 | `aw2_campaign`, `ds_campaign`, `bh_campaign`, `bh2_campaign` (+ the secret M32 and its three waves), `sn_campaign` | world map, mission card, CO screens, Setup phase, intro / arrival / victory boxes (the first box twice: as it starts typing and typed out), first turn, stage switches, win and back on the map |
 | `gauntlet` | selector, R records box, army screen (CO and colour), a run on Cinder Sea with Silver Nova: Setup, capture box, rout, arrival scenes |
