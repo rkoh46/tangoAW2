@@ -621,7 +621,13 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
     if s == 0 || !crate::gauntlet::session(core) {
         return false;
     }
-    // (the map selector is the game's own screen: nothing is drawn over it)
+    // (the map selector is the game's own screen: nothing is drawn over it, but the star's hint while the cursor is on a two-map run)
+    if s == SELECT {
+        let Some(opt) = crate::star_hint::option() else { return false };
+        let Some(e) = gm::entries().get(core.raw_read_8(MAP_CURSOR, -1) as usize) else { return false };
+        crate::star_hint::paint(rgba, opt, e, shown_stage(core, e.mission));
+        return false;
+    }
     if s != ARMY {
         return false;
     }

@@ -845,6 +845,44 @@ def gauntlet_map2(rec):
     rec.snap(e, "map1_again", ["menu", "maplist"])
 
 
+def _star_hint(rec, option):
+    """The selector on Iron Crown with the star-hint design option `option` (TANGOAW2_STAR_HINT, crate::star_hint): map 1 shown, then SELECT's map 2; and on a one-map row, where no hint may show."""
+    from . import gauntlet as ga
+    e, g = rec.emu(env={"TANGOAW2_STAR_HINT": option})
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "gauntlet")
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    d.go_to_row(ga.row_of(1))
+    e.wait(60)
+    rec.snap(e, "map1", ["menu", "maplist"])
+    d.flip(90)
+    rec.snap(e, "map2", ["menu", "maplist"])
+    d.flip(90)
+    d.go_to_row(ga.row_of(1) - 1)
+    e.wait(60)
+    rec.snap(e, "one_map_row", ["menu", "maplist"])
+
+
+@scene("gauntlet", "star_hint_a", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint_a(rec):
+    """Gauntlet selector, star-hint option A: [SELECT] 2ND MAP plate in the band under the picture (design pictures, not a test)."""
+    _star_hint(rec, "a")
+
+
+@scene("gauntlet", "star_hint_b", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint_b(rec):
+    """Gauntlet selector, star-hint option B: MAP 1/2 + SELECT label in the picture's corner."""
+    _star_hint(rec, "b")
+
+
+@scene("gauntlet", "star_hint_c", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint_c(rec):
+    """Gauntlet selector, star-hint option C: the ENEMY label reads MAP 1/2, with SELECT beside it."""
+    _star_hint(rec, "c")
+
+
 @scene("gauntlet", "army_skills", looks=("ds_flat",), pack=True)
 def gauntlet_army_skills(rec):
     """Gauntlet: SELECT on the army screen opens Set Skills for the CO picked (the Campaign set); B closes it back to the army screen."""
