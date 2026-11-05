@@ -561,8 +561,30 @@ fn compose(core: &mut Core, a: &Art) -> Canvas {
         Set::Versus(_) => "Versus",
     };
     let x = cv.text(core, 4, 2, &name, LINE);
-    let x = cv.text(core, x + 6, 2, &format!("Rank {}", co_skills::rank(core, co)), LINE);
-    cv.text(core, x + 6, 2, set, LINE);
+    let rank = co_skills::rank(core, co);
+    let x = cv.text(core, x + 6, 2, &format!("Rank {rank}"), LINE);
+    // The CO's EXP, and under it how far it is to the next rank (1000 EXP a rank; Dual Strike's cap ends it).
+    let exp = co_skills::exp(core, co);
+    let exp_x = x + 6;
+    let exp_text = if exp < co_skills::MAX_EXP {
+        format!("EXP {exp}/{}", (exp / 1000 + 1) * 1000)
+    } else {
+        format!("EXP {exp}")
+    };
+    let x = cv.text(core, exp_x, 2, &exp_text, LINE);
+    if exp < co_skills::MAX_EXP {
+        let w = x - exp_x;
+        let done = (w * (exp % 1000) as i32) / 1000;
+        cv.rect(exp_x, 13, w, 2, UI, BLUE);
+        for k in 0..done {
+            cv.red(exp_x + k, 13);
+            cv.red(exp_x + k, 14);
+        }
+    }
+    // (the set's name where it fits before the slots)
+    if x + 6 + width(core, set) as i32 <= 174 {
+        cv.text(core, x + 6, 2, set, LINE);
+    }
     cv.rect(0, 15, 240, 1, UI, BLUE);
     for k in 0..4 {
         let sx = 176 + 16 * k as i32;

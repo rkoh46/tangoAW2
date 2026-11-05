@@ -906,3 +906,22 @@ def gauntlet_tool_start(ctx):
             if f[:1].isdigit() and f.endswith(".png"):
                 shutil.copy(os.path.join(ctx.out, f), os.path.join(out, f))
     e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_win_gives_the_co_exp(ctx):
+    """A Gauntlet win gives the player's CO EXP as a campaign mission does (crate::battle_points: the points x2 for a lone CO, the map's
+    best before taken off), so its rank grows and the Set Skills screen shows it; a second win that does not beat the first gives none."""
+    from tests.test_co_skills import co_exp
+    e, g, d = boot(ctx)
+    d.start(ga.ANDY)
+    before = co_exp(e, ga.ANDY)
+    ctx.eq(d.win(ctx), 1, "won")
+    e.wait(60)
+    won = co_exp(e, ga.ANDY)
+    score = d.results(1)[0][2]
+    ctx.eq(won - before, 2 * score, f"Andy's EXP: + the score x2 ({before} -> {won}, score {score})")
+    d.start(ga.ANDY, from_title=False)
+    ctx.eq(d.win(ctx), 1, "won again")
+    e.wait(60)
+    ctx.eq(co_exp(e, ga.ANDY) - won, 2 * max(0, d.results(1)[0][2] - score), "the same result again: only what beats the best")
