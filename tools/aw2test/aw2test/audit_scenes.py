@@ -819,6 +819,54 @@ def volcano_show(rec, e, g, d, ring, at, first, last, prefix):
             look_at(rec, g, *at, f"{prefix}_day{nxt}_after", wait=90)
 
 
+MISSION_TITLE = 0x086165B0       # the mission card's proc (MissionTitle_*)
+
+
+def card_procs(e):
+    return {e.u32(p) for p in range(0x0200D610, 0x0200E418, 0x6C)}
+
+
+def card_shots(rec, e, prefix, press_a=True):
+    """The mission card from its first frame to the settled name: the proc is up, a picture every 20 frames for the first 120, then settled (the name typed out, the stamp on)."""
+    for _ in range(3000):
+        if MISSION_TITLE in card_procs(e):
+            break
+        if press_a:
+            e.press("A", 4)
+        e.wait(14)
+    else:
+        rec.fact(False, f"{prefix}: the mission card never came up")
+        return False
+    for k in range(8):
+        rec.snap(e, f"{prefix}_{k:02d}", ["card"])
+        e.wait(20)
+    e.wait(260)
+    rec.snap(e, f"{prefix}_settled", ["card"])
+    return True
+
+
+@scene("gauntlet", "mission_card", pack=True)
+def gauntlet_card(rec):
+    """Gauntlet's title card on Dustwind Basin: the word above the name and the stamp must not say MISSION (AW2's campaign card does)."""
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    d.open(True, map=2)
+    d.wait_army()
+    e.press("A", 6)
+    card_shots(rec, e, "gauntlet_card", press_a=False)
+    e.close()
+
+
+@scene("bh_campaign", "mission_card", pack=True)
+def bh_card(rec):
+    """BH Campaign M1's title card (the same card code as Gauntlet's: it must still say MISSION 1 and MISSION START)."""
+    e, g, d, picks = _bh_enter(rec, 1)
+    d.pick_mission()
+    card_shots(rec, e, "bh_card")
+    e.close()
+
+
 @scene("gauntlet", "cinder_sea_volcano", pack=True)
 def gauntlet_volcano(rec):
     """Cinder Sea's volcano (Hawke's island, ring (21,0)-(28,7), 3 cells a day from day 3; the volcano on the map's top rows): days 3 and 4's eruptions."""
