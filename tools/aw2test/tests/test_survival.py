@@ -252,6 +252,7 @@ def _lose(kind):
         st = sv.state(e)
         ctx.eq(st["phase"], sv.LOST, "the run is lost")
         shot(ctx, e, "results_lost")
+        sv.close_exp_box(e)
         e.press("A", 8)
         e.wait(30)
         ctx.eq(sv.state(e)["phase"], sv.CHOOSING, "A closes the results")

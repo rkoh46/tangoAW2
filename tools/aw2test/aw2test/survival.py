@@ -246,6 +246,21 @@ def to_select_map(e, max_steps=80):
     return False
 
 
+EXP_BOX = 0x0203C640     # crate::exp_box::STATE: 0 idle, 1 waiting for the results, 2 up, 3 closing
+
+
+def close_exp_box(e, wait=10):
+    """A run's end shows the EXP box over the results panel when the run gave EXP (crate::exp_box): A skips its filling, A closes it, and only the next A reaches the panel.
+    Presses A until it is gone (nothing to do when no box comes)."""
+    e.wait(wait)
+    for _ in range(6):
+        if e.u8(EXP_BOX) == 0:
+            return
+        e.press("A", 4)
+        e.wait(12)
+    e.wait(6)
+
+
 UNIT = {TIME: 60, MONEY: 100, TURN: 1}
 LEFT_BITS = {TIME: 11, MONEY: 13, TURN: 7}
 

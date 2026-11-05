@@ -125,3 +125,59 @@ def render(rep):
         else:
             lines.append("    no five-army record")
     return "\n".join(lines)
+
+
+# --- the COs' EXP (`aw2dev save exp`) ---------------------------------------------------------------------------------------------------------------------
+CO_NAMES = {0: "Nell", 1: "Andy", 2: "Max", 3: "Sami", 4: "Olaf", 5: "Grit", 6: "Colin", 7: "Kanbei", 8: "Sonja", 9: "Sensei", 10: "Eagle", 11: "Drake", 12: "Jess", 13: "Hachi", 14: "Sturm",
+            15: "Flak", 16: "Lash", 17: "Adder", 18: "Hawke", 72: "Jake", 73: "Rachel", 74: "Sasha", 75: "Grimm", 76: "Javier", 77: "Jugger", 78: "Koal", 79: "Kindle", 80: "Von Bolt",
+            81: "Clone Andy", 82: "Crumb", 86: "Tabitha", 87: "Lili", 88: "Caulder", 92: "Asuka", 93: "Aria"}
+EXTRA_COS = (86, 87, 88, 92, 93)       # crate::co_skills::EXTRA_COS: slots 30..34
+SKILLS_AT = 0x20 + 8 * 32               # slot 15's payload: progress (0x20), the DS Campaign's records (8 x 32), then "SKL1" and 30 x 32 bytes
+CO_LEN, FIRST_COS, HISTORY_LEN, EXTRA_LEN = 32, 30, 0x1A4, 4 + 32 * 7     # (the block has 7 records: two spare)
+EXTRA_AT = SKILLS_AT + 4 + CO_LEN * FIRST_COS + HISTORY_LEN      # "SKX1" and 5 x 32 bytes, after the History
+
+
+def co_slot(co):
+    co = {89: 87, 90: 88}.get(co, co)
+    if 0 <= co <= 18:
+        return co
+    if 72 <= co <= 82:
+        return 19 + co - 72
+    return FIRST_COS + EXTRA_COS.index(co)       # (ValueError: no slot)
+
+
+def co_offset(co):
+    """Where CO `co`'s 32-byte record (EXP u32, then Campaign, Survival, War Room, four Versus sets of 4 skill ids) is in slot 15's payload."""
+    k = co_slot(co)
+    return SKILLS_AT + 4 + CO_LEN * k if k < FIRST_COS else EXTRA_AT + 4 + CO_LEN * (k - FIRST_COS)
+
+
+def exp_table(path):
+    """[(CO id, name, EXP, rank, sets)] for every CO with a slot, from slot 15 of the save at `path` (a save with no record: every CO at 0)."""
+    im = _saveimg().Image(path)
+    rec = im.slot(15) or b""
+    ids = [c for c in range(19)] + list(range(72, 83)) + list(EXTRA_COS)
+    out = []
+    for co in ids:
+        o = co_offset(co)
+        ok = len(rec) >= o + CO_LEN and (co_slot(co) < FIRST_COS and rec[SKILLS_AT:SKILLS_AT + 4] == b"SKL1" or co_slot(co) >= FIRST_COS and rec[EXTRA_AT:EXTRA_AT + 4] == b"SKX1")
+        b = rec[o:o + CO_LEN] if ok else bytes(CO_LEN)
+        exp = struct.unpack_from("<I", b, 0)[0]
+        out.append((co, CO_NAMES.get(co, str(co)), exp, min(exp // 1000, 100), [list(b[4 + 4 * i:8 + 4 * i]) for i in range(7)]))
+    return out
+
+
+def set_exp(path, out, changes):
+    """The save at `path` with each CO's EXP in `changes` ({CO id: EXP}) set in slot 15's record (written to `out`). A record without the later COs' block gets one; a save with no record is refused."""
+    saveimg = _saveimg()
+
+    def edit(p):
+        b = bytearray(p)
+        if len(b) < SKILLS_AT + 4 or b[SKILLS_AT:SKILLS_AT + 4] != b"SKL1":
+            raise ValueError("the save has no skill record yet (win a battle or set a skill in the game first)")
+        if co_slot(max(changes, key=co_slot)) >= FIRST_COS and bytes(b[EXTRA_AT:EXTRA_AT + 4]) != b"SKX1":
+            b[EXTRA_AT:EXTRA_AT] = b"SKX1" + bytes(EXTRA_LEN - 4)
+        for co, v in changes.items():
+            struct.pack_into("<I", b, co_offset(co), min(v, 100_000))
+        return bytes(b)
+    return saveimg.rewrite_slot(path, out, 15, edit)

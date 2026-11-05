@@ -693,6 +693,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         crate::online::apply_match(core, rgba);
         crate::result_view::serve(_seat, rgba);
         crate::fog_view::hud_patch(core, _seat, rgba);
+        crate::exp_box::draw(core, rgba);
         crate::hold_box::draw(core, rgba);
         crate::campaign_menu::draw_notice(core, rgba);
     }
@@ -736,6 +737,7 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         let before = lo.clone();
         crate::ds_menus::apply(core, &mut lo);
         crate::ds_coselect::apply(core, &mut lo);
+        crate::exp_box::draw(core, &mut lo);
         crate::hold_box::draw(core, &mut lo);
         crate::campaign_menu::draw_notice(core, &mut lo);
         if lo != before {
@@ -1036,6 +1038,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         // The map list is up (Versus entered, or the Teams screen left backwards): no skin is chosen.
         if in_versus(core) && !in_battle(core) && crate::ds_versus::list_up(core) {
             crate::army_skin::reset_choice(core);
+        }
+        // The EXP box over AW2's results page (offline: a room's results give no EXP, crate::exp_box).
+        if mode.is_none() {
+            keys = crate::exp_box::tick(core, keys, prev);
         }
         // Dual Strike's Survival (offline: its War Room is single-player).
         keys = crate::survival::tick(core, ds && mode.is_none(), keys, prev);

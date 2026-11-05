@@ -970,7 +970,12 @@ mod tests {
             assert!(crate::five_map::is_ds_map(id) && !crate::five_map::is_five_map(id));
         }
         assert!(
-            RECORDS_TAIL_LEN + 0x20 + crate::ds_campaign::RECORDS_SIZE as usize + crate::co_skills::DATA_LEN as usize
+            RECORDS_TAIL_LEN
+                + 0x20
+                + crate::ds_campaign::RECORDS_SIZE as usize
+                + crate::co_skills::DATA_LEN as usize
+                + crate::history::SAVED_LEN as usize
+                + crate::co_skills::EXTRA_SAVED_LEN as usize
                 <= 0xFAD
         );
     }

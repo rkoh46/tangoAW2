@@ -147,6 +147,35 @@ class Image:
         return {t: self.slot(t) for t in self.tags()}
 
 
+def rewrite_slot(src, dst, tag, edit):
+    """`src`'s Flash with the newest copy of slot `tag` (one sector) rewritten by `edit(payload) -> payload`, its length and AW2's sector sum fixed: written to `dst` (a .sav).
+    For tests of old and edited saves (`aw2dev save exp --set`)."""
+    data = bytearray(open(src, "rb").read())
+    best = None
+    for s in range(16):
+        sec = data[s * SECTOR:(s + 1) * SECTOR]
+        if valid(sec) and sec[0xD] == tag and (best is None or struct.unpack_from("<I", sec, 8)[0] >= best[1]):
+            best = (s, struct.unpack_from("<I", sec, 8)[0])
+    if best is None:
+        raise ValueError(f"no slot {tag} in {src}")
+    s = best[0]
+    sec = data[s * SECTOR:(s + 1) * SECTOR]
+    n = struct.unpack_from("<H", sec, 0x50)[0]
+    new = edit(bytes(sec[0x52:0x52 + n]))
+    if 0x52 + len(new) > 0xFFF:
+        raise ValueError(f"slot {tag}'s payload ({len(new)} bytes) does not fit one sector")
+    sec[0x52:0xFFF] = bytes(0xFFF - 0x52)
+    sec[0x52:0x52 + len(new)] = new
+    struct.pack_into("<H", sec, 0x50, len(new))
+    sec[6] = sec[7] = 0
+    total = (sum(sec) + 0xFF) & 0xFF
+    sec[6], sec[7] = total, (~total) & 0xFF
+    data[s * SECTOR:(s + 1) * SECTOR] = sec
+    with open(dst, "wb") as f:
+        f.write(bytes(data))
+    return dst
+
+
 def ranges(a, b):
     """The byte ranges [(start, end)] where a and b differ (a longer one's tail too)."""
     out = []

@@ -65,3 +65,6 @@ a pile of them builds up (use `pgrep -f "[r]un.py ..."` if you must).
 
 ## Kit regression tests (no ROM)
 `aw2.test_kitgrow` (run by `aw2dev test python`): the Gauntlet kit (`gauntlet new-map` refusals and scaffold, `gauntlet cos` reading, parser registration of every new command), `campaign text-lint` / `scene-check` parsing, `bh2 waves` parsing, `co consistency`.
+
+## Looking at a CO's EXP and editing it (`aw2dev save exp`)
+`aw2dev save exp FILE.sav` prints every CO's EXP, rank (EXP / 1000) and sets from Flash slot 15 (35 slots: AW2's 19, the new eleven, Silver Nova's three, Asuka, Aria; layout in docs/AW2.md "Save"). `--set caulder=2500 --set 1=12345 [--out NEW.sav]` writes a copy with those EXPs changed (default `FILE.exp.sav`), for a rank, a rank-up in the EXP box or a skill-slot test without playing for it (needs a save that already has a skill record: win one battle first). `aw2test.saveimg.rewrite_slot(src, dst, tag, edit)` is the same for tests (old-format saves: `skills_later_cos_exp_saved_and_old_saves_load`). Covered by `aw2.test_kitgrow` (`SaveExp`).

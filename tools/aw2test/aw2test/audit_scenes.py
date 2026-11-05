@@ -468,6 +468,62 @@ def war_room(rec):
     rec.snap(e, "map_menu", ["battle", "menu"])
 
 
+def _exp_pictures(rec, e, prefix):
+    """The EXP box (crate::exp_box) from its first frame to the settled bar: three pictures, then A closes it."""
+    BOX = 0x0203C640
+    results_wait = 0x08616184
+    for k in range(900):
+        if e.u8(BOX) == 2:
+            break
+        e.wait(5)
+        waiting = any(e.u32(0x0200D610 + 0x6C * q) == results_wait for q in range(32))
+        if k % 12 == 11 and not waiting:
+            e.press("A", 4)
+    rec.fact(e.u8(BOX) == 2, f"{prefix}: the EXP box opened over the results page")
+    rec.snap(e, f"{prefix}_start", ["menu", "results"])
+    e.wait(36)
+    rec.snap(e, f"{prefix}_filling", ["menu", "results"])
+    e.wait(70)
+    rec.fact(e.u16(BOX + 4) >= 84, f"{prefix}: the bar has finished")
+    rec.snap(e, f"{prefix}_settled", ["menu", "results"])
+    e.press("A", 4)
+    e.wait(40)
+    rec.fact(e.u8(BOX) == 0, f"{prefix}: A closed the box")
+    rec.snap(e, f"{prefix}_closed", ["menu", "results"])
+
+
+@scene("exp_box", "war_room_win", pack=True)
+def exp_box_war_room(rec):
+    """War Room win with Andy at 950 EXP: the EXP box over AW2's results page: the bar nearly full, filling past rank 1 ('Rank up!'), settled, closed."""
+    import sys
+    from . import saves
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests"))
+    from tests.test_co_skills import war_room_battle, PLAYERS, P_YIELD, DATA, CO_SLOTS, co_at
+    e, g = rec.emu()
+    saves.to_select_mode(e)
+    e.w32(DATA, 0x314C4B53)
+    for c in CO_SLOTS:
+        e.w32(co_at(c), 950)
+    war_room_battle(e, g)
+    for a in range(2, 5):
+        if e.u8(e.u32(PLAYERS) + 0x3C * a + 0x1B):
+            e.w8(e.u32(PLAYERS) + 0x3C * a + P_YIELD, 1)
+    g.open_map_menu()
+    g.choose("End", g.MAP_MENU)
+    _exp_pictures(rec, e, "andy")
+
+
+@scene("exp_box", "gauntlet_asuka", pack=True)
+def exp_box_gauntlet(rec):
+    """Gauntlet win with Asuka (a later CO: slot 33): the EXP box with her face, 0 to the points x2 EXP, no rank change."""
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    d.start(92)
+    d.play_to_the_last_line(rec.ctx)
+    _exp_pictures(rec, e, "asuka")
+
+
 @scene("survival", "screens", pack=True)
 def survival(rec):
     """Survival: SELECT MAP (the course strip), the CO screen, the battle with its budget."""

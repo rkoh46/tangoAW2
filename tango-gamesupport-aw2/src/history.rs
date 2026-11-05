@@ -430,6 +430,7 @@ pub fn co_ranks(core: &mut Core) {
     }
     let total: u32 = (0..=18u8)
         .chain(72..=82)
+        .chain(crate::co_skills::EXTRA_COS)
         .map(|co| crate::co_skills::rank(core, co))
         .sum();
     set(core, CO_RANKS, total);

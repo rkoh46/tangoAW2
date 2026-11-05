@@ -208,6 +208,7 @@ def survival_record_shown(ctx):
     shot = sv.bg0(e)
     ctx.check(sv.text_on(shot, "Funds left", 18, 75), "the results say Funds left")
     ctx.check(sv.text_right(shot, "123400 G", 180, 75), "123400 G left")
+    sv.close_exp_box(e)
     e.press("A", 8)
     e.wait(60)
     shot = sv.bg0(e)
