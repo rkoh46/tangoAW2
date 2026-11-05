@@ -133,16 +133,42 @@ def skills_off_change_nothing(ctx):
 
 DATA = 0x0203E000      # crate::co_skills::DATA: "SKL1", then 32 bytes per CO
 CO_LEN = 32
+EXTRA = 0x0203C520     # crate::co_skills::EXTRA: the later COs' records (slots 30..34, two spare)
+EXTRA_COS = [86, 87, 88, 92, 93]   # Tabitha, Lili, Caulder (Silver Nova), Asuka, Aria
+TABITHA, LILI, CAULDER, ASUKA, ARIA = EXTRA_COS
 PLAYERS = 0x08499598
-CO_SLOTS = list(range(19)) + list(range(72, 83)) + [92]
+CO_SLOTS = list(range(19)) + list(range(72, 83)) + EXTRA_COS
 
 
 def co_slot(co):
-    return co if co <= 18 else 19 + co - 72
+    co = {89: 87, 90: 88}.get(co, co)       # (the retired Silver Nova ids are their copies')
+    if co <= 18:
+        return co
+    if co <= 82:
+        return 19 + co - 72
+    return 30 + EXTRA_COS.index(co)
+
+
+def co_at(co):
+    """The address of a CO's 32-byte record."""
+    k = co_slot(co)
+    return DATA + 4 + CO_LEN * k if k < 30 else EXTRA + CO_LEN * (k - 30)
+
+
+HISTORY_LEN = 0x1A4
+
+
+def saved_exp_off(co):
+    """Where a CO's EXP is in Flash slot 15's payload: progress (0x20), records (8 x 32), the first thirty COs' block ("SKL1" + 30 x 32), the History,
+    then the later COs' block ("SKX1" + 5 x 32)."""
+    k = co_slot(co)
+    if k < 30:
+        return 0x20 + 8 * 32 + 4 + CO_LEN * k
+    return 0x20 + 8 * 32 + 4 + CO_LEN * 30 + HISTORY_LEN + 4 + CO_LEN * (k - 30)
 
 
 def co_exp(e, co):
-    return e.u32(DATA + 4 + CO_LEN * co_slot(co))
+    return e.u32(co_at(co))
 
 
 def active(e, army):
@@ -182,7 +208,7 @@ def skills_ds_campaign_exp_and_sets(ctx):
     # Every CO: rank 2, a Campaign set of Bruiser (rank 1), Brawler (rank 8:
     # not open yet), Slam Guard (rank 1).
     for c in CO_SLOTS:
-        a = DATA + 4 + CO_LEN * co_slot(c)
+        a = co_at(c)
         e.w32(a, 2000)
         e.write(a + 4, bytes([0x20, 0x21, 0x25, 0]))
     ctx.require(d.force_win(), "Jake's Trial won (test aid)")
@@ -383,7 +409,7 @@ def skills_war_room_exp(ctx):
     saves.to_select_mode(e)
     e.w32(DATA, 0x314C4B53)
     for c in CO_SLOTS:
-        a = DATA + 4 + CO_LEN * co_slot(c)
+        a = co_at(c)
         e.w32(a, 3000)
         e.write(a + 12, bytes([0x20, 0x25, 0x27, 0x47]))  # the War Room set
     war_room_battle(e, g)
@@ -403,12 +429,12 @@ def skills_war_room_exp(ctx):
     img = saves.flash(e, os.path.join(ctx.out, "after"))
     rec = img.slot(15)
     ctx.require(rec is not None, "the DS Campaign's slot written")
-    off = 0x20 + 8 * 32 + 4 + CO_LEN * co_slot(co)
+    off = saved_exp_off(co)
     ctx.eq(int.from_bytes(rec[off:off + 4], "little"), 3000 + score * 2, "the EXP in Flash")
 
 
 PANEL = 0x0203E3F0          # crate::skills_panel: open, slot, CO, set, ids[4], on Teams
-VERSUS_RULE = DATA + 4 + CO_LEN * 30 + 1
+VERSUS_RULE = DATA + 4 + CO_LEN * 30 + 1   # (after the first thirty COs' records: DIRTY, then the rule)
 CO_SELECT = 0x08616638
 CO_SELECT_IDLE = 0x0807CE5D
 
@@ -461,7 +487,7 @@ def skills_panel_co_screen(ctx):
     e.wait(30)
     e.w32(DATA, 0x314C4B53)
     for c in CO_SLOTS:
-        e.w32(DATA + 4 + CO_LEN * co_slot(c), 2000)
+        e.w32(co_at(c), 2000)
     before, shown = covered(e), layers(e)
     e.press("SELECT", 4)
     e.wait(10)
@@ -489,7 +515,7 @@ def skills_panel_co_screen(ctx):
     ctx.check(co_select_idle(e), "the B that kept the set did not reach the CO screen")
     ctx.eq(layers(e), shown, "the layers back")
     ctx.check(covered(e) == before, "BG0's tiles, tilemap and the BG palettes as they were")
-    a = DATA + 4 + CO_LEN * co_slot(co)
+    a = co_at(co)
     ctx.eq(list(e.read(a + 12, 4)), [0x20, 0x22, 0, 0], "the CO's War Room set")
     e.wait(30)
     shot(ctx, e, "co_screen_after")
@@ -525,8 +551,8 @@ def skills_panel_teams_and_rule(ctx):
     e.wait(30)
     e.w32(DATA, 0x314C4B53)
     for c in CO_SLOTS:
-        e.w32(DATA + 4 + CO_LEN * co_slot(c), 1000)
-        e.write(DATA + 4 + CO_LEN * co_slot(c) + 16, bytes([0x25, 0, 0, 0]))  # Versus set 0: Slam Guard
+        e.w32(co_at(c), 1000)
+        e.write(co_at(c) + 16, bytes([0x25, 0, 0, 0]))  # Versus set 0: Slam Guard
     ctx.eq(e.u8(VERSUS_RULE), 0, "the rule: off by default")
     shot(ctx, e, "teams_cards")
     e.press("SELECT", 4)
@@ -551,7 +577,7 @@ def skills_panel_teams_and_rule(ctx):
     e.press("B", 4)
     e.wait(10)
     ctx.eq(e.u8(PANEL), 0, "B: closed")
-    a = DATA + 4 + CO_LEN * co_slot(edited)
+    a = co_at(edited)
     ctx.eq(list(e.read(a + 16, 4)), [0x27, 0, 0, 0], "its CO's Versus set: Snipe Guard")
     g.set_teams(["andy", "max"], {1})
     g.teams_to_rules()
@@ -585,8 +611,8 @@ def skills_five_armies(ctx):
     ctx.eq(e.u8(ram.FIVE_ON), 1, "a five-army game")
     e.w32(DATA, 0x314C4B53)
     for c in CO_SLOTS:
-        e.w32(DATA + 4 + CO_LEN * co_slot(c), 1000)
-        e.write(DATA + 4 + CO_LEN * co_slot(c) + 16, bytes([0x25, 0, 0, 0]))  # Versus set 0: Slam Guard
+        e.w32(co_at(c), 1000)
+        e.write(co_at(c) + 16, bytes([0x25, 0, 0, 0]))  # Versus set 0: Slam Guard
     for _ in range(12):
         if e.u8(g.teams_addr() + 0x32) == 8:
             break
@@ -628,7 +654,7 @@ def skills_netplay_versus_rule(ctx):
     e.wait(30)
     e.w32(DATA, 0x314C4B53)
     for c in CO_SLOTS:
-        a = DATA + 4 + CO_LEN * co_slot(c)
+        a = co_at(c)
         e.w32(a, 1000)
         e.w32(a + 16, 0x20)  # Versus set 0: Bruiser
     g.set_teams(["andy", "andy"], {1, 2})
@@ -810,3 +836,139 @@ def skills_none_without_pack(ctx):
     e.press("R", 4)
     e.wait(10)
     ctx.check(e.u8(TEAMS_COLOUR) != before, "R as well")
+
+
+# --- every playable CO has a slot (crate::co_skills::co_slot): Silver Nova's three, Asuka and Aria too ---------------------------------------------------
+
+def later_cos_panel(ctx, co, other=1):
+    """Teams screen with `co` as the second army's CO (set_teams leaves the cursor on its CO stop): SELECT opens the panel for it, A puts Bruiser on its Versus set,
+    B keeps it, in that CO's own record."""
+    m = ctx.map()
+    m.unit(1, "tank", 10, 10).unit(2, "tank", 20, 10)
+    save = os.path.join(ctx.out, f"map{co}.sav")
+    m.write(paths.base_save(), save)
+    e = Emu(save=save, ds=True)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    g.boot_to_teams()
+    e.wait(30)
+    e.w32(DATA, 0x314C4B53)
+    for c in CO_SLOTS:
+        e.w32(co_at(c), 1000)
+    g.set_teams([other, co], {1})
+    e.wait(20)
+    e.press("SELECT", 4)
+    e.wait(10)
+    ctx.eq((e.u8(PANEL), e.u8(PANEL + 2)), (1, co), f"SELECT on the CO stop: the panel is up for CO {co}")
+    ctx.eq(e.u8(PANEL + 3), 3, "its Versus set")
+    e.press("A", 4)
+    e.wait(6)
+    shot(ctx, e, f"panel_{co}")
+    e.press("B", 4)
+    e.wait(10)
+    ctx.eq(e.u8(PANEL), 0, "B: closed")
+    ctx.eq(list(e.read(co_at(co) + 16, 4)), [0x20, 0, 0, 0], f"CO {co}'s Versus set: Bruiser (in its own record)")
+    # (the other records are untouched)
+    others = [c for c in CO_SLOTS if c != co and list(e.read(co_at(c) + 16, 4)) != [0, 0, 0, 0]]
+    ctx.eq(others, [], "no other CO's set changed")
+
+
+@test(modes=("ds",))
+def skills_asuka_and_aria_open_the_panel_on_teams(ctx):
+    """Versus' Teams screen: SELECT on Asuka's and on Aria's CO stop opens the SET SKILLS screen for them (it used to open for none of tangoAW2's later COs); the set
+    is in the CO's own record (the later COs' block, slots 33 and 34)."""
+    later_cos_panel(ctx, ASUKA)
+    later_cos_panel(ctx, ARIA)
+
+
+@test(modes=("ds",))
+def skills_silver_nova_cos_open_the_panel_on_teams(ctx):
+    """The same for Silver Nova's three COs (slots 30, 31 and 32)."""
+    for co in (TABITHA, LILI, CAULDER):
+        later_cos_panel(ctx, co)
+
+
+def boot_war_room_with(ctx, save, name):
+    e = Emu(save=save, ds=True)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    saves.to_select_mode(e)
+    war_room_battle(e, g)
+    return e, g
+
+
+@test(modes=("ds",))
+def skills_later_cos_exp_saved_and_old_saves_load(ctx):
+    """The later COs' EXP (Silver Nova's three, Asuka, Aria) is saved with the rest: after a War Room win (a test aid gives them EXP) slot 15 holds the first
+    thirty COs' block where it always was and the later COs' block after the History; a reboot reads both back. A save from before the later COs (the same
+    record without their block) still loads: the first thirty COs keep their EXP and the later ones start at 0, no set."""
+    e = Emu(save=paths.base_save(), ds=True)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    saves.to_select_mode(e)
+    e.w32(DATA, 0x314C4B53)
+    want = {ASUKA: 7000, ARIA: 4321, CAULDER: 150, TABITHA: 99_999, LILI: 1000}
+    for c, v in want.items():
+        e.w32(co_at(c), v)
+        e.write(co_at(c) + 16, bytes([0x20, 0, 0, 0]))   # (a Versus set)
+    e.w32(co_at(2), 3210)                                # Max
+    war_room_battle(e, g)
+    co = e.u8(e.u32(PLAYERS) + 0x3C + 0x1D)
+    for a in range(2, 5):
+        if e.u8(e.u32(PLAYERS) + 0x3C * a + 0x1B):
+            e.w8(e.u32(PLAYERS) + 0x3C * a + P_YIELD, 1)
+    g.open_map_menu()
+    g.choose("End", g.MAP_MENU)
+    if not sv.to_select_map(e) and not e.wait_until(lambda: sv.running(e, sv.SELECT_MAP_PROC), 3000, step=10):
+        raise NavError("SELECT MAP did not come back")
+    andy = co_exp(e, co)
+    ctx.check(andy > 0, f"the player's CO ({co}) has {andy} EXP")
+    img = saves.flash(e, os.path.join(ctx.out, "after"))
+    rec = img.slot(15)
+    ctx.require(rec is not None, "slot 15 written")
+    ctx.check(len(rec) <= 0xFAD, f"the record ({len(rec)} bytes) fits the Flash slot's payload (0xFAD)")
+    extra_at = 0x20 + 8 * 32 + 4 + CO_LEN * 30 + HISTORY_LEN
+    ctx.eq(rec[extra_at:extra_at + 4], b"SKX1", "the later COs' block follows the History")
+    for c, v in want.items():
+        ctx.eq(int.from_bytes(rec[saved_exp_off(c):saved_exp_off(c) + 4], "little"), v, f"CO {c}'s EXP in Flash")
+    ctx.eq(int.from_bytes(rec[saved_exp_off(2):saved_exp_off(2) + 4], "little"), 3210, "Max's EXP (the first block) where it always was")
+    ctx.eq(rec[0x20 + 8 * 32:0x20 + 8 * 32 + 4], b"SKL1", "the first block's magic where it always was")
+    e.close()
+    # A reboot reads both blocks (the data loads at the first battle).
+    e2, g2 = boot_war_room_with(ctx, img.path, "reboot")
+    for c, v in want.items():
+        ctx.eq(co_exp(e2, c), v, f"CO {c}'s EXP after a reboot")
+        ctx.eq(list(e2.read(co_at(c) + 16, 4)), [0x20, 0, 0, 0], f"CO {c}'s Versus set after a reboot")
+    ctx.eq(co_exp(e2, 2), 3210, "Max after a reboot")
+    ctx.eq(co_exp(e2, co), andy, f"the player's CO after a reboot")
+    e2.close()
+    # A save from before the later COs: the record without their block.
+    old = saves.saveimg.rewrite_slot(img.path, os.path.join(ctx.out, "old.sav"), 15, lambda b: b[:extra_at] + b[extra_at + 4 + CO_LEN * 7:])
+    ctx.check(len(saves.saveimg.Image(old).slot(15)) == len(rec) - 4 - CO_LEN * 7, "the old-format record is the new one without the block")
+    e3, g3 = boot_war_room_with(ctx, old, "old")
+    ctx.eq(co_exp(e3, 2), 3210, "an old save: Max keeps his EXP")
+    ctx.eq(co_exp(e3, co), andy, "an old save: the player's CO keeps its EXP")
+    for c in want:
+        ctx.eq((co_exp(e3, c), list(e3.read(co_at(c) + 16, 4))), (0, [0, 0, 0, 0]), f"an old save: CO {c} starts at 0 EXP, no set")
+    e3.close()
+
+
+@test(modes=("ds",))
+def skills_gauntlet_win_gives_asuka_exp(ctx):
+    """A Gauntlet win with Asuka (a CO with no skills slot before) gives her EXP like any CO's (the points x2), and with Aria too (a second run)."""
+    from aw2test import gauntlet as ga
+    for co in (ASUKA, ARIA):
+        e = Emu(save=paths.base_save(), ds=True)
+        g = Game(e, ctx.image)
+        ctx.games.append(g)
+        d = ga.Gauntlet(g)
+        d.start(co)
+        ctx.eq(g.player(1)["co"], co, f"the pick leads the player's army: CO {co}")
+        before = co_exp(e, co)
+        ctx.eq(d.win(ctx), 1, "won")
+        e.wait(60)
+        won = co_exp(e, co)
+        score = d.results(1)[0][2]
+        ctx.eq(won - before, 2 * score, f"CO {co}'s EXP: + the score x2 ({before} -> {won}, score {score})")
+        ctx.check(won > 0, "she has EXP")
+        e.close()

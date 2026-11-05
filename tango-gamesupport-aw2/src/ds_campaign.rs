@@ -502,6 +502,8 @@ pub fn stage_slot(core: &mut Core) -> (u8, u32, u32) {
     b.extend_from_slice(&crate::co_skills::bytes(core));
     // (the History's record follows: crate::history)
     b.extend_from_slice(&crate::history::bytes(core));
+    // (then the later COs' skill block: crate::co_skills::EXTRA_COS)
+    b.extend_from_slice(&crate::co_skills::extra_bytes(core));
     // The War Room's records on Dual Strike's maps end the slot (crate::ds_versus).
     b.extend_from_slice(&crate::ds_versus::records_tail(core));
     crate::ds_versus::records_written(core);
@@ -1340,7 +1342,7 @@ fn read_slot(core: &Core, slot: u8) -> Option<Vec<u8>> {
     }
     let (_, at) = best?;
     let len = (core.raw_read_16(at + 0x50, -1) as u32)
-        .min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN);
+        .min(SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN + crate::co_skills::EXTRA_SAVED_LEN + crate::ds_versus::RECORDS_TAIL_LEN as u32);
     let mut b = vec![0u8; len as usize];
     core.raw_read_range(at + 0x52, -1, &mut b);
     Some(b)
@@ -1354,7 +1356,14 @@ pub fn skills_loaded(core: &mut Core) {
     }
     let saved = read_slot(core, SAVE_SLOT).filter(|b| b.len() > (SAVE_SIZE + RECORDS_SIZE) as usize);
     let part = saved.as_ref().map(|b| &b[(SAVE_SIZE + RECORDS_SIZE) as usize..]);
-    crate::co_skills::load(core, part);
+    // (the later COs' block follows the History: `extra_at`)
+    let extra = saved.as_ref().and_then(|b| b.get(extra_at()..)).map(|x| x.to_vec());
+    crate::co_skills::load(core, part, extra.as_deref());
+}
+
+/// Where the later COs' skill block starts in the slot's payload: after the progress, records, first thirty COs' data and the History.
+fn extra_at() -> usize {
+    (SAVE_SIZE + RECORDS_SIZE + crate::co_skills::DATA_LEN + crate::history::SAVED_LEN) as usize
 }
 
 /// The History's record as saved after the skill data (crate::history), if the slot has one.

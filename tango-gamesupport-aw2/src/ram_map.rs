@@ -70,6 +70,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("the map menu's End row, the item chosen, the last cell and the map menu's own item (crate::pvp::END_ROW)", (crate::pvp::END_ROW, 5)),
     ("the waiting player's fog view: scratch call (crate::fog_view)", (crate::fog_view::CALL, 0x58)),
     ("CO skills' data (crate::co_skills::DATA)", (0x0203_E000, 0x3C6)),
+    ("CO skills' later COs: Silver Nova's three, Asuka, Aria (crate::co_skills::EXTRA)", (crate::co_skills::EXTRA, crate::co_skills::EXTRA_LEN)),
     ("Grand Bolt's borrowed palette (crate::grand_bolt::BORROWED)", (0x0203_E3C8, 0x24)),
     ("Dual Strike graphics switch and the factory's table-only hook", (0x0203_E3FE, 2)),
     ("skills panel", (0x0203_E3F0, 0x0E)),

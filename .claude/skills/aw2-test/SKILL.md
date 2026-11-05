@@ -20,6 +20,8 @@ description: Pick and run the right tangoAW2 checks for a change (lib tests, off
 
 ## Looking into a save
 
+`aw2dev save exp FILE.sav [--set CO=EXP]`: every CO's EXP, rank and sets in slot 15; with `--set` an edited copy (to test ranks and the EXP box, `docs/dev/testing.md`).
+
 `aw2dev save inspect FILE.sav` (a save the harness left, e.g. `tools/aw2test/out/ds/<test>/saved.sav`) lists the suspended games and, for a five-army battle, the record after AW2's block (`docs/dev/five-suspend.md`):
 whether its hash matches the block (a record that does not is never applied), each army's funds / CO / unit count and the Flash sectors used. A new suspend-and-resume test compares the battle byte for byte
 (`tests/test_five_suspend.py` `whole_battle`, `compare_whole`).

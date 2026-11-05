@@ -113,3 +113,52 @@ class WavesAndConsistency(unittest.TestCase):
             res = consistency.static(co)
             self.assertTrue(all(ok for _, ok, _ in res), (co, res))
         self.assertFalse(consistency.static("nobody")[0][1])
+
+
+class SaveExp(unittest.TestCase):
+    """`aw2dev save exp`: a synthetic Flash (a profile listing one sector as slot 15) with a skill record of the old layout (no later COs' block)."""
+
+    @staticmethod
+    def sector(tag, payload, gen=1, directory=None):
+        import struct
+        sec = bytearray(0x1000)
+        struct.pack_into("<I", sec, 0, 0x73726132)
+        sec[4], sec[0xFFF], sec[5] = 0x55, 0xAA, 0x0F
+        struct.pack_into("<I", sec, 8, gen)
+        sec[0xD] = tag
+        struct.pack_into("<H", sec, 0x50, len(payload))
+        sec[0x52:0x52 + len(payload)] = payload
+        if directory is not None:
+            sec[0xFEF:0xFEF + 16] = bytes(directory)
+        total = (sum(sec) + 0xFF) & 0xFF
+        sec[6], sec[7] = total, (~total) & 0xFF
+        return bytes(sec)
+
+    def image(self, path):
+        import struct
+        from aw2 import savelib
+        record = bytearray(savelib.SKILLS_AT) + b"SKL1" + bytearray(32 * 30) + bytes(savelib.HISTORY_LEN) + b"DSWR"     # (the old layout: the War Room's mark where the later block now is)
+        struct.pack_into("<I", record, savelib.co_offset(2), 3210)           # Max
+        profile = self.sector(0, bytes(0x20), directory=[0, 15] + [0xFF] * 14)
+        data = profile + self.sector(15, bytes(record)) + b"\xff" * 0x1000 * 14
+        with open(path, "wb") as f:
+            f.write(data)
+
+    def test_an_old_record_reads_the_later_cos_as_zero_and_set_exp_adds_their_block(self):
+        import os
+        import tempfile
+        from aw2 import savelib
+        with tempfile.TemporaryDirectory() as d:
+            old = os.path.join(d, "old.sav")
+            self.image(old)
+            rows = {r[0]: r for r in savelib.exp_table(old)}
+            self.assertEqual(len(rows), 35)
+            self.assertEqual(rows[2][2], 3210)
+            self.assertEqual(rows[92][2], 0)
+            new = savelib.set_exp(old, os.path.join(d, "new.sav"), {92: 7000, 1: 2500})
+            rows = {r[0]: r for r in savelib.exp_table(new)}
+            self.assertEqual((rows[92][2], rows[92][3], rows[1][2], rows[2][2], rows[93][2]), (7000, 7, 2500, 3210, 0))
+            self.assertEqual(savelib._saveimg().Image(new).slot(15)[savelib.EXTRA_AT:savelib.EXTRA_AT + 4], b"SKX1")
+            self.assertEqual(savelib.co_slot(89), savelib.co_slot(87), "a retired Silver Nova id is its copy's")
+            with self.assertRaises(ValueError):
+                savelib.co_slot(40)

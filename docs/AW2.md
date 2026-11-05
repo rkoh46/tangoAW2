@@ -3817,12 +3817,14 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   or lost, player 1's COs get the run's points (with its leftover bonus), at most 9999. Versus gives none. AW2's
   campaign gives EXP only once the player has set skills for some CO (until then it stays AW2's own). Unlike
   Dual Strike, Survival's map scores are not halved (tangoAW2's run points).
-- **Save.** Per CO (AW2's 19 and the ten new): EXP and seven sets
-  (Campaign, Survival, War Room, four Versus), 32 bytes, at `0x0203E000`
-  after a magic word; saved in Flash slot 15 after the DS Campaign's
-  progress and records (one 0x4A4-byte record). The DS Campaign's save
-  writes it; after any profile write (`sub_0801A7D8(0, ..)` returning at
-  0x08016E2C, 0x0801AC40, 0x0801AE2E) it is written again if it changed.
+- **Save.** Per CO: EXP and seven sets (Campaign, Survival, War Room, four Versus), 32 bytes. Every CO a player can pick has a slot (`co_skills::co_slot`): AW2's 19 (slots 0..18), the new
+  eleven 72..82 (19..29), then Silver Nova's Tabitha, Lili and Caulder, Asuka and Aria (30..34; the retired Silver Nova ids 89 and 90 use their copies' slots). The first thirty are at `0x0203E000`
+  after a magic word ("SKL1"); the later five are at `co_skills::EXTRA` (`0x0203C520`, 0xE0 bytes: seven records, two spare, registered in `ram_map.rs`). Saved in Flash slot 15 after the DS Campaign's progress and
+  records: "SKL1" and the first thirty (0x3C4 bytes, where they always were), the History (0x1A4), then the later COs' block ("SKX1" and seven records, 0xE4 bytes), then the War Room's records;
+  a record saved before the later COs has no block there and reads them at 0 EXP with no sets (`aw2dev save exp FILE.sav` prints every CO's EXP, `--set CO=EXP` writes an edited copy).
+  The DS Campaign's save writes it; after any profile write (`sub_0801A7D8(0, ..)` returning at
+  0x08016E2C, 0x0801AC40, 0x0801AE2E) it is written again if it changed. Online (both peers boot from seat 0's save) the Versus sets are part of the simulation, so a build that adds slots
+  needs a `SIM_VERSION` bump (`inspect.rs`).
 - **The SET SKILLS screen** (`skills_panel.rs`). On the CO screen (War
   Room, Survival, the campaigns: `ProcScr_CoSelect`) SELECT opens it for the
   CO highlighted; on Versus' Teams screen SELECT on an army's CO stop, for

@@ -666,8 +666,8 @@ pub fn profile_written(core: &mut Core, back: u32) {
 
 /// Some CO has a set of skills (the player has taken up skills).
 pub fn any_set(core: &Core) -> bool {
-    (0..COS).any(|k| {
-        let a = DATA + 4 + CO_LEN * k + 4;
+    (0..COS + EXTRA_SLOTS).any(|k| {
+        let a = slot_at(k) + 4;
         (0..CO_LEN - 4).any(|o| core.raw_read_8(a + o, -1) != 0)
     })
 }
@@ -714,7 +714,26 @@ const CO_LEN: u32 = 32;
 /// Clone Andy and Crumb). (A record saved with fewer reads the rest as
 /// zeros.)
 pub const COS: u32 = 30;
+/// The data saved first: the magic and the [`COS`] records (what every record saved before the later COs has).
 pub const DATA_LEN: u32 = 4 + CO_LEN * COS;
+/// tangoAW2's later COs (Silver Nova's Tabitha, Lili and Caulder, Asuka, Aria): slots [`COS`].. after the
+/// first thirty. Their records are in RAM at [`EXTRA`] (free room found by the overlap test of crate::ram_map) and
+/// saved in their own block ([`extra_bytes`]) after the History in Flash slot 15, so every earlier save still reads
+/// the same bytes where it always did (and the new COs at 0 EXP, no sets).
+pub const EXTRA_COS: [u8; 5] = [
+    crate::es_co::TABITHA,
+    crate::es_co::LILI,
+    crate::es_co::CAULDER,
+    crate::co_new::ASUKA,
+    crate::co_new::ARIA,
+];
+pub const EXTRA: u32 = 0x0203_C520;
+/// Room for seven (two spare slots, so that the next CO needs no new save layout): the block is [`EXTRA_SLOTS`] records long in RAM and in Flash.
+pub const EXTRA_SLOTS: u32 = 7;
+pub const EXTRA_LEN: u32 = CO_LEN * EXTRA_SLOTS;
+/// The block's mark in Flash ("SKX1") and its length there.
+const EXTRA_MAGIC: u32 = 0x3158_4B53;
+pub const EXTRA_SAVED_LEN: u32 = 4 + EXTRA_LEN;
 /// EXP stops at Dual Strike's cap.
 pub const MAX_EXP: u32 = 100_000;
 
@@ -738,17 +757,29 @@ impl Set {
     }
 }
 
-/// The data slot of a CO (AW2's ids; the new COs 72..80).
+/// The data slot of a CO: AW2's ids 0..=18, the new COs 72..=82 (Dual Strike's nine, Clone Andy, Crumb), then
+/// [`EXTRA_COS`] (a retired Silver Nova id has its copy's: crate::es_co::canon). Every CO a player can pick has one.
 pub fn co_slot(co: u8) -> Option<u32> {
     match co {
         0..=18 => Some(co as u32),
         72..=82 => Some(19 + (co - 72) as u32),
-        _ => None,
+        _ => {
+            let c = crate::es_co::canon(co);
+            EXTRA_COS.iter().position(|&x| x == c).map(|k| COS + k as u32)
+        }
+    }
+}
+
+fn slot_at(k: u32) -> u32 {
+    if k < COS {
+        DATA + 4 + CO_LEN * k
+    } else {
+        EXTRA + CO_LEN * (k - COS)
     }
 }
 
 fn co_at(co: u8) -> Option<u32> {
-    co_slot(co).map(|k| DATA + 4 + CO_LEN * k)
+    co_slot(co).map(slot_at)
 }
 
 pub fn data_valid(core: &Core) -> bool {
@@ -757,7 +788,7 @@ pub fn data_valid(core: &Core) -> bool {
 
 /// The data from a saved record's bytes (a record saved before skills has
 /// none: every CO at 0 EXP, no set).
-pub fn load(core: &mut Core, saved: Option<&[u8]>) {
+pub fn load(core: &mut Core, saved: Option<&[u8]>, extra: Option<&[u8]>) {
     let mut b = vec![0u8; DATA_LEN as usize];
     if let Some(s) = saved.filter(|s| s.len() >= 4 && u32::from_le_bytes(s[0..4].try_into().unwrap()) == DATA_MAGIC) {
         let n = s.len().min(b.len());
@@ -765,6 +796,20 @@ pub fn load(core: &mut Core, saved: Option<&[u8]>) {
     }
     b[0..4].copy_from_slice(&DATA_MAGIC.to_le_bytes());
     core.raw_write_range(DATA, -1, &b);
+    // The later COs' block (after the History in the record; a record without it: zeros).
+    let mut x = vec![0u8; EXTRA_LEN as usize];
+    if let Some(m) = extra.filter(|m| m.len() >= EXTRA_SAVED_LEN as usize && u32::from_le_bytes(m[0..4].try_into().unwrap()) == EXTRA_MAGIC) {
+        x.copy_from_slice(&m[4..EXTRA_SAVED_LEN as usize]);
+    }
+    core.raw_write_range(EXTRA, -1, &x);
+}
+
+/// The later COs' block as saved: its mark, then the records.
+pub fn extra_bytes(core: &Core) -> Vec<u8> {
+    let mut b = vec![0u8; EXTRA_SAVED_LEN as usize];
+    b[0..4].copy_from_slice(&EXTRA_MAGIC.to_le_bytes());
+    core.raw_read_range(EXTRA, -1, &mut b[4..]);
+    b
 }
 
 /// The data's bytes, as saved.
@@ -867,6 +912,14 @@ mod tests {
         assert_eq!(co_slot(72), Some(19));
         assert_eq!(co_slot(80), Some(27));
         assert_eq!(co_slot(19), None);
+        assert_eq!(co_slot(crate::es_co::TABITHA), Some(30));
+        assert_eq!(co_slot(crate::es_co::RETIRED_B), co_slot(crate::es_co::CAULDER));
+        assert_eq!(co_slot(crate::co_new::ASUKA), Some(33));
+        assert_eq!(co_slot(crate::co_new::ARIA), Some(34));
+        assert_eq!(co_slot(crate::co_new::MORTAR_FACE), None);
+        assert_eq!(slot_at(COS), EXTRA);
+        assert!(EXTRA_COS.len() as u32 <= EXTRA_SLOTS);
+        assert_eq!(EXTRA + EXTRA_LEN, 0x0203_C600, "the free room between the army skin's bytes and the power music's");
         assert_eq!(Set::Versus(3).offset() + 4, CO_LEN);
         assert!(VERSUS_RULE < 0x0203_F600, "below the DS Campaign's records");
     }
