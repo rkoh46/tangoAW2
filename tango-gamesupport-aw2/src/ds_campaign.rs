@@ -1438,6 +1438,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
         ),
         (SAVE_GAME, Box::new(save_game)),
         (BEST_SCORE, Box::new(best_score)),
+        (crate::gauntlet::NEOTANK_OPEN, Box::new(crate::gauntlet::neotank_open)),
         (SCRIPT_END_MATCH, Box::new(script_end_match)),
         (MAP_CURSOR_LOOP, Box::new(cursor_loop)),
         (SELECT_MODE_START, Box::new(select_mode_start)),

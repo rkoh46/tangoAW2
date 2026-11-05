@@ -109,6 +109,21 @@ pub fn consumed(core: &mut Core) {
     core.raw_write_8(PICKED, -1, 0);
 }
 
+// --- Rules AW2's campaign applies that a Gauntlet run does not want ------------------------------------------------------------------------------------------------------------------------
+
+/// `sub_080261E8(army)`: in campaign mode AW2 offers the Neotank only when the army's colour has its story flag (0x65..0x68; Black Hole's colour none), which a Gauntlet session (every run a
+/// first play, no story) never has. Called by the build menu (`0x0802D6CA`). In a Gauntlet session the answer is yes, so every map's bases offer the Neotank as a Versus map with the pack does.
+pub const NEOTANK_OPEN: u32 = 0x0802_61E8;
+pub fn neotank_open(core: &mut Core) {
+    if !session(core) {
+        return;
+    }
+    let cpu = core.gba_mut().cpu_mut();
+    cpu.set_gpr(0, 1);
+    let lr = cpu.gpr(14) as u32;
+    cpu.set_thumb_pc(lr & !1);
+}
+
 /// A best result as AW2 keeps it (`best_score`'s word: CO | days << 8 | score << 20), by mission.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Best {

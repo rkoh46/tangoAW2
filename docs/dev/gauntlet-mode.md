@@ -115,6 +115,11 @@ the winning scene (those scenes were not hit: the grey is written only while mov
 ## The rout rule
 Capturing a line's HQ routes that army at once (all its units destroyed by AW2's own `DefeatArmy`, every property it owns neutral), then the next line comes; the last line's HQ wins as before. It is the shared engine's, so every map has it by default: list every line but the last in `cut_off` ([gauntlet.md](gauntlet.md), "The rout"). Tests `-k gauntlet_rout`.
 
+## Units on offer
+AW2's build menu asks `sub_080261E8` (`0x0802D6CA`) before it lists the Neotank, and in campaign mode that function says yes only when the army's colour has its story flag (0x65..0x68, Black Hole's colour never): a Gauntlet run is
+a campaign session with no story, so bases offered no Neotank (the factory read Recon, Tank, Md Tank, Megatank...). `gauntlet::neotank_open` (`NEOTANK_OPEN`) answers yes in a Gauntlet session, so every map offers what a Versus
+map with the pack offers (airports and ports never had the gate; the computer's armies buy by the pack's production, not by this menu). Test `-k gauntlet_build_menu` (every map's base, airport and port against a Versus battle's).
+
 ## Adding a map
 The steps to add `gauntlet_NN` (NN = the next number; its record key, never reused):
 1. Spec `five/gauntlet/spec/gauntlet_NN.py`; `aw2dev maps gen --campaign gauntlet` (writes `five/gauntlet/gauntlet_NN.txt` and `gauntlet_map_data.rs`); `aw2dev maps lint --source gauntlet` clean. Keep a map to about 110 properties (Neon Row with 150 stalled the computer's turn on day 1, with 210 some properties stayed owned after a rout; 108 is clean).
