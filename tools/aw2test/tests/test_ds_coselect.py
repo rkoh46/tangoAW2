@@ -170,12 +170,12 @@ def ds_coselect_versus_five_armies(ctx):
 
 # The army cards' keys (crate::ds_coselect::card_keys) for AW2's own: its LEFT / RIGHT (a move) are UP / DOWN, its UP / DOWN
 # (a change) LEFT / RIGHT.
-CARD = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
+CARD_KEYS = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
 
 
 def pick_partners(ctx, on):
     """Boot the Teams screen, set the pairs with the pad (START on a CO stop, DOWN through the COs, START), return what the
-    game holds. The pad is the army cards' (crate::ds_coselect::card_keys): [`CARD`] turns AW2's keys into them."""
+    game holds. The pad is the army cards' (crate::ds_coselect::card_keys): [`CARD_KEYS`] turns AW2's keys into them."""
     g = ctx.boot_teams(ctx.map(), env=BYTE_DRIVEN)
     e = g.e
     e.w8(DS_GRAPHICS, 1 if on else 0)
@@ -184,7 +184,7 @@ def pick_partners(ctx, on):
         e.press("START", 6)
         e.wait(20)
         for _ in range(2 + army):
-            e.press(CARD["DOWN"], 6)
+            e.press(CARD_KEYS["DOWN"], 6)
             e.wait(20)
         if army == 0:
             shot(ctx, e, "partner_pick" if on else "partner_pick_off")
@@ -194,10 +194,10 @@ def pick_partners(ctx, on):
             # (with the setting on the cursor has three cells an army, CO, partner and the P1 / CPU tab: the Teams record is the game's
             # either way, the pad walks to the next army's CO with one more press)
             for _ in range(3 if on else 2):
-                e.press(CARD["RIGHT"], 6)
+                e.press(CARD_KEYS["RIGHT"], 6)
                 e.wait(14)
     for _ in range(3):
-        e.press(CARD["DOWN"], 6)
+        e.press(CARD_KEYS["DOWN"], 6)
         e.wait(20)
     return g.teams(), list(e.read(tag.TEAMS_PARTNER, 5)), list(e.read(ram.TEAMS + ram.T_CONTROLLERS, 4))
 

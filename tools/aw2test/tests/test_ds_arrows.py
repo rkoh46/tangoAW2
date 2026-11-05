@@ -2,7 +2,7 @@
 
 Versus' Teams screen: drawn as army cards with the pack, its keys are the online army page's (crate::ds_coselect::card_keys):
 UP and DOWN go cell to cell (an army's CO, its partner, its P1 / CPU tab, the next army's CO ..., round again), LEFT and RIGHT
-change what the cell holds, as the cards' "< CO >" arrows show ([`CARD`] turns the keys written below, Dual Strike's arrows, into
+change what the cell holds, as the cards' "< CO >" arrows show ([`CARD_KEYS`] turns the keys written below, Dual Strike's arrows, into
 them); the game's own cursor does the walking, so the Teams record, partners and controllers are what AW2's own controls make. The CO screen (War Room,
 campaigns): the arrows move one cell of the drawn grid (four to a row, by country), the game's cursor is walked to that CO, so
 A picks the CO the picture shows; a locked cell takes the cursor but not the pick."""
@@ -32,11 +32,11 @@ def tap(e, key, wait=30):
 
 
 # The army cards' keys for the moves below: a move (Dual Strike's RIGHT / LEFT) is DOWN / UP, a change (its DOWN / UP) RIGHT / LEFT.
-CARD = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
+CARD_KEYS = {"RIGHT": "DOWN", "LEFT": "UP", "DOWN": "RIGHT", "UP": "LEFT"}
 
 
 def card_tap(e, key, wait=30):
-    tap(e, CARD.get(key, key), wait)
+    tap(e, CARD_KEYS.get(key, key), wait)
 
 
 def cursor(e, five):
@@ -358,22 +358,22 @@ def ds_coselect_arrows_versus_press_edges(ctx):
     # (frames held, cells): the press, then 12, 16, 20 ... 56 for the 60 frames (13 cells; the ring has 6)
     for frames, cells in ((2, 1), (8, 1), (11, 1), (13, 2), (15, 2), (60, 13)):
         e = fresh_versus(ctx)
-        e.hold(CARD["RIGHT"], frames)
+        e.hold(CARD_KEYS["RIGHT"], frames)
         e.wait(120)
         ctx.eq(virtual_cell(e, 2), cells % 6, f"RIGHT held {frames} frames: {cells} cells")
         ctx.eq(e.u8(tag.ARROWS + 1), 0, f"RIGHT held {frames} frames: the walk is over")
     for gap in (10, 6):
         e = fresh_versus(ctx)
         for _ in range(3):
-            e.hold(CARD["RIGHT"], 4)
+            e.hold(CARD_KEYS["RIGHT"], 4)
             e.wait(gap - 4)
         e.wait(120)
         ctx.eq(virtual_cell(e, 2), 3, f"RIGHT three times, {gap} frames apart")
     e = fresh_versus(ctx)
     for _ in range(3):
-        e.hold(CARD["RIGHT"], 8)
+        e.hold(CARD_KEYS["RIGHT"], 8)
         e.wait(3)
-    e.hold(CARD["LEFT"], 8)
+    e.hold(CARD_KEYS["LEFT"], 8)
     e.wait(120)
     ctx.eq(virtual_cell(e, 2), 2, "RIGHT three times, LEFT once, in a hurry")
 
@@ -411,6 +411,6 @@ def ds_coselect_arrows_survive_the_rules_screen(ctx):
     ctx.require(e.wait_until(g.on_teams, 400, step=10), "back on the Teams screen")
     e.wait(60)
     start = virtual_cell(e, 2)
-    e.hold(CARD["RIGHT"], 8)
+    e.hold(CARD_KEYS["RIGHT"], 8)
     e.wait(80)
     ctx.eq(virtual_cell(e, 2), (start + 1) % 6, "a move (the cards' DOWN): one Dual Strike cell")
