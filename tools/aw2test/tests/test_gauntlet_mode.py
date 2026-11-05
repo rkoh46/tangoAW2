@@ -347,7 +347,7 @@ def gauntlet_mode_save_and_continue(ctx):
     g2 = Game(e2, ctx.image)
     ctx.games.append(g2)
     d2 = ga.Gauntlet(g2)
-    d2.open(pick=False)
+    d2.open(pick=False, box="continue")
     ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET on Select Mode brings the battle back (no selector, no CO screen)")
     ctx.eq(e2.u8(ga.CONTINUING), 1, "the pick asked to continue")
     g2._units_base = g2._players_base = None
@@ -747,7 +747,7 @@ def gauntlet_mode_emerald_sun_survives_save_and_continue(ctx):
     g2 = Game(e2, ctx.image)
     ctx.games.append(g2)
     d2 = ga.Gauntlet(g2)
-    d2.open(pick=False)
+    d2.open(pick=False, box="continue")
     ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET continues the run")
     g2._units_base = g2._players_base = None
     g2.wait_for_input()
@@ -774,40 +774,185 @@ def oam_survey(e, uses):
         uses.setdefault(pal, set()).update(range(t, t + w * h))
 
 
-@test(modes=("ds",))
-def gauntlet_mode_select_with_a_starts_a_new_run_over_a_saved_one(ctx):
-    """With a run saved halfway, GAUNTLET continues it; SELECT held with A starts a new run instead (the army screen) and drops the save (from the game's directory at once, from Flash with the next write)."""
+def saved_run(ctx, name="saved"):
+    """A Gauntlet run saved halfway (the map menu's Save): the Flash image after it."""
     e, g, d = boot(ctx)
     d.start(ga.ANDY)
     saves.suspend(g)
-    saved = flash_after(ctx, e, "saved")
+    saved = flash_after(ctx, e, name)
     ctx.check(ga.MID_SLOT in saved.tags(), "the run is saved in slot 12")
     e.close()
-    e2 = Emu(save=saved.path, ds=True)
-    g2 = Game(e2, ctx.image)
-    ctx.games.append(g2)
-    d2 = ga.Gauntlet(g2)
-    saves.to_select_mode(e2)
-    saves.wheel_to(e2, "gauntlet")
-    e2.press("A+SELECT", 8)
-    d2.wait_step(ga.SELECTOR)
-    e2.press("A", 6)
-    d2.wait_army()
-    ctx.eq(e2.u8(ga.CONTINUING), 0, "a new run was asked for")
-    ctx.check(e2.u32(0x03000000) != 0x08022049, "no battle was resumed: the selector and the army screen come up")
-    png(pic(ctx, e2, "new_run_over_a_save"))
-    # (the drop is in the game's directory now and reaches Flash with its next write, as every campaign's New over a save does)
-    e2.press("B", 8)
-    d2.wait_step(ga.SELECTOR)
-    e2.press("B", 8)
-    ctx.require(e2.wait_until(lambda: d2.select_mode_up() and e2.u8(dc.ACTIVE) == 0, 900, step=10), "B: back on Select Mode")
-    e2.wait(60)
+    return saved
+
+
+def boot_select_mode(ctx, path):
+    """A console on this Flash image, on Select Mode with the wheel at GAUNTLET."""
+    e = Emu(save=path, ds=True)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "gauntlet")
+    return e, g, d
+
+
+def text_of(e, text_id):
+    """A text id's string, through the game's text table (0x08610A38)."""
+    at = e.u32(0x08610A38 + 4 * text_id)
+    out = bytearray()
+    while len(out) < 80 and e.u8(at + len(out)):
+        out.append(e.u8(at + len(out)))
+    return out.decode("latin-1")
+
+
+@test(modes=("ds",))
+def gauntlet_mode_a_saved_run_makes_the_wheel_offer_continue_and_new(ctx):
+    """With a run saved halfway, A on GAUNTLET opens AW2's own item box (the one Campaign's wheel entry opens): Continue on the top row, New on the bottom, the help line under it saying what each does
+    (Continue the saved run; New drops it). The cursor starts on Continue; B closes the box and leaves the wheel. With no save A starts the mode at once (the selector), no box. Pictures: the box with each
+    row under the cursor."""
+    saved = saved_run(ctx)
+    e, g, d = boot_select_mode(ctx, saved.path)
+    e.press("A", 8)
+    ctx.require(e.wait_until(d.box_open, 120, step=4), "A on GAUNTLET opens an item box (a run is saved)")
+    e.wait(100)
+    ctx.eq(d.box_cursor(), 0, "the cursor starts on Continue")
+    ctx.eq(d.step(), 0, "the selector has not opened")
+    png(pic(ctx, e, "box_continue"))
+    e.press("DOWN", 6)
+    e.wait(100)
+    ctx.eq(d.box_cursor(), 1, "DOWN: New")
+    png(pic(ctx, e, "box_new"))
+    # the help lines the box shows are the Gauntlet's own
+    from_ptr = e.u32(0x080846C0)  # (the options pool word: crate::mode_menu::OPTIONS_POOL)
+    ctx.eq(from_ptr, 0x08E40080, "the wheel reads tangoAW2's choice lines")
+    lines = [text_of(e, e.u16(0x08E40080 + 2 * (8 + k))) for k in (0, 1)]
+    ctx.eq(lines, ["Continue your saved Gauntlet run.", "Start a new run. The saved run is dropped."], "the box's help lines")
+    e.press("B", 8)
+    e.wait(40)
+    ctx.check(not d.box_open(), "B closes the box")
+    ctx.check(d.select_mode_up(), "still on Select Mode")
+    ctx.eq(ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)], 9, "on GAUNTLET")
+    e.close()
+    # no save: the Gauntlet answers at once, no box
+    e, g, d = boot_select_mode(ctx, paths.base_save())
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    ctx.check(not d.box_open(), "no save: no box, the selector")
+    e.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_continue_in_the_box_resumes_the_saved_run_byte_for_byte(ctx):
+    """Continue in the box (the first row, A): the saved battle comes back with no selector and no army screen, the snapshot of it equal to the one taken when it was saved, and a second reboot from the
+    same Flash still offers Continue (the save is not used up by resuming); the run's end drops it."""
+    e, g, d = boot(ctx)
+    d.start(ga.ANDY)
+    d.capture(ctx, ga.CINDER["drake"])
+    d.settle()
+    saves.suspend(g)
+    snap = saves.snapshot(g)
+    saved = flash_after(ctx, e, "saved")
+    e.close()
+    e2, g2, d2 = boot_select_mode(ctx, saved.path)
     e2.press("A", 8)
-    d2.wait_step(ga.SELECTOR)
-    e2.press("A", 6)
-    d2.wait_army()
-    ctx.eq(e2.u8(ga.CONTINUING), 0, "the save is gone: GAUNTLET alone starts a new run now")
+    d2.choose_in_box("continue")
+    ctx.require(e2.wait_until(lambda: e2.u32(0x03000000) == 0x08022049, 1800, step=10), "Continue brings the battle back (no selector, no CO screen)")
+    ctx.eq(e2.u8(ga.CONTINUING), 1, "the pick asked to continue")
+    g2._units_base = g2._players_base = None
+    g2.wait_for_input()
+    saves.compare_snapshots(ctx, snap, saves.snapshot(g2), "after Continue in the box")
+    ctx.eq(d2.controllers(), [1, 2, 2, 0], "the first line has fallen as saved")
     e2.close()
+    e3, g3, d3 = boot_select_mode(ctx, saved.path)
+    e3.press("A", 8)
+    ctx.check(e3.wait_until(d3.box_open, 120, step=4), "the same Flash offers Continue again: resuming does not use the save up")
+    e3.close()
+
+
+@test(modes=("ds",))
+def gauntlet_mode_new_in_the_box_starts_at_the_selector_and_drops_the_save_when_the_run_starts(ctx):
+    """New in the box (the second row) goes to the map selector and the army screen as a new run does; backing out (B, B) to Select Mode keeps the save (the box offers Continue again); only the army
+    screen's A, the new run's real start, drops it (the game's directory at once): back on Select Mode after that run, GAUNTLET goes to the selector at once."""
+    saved = saved_run(ctx)
+    e, g, d = boot_select_mode(ctx, saved.path)
+    e.press("A", 8)
+    d.choose_in_box("new")
+    d.wait_step(ga.SELECTOR)
+    e.press("A", 6)
+    d.wait_army()
+    ctx.eq(e.u8(ga.CONTINUING), 0, "a new run was asked for")
+    ctx.check(e.u32(0x03000000) != 0x08022049, "no battle was resumed")
+    png(pic(ctx, e, "new_run_over_a_save"))
+    ctx.check(mid_in_directory(e), "on the army screen the save is still there")
+    e.press("B", 8)
+    d.wait_step(ga.SELECTOR)
+    e.press("B", 8)
+    ctx.require(e.wait_until(lambda: d.select_mode_up() and e.u8(dc.ACTIVE) == 0, 900, step=10), "B, B: back on Select Mode")
+    e.wait(60)
+    ctx.check(mid_in_directory(e), "backing out kept the save")
+    # (AW2's own way back from a mode: the wheel returns with the item box still open on the row last taken, as Campaign's does)
+    ctx.check(d.box_open(), "the box offers Continue again, open on the row last taken")
+    ctx.eq(d.box_cursor(), 1, "on New")
+    png(pic(ctx, e, "box_back_from_the_selector"))
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    e.press("A", 6)
+    d.pick_army(ga.ANDY)
+    for _ in range(600):
+        if d.in_battle() and e.u32(0x0849_9598) != 0:
+            break
+        e.press("A", 4) if d.scripts_running() else None
+        e.wait(10)
+    ctx.require(d.in_battle(), "the new run's battle loads")
+    ctx.check(not mid_in_directory(e), "the army screen's A started the run: the save is dropped from the game's directory")
+    e.close()
+
+
+def mid_in_directory(e):
+    """Slot 12 is in the game's save directory (crate::suspend::DIRECTORY, 16 sector slots)."""
+    return ga.MID_SLOT in list(e.read(0x0200CC38, 16))
+
+
+@test(modes=("ds",))
+def gauntlet_mode_a_bh_save_in_the_shared_slot_is_neither_offered_nor_dropped(ctx):
+    """Slot 12 is shared by the BH Campaigns and the Gauntlet (a saved mission's top bits name its campaign). With a BH mission saved halfway there: GAUNTLET offers no Continue (no box), a new Gauntlet run
+    started over it leaves the BH save in the directory, and the Gauntlet's own Save then replaces it (one halfway save at a time, as the BH Campaigns replace each other's): BH CAMPAIGN has no Continue after that."""
+    e, g, d = boot(ctx, driver=bh.BhCampaign)
+    d.start_bh(new=True, pick=False)
+    d.wait_world_map()
+    d.pick_mission()
+    d.wait_map()
+    g._units_base = g._players_base = None
+    saves.suspend(g)
+    bh_saved = flash_after(ctx, e, "bh_saved")
+    ctx.check(ga.MID_SLOT in bh_saved.tags(), "the BH mission is saved in slot 12")
+    ctx.eq(bh_saved.slot(ga.MID_SLOT) is not None, True, "slot 12 has its block")
+    e.close()
+    e, g, d = boot_select_mode(ctx, bh_saved.path)
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    ctx.check(not d.box_open(), "a BH save is no Gauntlet save: no Continue, the selector at once")
+    e.press("A", 6)
+    d.pick_army(ga.ANDY)
+    for _ in range(600):
+        if d.in_battle() and e.u32(0x0849_9598) != 0:
+            break
+        e.press("A", 4) if d.scripts_running() else None
+        e.wait(10)
+    ctx.require(d.in_battle(), "the new Gauntlet run's battle loads")
+    ctx.check(mid_in_directory(e), "the BH save is still in the directory: a new Gauntlet run does not drop another campaign's save")
+    d.leave_setup()
+    d.wait_control()
+    g._units_base = g._players_base = None
+    saves.suspend(g)
+    both = flash_after(ctx, e, "gauntlet_over_bh")
+    e.close()
+    ctx.check(ga.MID_SLOT in both.tags(), "slot 12 holds the Gauntlet's run now")
+    e, g, d = boot_select_mode(ctx, both.path)
+    e.press("A", 8)
+    ctx.check(e.wait_until(d.box_open, 120, step=4), "GAUNTLET offers Continue for it")
+    e.close()
+    ctx.check(bytes(both.slot(ga.MID_SLOT)) != bytes(bh_saved.slot(ga.MID_SLOT)), "and it is the Gauntlet's block, no longer the BH mission's (one halfway save at a time)")
 
 
 @test()

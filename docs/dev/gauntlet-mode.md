@@ -6,8 +6,18 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
 (`start_gauntlet`, `gauntlet_start_script`, `gauntlet_end_script`, `after_map`, `end_of_battle`), `campaign_model.rs` (the source), tests `tools/aw2test/tests/test_gauntlet_mode.py`.
 
 ## The flow, screen by screen
-1. **Select Mode.** GAUNTLET answers like Battle Maps and Link (A starts it, no Continue/New box). The wheel's mode store stores Campaign's New (1) and `gauntlet::picked` asks for this source
-   (`ds_campaign::REQUEST`, `SOURCE` 4); a run saved halfway asks for Continue instead (hold SELECT with A to start a new run over it).
+1. **Select Mode.** With **no run saved**, GAUNTLET answers like Battle Maps and Link (A starts it, no box): the wheel's mode store stores Campaign's New (1) and `gauntlet::picked(core, false)` asks for this source
+   (`ds_campaign::REQUEST`, `SOURCE` 4). With **a run saved halfway** (`gauntlet::saved`: slot 12, the save's source tag 4), A opens AW2's own item box, as Campaign's entry does: **CONTINUE** (top row) and
+   **NEW** (bottom row), the help line under the wheel saying "Continue your saved Gauntlet run." / "Start a new run. The saved run is dropped." (text slots 41 and 42 of Survival's block, the wheel's options
+   table at position 4). The `cmp r0, #4` traps answer 4 for GAUNTLET only without a save (`mode_menu::direct`); with one the game opens the box itself (cursor on Continue; the wheel also comes back from a mode
+   with the box open on the row last taken, as AW2's does). The box's commit has no case for item 9, so a trap at `0x08082352` (`box_commit`) stores Campaign's New (1) and `picked(core, cursor is the top row)`
+   (REQUEST 2 = Continue, 1 = New). The rows' sprites are drawn by a chain on the item at `0x08083B26..`: a trap at its `cmp r0, #5` makes the Gauntlet the War Room (CONTINUE / NEW labels, `GetWarRoomSaveFlag`
+   `0x0803BC94` answered true for it so Continue is never dimmed), and `remap` (the sprite flush) puts the War Room's palette-7 row into the Gauntlet's OBJ palette 14. **Continue** resumes the battle (no selector,
+   no army screen). **New** goes to the selector and the army screen; **the save is dropped only when the new run really starts** (`gauntlet_ui::apply`, the army screen's A: from the game's directory at once, from
+   Flash with the next write), so B, B back to Select Mode keeps it (the wheel is back with the box open on New). Slot 12 is shared with the BH Campaigns (saves are told apart by the source tag): a BH save is
+   neither offered as Continue nor dropped by a new Gauntlet run; the Gauntlet's own Save replaces whatever halfway save the slot holds (one at a time, as the BH Campaigns replace each other's).
+   Tests: `-k gauntlet_mode_a_saved_run` (the box and its two lines), `gauntlet_mode_continue_in_the_box` (byte for byte), `gauntlet_mode_new_in_the_box` (the drop timing), `gauntlet_mode_a_bh_save` (shared slot);
+   the audit scene `aw2dev gfx audit --scenes wheel_box` shows the box in AW2, DS + tilt and DS flat. The test driver: `Gauntlet.open(box="continue"|"new")`, `choose_in_box`.
 2. The game's own Campaign New handler (`0x0803BA4C`, trapped by `ds_campaign::start`) runs `start_gauntlet`: the record from Flash (kept), the session's flags and wins cleared (every run is a first
    play), `GAME_MODE` campaign, then the **start proc** (`gauntlet_start_script`, a proc of AW2's own script language; labels are found by scanning on and an END stops the scan, so the "round again"
    section is last): fade, then
