@@ -164,6 +164,9 @@ const CARRY_CO: u32 = STATE + 0xC;
 const CARRY_PARTNER: u32 = STATE + 0xD;
 const CARRY_PCHARGE: u32 = STATE + 0x10;
 const CARRY_CHARGE: u32 = STATE + 0x14;
+/// A Gauntlet run's score counters across the switch ([`crate::gauntlet::carry_score_out`]): +0x18 the player's units built (u8), +0x19 lost (u8), +0x1A the most kills in a turn (u16),
+/// +0x1C the units the enemy armies built (u16, summed). Cleared with the rest of the first 0x20 bytes when a run starts ([`reset`]).
+pub(crate) const SCORE_CARRY: u32 = STATE + 0x18;
 const CARRY: u32 = STATE + 0x20;
 /// The most units carried (the campaigns' armies start with at most 40: the cap of the carry buffer, [`crate::ram_map::STAGE`]).
 pub const CARRY_MAX: u32 = 40;
@@ -303,6 +306,7 @@ fn snapshot(core: &mut Core, rt: &StageRuntime) {
     for (k, r) in recs.iter().enumerate() {
         core.raw_write_range(CARRY + 12 * k as u32, -1, r);
     }
+    crate::gauntlet::carry_score_out(core, army);
 }
 
 fn value_of(core: &Core, r: &[u8; 12]) -> u32 {
@@ -500,6 +504,7 @@ fn arrive(core: &mut Core) {
         core.raw_write_8(MAP + 0x12 + row + x, -1, ((army - 1) * stride + j) as u8);
         taken.push((x, y));
     }
+    crate::gauntlet::carry_score_in(core, army);
     let p = players(core) + PLAYER * army;
     let carried = core.raw_read_32(CARRY_FUNDS, -1).min(rt.funds_cap.unwrap_or(u32::MAX));
     core.raw_write_32(p, -1, rt.funds.map_or(carried, |f| f.max(0) as u32));

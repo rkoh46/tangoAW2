@@ -19,6 +19,23 @@ class Parsing(unittest.TestCase):
             a = parse(*argv)
             self.assertTrue(callable(a.fn), argv)
 
+    def test_score_parses_and_the_score_table_is_consistent(self):
+        for argv in (["gauntlet", "score"], ["gauntlet", "score", "--markdown"]):
+            self.assertTrue(callable(parse(*argv).fn), argv)
+        import sys
+        sys.path.insert(0, str(cfg.REPO / "tools" / "aw2test"))
+        from aw2test import gauntlet_score as gs
+        rows = gs.table()
+        self.assertEqual(len(rows), 12)
+        for key, title, n, old, new, res in rows:
+            self.assertGreaterEqual(new, old, f"{title}: no map's par got stricter")
+            for name, (before, after) in res.items():
+                self.assertGreaterEqual(after["total"], before["total"], f"{title} {name}")
+        self.assertEqual(gs.speed(36, 36), 100)
+        self.assertEqual(gs.speed(144, 36), 0)
+        self.assertEqual(gs.rank(280), "S")
+        self.assertEqual(gs.rank(279), "A")
+
     def test_gauntlet_start_help_names_the_army_screen(self):
         text = gauntlet.__doc__ + subprocess.run([str(cfg.REPO / "aw2dev"), "gauntlet", "start", "--help"], capture_output=True, text=True).stdout
         self.assertIn("army screen", text)

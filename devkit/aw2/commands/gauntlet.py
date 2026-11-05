@@ -11,6 +11,8 @@
                                         saves three console checkpoints, the app boots each (needs `cargo build --release -p tango`) and a sheet is composed (rows: looks, columns: moments)
   gauntlet maps-pictures [--out DIR]    every map added after Cinder Sea and Iron Crown played with real captures, per look (AW2, DS + tilt, DS flat): `gauntlet_lines_pictures` sheets in DIR
   gauntlet order                        the maps in the selector's order (fewest enemy COs first), from `aw2test/gauntlet_maps.py` and `crate::gauntlet_mode::order`
+  gauntlet score [--markdown]           every map's par days (days per line, `crate::gauntlet_mode::par_days`) and what a quick, a steady and a slow run score before the rework and now (total and rank): AW2's
+                                        Speed against the par, Power against an average line's builds (`aw2test/gauntlet_score.py`: the ROM's formulas; the real check is `-k gauntlet_score`)
   gauntlet test                         the Gauntlet's regression tests (`run.py -k gauntlet_mode --mode ds`)
 """
 import os, subprocess, sys, tempfile
@@ -45,6 +47,9 @@ def register(sub):
     a.set_defaults(fn=new_map)
     a = gs.add_parser("cos", help="the enemy COs of every map, reused ones with the allowed exceptions, and the COs no map uses")
     a.set_defaults(fn=cos)
+    a = gs.add_parser("score", help="par days and example scores per map (the Gauntlet's scoring rework)")
+    a.add_argument("--markdown", action="store_true", help="print the table as Markdown")
+    a.set_defaults(fn=score)
     a = gs.add_parser("order", help="the maps in the selector's order")
     a.set_defaults(fn=order)
     a = gs.add_parser("rout-sheet", help="the rout's before/during/after in the real app, in all three looks, as one sheet")
@@ -95,6 +100,25 @@ def order(a):
 
 def test(a):
     return _run({}, ["-k", "gauntlet", "--mode", "ds"]).returncode
+
+
+def score(a):
+    """The par days and the example runs' scores (aw2test/gauntlet_score.py, written from the ROM's score code; `crate::gauntlet_mode::PAR_PER_LINE` and `PAR_OVERRIDES` are read from the source)."""
+    sys.path.insert(0, str(cfg.REPO / "tools" / "aw2test"))
+    from aw2test import gauntlet_score as gs
+    per, over = gs.par_rules()
+    util.say(f"par = {per} days a line (overrides {over}); Speed 100 up to par, 0 at 4 x par; Power's enemy builds divided by the lines; Technique and rank as AW2's")
+    util.say("runs (days, most kills in a turn, enemy builds, units built/lost): " + "; ".join(f"{n} on N lines: {gs.SCENARIOS[n](1)} per line" for n in gs.SCENARIOS))
+    if a.markdown:
+        util.say("| map | lines | par before | par now | " + " | ".join(gs.SCENARIOS) + " |")
+        util.say("|---|---|---|---|" + "---|" * len(gs.SCENARIOS))
+        for key, title, n, old, new, res in gs.table():
+            util.say(f"| {title} | {n} | {old} | {new} | " + " | ".join(f"{gs.fmt(res[s][0])} -> {gs.fmt(res[s][1])}" for s in gs.SCENARIOS) + " |")
+    else:
+        for line in gs.lines():
+            util.say(line)
+    return 0
+
 
 
 LOOKS = [("AW2 graphics", dict(ds=True, graphics=False)), ("DS graphics, no tilt", dict(ds=True, graphics=True)), ("DS graphics + tilt", dict(ds=True, graphics=True, tilt=True))]
