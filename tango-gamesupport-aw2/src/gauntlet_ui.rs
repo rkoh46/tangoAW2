@@ -625,7 +625,7 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
     if s == SELECT {
         let Some(opt) = crate::star_hint::option() else { return false };
         let Some(e) = gm::entries().get(core.raw_read_8(MAP_CURSOR, -1) as usize) else { return false };
-        crate::star_hint::paint(rgba, opt, e, shown_stage(core, e.mission));
+        crate::star_hint::paint(core, rgba, opt, e, shown_stage(core, e.mission));
         return false;
     }
     if s != ARMY {

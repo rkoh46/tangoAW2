@@ -865,22 +865,22 @@ def _star_hint(rec, option):
     rec.snap(e, "one_map_row", ["menu", "maplist"])
 
 
-@scene("gauntlet", "star_hint_a", looks=("ds_flat",), pack=True)
-def gauntlet_star_hint_a(rec):
-    """Gauntlet selector, star-hint option A: [SELECT] 2ND MAP plate in the band under the picture (design pictures, not a test)."""
-    _star_hint(rec, "a")
+@scene("gauntlet", "star_hint_a1", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint_a1(rec):
+    """Gauntlet selector, star-hint variant A1 (crate::star_hint): the SELECT: 2nd map hint on a two-map row."""
+    _star_hint(rec, "1")
 
 
-@scene("gauntlet", "star_hint_b", looks=("ds_flat",), pack=True)
-def gauntlet_star_hint_b(rec):
-    """Gauntlet selector, star-hint option B: MAP 1/2 + SELECT label in the picture's corner."""
-    _star_hint(rec, "b")
+@scene("gauntlet", "star_hint_a2", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint_a2(rec):
+    """Gauntlet selector, star-hint variant A2 (crate::star_hint): the SELECT: 2nd map hint on a two-map row."""
+    _star_hint(rec, "2")
 
 
-@scene("gauntlet", "star_hint_c", looks=("ds_flat",), pack=True)
-def gauntlet_star_hint_c(rec):
-    """Gauntlet selector, star-hint option C: the ENEMY label reads MAP 1/2, with SELECT beside it."""
-    _star_hint(rec, "c")
+@scene("gauntlet", "star_hint_a3", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint_a3(rec):
+    """Gauntlet selector, star-hint variant A3 (crate::star_hint): the SELECT: 2nd map hint on a two-map row."""
+    _star_hint(rec, "3")
 
 
 @scene("gauntlet", "army_skills", looks=("ds_flat",), pack=True)
