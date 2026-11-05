@@ -346,6 +346,7 @@ pub fn results(core: &mut Core) {
                 core.raw_read_8(MAP_ID, -1).wrapping_sub(FIRST_CAMPAIGN_MAP) < 8
             }
         };
+        let mut shown = Vec::new();
         for a in 1..=4u32 {
             if !human(core, a) {
                 continue;
@@ -354,10 +355,14 @@ pub fn results(core: &mut Core) {
             let partner = crate::tag::partner(core, a);
             let m = mult(mode, early, partner.is_some(), skills_on(core, a));
             for co in std::iter::once(front).chain(partner) {
-                let e = award(crate::co_skills::exp(core, co), scale(prev, m), scale(total, m));
+                let old = crate::co_skills::exp(core, co);
+                let e = award(old, scale(prev, m), scale(total, m));
                 crate::co_skills::set_exp(core, co, e);
+                shown.push((co, a as u8, old, crate::co_skills::exp(core, co)));
             }
         }
+        // The EXP box shows these on AW2's results page ([`crate::exp_box`]).
+        crate::exp_box::record(core, &shown);
     }
     crate::history::battle_over(core, score, total, prev, survival, !aw2_campaign_plain);
     clear(core);
@@ -372,10 +377,15 @@ pub fn survival_run_over(core: &mut Core, points: u32) {
     crate::ds_campaign::skills_loaded(core);
     let gain = points.min(9999);
     let front = core.raw_read_8(player(core, 1) + P_CO, -1);
+    let mut shown = Vec::new();
     for co in std::iter::once(front).chain(crate::tag::partner(core, 1)) {
-        let e = (crate::co_skills::exp(core, co) + gain).min(crate::co_skills::MAX_EXP);
+        let old = crate::co_skills::exp(core, co);
+        let e = (old + gain).min(crate::co_skills::MAX_EXP);
         crate::co_skills::set_exp(core, co, e);
+        shown.push((co, 1u8, old, crate::co_skills::exp(core, co)));
     }
+    // The EXP box shows these on Survival's results page ([`crate::exp_box`]).
+    crate::exp_box::record(core, &shown);
     crate::history::co_ranks(core);
 }
 
@@ -383,6 +393,7 @@ pub fn survival_run_over(core: &mut Core, points: u32) {
 pub fn map_start(core: &mut Core) {
     if is_on(core) && core.raw_read_16(DAY, -1) <= 1 && !crate::two_front::second_live(core) {
         clear(core);
+        crate::exp_box::reset(core);
     }
 }
 

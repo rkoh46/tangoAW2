@@ -122,6 +122,7 @@ pub mod hazard;
 pub mod heal_effect;
 pub mod history;
 pub mod history_ui;
+pub mod exp_box;
 pub mod hold_box;
 pub mod inspect;
 pub mod invention_art;

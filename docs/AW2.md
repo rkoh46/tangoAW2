@@ -3825,6 +3825,12 @@ Dual Strike's CO skills, from its code (overlay 0's skill table at
   The DS Campaign's save writes it; after any profile write (`sub_0801A7D8(0, ..)` returning at
   0x08016E2C, 0x0801AC40, 0x0801AE2E) it is written again if it changed. Online (both peers boot from seat 0's save) the Versus sets are part of the simulation, so a build that adds slots
   needs a `SIM_VERSION` bump (`inspect.rs`).
+- **The EXP box** (`exp_box.rs`). A battle that gave EXP (a campaign mission, the War Room, the Gauntlet; Survival at the end of a run) shows each human army's CO (a tag partner too) in a window
+  of the game's own look over AW2's results page, once its totals are worked out and it waits for A (its proc script `0x08616184`; Survival: its results panel): the CO's face from the game, its name,
+  "+N EXP", and a bar from the old EXP to the new within the rank (1000 EXP a rank, "Rank N" at the left, filling over about a second after a pause, gold when full), "Rank up!" in red
+  when a rank is crossed, three COs a page. A skips the filling, then goes on to the next page, then closes; the page under it takes the next A. `battle_points::results` and
+  `survival_run_over` record (CO, army, EXP before, EXP after) at `0x0203C640` (+0x70, `ram_map.rs`) with the state and the frame, and `pvp`'s tick takes the pad while it is up. Offline only;
+  a Versus win gives no EXP and shows nothing. Tests `exp_box_*` (`tools/aw2test/tests/test_exp_box.py`), audit scenes `exp_box/war_room_win` and `exp_box/gauntlet_asuka`.
 - **The SET SKILLS screen** (`skills_panel.rs`). On the CO screen (War
   Room, Survival, the campaigns: `ProcScr_CoSelect`) SELECT opens it for the
   CO highlighted; on Versus' Teams screen SELECT on an army's CO stop, for

@@ -202,6 +202,11 @@ fn running(core: &Core, script: u32) -> bool {
         .any(|p| core.raw_read_32(p, -1) == script)
 }
 
+/// The run's results panel is up (cleared or lost, on SELECT MAP: crate::exp_box shows the COs' EXP over it).
+pub fn results_up(core: &Core) -> bool {
+    core.raw_read_8(ON, -1) == 1 && matches!(core.raw_read_8(PHASE, -1), CLEARED | LOST) && running(core, SELECT_MAP)
+}
+
 /// Survival's War Room is open (a run being played).
 pub fn on(core: &Core) -> bool {
     core.raw_read_8(ON, -1) == 1

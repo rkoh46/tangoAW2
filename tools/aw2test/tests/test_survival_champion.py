@@ -200,6 +200,7 @@ def survival_champion_opens_with_the_basic_clear(ctx):
     e.w32(player(1) + P_FUNDS, 123400)
     finish_map(ctx, e, g, data.map(data.run(sv.MONEY)[0])["armies"])
     ctx.eq(e.u8(sv.PHASE), sv.CLEARED, "the basic course is cleared")
+    sv.close_exp_box(e)
     e.press("A", 8)
     e.wait(40)
     ctx.eq(sv.listed(e), [sv.ENTRY_IDS[k] for k in sv.LIST_ORDER] + [sv.CHAMPION_IDS[sv.MONEY]],
@@ -403,6 +404,7 @@ def survival_champion_records_and_results(ctx):
     ctx.check(text_gray(shot, "Money Champion", 18, 129), "the course's name")
     ctx.check(blue_in(shot, 190, 76, 232, 110) > 40, "the rank in the title font")
     e.shot(f"{ctx.out}/champion_lost")
+    sv.close_exp_box(e)
     e.press("A", 8)
     e.wait(40)
     ctx.eq(sv.state(e)["phase"], sv.CHOOSING, "A closes the results")
@@ -419,6 +421,7 @@ def survival_champion_records_and_results(ctx):
     st = sv.state(e)
     ctx.eq((st["bonus"], st["rank"]), (sv.champion_bonus(12), 3), "12 maps: rank B")
     ctx.eq(sv.champion_records(e), {kind: 12}, "the record is now 12")
+    sv.close_exp_box(e)
     e.press("A", 8)
     e.wait(40)
     # A worse one.
@@ -469,6 +472,7 @@ def survival_champion_saved_and_after_reboot(ctx):
     finish_map(ctx, e, g, data.map(data.run(sv.MONEY)[0])["armies"])
     ctx.eq(e.u8(sv.PHASE), sv.CLEARED, "the basic course is cleared")
     co = sv.state(e)["co"]
+    sv.close_exp_box(e)
     e.press("A", 8)
     e.wait(40)
     mid = saves.flash(e, os.path.join(ctx.out, "basic"))
