@@ -175,6 +175,73 @@ def asuka_enemy_terrain_cover_is_cut_one_two_three_stars(ctx):
     ctx.check(seen_def[0] > seen_def[1] > seen_def[2], f"each level cuts more: defence {seen_def} (200 - defence is the damage taken)")
 
 
+def panel_star_number(e):
+    """The defence number the terrain panel shows on its star row: the semi-transparent 8x8 digit sprites of palette 1 (AW2's tiles 976.., Dual Strike's 32..) on the row of the star icon (tile 850), read left to right."""
+    from tests.test_ds_hud import sprites
+    ss = [s for s in sprites(e) if (s["a0"] >> 10) & 3 == 1 and (s["a0"] & 255) >= 90 and s["pal"] == 1]
+    star = [s for s in ss if s["tile"] == 850]
+    if not star:
+        return None
+    sx, sy = star[0]["a1"] & 511, star[0]["a0"] & 255
+    digits = []
+    for s in ss:
+        d = s["tile"] - 976 if 976 <= s["tile"] < 986 else s["tile"] - 32 if 32 <= s["tile"] < 42 else None
+        x, y = s["a1"] & 511, s["a0"] & 255
+        if d is not None and (s["a0"] >> 14) == 0 and (s["a1"] >> 14) == 0 and sx < x < sx + 26 and abs(y - sy) <= 6:
+            digits.append((x, d))
+    return int("".join(str(d) for _, d in sorted(digits))) if digits else None
+
+
+@test(modes=("ds",))
+def asuka_terrain_panel_shows_the_cut_stars(ctx):
+    """The terrain panel's defence number (the map's terrain info window) shows the stars the cell gives the army on it AFTER Asuka's cut (1 day to day, 2 in Dark Intel, 3 in Event Horizon; Dual Strike's
+    window does the same, `DoubleTerrainStars`): her enemy's Infantry on a city (3 stars) reads 2 / 1 / 0 and on a mountain (4) 3 / 2 / 1, her own Infantry the full 3 and 4, an empty city for her turn 3 (nothing cuts
+    hers); and the day-to-day number is back once her Super Power is over."""
+    cells = {"enemy_city": (10, 10), "enemy_mountain": (12, 10), "own_city": (14, 10), "own_mountain": (16, 10), "empty_city": (18, 10)}
+    for mode, cut in ((None, 1), ("power", 2), ("super", 3)):
+        m = ctx.map()
+        m.terrain(10, 10, "city").terrain(12, 10, "mountain").terrain(14, 10, "city").terrain(16, 10, "mountain").terrain(18, 10, "city")
+        m.unit(2, "infantry", 10, 10).unit(2, "infantry", 12, 10).unit(1, "infantry", 14, 10).unit(1, "infantry", 16, 10)
+        g = ctx.start(m, ["asuka", "andy"])
+        if mode:
+            ctx.power(g, 1, mode)
+            g.wait_for_input()
+        got = {}
+        for name, (x, y) in cells.items():
+            g.goto(x, y)
+            g.e.wait(40)
+            got[name] = panel_star_number(g.e)
+            if name in ("enemy_city", "own_mountain"):
+                ctx.shot(g, f"panel_{mode or 'd2d'}_{name}")
+        want = {"enemy_city": max(0, 3 - cut), "enemy_mountain": max(0, 4 - cut), "own_city": 3, "own_mountain": 4, "empty_city": 3}
+        ctx.eq(got, want, f"{mode or 'day to day'}: the panel's stars by cell (cut {cut})")
+        if mode == "super":
+            g.end_turn()
+            g.goto(10, 10)
+            g.e.wait(40)
+            ctx.eq(g.player(1)["co_mode"], 0, "the Super Power is over at her next turn")
+            ctx.eq(panel_star_number(g.e), 2, "and the enemy's city reads the day-to-day 2 again")
+    # the other way round: Andy's Infantry faces Asuka's cut
+    m = ctx.map()
+    m.terrain(10, 10, "city").unit(1, "infantry", 10, 10)
+    g = ctx.start(m, ["andy", "asuka"])
+    g.goto(10, 10)
+    g.e.wait(40)
+    ctx.eq(panel_star_number(g.e), 2, "Andy's Infantry on a city faces Asuka: 3 stars less her cut of 1")
+    # Sonja's the same day to day (her block is Asuka's), and Andy's (no cut) leaves the full 3
+    for co, want in (("sonja", 2), ("kanbei", 3)):
+        g = ctx.start(m, [co, "andy"])
+        g.goto(10, 10)
+        g.e.wait(40)
+        ctx.eq(panel_star_number(g.e), 3, f"{co}'s own Infantry on a city: the full 3")
+        m2 = ctx.map()
+        m2.terrain(10, 10, "city").unit(2, "infantry", 10, 10)
+        g = ctx.start(m2, [co, "andy"])
+        g.goto(10, 10)
+        g.e.wait(40)
+        ctx.eq(panel_star_number(g.e), want, f"{co}: Andy's Infantry on a city reads {want}")
+
+
 @test(modes=("ds",))
 def asuka_luck_is_nells_and_there_is_no_bad_luck(ctx):
     """Black Insight's luck: each hit rolls 0..19% (Nell's day-to-day), no bad luck, in every level. Ten Tank hits on ten Infantry in one turn (the sampled spread): every loss is inside the calculator's range

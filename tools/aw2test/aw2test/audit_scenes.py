@@ -316,6 +316,26 @@ def five_army(rec):
     rec.snap(e, "five_menu", ["battle", "menu"])
 
 
+@scene("versus", "asuka_stars", pack=True)
+def asuka_stars(rec):
+    """Asuka's terrain cut on the terrain panel: the defence stars of the enemy's Infantry on a mountain (4 stars) and of her own, day to day (3 and 4),
+    in her CO Power (2 and 4) and her Super Power (1 and 4)."""
+    m = showcase_map(rec.ctx)
+    m.unit(2, "infantry", 4, 3).unit(1, "infantry", 4, 4)
+    cells = ((4, 3, "enemy"), (4, 4, "own"))
+    for which in (None, "power", "super"):
+        e, g = versus(rec, m, cos=("asuka", "andy"))
+        if which:
+            g.charge_power(1, which)
+            g.power(which)
+            g.wait_for_input()
+        for x, y, who in cells:
+            look_at(rec, g, x, y, f"cut_{which or 'd2d'}_{who}", ("battle", "map", "panel"), wait=40)
+        if which == "super":
+            look_at(rec, g, 2, 2, "cut_super_plain", ("battle", "map", "panel"), wait=40)
+        e.close()
+
+
 @scene("versus", "silver_nova", pack=True)
 def silver_nova(rec):
     """Silver Nova in a Versus battle: its units, HQ, the terrain panel, capture box and a battle scene."""

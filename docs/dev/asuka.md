@@ -182,3 +182,9 @@ tag powers' halves) and `co verify sonja`.
 **2026-10-30 (the owner):** her day to day rose to +10% attack and defence (`asuka::DAY_BONUS` 10, from 5) and Event Horizon now takes 3 HP from every enemy unit (`asuka::HP_ENEMY` [0, 0, 3], from 1; never below 1 HP); her powers give vision +3 (their rain takes 1 off). The CO page says "enemy terrain defense" (was "enemy cover").
 Both powers now take a quarter of every enemy unit's ammo and fuel (3/4 kept, rounded down: ammo 9 -> 6, fuel 99 -> 74), not half: Drake's fuel flag is off in her power functions and `co_powers::mass_unit` does both cuts.
 Dark Intel now takes 1 HP from every enemy unit (`asuka::HP_ENEMY` [0, 1, 3]; never below 1 HP).
+
+**The terrain panel shows the cut (2026-11-04, the owner asked "does it visually show the 3 stars?").** It did not: the map's terrain info window kept the terrain's full stars while the damage formula took the stars off. Dual Strike's window does show it
+(`InfoPanel_Draw` prints `DoubleTerrainStars(currentPlayer, 0, terrain) / 10`: the terrain's stars less the player's cut, doubled in Lash's Super Power; only a number next to the star icon, there are no single stars to grey out, and only for the player whose turn it is).
+tangoAW2's window now prints the same number, but for the army that would stand there: the army of the unit on the cell, else the army whose turn it is (`co_roster::panel_stars`, a trap on the star number's call `sub_0802BAFC` at 0x0802ABB6; the cell is in the frame of `sub_0802AA78`
+at sp+0x20 / 0x24). So the enemy's Infantry on a mountain reads 3 / 2 / 1 against Asuka (and Sonja, and the pack's Dual Strike Sonja), her own 4. Display only: no damage math, no emulated state, **no SIM_VERSION bump**. Both looks: Dual Strike's panel (`ds_hud::info_flush`) reads the number
+AW2 draws and redraws it, so it follows. Test: `asuka_terrain_panel_shows_the_cut_stars`; audit scene `versus/asuka_stars` (`aw2dev gfx audit --scenes asuka_stars`).

@@ -789,6 +789,38 @@ fn terrain_defence_done(core: &mut Core) {
     core.gba_mut().cpu_mut().set_gpr(0, v);
 }
 
+/// The terrain panel's defence-stars number (inside `sub_0802AA78`'s panel update, the call
+/// `sub_0802BAFC(x, y, stars)` at 0x0802ABB6, r2 the terrain's stars; the cell's x and y are in the
+/// frame at sp+0x20 and sp+0x24, shifted left 16): shows the stars the cell would give the army who
+/// would stand on it, after the enemies' cut and Lash's doubling (`DoubleTerrainStars`): the army
+/// of the unit on the cell, or the army whose turn it is for an empty one. Display only.
+const PANEL_STARS_CALL: u32 = 0x0802_ABB6;
+const PANEL_CURRENT_ARMY: u32 = 0x0300_33EC;
+
+/// The stars the terrain panel shows on cell (x, y) whose terrain gives `stars`.
+pub fn panel_stars(core: &Core, x: i32, y: i32, stars: i32) -> i32 {
+    let army = match crate::unit_actions::unit_at(core, x, y) {
+        Some(u) => crate::unit_actions::army_of(core, u),
+        None => core.raw_read_16(PANEL_CURRENT_ARMY, -1) as u32,
+    };
+    if !(1..=5).contains(&army) {
+        return stars;
+    }
+    ds_terrain_stars(core, army, stars * 10) / 10
+}
+
+fn panel_stars_call(core: &mut Core) {
+    if !is_on(core) || !abilities_on(core) {
+        return;
+    }
+    let cpu = core.gba().cpu();
+    let (sp, stars) = (cpu.gpr(13) as u32, cpu.gpr(2) as i16 as i32);
+    let x = (core.raw_read_32(sp + 0x20, -1) as i32) >> 16;
+    let y = (core.raw_read_32(sp + 0x24, -1) as i32) >> 16;
+    let v = panel_stars(core, x, y, stars);
+    core.gba_mut().cpu_mut().set_gpr(2, v);
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     let mut t: Vec<(u32, Box<dyn Fn(&mut Core)>)> = Vec::new();
     for (at, field) in STAT_FUNCTIONS {
@@ -797,6 +829,7 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     t.push((DEFENCE_ARMY, Box::new(defence_army)));
     t.push((DEFENCE_DONE, Box::new(defence_done)));
     t.push((TERRAIN_DEFENCE_DONE, Box::new(terrain_defence_done)));
+    t.push((PANEL_STARS_CALL, Box::new(panel_stars_call)));
     t.push((CALC_DAMAGE, Box::new(calc_damage)));
     t.push((DEFENCE_TOTAL, Box::new(defence_total)));
     t.push((PREVIEW_SCALED, Box::new(preview_scaled)));
