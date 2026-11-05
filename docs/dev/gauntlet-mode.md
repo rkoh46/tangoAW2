@@ -100,6 +100,16 @@ The list takes **up to 32 maps** (`gauntlet_ui::MAX_MAPS`). Three things set tha
 To go past 32: raise `MAX_MISSIONS` (and `RECORDS` / the `ds_campaign` regions that depend on it), `PREVIEW_ROM`'s room, `gauntlet::SLOTS`, `gauntlet_ui::MAX_MAPS` and `ram_map`'s block, and find more ids (there are none left below 0xFD without taking the Vault's or Versus' pool).
 The unit tests `a_full_list_has_ids_rows_records_and_order_that_work` (32 maps' ids, rows, records and order) and, in the harness, `-k gauntlet_mode_a_long_list` (the aid `TANGOAW2_GAUNTLET_SLOTS=32` lays the ids out for a full house, so today's twelve borrow Survival's entries: every map is listed with its name, the list scrolls to the last, the record box reads the borrowed ids' rows, Survival's entries come back byte for byte) cover it.
 
+## Music under the dialogue (`gauntlet_mode::add_music`, `OPENING`)
+Every Gauntlet scene plays a song, as AW2's campaign does under each story scene (op 0x41 starts it, op 0x42 fades it out before the box closes; `custom_campaign::Compiler::one_scene`; the battle's CO theme returns at the next turn change).
+`def()` runs `add_music` over every mission, so a new map is never silent:
+- the opening speech: the role named for the map in `OPENING` (`(mission key, campaign_music::NAMED role)`; a map without a row gets `DEFAULT_OPENING`, `enemy1`);
+- every other scene (a line falls and the next CO arrives, a day scene, the stage switch, the victory): the theme of the CO who speaks last in it (`Track::Co`), that is the arriving CO's own song.
+A scene that already has a `song` keeps it (set `.with_song(...)` on it for a special one). To give a new map its own opening, add one row to `OPENING`.
+List them: `./aw2dev campaign scenes --campaign gauntlet` (every scene, its role and AW2 song id; exit 1 for a scene without a song; needs `aw2dev build --examples`).
+Test: `-k gauntlet_music` (per map: the song the game has started while the opening's boxes are up and while the first fall's arrival boxes are up is the listed one, and the player's CO theme is back after the next turn).
+Offline script data only (Gauntlet never runs online or in Versus): no `SIM_VERSION`.
+
 ## Arrival scenes: one box per speaker, opened fresh (`Compiler::one_scene`, `battle_scene`)
 A scene a trigger plays in the middle of a battle (`Action::Scene`: a line arriving after a capture or a rout; BH2's M31 and the BH campaigns' triggers too) used to be compiled as AW2's own scenes are: `0x17` open with the first face, then `0x38` (a speaker) and `0x19` (a text) for each line,
 `0x18` close. In a box opened that way in the middle of a battle two things were wrong, on every Gauntlet map (Cinder Sea and Iron Crown too, as released) and found by the pictures: the **first box's text was drawn over by other pictures** (the box stood at the bottom of the screen, where the
