@@ -344,6 +344,10 @@ fn begin_army(core: &mut Core, mission: usize) {
 /// list it reads. A jump to the function does not run the traps on it, so the one that matters here runs first: [`crate::tag::set_cos`] moves a five-army map's pick to the player's army (the
 /// fifth; the first keeps its fixed CO). The Gauntlet has no two-front maps ([`crate::two_front`]'s trap there).
 pub fn apply(core: &mut Core) {
+    if core.raw_read_8(crate::gauntlet::CONTINUING, -1) == 0 {
+        // (the new run has begun: the one saved halfway is dropped, from the game's directory now and from Flash with the next write)
+        crate::suspend::drop_mid_of(core, crate::gauntlet::SOURCE);
+    }
     let co = core.raw_read_8(CO_PICK, -1);
     core.raw_write_8(CO_PICKS, -1, co);
     core.gba_mut().cpu_mut().set_gpr(0, CO_PICKS as i32);

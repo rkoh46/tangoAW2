@@ -769,6 +769,33 @@ def gauntlet_two_maps(rec):
     rec.snap(e, "army_iron_crown", ["menu", "army"])
 
 
+@scene("gauntlet", "wheel_box", pack=True)
+def gauntlet_wheel_box(rec):
+    """Gauntlet over a run saved halfway: the wheel's item box (Continue / New) with each row under the cursor, then back out of it (B)."""
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    ga.Gauntlet(g).start(ga.ANDY)
+    saves.suspend(g)
+    path = e.save(os.path.join(rec.out, "saved_run"))
+    e.close()
+    e, g = rec.emu(save=path)
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "gauntlet")
+    e.wait(40)
+    rec.snap(e, "wheel_saved_run", ["menu", "wheel"])
+    e.press("A", 8)
+    e.wait_until(d.box_open, 120, step=4)
+    e.wait(100)
+    rec.snap(e, "box_continue", ["menu", "wheel"])
+    e.press("DOWN", 6)
+    e.wait(100)
+    rec.snap(e, "box_new", ["menu", "wheel"])
+    e.press("B", 8)
+    e.wait(60)
+    rec.snap(e, "box_closed", ["menu", "wheel"])
+
+
 @scene("gauntlet", "cinder_sea_run", pack=True)
 def gauntlet_run(rec):
     """Gauntlet on Cinder Sea with Silver Nova: Setup, day 1, a capture box, Drake's rout and arrival scene, then Sensei's."""

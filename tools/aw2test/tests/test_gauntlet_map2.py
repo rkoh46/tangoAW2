@@ -231,7 +231,7 @@ def resume(ctx, path):
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = ga.Gauntlet(g)
-    d.open(pick=False)
+    d.open(pick=False, box="continue")
     ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1800, step=10), "GAUNTLET on Select Mode brings the battle back")
     g._units_base = g._players_base = None
     g.wait_for_input()

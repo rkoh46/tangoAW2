@@ -151,13 +151,18 @@ class Gauntlet(BhCampaign):
         rows = [0x14 * (i - ROW_BASE) for i in list_ids(span)]       # (the game reads the row of the map-table id it lists a map by)
         return [[(b[o + 4 * k], int.from_bytes(b[o + 4 * k + 1:o + 4 * k + 4], "little")) for k in range(5)] for o in rows]
 
-    def open(self, from_title=True, pick=True, map=0):
-        """Select Mode's GAUNTLET, A: the map selector (the mode starts at once: no box, no world map); with `pick` A takes the highlighted map and the army screen follows."""
+    def open(self, from_title=True, pick=True, map=0, box=None):
+        """Select Mode's GAUNTLET, A: with no run saved the map selector (the mode starts at once: no box, no world map); with a run saved AW2's item box (Continue / New) opens: `box="continue"` or
+        `"new"` takes that row (Continue resumes the battle: no selector). With `pick` A takes the highlighted map and the army screen follows."""
         e = self.e
         if from_title:
             saves.to_select_mode(e)
         saves.wheel_to(e, "gauntlet")
         e.press("A", 8)
+        if box:
+            self.choose_in_box(box)
+            if box == "continue":
+                return
         if pick:
             self.wait_step(SELECTOR)
             # (the selector lists the maps by their number of enemy COs, fewest first, crate::gauntlet_mode::order: DOWN until the cursor is on the mission `map`;
@@ -170,6 +175,15 @@ class Gauntlet(BhCampaign):
             if e.u8(UI_MAP_CURSOR) != map:
                 raise NavError(f"the selector's cursor is on map {e.u8(UI_MAP_CURSOR)}, not {map}")
             e.press("A", 6)
+
+    def choose_in_box(self, which):
+        """The Gauntlet's item box is open (a run is saved): its cursor to the row `which` ("continue": the top row, "new": the bottom) and A."""
+        e = self.e
+        if not e.wait_until(self.box_open, 120, step=4):
+            raise NavError("the Gauntlet's item box did not open")
+        e.wait(45)
+        self.box_row({"continue": 0, "new": 1}[which])
+        e.press("A", 8)
 
     def wait_army(self, frames=600):
         """The army screen (it follows the selector's A) is up and takes the pad."""
@@ -210,11 +224,11 @@ class Gauntlet(BhCampaign):
         e.press("A", 6)
         return picked
 
-    def start(self, co=ANDY, from_title=True, setup=True, colour=None, map=0):
+    def start(self, co=ANDY, from_title=True, setup=True, colour=None, map=0, box=None):
         """From the title: GAUNTLET, the map (the first), the army screen's CO `co` and army colour `colour` (an army code; None: the cursor's), the battle's start, Setup left with Deploy, the
         intro read: the player in control on day 1. Returns the CO the screen picked."""
         e, g = self.e, self.g
-        self.open(from_title, map=map)
+        self.open(from_title, map=map, box=box)
         picked = self.pick_army(co, colour)
         for _ in range(600):
             if self.in_battle() and e.u32(0x0849_9598) != 0:

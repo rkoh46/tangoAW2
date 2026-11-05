@@ -1604,8 +1604,7 @@ fn start_gauntlet(core: &mut Core, req: u8) {
     let resume = if req == 2 {
         crate::suspend::saved_mission_of(core, source(core)).filter(|&m| (m as usize) < missions)
     } else {
-        // (a new run drops the one saved halfway)
-        crate::suspend::drop_mid_of(core, source(core));
+        // (a new run drops the one saved halfway when it really starts: the army pick's A, [`crate::gauntlet_ui::apply`]; backing out of the selector keeps it)
         None
     };
     // (a new run's map is the selector's pick, [`choose_gauntlet_map`]: the first map stands in until then)

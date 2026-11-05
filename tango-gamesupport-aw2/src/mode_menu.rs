@@ -436,6 +436,12 @@ fn installed(core: &Core) -> bool {
 /// The Gauntlet's help line: a text id of Survival's block (its spare slot), whose string and table word are written with the rest of the wheel's data.
 pub const GAUNTLET_HELP: &str = "Beat a map's COs one after another.";
 const GAUNTLET_HELP_ID: u16 = crate::survival::TEXT_BASE + 4;
+/// The Gauntlet's box (a run saved halfway: Continue / New) lines, shown under the box as AW2's "Continue a campaign in progress." / "Start a new campaign." are (Survival's text slots 41 and 42: its
+/// block ends at 40, Dual Strike Versus' ids start far above).
+pub const GAUNTLET_CONTINUE: &str = "Continue your saved Gauntlet run.";
+pub const GAUNTLET_NEW: &str = "Start a new run. The saved run is dropped.";
+const GAUNTLET_CONTINUE_K: u16 = 41;
+const GAUNTLET_NEW_K: u16 = 42;
 
 fn install(core: &mut Core, help_text: u16) -> bool {
     BUILT.get_or_init(|| scan(core));
@@ -473,7 +479,8 @@ fn install(core: &mut Core, help_text: u16) -> bool {
     for i in 0..8 {
         options.push(opt(core, i));
     }
-    options.extend([0, 0]);
+    // (Gauntlet's, at position 4: Continue, New)
+    options.extend([crate::survival::TEXT_BASE + GAUNTLET_CONTINUE_K, crate::survival::TEXT_BASE + GAUNTLET_NEW_K]);
     for i in 8..12 {
         options.push(opt(core, i));
     }
@@ -500,6 +507,13 @@ fn install(core: &mut Core, help_text: u16) -> bool {
     s.push(0);
     core.raw_write_range(at, -1, &s);
     core.raw_write_32(crate::survival::text_slot(4), -1, at);
+    for (k, text) in [(GAUNTLET_CONTINUE_K, GAUNTLET_CONTINUE), (GAUNTLET_NEW_K, GAUNTLET_NEW)] {
+        let at = crate::survival::string_at(k);
+        let mut s = text.as_bytes().to_vec();
+        s.push(0);
+        core.raw_write_range(at, -1, &s);
+        core.raw_write_32(crate::survival::text_slot(k), -1, at);
+    }
     core.raw_write_32(SENTINEL, -1, MAGIC);
     true
 }
@@ -616,7 +630,24 @@ pub fn remap(core: &mut Core, start: u32, end: u32) {
         }
         at += 8;
     }
+    // The Gauntlet's box rows are drawn as the War Room's (OBJ palette 7 for the row that is not under the cursor): in the Gauntlet's own colour.
+    if matches!(crate::campaign_menu::wheel_info(core), Some((_, GAUNTLET, true))) {
+        let e = &EXTRAS[1];
+        let mut at = start;
+        while at + 8 <= end {
+            let a2 = core.raw_read_16(at + 4, -1) as u32;
+            let (tile, pal) = (a2 & 0x3FF, a2 >> 12);
+            if pal == WAR_ROOM_PALETTE && (BOX_LABEL_TILES.0..BOX_LABEL_TILES.1).contains(&tile) {
+                core.raw_write_16(at + 4, -1, ((e.palette << 12) | (a2 & 0x0FFF)) as u16);
+            }
+            at += 8;
+        }
+    }
 }
+
+/// The War Room's OBJ palette (item 5 + 2) and the box labels' OBJ tiles (CONTINUE at 664.., NEW at 676..).
+const WAR_ROOM_PALETTE: u32 = 7;
+const BOX_LABEL_TILES: (u32, u32) = (664, 696);
 
 // --- Traps -----------------------------------------------------------------------
 
@@ -638,6 +669,11 @@ fn named(core: &Core) -> Option<&'static Extra> {
     } else {
         None
     }
+}
+
+/// The extra item the trapped function's r0 names when it starts its mode at once (A, no box): Survival always; the Gauntlet unless a run is saved (then its box offers Continue and New, [`box_commit`]).
+fn direct(core: &Core) -> Option<&'static Extra> {
+    named(core).filter(|e| e.item != GAUNTLET || !crate::gauntlet::saved(core))
 }
 
 const CENTRE_GRAPHIC: u32 = 0x0808_45A8;
@@ -674,7 +710,7 @@ fn tile_highlight(core: &mut Core) {
 /// `cmp r0, #4` with the item in r0: the extra items answer as Link.
 const LIKE_LINK: [u32; 2] = [0x0808_1498, 0x0808_1E94];
 fn like_link(core: &mut Core) {
-    if named(core).is_some() {
+    if direct(core).is_some() {
         core.gba_mut().cpu_mut().set_gpr(0, 4);
     }
 }
@@ -682,10 +718,10 @@ fn like_link(core: &mut Core) {
 /// The last `cmp r0, #4` before the mode is stored: an extra item is picked.
 const PICKED: u32 = 0x0808_1EEE;
 fn picked(core: &mut Core) {
-    if let Some(e) = named(core) {
+    if let Some(e) = direct(core) {
         core.gba_mut().cpu_mut().set_gpr(0, 4);
         if e.item == GAUNTLET {
-            crate::gauntlet::picked(core);
+            crate::gauntlet::picked(core, false);
         } else {
             core.raw_write_8(crate::survival::MENU_PICKED, -1, 1);
         }
@@ -709,8 +745,46 @@ fn mode_store(core: &mut Core) {
     }
 }
 
+/// The open box's A, as its choice is committed for an item the game has no case for (`ldr r1, [pc, #..]` after the item chain: the Campaign's, Versus', Design Room's and War Room's cases store
+/// their mode and branch past it): the Gauntlet's box (Continue the top row, New the bottom) stores Campaign's New, with the request for its source ([`crate::gauntlet::picked`]).
+const BOX_COMMIT: u32 = 0x0808_2352;
+fn box_commit(core: &mut Core) {
+    if !active(core) {
+        return;
+    }
+    let Some((_, item, true)) = crate::campaign_menu::wheel_info(core) else { return };
+    let Some(cursor) = crate::campaign_menu::box_cursor(core) else { return };
+    if item == GAUNTLET {
+        crate::gauntlet::picked(core, cursor % 2 == 0);
+        core.raw_write_32(MODE, -1, CAMPAIGN_NEW);
+    }
+}
+
+/// The game mode word.
+const MODE: u32 = 0x0300_33FC;
+
+/// The box's rows are drawn each frame by a chain on the item (`cmp r0, #0`, `#1`, `#5`, `#3`: Campaign's, Versus', War Room's rows, which are the CONTINUE and NEW labels at OBJ tile 664, and Design Room's):
+/// at the `cmp r0, #5` the Gauntlet is the War Room (its labels, in the palettes of its two rows), whose Continue is dimmed by `GetWarRoomSaveFlag`, answered true for the Gauntlet's box (it only
+/// opens over a saved run).
+const DRAW_IS_WAR_ROOM: u32 = 0x0808_3C50;
+fn draw_like_war_room(core: &mut Core) {
+    if active(core) && r0(core) == GAUNTLET as u32 {
+        core.gba_mut().cpu_mut().set_gpr(0, 5);
+    }
+}
+
+const WAR_ROOM_SAVE_FLAG: u32 = 0x0803_BC94;
+fn war_room_save_flag(core: &mut Core) {
+    if active(core) && matches!(crate::campaign_menu::wheel_info(core), Some((_, GAUNTLET, true))) {
+        ret(core, 1);
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
+        (BOX_COMMIT, Box::new(box_commit)),
+        (DRAW_IS_WAR_ROOM, Box::new(draw_like_war_room)),
+        (WAR_ROOM_SAVE_FLAG, Box::new(war_room_save_flag)),
         (CENTRE_GRAPHIC, Box::new(centre_graphic)),
         (TILE_COMPLETE, Box::new(tile_complete)),
         (TILE_PALETTE, Box::new(tile_palette)),
@@ -725,6 +799,17 @@ pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_gauntlets_box_lines_have_text_slots_of_their_own() {
+        // Survival's block: help at 0, kinds 1..3, spare 4 (the Gauntlet's help), maps 5..37, champions 38..40; the box's two lines follow, in the 0x40-byte string slots below the wheel's data.
+        assert!(GAUNTLET_CONTINUE_K > 40 && GAUNTLET_NEW_K == GAUNTLET_CONTINUE_K + 1);
+        assert!(crate::survival::TEXT_BASE + GAUNTLET_NEW_K < crate::ds_versus::TEXT_BASE);
+        for t in [GAUNTLET_CONTINUE, GAUNTLET_NEW, GAUNTLET_HELP] {
+            assert!(t.len() < 0x40, "{t} fits its string slot");
+        }
+        assert!(crate::survival::string_at(GAUNTLET_NEW_K) + 0x40 <= DATA);
+    }
 
     #[test]
     fn table_keeps_every_position_but_the_three_after_versus() {

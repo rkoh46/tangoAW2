@@ -18,8 +18,10 @@
 //! written by replacing only its own region ([`crate::ds_campaign::merge_record`]). Format 1 (0.9.4: one best word per list position) is converted on load ([`load_record`]).
 //!
 //! **Save.** The map menu's Save writes the battle in the shared mid-battle slot 12 as the BH Campaigns do, the saved mission's top bits naming this source
-//! ([`crate::suspend`]'s `source_tag`: 4 << 5). GAUNTLET on Select Mode continues a saved run (the pick asks for Continue instead of New); holding SELECT with A starts a new one
-//! and drops the save. A run's end (won or lost) drops its save.
+//! ([`crate::suspend`]'s `source_tag`: 4 << 5). With a run saved, A on GAUNTLET opens AW2's own item box on Select Mode (as Campaign's): **Continue** (the top row: "Continue your saved Gauntlet run.") resumes the save,
+//! **New** (the bottom row: "Start a new run. The saved run is dropped.") goes to the map selector; the save is dropped when the new run really starts (the army screen's A), so backing out keeps it.
+//! With no save A starts at the selector at once (no box). A run's end (won or lost) drops its save. The slot is shared with the BH Campaigns' (saves told apart by the source tag): only a
+//! Gauntlet save offers Continue, a BH save in the slot is neither offered nor dropped by a new run (the Gauntlet's own Save replaces it, as the BH Campaigns' replace each other's).
 
 use mgba::core::Core;
 
@@ -39,10 +41,6 @@ const RETURNING: u8 = 2;
 const WHEEL_LAST: u32 = 0x0300_5934;
 /// The pick asked for a new run (0) or to continue the saved one (1), kept for [`start_script`]'s callers (the tests).
 pub const CONTINUING: u32 = 0x0203_FD55;
-
-/// Keys (REG_KEYINPUT, active low): SELECT.
-const KEYINPUT: u32 = 0x0400_0130;
-const KEY_SELECT: u16 = 1 << 2;
 
 /// The mode's maps are playable: the Dual Strike pack is on (offline: the wheel only has the entry then, [`crate::mode_menu`]).
 pub fn available(core: &Core) -> bool {
@@ -65,11 +63,13 @@ pub fn session(core: &Core) -> bool {
     crate::ds_campaign::active(core) && crate::ds_campaign::source(core) == SOURCE
 }
 
-/// The wheel's pick (a trap at the item's `cmp r0, #4`): the request for this source, New or (a run saved halfway) Continue.
-pub fn picked(core: &mut Core) {
-    let saved = crate::suspend::saved_mission_of(core, SOURCE).is_some();
-    let fresh = core.raw_read_16(KEYINPUT, -1) & KEY_SELECT == 0;
-    let cont = saved && !fresh;
+/// A run is saved halfway (the Gauntlet's own: the slot is shared with the BH Campaigns', told apart by the save's source tag).
+pub fn saved(core: &Core) -> bool {
+    crate::suspend::saved_mission_of(core, SOURCE).is_some()
+}
+
+/// The wheel's pick: the request for this source, New (the pick with no save, a trap at the item's `cmp r0, #4`; or the box's New) or Continue (the box's, over a run saved halfway).
+pub fn picked(core: &mut Core, cont: bool) {
     core.raw_write_8(PICKED, -1, 1);
     core.raw_write_8(CONTINUING, -1, cont as u8);
     core.raw_write_8(crate::ds_campaign::SOURCE, -1, SOURCE as u8);
