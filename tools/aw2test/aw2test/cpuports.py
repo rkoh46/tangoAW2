@@ -194,6 +194,7 @@ def report(ctx, label, snaps, scripted=False, min_snaps=2):
         ctx.log(f"  exempt: {t} #{i} on a production tile at {cell}, days {ds_}: {why}")
     for r in bad:
         ctx.log(f"  VIOLATION: {describe(r)}")
+    foot_report(ctx, label, snaps, scripted)       # (log only: idle soldiers and the neutral buildings left, see foot_idle)
     ctx.check(len(snaps) >= min_snaps, f"{label}: the game ran long enough to compare turns ({len(snaps)} snapshots)")
     ctx.check(not bad, f"{label}: no computer unit that could move idles on a base, port or airport ({len(bad)}: {[describe(r) for r in bad[:4]]})")
     return bad
@@ -563,3 +564,133 @@ def run_survival(ctx, kind, days=DAYS):
     g.wait_for_input()
     d = dc.DsCampaign(g)
     return e, g, passive(ctx, e, g, d, f"Survival {sv.NAMES[kind]}", days, snap_fn(ctx, e, g), over=g.battle_over)
+
+
+# --- idle foot soldiers and uncaptured neutral properties (docs/dev/cpu-unit-use.md, "Foot soldiers") ----------------------------
+FOOT = (1, 2)            # Infantry, Mech
+CITY_KINDS = None
+
+
+def walk_costs(s, u, turns=3):
+    """Cells a foot soldier walks to within `turns` turns of its move (the army's CO chart; units ignored): {cell: move cost}."""
+    import heapq
+    move, mt = s["stats"][u["type"]]
+    limit = move * turns
+    chart = s["charts"].get(u["army"])
+    if chart is None or move <= 0:
+        return {}
+    w, h = s["size"]
+    start = (u["x"], u["y"])
+    best = {start: 0}
+    q = [(0, start)]
+    while q:
+        c, (x, y) = heapq.heappop(q)
+        if c > best[(x, y)]:
+            continue
+        for dx, dy in STEPS:
+            n = (x + dx, y + dy)
+            if not (0 <= n[0] < w and 0 <= n[1] < h):
+                continue
+            step = chart[mt * 32 + (s["grid"][n[1]][n[0]] & 0x1F)]
+            if step <= 0 or c + step > limit:
+                continue
+            if c + step < best.get(n, 999):
+                best[n] = c + step
+                heapq.heappush(q, (c + step, n))
+    return best
+
+
+def foot_acted(a, b, i):
+    """A foot soldier took part in the turn between snapshots `a` and `b`: it moved, stands on a building not its team's (capturing), fought (hit points lost, or an enemy within two cells),
+    or was healed by a property."""
+    u, v = b["units"][i], a["units"][i]
+    cell = (u["x"], u["y"])
+    if cell != (v["x"], v["y"]):
+        return True
+    k = b["props"].get(cell)
+    if k and not (k[1] and b["team"][k[1]] == b["team"][u["army"]]):
+        return True
+    k0 = a["props"].get(cell)          # (it finished capturing it this turn: the building is its team's now and was not before)
+    if k and k0 and k0[1] != k[1]:
+        return True
+    if u["hp"] != v["hp"]:
+        return True
+    return any(abs(o["x"] - u["x"]) + abs(o["y"] - u["y"]) <= 2 and not o["on"] and b["team"][o["army"]] != b["team"][u["army"]] for o in b["units"].values())
+
+
+def foot_idle(snaps, scripted_roles=False):
+    """Over the pairs of player-turn snapshots: for each computer army that played, its foot soldiers (alive in both) and how many took part. Returns
+    {army: dict(soldiers=n, idle=[(day, type, id, cell, role, hp)], acted=n)}; and `reach`: the neutral buildings within three turns' walk of an idle soldier in the last snapshot."""
+    out = {}
+    for a, b in zip(snaps, snaps[1:]):
+        for army in {x for x in cpu_armies(a) & cpu_armies(b) if turn_between(a, b, x)}:
+            r = out.setdefault(army, dict(soldiers=0, acted=0, idle=[]))
+            for i, u in b["units"].items():
+                v = a["units"].get(i)
+                if v is None or u["on"] or v["on"] or u["army"] != army or v["army"] != army or u["type"] not in FOOT or v["type"] != u["type"]:
+                    continue
+                r["soldiers"] += 1
+                if foot_acted(a, b, i):
+                    r["acted"] += 1
+                else:
+                    r["idle"].append((b["day"], romlib.UNIT_NAMES.get(u["type"], u["type"]), i, (u["x"], u["y"]), u["role"], u["hp"]))
+    return out
+
+
+def neutral_reachable(s, army):
+    """Neutral properties (no owner) within three turns' walk of one of the army's foot soldiers in snapshot `s`: {cell: nearest soldier id}."""
+    neutral = {c for c, (k, o) in s["props"].items() if not o}
+    found = {}
+    for i, u in s["units"].items():
+        if u["army"] == army and not u["on"] and u["type"] in FOOT:
+            for c in neutral & set(walk_costs(s, u)):
+                found.setdefault(c, i)
+    return found
+
+
+def acting_share(snaps, army):
+    """Share of the army's units (any kind, alive at both ends of a turn, not carried) that moved, fought, were healed or sit capturing, over the turns it played."""
+    n = k = 0
+    for a, b in zip(snaps, snaps[1:]):
+        if army not in cpu_armies(a) or not turn_between(a, b, army):
+            continue
+        for i, u in b["units"].items():
+            v = a["units"].get(i)
+            if v is None or u["on"] or v["on"] or u["army"] != army or v["army"] != army:
+                continue
+            n += 1
+            k += foot_acted(a, b, i)
+    return k, n
+
+
+def foot_report(ctx, label, snaps, scripted=False):
+    """Log the foot soldiers' idling and the neutral properties they could have taken; returns {army: result}."""
+    res = foot_idle(snaps)
+    for army, r in sorted(res.items()):
+        k, n = acting_share(snaps, army)
+        first = snaps[0]["units"]
+        held = sum(1 for u in first.values() if u["army"] == army and u["type"] in FOOT and u["role"] == 0)
+        left = neutral_reachable(snaps[-1], army)
+        captured = sum(1 for c, (kd, o) in snaps[-1]["props"].items() if o == army and not snaps[0]["props"].get(c, (0, 0))[1] == army)
+        ctx.log(f"{label}: army {army}: {r['acted']}/{r['soldiers']} foot-soldier turns acted ({len(r['idle'])} idle), {k}/{n} unit turns acted, "
+                f"{held} soldiers started with role 0, {captured} properties gained, {len(left)} neutral within 3 turns of a soldier at the end {sorted(left)[:6]}")
+        ctx.log(f"  other units idle turns by type (idle, turns): {other_idle(snaps, army)}")
+        for d_, t, i, cell, role, hp in r["idle"][:40]:
+            ctx.log(f"  idle: day {d_} {t} #{i} at {cell} role {role} {hp} hp")
+    return res
+
+
+def other_idle(snaps, army):
+    """Units other than foot soldiers that did nothing over the army's turns: {type name: (idle turns, turns)}."""
+    out = {}
+    for a, b in zip(snaps, snaps[1:]):
+        if army not in cpu_armies(a) or not turn_between(a, b, army):
+            continue
+        for i, u in b["units"].items():
+            v = a["units"].get(i)
+            if v is None or u["on"] or v["on"] or u["army"] != army or v["army"] != army or u["type"] in FOOT:
+                continue
+            t = romlib.UNIT_NAMES.get(u["type"], u["type"])
+            n, k = out.get(t, (0, 0))
+            out[t] = (n + (not foot_acted(a, b, i)), k + 1)
+    return out
