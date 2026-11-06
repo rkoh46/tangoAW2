@@ -25,7 +25,7 @@ TABITHA: Black Hole's quay lies east. It / sells to anyone. Move out.
 == m09_pre2
 @SONG enemy1
 NARRATION: The freight yards. The / quartermasters' radio channel.
-ADDER: A silver star on a grey field. / How very fresh. Quartermaster Adder.
+ADDER: A silver sun on a grey field. / How very fresh. Quartermaster Adder.
 FLAK: Raiders, Adder? Flak likes / raiders. Raiders bring fuel.
 ADDER: They are not raiders until they / have raided, Flak.
 TABITHA: Commander Tabitha of Novaria. / Kneel, and I may ignore you.

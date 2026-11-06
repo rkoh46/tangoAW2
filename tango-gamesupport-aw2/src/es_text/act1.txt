@@ -39,15 +39,15 @@ LILI: It climbs to the fort. Take the / fort, and the cape is ours.
 LILI: Two green cruisers wait in the lane. / Fat little toys. They float. For now.
 TABITHA: So we land under fire. Infantry / and Mech first, Recon beside them.
 LILI: And the barges must wiggle! A / straight line is an easy target.
-LEGIONARY: Commander! A banner on the fort. / Green, with a star on it.
-LILI: Two stars on one coast. Which / one is the real one?
-CAULDER: Neither, I suspect. Splendid. / Someone do write it down.
+LEGIONARY: Commander! Green banners on / the fort. They are waiting for us.
+LILI: Their flags were up before our / sails were. Somebody told them.
+CAULDER: Someone always does. Splendid. / Do write it down.
 TABITHA: You will write "well done." / Signal the ramps, you dolt.
 LILI(h): Ramps down! Tee hee! Let's go, / Mr. Bear!
 
 == m01_day2
 JESS: You, on my beach! Green Earth / Coastal Watch. Identify yourselves!
-JESS: Your flag has a star on it. So / does ours. Ours is greener.
+JESS: A silver sun on your flag. Never / seen it. Where are you from?
 TABITHA: We are Novaria. We came for / answers. We will take your coast.
 JESS: Answers don't come off a barge / with tanks on it.
 JESS: You want to talk, send an envoy. / Unarmed.
