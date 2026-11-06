@@ -315,7 +315,7 @@ TABITHA: ...Then be sure. Quickly. I / am not patient.
 @SONG enemy1
 NARRATION: The Mistvale, along the Verna. / A river under fog. Day one.
 LEGIONARY: Commander! Banners on the east / bank. A corps, in the fog.
-LEGIONARY: Red plumes, ma'am. Red cloaks. / The star of the Second.
+LEGIONARY: Orange colours, ma'am. Masks. / The badge of the Second.
 TABITHA: The Second Corps. I know it. It / sailed a week behind me. Behind!
 LILI: It was meant to meet us at the / cape! Where did it go?
 LEGIONARY: It took the old road north, / Chief. Fast. Faster than we did.
@@ -326,9 +326,9 @@ TABITHA: Its commander is Father. / Of course he is.
 LILI: But Daddy was on the radio at the / cape! He said he was behind!
 TABITHA: He was behind. Then he took the / old road, and stopped being behind.
 TABITHA: Father never lies to me. He lets / me lie to myself. That is worse.
-LILI: Their red is wrong! We are green. / Why are they red? Are they sick?
+LILI: Their colour is wrong! We are / silver. Why are they orange? Sick?
 TABITHA: Because here the Second Corps / wears Orange Star's colour. How tacky.
-TABITHA: One army wears the green. Today / the other wears the red. Pathetic.
+TABITHA: One army wears the silver. Today / the other wears orange. Pathetic.
 LILI: That is confusing in the fog! The / toys will pick the wrong box.
 TABITHA: They may pick the wrong enemy. I / will not forgive them for it.
 TABITHA: Fire only on what shoots. And keep / your Recons close, you blind idiots.
@@ -408,7 +408,7 @@ NARRATION: He withdraws north through / the last of the mist. Smiling.
 NARRATION: The Mistvale camp. Two corps / share a fire.
 TABITHA: The frontier is forty leagues / north of the cape. Half the Second
 TABITHA: helps us hold it. The other half / walks with Father. Traitors.
-LILI: The Second Corps wears red cloaks, / Sister. We wear green. Why?
+LILI: The Second Corps wears orange, / Sister. We wear silver. Why?
 LILI: Dyeing them costs forty-one credits. / Mr. Bear says they will miss the red.
 TABITHA: Let them keep it. They will die in / it just as well. Idiots.
 LILI: Mr. Bear says that is the nicest / thing you said all week! Hee hee.

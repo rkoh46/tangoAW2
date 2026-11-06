@@ -255,7 +255,7 @@ LEGIONARY: Commander! A call on the long / wave. From the north.
 NELL: Hello? Is this Commander Tabitha? / This is Nell, of Orange Star.
 NELL: I chair the Allied Accord's / council. I hope I may speak.
 TABITHA: Speak, Madam Chair. Briefly. / I am growing bored of your voice.
-NELL: Thank you. First: the Accord has / noticed the green fleet.
+NELL: Thank you. First: the Accord has / noticed the silver fleet.
 NELL: Four reports, four theories. All / of them end with "invasion".
 TABITHA: The fleet sails openly. We kept / the fishing lanes clear. I was bored.
 NELL: Armies that invade seldom tell the / fishermen to stay home.
