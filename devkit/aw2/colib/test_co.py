@@ -295,6 +295,42 @@ class Pixelart(unittest.TestCase):
         self.assertFalse(np.array_equal(im.faces["happy"], im.faces["normal"]))
 
 
+class FaceScale(unittest.TestCase):
+    """`mug_div`: a picture with fine cells has its 48-pixel face shrunk so the head fits like AW2's COs' (the owner's report: Lili's and Tabitha's dialogue faces were huge)."""
+
+    def test_block_ranges_cover_the_square(self):
+        from . import pixelart as P
+        for n_in, n_out in ((96, 48), (72, 48), (84, 48)):
+            bl = P._blocks(n_in, n_out)
+            self.assertEqual(bl[0][0], 0)
+            self.assertGreaterEqual(bl[-1][1], n_in)
+            self.assertTrue(all(b > a for a, b in bl))
+
+    def test_block_mode_takes_the_commonest_colour_and_drops_thin_edges(self):
+        from . import pixelart as P
+        idx = np.zeros((4, 4), np.uint8)
+        idx[:, :2] = 3
+        idx[0, 0] = 5
+        idx[:, 2] = 4
+        fg = np.ones((4, 4), bool)
+        fg[:, 3] = False
+        out, sfg = P._block_mode(idx, fg, 2)
+        self.assertEqual(out[0, 0], 3)
+        self.assertEqual(out[1, 0], 3)
+        self.assertTrue(sfg[0, 1])          # half a block of figure is kept
+
+    def test_the_two_shrunk_faces_are_as_wide_as_caulders(self):
+        eyes = {}
+        for co, (frame, ey) in {"lili": ("lili_v2", None), "tabitha": ("tabitha_v1", None), "caulder": ("caulder_v1", None)}.items():
+            import tomllib
+            spec = tomllib.loads((cfg.REPO / "art-src" / "cos" / f"{frame}.toml").read_text())
+            e = spec["eyes"]
+            eyes[co] = (e[2] - e[0]) / float(spec.get("mug_div", 1.0))
+        for co in ("lili", "tabitha"):
+            self.assertLessEqual(eyes[co], 1.15 * eyes["caulder"])
+            self.assertGreaterEqual(eyes[co], 0.85 * eyes["caulder"])
+
+
 class Illustration(unittest.TestCase):
     """The illustration route (`illustration.py`, Asuka's picture): a clean drawing on white is cut from its background, downscaled and quantised to one palette, never redrawn."""
 

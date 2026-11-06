@@ -762,6 +762,26 @@ def sn_campaign(rec):
         e.close()
 
 
+@scene("sn_campaign", "dialogue_faces", pack=True)
+def sn_dialogue_faces(rec):
+    """The face window of the dialogue boxes in Silver Nova missions where Tabitha, Lili, Caulder and a vanilla CO speak (M1 victory, M4 and M14 intros, 12 boxes each, 40 for M14 where Caulder speaks late):
+    their scale and framing are compared by `tools/aw2test/compose_dialogue_faces.py` (the same window, head and shoulders, eyes about 16 to 18 px apart)."""
+    from . import escampaign as es
+    from . import bhact2 as a2
+    for n in (1, 4, 14):
+        e, g, d = es.boot(rec.ctx, n, env=rec.env)
+        d.wait_world_map()
+        a2.open_mission(rec.ctx, e, g, d, n - 1, es.PICKS.get(n, []), f"m{n}", setup_only=True)
+        e.wait(40)
+        if d.in_setup():
+            d.leave_setup()
+        scene_boxes(rec, e, d, f"m{n}_intro", most=40 if n == 14 else 12, early=False)
+        if n == 1:
+            d.wait_control()
+            victory(rec, e, d, f"m{n}", most=12)
+        e.close()
+
+
 # ---------------------------------------------------------------------------------------------------------------- Gauntlet
 @scene("gauntlet", "selector_and_army", pack=True)
 def gauntlet_selector(rec):
