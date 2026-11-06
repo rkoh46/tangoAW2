@@ -217,11 +217,18 @@ pub fn held_hq(core: &Core) -> Option<(u8, u8)> {
         .flatten()
 }
 
+/// A mission's battle is on: the map is up, or an army has the turn (a battle scene (the animation), a CO power's animation and the screens between the map's turns clear the map's
+/// main loop, which [`in_battle`] reads, but the army whose turn it is stays set). What decides whether a skin stays on: a skin tied to `in_battle` alone came off for every battle animation
+/// and went back on after it, and the palettes the game loaded in between (the moved units' greys, the scene's) were the host colour's own.
+pub fn battle_or_turn(core: &Core) -> bool {
+    in_battle(core) || crate::pvp::in_battle(core) || crate::pvp::current_army(core) != 0
+}
+
 /// The skin an army of the battle on now wears: (army 1-based, skin index), for a custom campaign's mission that names one.
 pub fn mission_skin(core: &Core) -> Option<(u8, usize)> {
     // (a battle scene (the animation) and the screens between the map's turns clear the map's main loop, which `in_battle` reads: the mission's battle is on while an army has the
     // turn, so the skin stays on through the scenes; it went off for every battle animation, and the enemy's tanks fought in the host colour's own)
-    if !active(core) || is_ds(core) || !(in_battle(core) || crate::pvp::current_army(core) != 0) {
+    if !active(core) || is_ds(core) || !battle_or_turn(core) {
         return None;
     }
     campaign(core)?

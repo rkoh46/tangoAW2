@@ -200,6 +200,20 @@ dark outline all round, like theirs, and AWBW's own are paler and flatter):
 4. `aw2dev armyskin sources` must print nothing; `AW2DEV_SKIN=1 aw2dev live moveview --local` and `lobby --players 3 --local`; `aw2dev suite`.
 5. Credits for inspiration go in `CREDITS.md`; the art is yours (never trace another project's pictures; look, then draw).
 
+## Skin lifetime: what the game loaded before the skin went on (0.9.8)
+
+The skin is patched into the ROM image of its host colour, but the game copies colours and sprite tiles into palette RAM and OBJ VRAM when it loads a map, a screen or a sprite. Two rules keep a
+skin from leaking the host colour (the 0.9.7 reports: orange done unit, orange Lander in a battle scene, Orange Star's star on the CO page, all in the Silver Nova Campaign):
+
+* **A skin's lifetime follows the mission, never `pvp::in_battle` alone.** A battle scene (and a CO power's animation) clears the map's main loop, so `in_battle` is false for it; a skin tied to it came
+  off for every animation and went back on after it. Use `ds_campaign::battle_or_turn` (an army has the turn): `es_campaign::skin_colour`, `ds_campaign::mission_skin`. A new place that installs a skin takes the same test.
+* **Installing or removing a skin refreshes what the game already loaded:** `refresh_palettes` (the sprite banks, and BG bank 11, the moved units' greys) and `refresh_tiles` (a picture of 128 bytes or
+  more found in OBJ VRAM: the emblem). A new patched table or picture that the game copies once must be reachable by one of them.
+
+Tests: `tests/test_sn_done.py` (`-k sn_moved_units_stay_silver`, `-k sn_co_page_emblem_is_the_sun`): Versus, the Silver Nova Campaign's first mission and the Gauntlet, each in AW2's graphics, Dual Strike's
+with the tilt and flat: the done palette after a move, after a battle animation and after a CO power, the skin on through the scene, the scene's pictures without host red, the CO page's emblem tiles.
+Helpers: `aw2test/sndone.py`.
+
 ## 8. Limits
 
 - The battle-scene soldiers and the portraits have the helmet on every frame that has a helmet block; the falling-over frames (three of each sheet) keep AW2's helmet in the skin's colours. The figures' sheets are patched where the scene loads them rather than on the tile copy, so every frame, terrain and scale has them (the scene has one figure size).
