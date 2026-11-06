@@ -8,7 +8,7 @@
                                             the static rules, the dialogue as one Markdown file; `scenes` and `trace` take `--campaign es`; `scenes` also `--campaign gauntlet` (the Gauntlet maps: opening, falls, victory)
   campaign playthrough bh2 N [--player cpu|bot] [--days D]   a BH2 mission played to its end in the harness (the computer on every side, or the test player for the player's army), with a report (days, outcome,
                                             takeovers and stage switches, units and funds by day, stalls) and a contact sheet of the key moments (docs/dev/playthrough.md)
-  campaign text-lint [es|bh2|all]           the dialogue lints (tools/estext/lint.py for Silver Nova, tools/bh2text/lint.py for BH2: grammar, 176 px boxes, voice rules); fails on an error or a warning
+  campaign text-lint [es|bh2|all] [--pacing] the dialogue lints (tools/estext/lint.py for Silver Nova, tools/bh2text/lint.py for BH2: grammar, 176 px boxes, voice rules); fails on an error or a warning
   campaign scene-check [--no-run]           the scene lessons on every Gauntlet map and BH2 M31, reported per map: every box of an arrival scene is shown and clean, and every box's face has its
                                             speaker's own palette (a five-army battle's moved-unit grey shares BG palette 9 with the faces); docs/dev/campaign-scenes.md
   campaign worldmap [--out PNG] [--no-run]  the world-map tests with pictures, then es_world_map.png: the map at three stages with the nodes labelled, the flag states, the unlock moments
@@ -32,6 +32,7 @@ def register(sub):
     a.set_defaults(fn=scenes)
     a = cs.add_parser("text-lint", help="the Silver Nova and BH2 dialogue lints (grammar, 176 px boxes, voices); fails on an error or warning")
     a.add_argument("which", nargs="?", default="all", choices=["es", "bh2", "all"])
+    a.add_argument("--pacing", action="store_true", help="also print the Silver Nova pacing report (scene lengths by kind, Mr. Bear mentions, signature lines; information only)")
     a.set_defaults(fn=text_lint)
     a = cs.add_parser("scene-check", help="arrival boxes shown and clean, faces in their speaker's own palette: every Gauntlet map and BH2 M31, per map")
     a.add_argument("-j", "--jobs", type=int, default=4)
@@ -259,10 +260,10 @@ def text_lint(a):
     """Runs the lint scripts (they read the AW2 ROM's font widths; nothing is kept); a warning fails too (voice rules are the owner's: tools/estext/BIBLE.md)."""
     bad = 0
     for k in (["es", "bh2"] if a.which == "all" else [a.which]):
-        r = subprocess.run([sys.executable, str(cfg.REPO / LINTS[k])], capture_output=True, text=True)
+        r = subprocess.run([sys.executable, str(cfg.REPO / LINTS[k])] + (["--pacing"] if getattr(a, "pacing", False) and k == "es" else []), capture_output=True, text=True)
         out = r.stdout.strip().splitlines()
         for l in out:
-            if l.startswith(("ERROR", "warn", "WARN")) or " error" in l and not l.endswith(" 0 errors, 0 warnings"):
+            if l.startswith(("ERROR", "warn", "WARN", "pace:")) or " error" in l and not l.endswith(" 0 errors, 0 warnings"):
                 print(f"{k}: {l}")
         summary = out[-1] if out else r.stderr[-300:]
         failed = r.returncode != 0 or not summary.endswith(" 0 errors, 0 warnings")

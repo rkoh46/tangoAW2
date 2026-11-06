@@ -42,6 +42,14 @@ Power names (if a scene names one): Tabitha's Super CO Power is **Firestorm** (9
 day to day: Tabitha **Mega Boost**, Caulder **Overdrive**... (no need to name them in dialogue). Tag Powers are named in `cos/tags.toml` (not for dialogue).
 Keep every box inside the lint's limits; keep the number and the length of scenes (same structure and `== key` names; a scene's pool header names only TABITHA / LILI / KANBEI / COLIN).
 
+## Pacing (the Silver Nova scenes: these rules come before any length advice further down)
+The user's complaint: "the dialogue on mission 1 sounds like they're rambling". A scene is a conversation with a point, not a pile of voice tics. Check a scene with `aw2dev campaign text-lint es --pacing`.
+1. **Length.** Pre-mission scene 12 to 20 boxes (a mission that sets up a big twist, up to about 24); post-mission 6 to 12; day or event scene 2 to 8; world-map scene 6 to 12. Cut; do not squeeze the same lines into longer boxes.
+2. **Every box earns its place:** it moves the plot, gives the player the briefing (the objective, the threat, one tactical hint), or shows character in a way the scene needs. Cut repeated points, side chatter and lines that only restate a voice tic.
+3. **Conversation flows.** Each line answers or follows from the line before; no non sequiturs. A change of topic needs a cue (a question, a messenger, a name).
+4. **Voices, with restraint.** Lili: a child, giggles, odd literal observations, toys; at most ONE whimsical aside and at most one Mr. Bear mention per scene; her odd remarks carry information or eeriness (she notices what adults miss: the ledger clues are hers); no babbling chains. Tabitha: cold, cruel, spoiled, commanding, short sentences; "Stupid weak people" at most once per act; one insult a scene is plenty. Caulder: brief, detached, clinical, unsettling; he says more with less. The other COs keep their AW2 voices, short.
+5. **Briefing.** By the end of a pre-mission scene the player knows the goal and the main danger, said once and plainly.
+
 ---
 # Emerald Sun Campaign dialogue: writers' bible
 

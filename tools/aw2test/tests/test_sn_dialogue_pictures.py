@@ -31,9 +31,9 @@ def pre_scene(ctx, n, name, minimum, **kw):
 
 @test(modes=("ds",))
 def sn_dialogue_pictures_m04_pre(ctx):
-    pre_scene(ctx, 4, "sn_m04_pre", 30, max_boxes=60)
+    pre_scene(ctx, 4, "sn_m04_pre", 18, max_boxes=60)
 
 
 @test(modes=("ds",))
 def sn_dialogue_pictures_m14_pre(ctx):
-    pre_scene(ctx, 14, "sn_m14_pre", 30, max_boxes=60)
+    pre_scene(ctx, 14, "sn_m14_pre", 18, max_boxes=60)

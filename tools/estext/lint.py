@@ -147,6 +147,39 @@ def lint_file(name, errors, warns, counts):
     return scenes
 
 
+PACE = {"pre": (12, 24), "post": (6, 12), "map": (6, 12), "day": (2, 8)}
+
+
+def pacing(names):
+    """`--pacing`: the BIBLE's Pacing rules as information (never an error): scene length by kind, Mr. Bear mentions per scene, 'Stupid weak people' per file."""
+    out = []
+    for name in names:
+        path = os.path.join(SRC, "es_text", name + ".txt")
+        if not os.path.exists(path):
+            continue
+        rows, key = {}, None
+        for raw in open(path, encoding="utf-8"):
+            l = raw.strip()
+            if l.startswith("== "):
+                key = l[3:].partition("|")[0].strip()
+                rows[key] = []
+            elif key and ": " in l and not l.startswith(("@", "#")):
+                rows[key].append(l)
+        weak = 0
+        for key, rs in rows.items():
+            kind = re.sub(r"^m\d\d_([a-z]+).*", r"\1", key)
+            lo, hi = PACE.get(kind, (0, 999))
+            if not lo <= len(rs) <= hi:
+                out.append(f"pace: {name} {key}: {len(rs)} boxes (a {kind} scene runs {lo} to {hi})")
+            bear = [r for r in rs if r.startswith("LILI") and "Bear" in r]
+            if len(bear) > 1:
+                out.append(f"pace: {name} {key}: {len(bear)} Lili boxes mention Mr. Bear (at most one a scene)")
+            weak += sum(r.count("Stupid weak people") for r in rs)
+        if weak > 1:
+            out.append(f"pace: {name}: 'Stupid weak people' {weak} times (at most once an act)")
+    return out
+
+
 def used_keys():
     keys = set()
     for fn in os.listdir(SRC):
@@ -188,6 +221,9 @@ def main():
             for k in sorted(set(allscenes) - used):
                 if not args:
                     warns.append(f"scene {k!r} is defined but the code never asks for it")
+    if "--pacing" in sys.argv:
+        for line in pacing(names):
+            print(line)
     for w in warns:
         print("warn:", w)
     for e in errors:
