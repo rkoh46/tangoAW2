@@ -176,8 +176,8 @@ A mission with stages (`MissionDef::stages`) is several maps in one run. The sel
 the faces (+0x3D..: that stage's enemy lines, three at most; +0x18, the player count the screen draws faces from: lines + 1). The game does not redraw from a changed entry by itself: SELECT does what the game does on a cursor move
 (found in `ProcScr_PreviewMap`'s list proc, script `0x08616CF4`, whose input handler at `0x08086132` calls `0x08087B60(list index)` for the faces and sets +0x4E to -1 and +0x4C to 0, which starts the 28-frame change of the
 picture that loads it from the entry at frame 12, `0x08086EB0`): `fog_view::start_program` runs `0x08087B60` at the next sprite flush and the proc's two halfwords are set. A map-table entry other than the cursor's is always the first map's,
-the cursor moving resets to the first map (the game draws the new entry itself), SELECT on a one-map entry does nothing, and `leave` resets it. The selector has no help line of its own, so the hint is the star alone. Tests
-`-k gauntlet_mode_select_flips`, picture `aw2dev gfx audit --scenes iron_crown_map2`. No `SIM_VERSION`: offline UI state in EWRAM only.
+the cursor moving resets to the first map (the game draws the new entry itself), SELECT on a one-map entry does nothing, and `leave` resets it. The selector has no help line of its own, so a two-map row's hint is the star plus a small overlay (`crate::star_hint`, drawn by `gauntlet_ui::draw`): AW2's white help-plate window under the picture saying "SELECT: 2nd map" ("SELECT: 1st map" while the second map shows), only while the cursor is on a two-map row. Tests
+`-k gauntlet_mode_select_flips` (also the hint's red/blue edges), pictures `aw2dev gfx audit --scenes iron_crown_map2,star_hint`. No `SIM_VERSION`: offline UI state in EWRAM only.
 
 Pictures of the two-map run's army screen: `aw2dev gauntlet two-maps`, `-k gauntlet_two_maps`.
 

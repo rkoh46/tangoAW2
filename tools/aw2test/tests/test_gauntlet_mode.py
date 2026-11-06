@@ -383,6 +383,15 @@ def region_diff(path_a, path_b, box):
 
 # the part of the selector's screen the map's picture is drawn in (x0, y0, x1, y1)
 PICTURE_BOX = (108, 36, 236, 126)
+# the hint's window under the picture (crate::star_hint): its red top edge and blue bottom edge (x0, y0, x1, y1); the edges' colours are the overlay's own (online.rs RED, BLUE)
+HINT_TOP, HINT_BOTTOM = (112, 129, 160, 131), (112, 141, 160, 143)
+
+
+def hint_shown(path):
+    """Whether the star hint's window is up: its top edge red and its bottom edge blue."""
+    red = hue_share(region_pixels(path, HINT_TOP), lambda r, g, b: r > 200 and g < 90 and b < 90)
+    blue = hue_share(region_pixels(path, HINT_BOTTOM), lambda r, g, b: b > 180 and r < 90 and g < 110)
+    return red > 0.8 and blue > 0.8
 
 
 def hue_share(px, want):
@@ -484,6 +493,7 @@ def gauntlet_mode_select_flips_a_two_map_runs_picture_and_faces(ctx):
     ctx.eq(entry_bytes(d, first), entry, "its entry is untouched")
     ctx.eq(d.face_tiles(), faces, "its faces are not redrawn")
     ctx.check(SAME(pic(ctx, e, "selector_one_map_after"), shot0), "its picture stays")
+    ctx.check(not hint_shown(shot0), "no hint on a one-map row")
     # the two-map run
     iron_row = ga.row_of(1)
     ids, row = d.go_to_row(iron_row)
@@ -492,6 +502,7 @@ def gauntlet_mode_select_flips_a_two_map_runs_picture_and_faces(ctx):
     ctx.eq(list(one[0x3C:0x40]), [0xFF, 5, 17, 6], "map 1's enemies: Grit, Jess, Kanbei (three faces)")
     faces1, pic1 = d.face_tiles(), pic(ctx, e, "selector_iron_map1")
     ctx.eq(e.u8(ga.UI_STAGE), 0, "the first map is shown")
+    ctx.check(hint_shown(pic1), "the star hint (SELECT: 2nd map) is under the picture on the two-map row")
     d.flip()
     two = entry_bytes(d, iron)
     ctx.eq(e.u8(ga.UI_STAGE), 1, "SELECT: the second map")
@@ -502,6 +513,8 @@ def gauntlet_mode_select_flips_a_two_map_runs_picture_and_faces(ctx):
     faces2, pic2 = d.face_tiles(), pic(ctx, e, "selector_iron_map2")
     ctx.check(faces2 != faces1, "the game redrew the first face (Asuka's)")
     ctx.check(DIFFERENT(pic2, pic1), "the game redrew the picture (Asuka's Keep)")
+    ctx.check(hint_shown(pic2), "the hint stays with the second map shown (SELECT: 1st map)")
+    ctx.check(region_diff(pic1, pic2, (108, 129, 190, 143)) > 0.02, "the hint's text changed")
     ctx.eq(d.selector_ids()[1], iron_row, "the cursor did not move")
     ctx.eq(e.u8(ga.UI_MAP_CURSOR), 1, "the cursor's map is still Iron Crown")
     d.flip()

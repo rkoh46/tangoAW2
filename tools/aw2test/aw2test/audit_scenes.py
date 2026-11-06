@@ -845,10 +845,11 @@ def gauntlet_map2(rec):
     rec.snap(e, "map1_again", ["menu", "maplist"])
 
 
-def _star_hint(rec, option):
-    """The selector on Iron Crown with the star-hint design option `option` (TANGOAW2_STAR_HINT, crate::star_hint): map 1 shown, then SELECT's map 2; and on a one-map row, where no hint may show."""
+@scene("gauntlet", "star_hint", looks=("ds_flat",), pack=True)
+def gauntlet_star_hint(rec):
+    """Gauntlet selector: the hint under the picture on Iron Crown (the two-map run's star): "SELECT: 2nd map" with the first map shown, "SELECT: 1st map" after SELECT, none on a one-map row. Menus: one look is enough."""
     from . import gauntlet as ga
-    e, g = rec.emu(env={"TANGOAW2_STAR_HINT": option})
+    e, g = rec.emu()
     d = ga.Gauntlet(g)
     saves.to_select_mode(e)
     saves.wheel_to(e, "gauntlet")
@@ -863,24 +864,6 @@ def _star_hint(rec, option):
     d.go_to_row(ga.row_of(1) - 1)
     e.wait(60)
     rec.snap(e, "one_map_row", ["menu", "maplist"])
-
-
-@scene("gauntlet", "star_hint_a1", looks=("ds_flat",), pack=True)
-def gauntlet_star_hint_a1(rec):
-    """Gauntlet selector, star-hint variant A1 (crate::star_hint): the SELECT: 2nd map hint on a two-map row."""
-    _star_hint(rec, "1")
-
-
-@scene("gauntlet", "star_hint_a2", looks=("ds_flat",), pack=True)
-def gauntlet_star_hint_a2(rec):
-    """Gauntlet selector, star-hint variant A2 (crate::star_hint): the SELECT: 2nd map hint on a two-map row."""
-    _star_hint(rec, "2")
-
-
-@scene("gauntlet", "star_hint_a3", looks=("ds_flat",), pack=True)
-def gauntlet_star_hint_a3(rec):
-    """Gauntlet selector, star-hint variant A3 (crate::star_hint): the SELECT: 2nd map hint on a two-map row."""
-    _star_hint(rec, "3")
 
 
 @scene("gauntlet", "army_skills", looks=("ds_flat",), pack=True)
