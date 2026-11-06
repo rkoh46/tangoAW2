@@ -346,12 +346,16 @@ def bh2_m2_crate_reaches_the_depot(ctx):
     d.place_unit(apc, 26, 19)
     e.wait(4)
     ctx.eq(g.terrain_class(26, 19) & 0x1F != 0, True, "the goal tile is land with a property")
-    g.wait_unit(inf["x"], inf["y"])
-    for _ in range(40):
+    # not g.wait_unit: its wait for an idle map never ends, because the win scene (m02_post) opens right after the Wait; the loop below presses through it
+    g.select(inf["x"], inf["y"])
+    g.move_to(inf["x"], inf["y"])
+    g.choose("Wait", g.ACTION_MENU)
+    for _ in range(120):          # (the win scene is a dozen boxes, each typed out: 40 presses ended inside it)
         if e.u8(dc.LAST_RESULT) or not d.in_battle():
             break
-        e.press("A", 4)
-        e.wait(30)
+        if d.scripts_running():
+            e.press("A", 4)
+        e.wait(40)
     ctx.check(bool(e.u8(dc.LAST_RESULT)) or not d.in_battle(), "the crate on the goal tile wins the mission")
     e.close()
 
