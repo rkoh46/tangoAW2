@@ -130,7 +130,7 @@ jobs:
           retention-days: 90
 
   release-mac-arm64:
-    runs-on: macos-14
+    runs-on: macos-15
     needs: create-release
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
@@ -226,7 +226,7 @@ jobs:
           retention-days: 90
 
   release-ios:
-    runs-on: macos-14
+    runs-on: macos-15
     needs: create-release
     env:
       CMAKE_POLICY_VERSION_MINIMUM: 3.5
