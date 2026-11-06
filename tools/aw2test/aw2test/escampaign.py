@@ -113,12 +113,12 @@ def boot(ctx, n, env=None):
     return e, g, d
 
 
-def enter(ctx, n):
+def enter(ctx, n, env=None):
     """Mission n entered through its CO screens: a mission with picks stands in its Setup phase; a fixed one is let play out its opening (the
     player has control, nothing has moved). Returns (emu, game, driver)."""
     from . import bhact2 as a2
     picks = PICKS.get(n, [])
-    e, g, d = boot(ctx, n)
+    e, g, d = boot(ctx, n, env=env)
     d.wait_world_map()
     if picks:
         a2.open_mission(ctx, e, g, d, n - 1, picks, f"m{n}", setup_only=True)

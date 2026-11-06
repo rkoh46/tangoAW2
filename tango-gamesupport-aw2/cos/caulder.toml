@@ -9,7 +9,7 @@ hq = "emerald_sun"
 
 full_name = "Caulder"
 theme = "own:caulder"
-bio = "The head of Silver Nova. He seeks a world where he is free to carry out his terrible experiments. Hit: Unrestricted experiments Miss: Ethics"
+bio = "The head of Silver Nova. Free to do terrible experiments. Hit: Unrestricted experiments Miss: Ethics"
 luck = [10, 10, 10]
 stars = { cop = 0, scop = 4 }
 

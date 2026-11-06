@@ -20,6 +20,16 @@ def text(args):
         problems += [l for l in lines if l.startswith("PROBLEM")]
         done_all.append(next((l for l in lines if l.startswith("done:")), None))
         rc |= r.returncode
+    # (AW2's CO page has six lines for a bio, Hit and Miss: a longer bio of tangoAW2's own COs lost its last sentences; `co_new` test `own_bios_show_whole_on_the_aw2_page`)
+    bio_env = cfg.env_with_cargo()
+    bio_env["TANGOAW2_AW2_ROM"] = str(cfg.aw2_rom())
+    b = subprocess.run(["cargo", "test", "-q", "-p", "tango-gamesupport-aw2", "--lib", "own_bios_show_whole_on_the_aw2_page", "--", "--nocapture"],
+                       env=bio_env, capture_output=True, text=True, cwd=cfg.REPO)
+    if b.returncode:
+        problems.append("PROBLEM co_page_bio: an own CO's bio does not show whole on AW2's CO page (" + " ".join(l for l in (b.stdout + b.stderr).splitlines() if "bio" in l or "panicked" in l or "page drops" in l)[:400] + ")")
+        rc |= 1
+    else:
+        util.say("CO page bios: Tabitha, Lili, Caulder, Asuka and Aria show whole on AW2's page")
     for l in problems:
         print(l)
     done = done_all[-1] if all(d == "done: 0 problems" for d in done_all) else next((d for d in done_all if d != "done: 0 problems"), None)

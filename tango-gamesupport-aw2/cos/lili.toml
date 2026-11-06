@@ -8,7 +8,7 @@ hq = "emerald_sun"
 
 full_name = "Lili"
 theme = "own:lili"
-bio = "The youngest child of Dr. Caulder. Numerous experiments have left her mind permanently shattered. Hit: Mr. Bear Miss: Broken \"toys\""
+bio = "The youngest child of Dr. Caulder. Her mind is permanently shattered. Hit: Mr. Bear Miss: Broken \"toys\""
 luck = [10, 10, 10]
 # Only a CO Power: no Super Power (0 stars: the CO page says so).
 stars = { cop = 3, scop = 0 }

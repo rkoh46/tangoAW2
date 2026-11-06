@@ -10,7 +10,7 @@ hq = "emerald_sun"
 full_name = "Tabitha"
 # Her theme: music/sn/tabitha.m4t (our own composition: "Stupid Weak People").
 theme = "own:tabitha"
-bio = "Belongs to Silver Nova. A daughter of Dr. Caulder, she is extremely cruel and vindictive. Hit: Breakfast in bed Miss: \"Stupid Weak People\""
+bio = "Belongs to Silver Nova. Dr. Caulder's cruel, vindictive daughter. Hit: Breakfast in bed Miss: \"Stupid Weak People\""
 luck = [10, 10, 10]
 # No CO Power (like AW2's Sturm): the map menu has no Power entry. The Super Power costs 9 stars.
 stars = { cop = 0, scop = 9 }

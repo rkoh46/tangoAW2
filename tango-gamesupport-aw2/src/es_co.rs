@@ -79,7 +79,7 @@ pub struct Info {
 pub const INFO: [Info; 3] = [
     Info {
         name: "Tabitha",
-        bio: "Belongs to Silver Nova. A daughter of Dr. Caulder, she is extremely cruel and vindictive. Hit: Breakfast in bed Miss: \"Stupid Weak People\"",
+        bio: "Belongs to Silver Nova. Dr. Caulder's cruel, vindictive daughter. Hit: Breakfast in bed Miss: \"Stupid Weak People\"",
         d2d: "All units fight with 18% more firepower and defense.",
         cop: "Tabitha has no CO Power. She saves all her energy for her Super CO Power.",
         scop: "Deals 8 damage automatically to the most expensive group of enemies in 13 tiles. Cannot kill.",
@@ -103,7 +103,7 @@ pub const INFO: [Info; 3] = [
     },
     Info {
         name: "Lili",
-        bio: "The youngest child of Dr. Caulder. Numerous experiments have left her mind permanently shattered. Hit: Mr. Bear Miss: Broken \"toys\"",
+        bio: "The youngest child of Dr. Caulder. Her mind is permanently shattered. Hit: Mr. Bear Miss: Broken \"toys\"",
         d2d: "All units fight with 10% more firepower and defense.",
         cop: "For two days the weather turns to sand, snow or rain at random. Her units ignore weather and move 1 more space.",
         scop: "Lili has no Super CO Power. Her one trick is the Enigma.",
@@ -120,7 +120,7 @@ pub const INFO: [Info; 3] = [
     },
     Info {
         name: "Caulder",
-        bio: "The head of Silver Nova. He seeks a world where he is free to carry out his terrible experiments. Hit: Unrestricted experiments Miss: Ethics",
+        bio: "The head of Silver Nova. Free to do terrible experiments. Hit: Unrestricted experiments Miss: Ethics",
         d2d: "All units fight with 18% more firepower and defense. Every terrain costs just 1 move.",
         cop: "Caulder has no CO Power. He saves all his energy for his Super CO Power.",
         scop: "Restores 5 HP to all units. Firepower and defense rise by a further 25%.",

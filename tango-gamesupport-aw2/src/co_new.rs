@@ -1268,6 +1268,33 @@ mod tests {
 mod pack_tests {
     use super::*;
 
+    /// AW2's font widths from the user's ROM (`TANGOAW2_AW2_ROM`, else the app's ROM folder); None when there is no ROM (the test then does nothing).
+    fn rom_widths() -> Option<Vec<u8>> {
+        let path = std::env::var("TANGOAW2_AW2_ROM").ok().or_else(|| {
+            std::env::var("HOME").ok().map(|h| format!("{h}/Documents/TangoAW2/roms/Advance_wars_2.gba"))
+        })?;
+        let rom = std::fs::read(path).ok()?;
+        Some(rom[(FONT_WIDTHS - 0x0800_0000) as usize..][..256].to_vec())
+    }
+
+    /// Every bio of tangoAW2's own COs (Silver Nova's three, Asuka, Aria) shows whole on AW2's CO page: `wrap_page` fits it in the page's six lines without dropping a
+    /// sentence (it drops the last sentences of a bio too long for the page: Tabitha's once ended "A daughter of Dr." and Hit, her bio cut at the abbreviation's full stop).
+    #[test]
+    fn own_bios_show_whole_on_the_aw2_page() {
+        let Some(widths) = rom_widths() else { return };
+        let mut bios: Vec<(String, String)> = Vec::new();
+        for co in [crate::es_co::TABITHA, crate::es_co::LILI, crate::es_co::CAULDER, ASUKA, ARIA] {
+            bios.push((format!("CO {co}"), String::from_utf8(crate::es_cos::text(co, T_BIO).unwrap()).unwrap()));
+        }
+        let words = |t: &str| t.replace('\r', " ").split_whitespace().map(str::to_string).collect::<Vec<_>>();
+        for (who, bio) in bios {
+            let page = String::from_utf8(wrap_page(bio.as_bytes(), &widths)).unwrap();
+            println!("{who}: {}", page.replace('\r', " | "));
+            assert!(page.split('\r').count() <= PAGE_LINES, "{who}: more than {PAGE_LINES} lines: {page}");
+            assert_eq!(words(&page), words(&bio), "{who}: the page drops words of the bio: {page}");
+        }
+    }
+
     /// Every new CO's CO page texts fit AW2's page (needs `TANGOAW2_DS_ROM`).
     #[test]
     #[ignore]
