@@ -459,6 +459,22 @@ def styled(spec, path):
     pal16 = [(0, 0, 0)] + pal[:14] + [pal[14]]
     ex = lambda a, sl: np.kron(a[sl], np.ones((S, S), np.uint8))
     L = ex(full, fr)
+    # `large_div` (default 1): the large figure of a picture drawn with finer cells than Caulder's (Lili's, Tabitha's): a 128 * large_div x 160 * large_div frame of cells at
+    # `large_frame` (its corner) shrunk to 128 x 160 like the faces' `mug_div`, so the figure stands at the same size as the other COs'; `frame` still weights the palette (the faces keep theirs)
+    LD = float(spec.get("large_div", 1.0))
+    if LD != 1.0:
+        lx0, ly0 = spec["large_frame"]
+        lw, lh = round(128 * LD), round(160 * LD)
+        lfr = (slice(ly0 + P, ly0 + P + lh), slice(lx0 + P, lx0 + P + lw))
+        lum_ = np.array([0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2] for c in pal16])
+        wd_ = np.where(lum_ < float(spec.get("mug_dark_l", 90)), float(spec.get("mug_dark_w", 1.8)), 1.0)
+        if spec.get("large_resample") == "mean":
+            # as the faces' `mug_resample`: each pixel the mean of its block's figure cells, then the nearest palette colour (eyes and lashes survive the shrink)
+            lrgb, sfg_l = _block_mean_fg(nat[lfr], fg[lfr], (160, 128))
+            small_l = quantise(lrgb, sfg_l, pal[:14], spec.get("match", "luma"))
+        else:
+            small_l, sfg_l = _block_mode(full_noring[lfr], fg[lfr], (160, 128), wd_)
+        L = drop_orphan_outline(ring(sfg_l, small_l, diagonal=bool(spec.get("outline_diagonal"))))
     fullm = full
     if spec.get("mug_erase"):
         # the faces leave out what is not the face but falls inside the square (her cigarette's ember at the mug's lower left corner): cells set to background in the faces' own copy, their outline redrawn
@@ -489,7 +505,7 @@ def styled(spec, path):
     im = I.Imported()
     im.spec = spec
     im.palette = pal16
-    im.src = {"large": np.kron(nat[fr], np.ones((S, S, 1))), "face": (_block_mean(nat[mu], 48) if DV != 1.0 else np.kron(nat[mu], np.ones((MS, MS, 1))))}      # her native colours at the output's resolution (the lightness lint)
+    im.src = {"large": (_block_mean(nat[lfr], (160, 128)) if LD != 1.0 else np.kron(nat[fr], np.ones((S, S, 1)))), "face": (_block_mean(nat[mu], 48) if DV != 1.0 else np.kron(nat[mu], np.ones((MS, MS, 1))))}      # her native colours at the output's resolution (the lightness lint)
     im.large = L
     im.faces["normal"] = face
     e = spec["eyes"]
@@ -525,12 +541,13 @@ def _blocks(n_in, n_out):
 
 
 def _block_mode(idx, fg, n, weight=None):
-    """idx / fg (square, cells) -> n x n: each pixel the commonest figure index of its block of cells, background when the figure covers under half of it."""
-    out = np.zeros((n, n), np.uint8)
-    sfg = np.zeros((n, n), bool)
-    bl = _blocks(idx.shape[0], n)
-    for y, (y0, y1) in enumerate(bl):
-        for x, (x0, x1) in enumerate(bl):
+    """idx / fg (cells) -> n x n (or n = (rows, cols)): each pixel the commonest figure index of its block of cells, background when the figure covers under half of it."""
+    nh, nw = (n, n) if isinstance(n, int) else n
+    out = np.zeros((nh, nw), np.uint8)
+    sfg = np.zeros((nh, nw), bool)
+    blx = _blocks(idx.shape[1], nw)
+    for y, (y0, y1) in enumerate(_blocks(idx.shape[0], nh)):
+        for x, (x0, x1) in enumerate(blx):
             f = fg[y0:y1, x0:x1]
             if f.mean() < 0.5:
                 continue
@@ -546,12 +563,13 @@ def _block_mode(idx, fg, n, weight=None):
 
 
 def _block_mean_fg(rgb, fg, n):
-    """rgb / fg (square, cells) -> (n x n x 3 mean colour of each block's figure cells, n x n figure mask: the figure covers at least half of the block)."""
-    bl = _blocks(rgb.shape[0], n)
-    out = np.zeros((n, n, 3))
-    m = np.zeros((n, n), bool)
-    for y, (y0, y1) in enumerate(bl):
-        for x, (x0, x1) in enumerate(bl):
+    """rgb / fg (cells) -> (n x n x 3 (or n = (rows, cols)) mean colour of each block's figure cells, the figure mask: the figure covers at least half of the block)."""
+    nh, nw = (n, n) if isinstance(n, int) else n
+    out = np.zeros((nh, nw, 3))
+    m = np.zeros((nh, nw), bool)
+    blx = _blocks(rgb.shape[1], nw)
+    for y, (y0, y1) in enumerate(_blocks(rgb.shape[0], nh)):
+        for x, (x0, x1) in enumerate(blx):
             f = fg[y0:y1, x0:x1]
             if f.mean() >= 0.5:
                 out[y, x] = rgb[y0:y1, x0:x1][f].mean(0)
@@ -560,8 +578,9 @@ def _block_mean_fg(rgb, fg, n):
 
 
 def _block_mean(rgb, n):
-    bl = _blocks(rgb.shape[0], n)
-    return np.array([[rgb[y0:y1, x0:x1].reshape(-1, rgb.shape[2]).mean(0) for (x0, x1) in bl] for (y0, y1) in bl])
+    nh, nw = (n, n) if isinstance(n, int) else n
+    blx = _blocks(rgb.shape[1], nw)
+    return np.array([[rgb[y0:y1, x0:x1].reshape(-1, rgb.shape[2]).mean(0) for (x0, x1) in blx] for (y0, y1) in _blocks(rgb.shape[0], nh)])
 
 
 def _expression_picture(path, kind):

@@ -204,6 +204,28 @@ def battle_map(rec):
     e.wait(60)
 
 
+@scene("cos", "sn_portraits", pack=True)
+def sn_portraits(rec):
+    """Caulder's, Lili's and Tabitha's big portrait at one scale (Lili and Tabitha shrunk to Caulder's with `large_div`): the CO page in battle and the power cut-in (Super, or Lili's CO Power: she has no Super), each on the Silver Nova skin."""
+    m = showcase_map(rec.ctx)
+    for name, cid, skin in NEW_COS:
+        if name not in ("caulder", "lili", "tabitha"):
+            continue
+        e, g = versus(rec, m, (cid, "andy"), skin=skin)
+        g.open_map_menu()
+        g.choose("CO", g.MAP_MENU)
+        e.wait(90)
+        rec.snap(e, f"{name}_page", ["battle", "copage"])
+        e.press("B", 6)
+        e.wait(40)
+        which = "power" if name == "lili" else "super"
+        g.charge_power(1, which)
+        g.open_map_menu()
+        g.choose("Super" if which == "super" else "Power", g.MAP_MENU)
+        burst(rec, e, f"{name}_{which}_", 10, 10, ["battle", "power"])
+        e.close()
+
+
 @scene("versus", "powers", nopack=True)
 def powers(rec):
     """CO Power and Super CO Power activation (cut-in, flash)."""
