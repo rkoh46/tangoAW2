@@ -428,7 +428,10 @@ def styled(spec, path):
     mx0, my0 = spec["mug"]
     # the mug's own scale: 2 (a 24-cell square, the default of the 5 px-cell pictures) or 1 (a 48-cell square: a picture drawn with finer cells, whose whole head is more than 24 of them)
     MS = int(spec.get("mug_scale", S))
-    ms = 48 // MS
+    # `mug_div` (default 1): a picture drawn with cells so fine that its head is wider than the 48-pixel face (Lili's, Tabitha's: eyes 24..32 cells apart where AW2's COs have 16..18):
+    # the face square is 48 * mug_div cells, shrunk to 48 x 48 (each output pixel takes the commonest colour of its block of cells; `mug_div` may be fractional)
+    DV = float(spec.get("mug_div", 1.0))
+    ms = round(48 * DV) if DV != 1.0 else 48 // MS
     pad = lambda a, ys, xs: a[ys, xs]
     # a frame may reach past the picture (a short figure, a face near an edge): pad with background cells
     P = 64
@@ -438,8 +441,11 @@ def styled(spec, path):
     fgp = np.pad(keep_main(fg0), P, constant_values=False) if spec.get("palette_before_seeds") else fg
     fr = (slice(y0 + P, y0 + P + fh), slice(x0 + P, x0 + P + fw))
     mu = (slice(my0 + P, my0 + P + ms), slice(mx0 + P, mx0 + P + ms))
-    px = np.concatenate([nat[fr][fgp[fr]], nat[mu][fgp[mu]]])
-    wt = np.concatenate([np.ones(fgp[fr].sum()), np.full(fgp[mu].sum(), spec.get("face_weight", 3.0))])
+    # the palette weights a 48-cell square of the face (`mug_pal` = its corner): with `mug_div` the face square is much larger and would shift the whole palette (and the large figure with it)
+    mp = spec.get("mug_pal")
+    mup = (slice(mp[1] + P, mp[1] + P + 48), slice(mp[0] + P, mp[0] + P + 48)) if mp else mu
+    px = np.concatenate([nat[fr][fgp[fr]], nat[mup][fgp[mup]]])
+    wt = np.concatenate([np.ones(fgp[fr].sum()), np.full(fgp[mup].sum(), spec.get("face_weight", 3.0))])
     # colours guaranteed a palette entry: groups of native cells (`protect = [[[x, y], ...], ...]`, in the cells of the grid after `flip`), each group's mean colour
     protect = [np.mean([nat[y + P, x + P] for x, y in grp], axis=0) for grp in spec.get("protect", [])]
     pal = palette_for(px, wt, outline=tuple(spec.get("outline", (32, 24, 32))), protect=protect, dark_k=int(spec.get("dark_ramp", 0)), dark_l=float(spec.get("dark_ramp_l", 35.0)), dark_c=float(spec.get("dark_ramp_c", 14.0)))
@@ -447,6 +453,7 @@ def styled(spec, path):
     full = keep_off(full, nat, pal[:14], [[r[0] + P, r[1] + P, r[2] + P, r[3] + P, *r[4:]] for r in spec.get("keep_off", ())], spec.get("match", "luma"))
     if spec.get("despeckle"):
         full = despeckle_dark(full, pal[:14], int(spec["despeckle"]))
+    full_noring = full
     full = ring(fg, full, diagonal=bool(spec.get("outline_diagonal")))
     # the ring is index 15; nothing else uses index 15 (the palette has 14 clusters, indexes 1..14)
     pal16 = [(0, 0, 0)] + pal[:14] + [pal[14]]
@@ -459,12 +466,30 @@ def styled(spec, path):
         for x0_, y0_, x1_, y1_ in spec["mug_erase"]:
             fgm[y0_ + P:y1_ + P + 1, x0_ + P:x1_ + P + 1] = False
         fullm = ring(fgm, quantise(nat, fgm, pal[:14], spec.get("match", "luma")), diagonal=bool(spec.get("outline_diagonal")))
-    nface = drop_orphan_outline(fullm[mu])
-    face = np.kron(nface, np.ones((MS, MS), np.uint8))
+    if DV != 1.0:
+        fgm_ = fg
+        idx_ = full_noring
+        if spec.get("mug_erase"):
+            fgm_ = fg.copy()
+            for x0_, y0_, x1_, y1_ in spec["mug_erase"]:
+                fgm_[y0_ + P:y1_ + P + 1, x0_ + P:x1_ + P + 1] = False
+            idx_ = quantise(nat, fgm_, pal[:14], spec.get("match", "luma"))
+        lum = np.array([0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2] for c in pal16])
+        wdark = np.where(lum < float(spec.get("mug_dark_l", 90)), float(spec.get("mug_dark_w", 1.8)), 1.0)
+        if spec.get("mug_resample") == "mean":
+            # area average of the figure's own cells, then the nearest palette colour: thin features (lashes, irises) darken a pixel instead of being outvoted
+            small_rgb, sfg = _block_mean_fg(nat[mu], fgm_[mu], 48)
+            small = quantise(small_rgb, sfg, pal[:14], spec.get("match", "luma"))
+        else:
+            small, sfg = _block_mode(idx_[mu], fgm_[mu], 48, wdark)
+        face = drop_orphan_outline(ring(sfg, small, diagonal=bool(spec.get("outline_diagonal"))))
+    else:
+        nface = drop_orphan_outline(fullm[mu])
+        face = np.kron(nface, np.ones((MS, MS), np.uint8))
     im = I.Imported()
     im.spec = spec
     im.palette = pal16
-    im.src = {"large": np.kron(nat[fr], np.ones((S, S, 1))), "face": np.kron(nat[mu], np.ones((MS, MS, 1)))}      # her native colours at the output's resolution (the lightness lint)
+    im.src = {"large": np.kron(nat[fr], np.ones((S, S, 1))), "face": (_block_mean(nat[mu], 48) if DV != 1.0 else np.kron(nat[mu], np.ones((MS, MS, 1))))}      # her native colours at the output's resolution (the lightness lint)
     im.large = L
     im.faces["normal"] = face
     e = spec["eyes"]
@@ -491,6 +516,52 @@ def styled(spec, path):
         f2 = ring(fg2, quantise(nat2, fg2, pal[:14], spec.get("match", "luma")), diagonal=bool(spec.get("outline_diagonal")))      # art repal hook
         im.faces[kind] = np.kron(drop_orphan_outline(f2[mu]), np.ones((MS, MS), np.uint8))
     return im
+
+
+def _blocks(n_in, n_out):
+    """Cell ranges [a, b) of each of n_out output pixels over n_in cells (fractional ratios overlap by whole cells)."""
+    r = n_in / n_out
+    return [(int(np.floor(i * r)), max(int(np.floor(i * r)) + 1, int(np.ceil((i + 1) * r)))) for i in range(n_out)]
+
+
+def _block_mode(idx, fg, n, weight=None):
+    """idx / fg (square, cells) -> n x n: each pixel the commonest figure index of its block of cells, background when the figure covers under half of it."""
+    out = np.zeros((n, n), np.uint8)
+    sfg = np.zeros((n, n), bool)
+    bl = _blocks(idx.shape[0], n)
+    for y, (y0, y1) in enumerate(bl):
+        for x, (x0, x1) in enumerate(bl):
+            f = fg[y0:y1, x0:x1]
+            if f.mean() < 0.5:
+                continue
+            v = idx[y0:y1, x0:x1][f]
+            v = v[v > 0]
+            if v.size:
+                c = np.bincount(v, minlength=16).astype(float)
+                if weight is not None:
+                    c = c * weight          # thin dark features (lashes, irises) win a block they cover a third of
+                out[y, x] = c.argmax()
+                sfg[y, x] = True
+    return out, sfg
+
+
+def _block_mean_fg(rgb, fg, n):
+    """rgb / fg (square, cells) -> (n x n x 3 mean colour of each block's figure cells, n x n figure mask: the figure covers at least half of the block)."""
+    bl = _blocks(rgb.shape[0], n)
+    out = np.zeros((n, n, 3))
+    m = np.zeros((n, n), bool)
+    for y, (y0, y1) in enumerate(bl):
+        for x, (x0, x1) in enumerate(bl):
+            f = fg[y0:y1, x0:x1]
+            if f.mean() >= 0.5:
+                out[y, x] = rgb[y0:y1, x0:x1][f].mean(0)
+                m[y, x] = True
+    return out, m
+
+
+def _block_mean(rgb, n):
+    bl = _blocks(rgb.shape[0], n)
+    return np.array([[rgb[y0:y1, x0:x1].reshape(-1, rgb.shape[2]).mean(0) for (x0, x1) in bl] for (y0, y1) in bl])
 
 
 def _expression_picture(path, kind):
