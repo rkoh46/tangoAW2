@@ -4,19 +4,20 @@
 
 == prologue
 @SONG opening
-NARRATION: Novaria, beyond the Silver / Sea. Unseen for two centuries.
-NARRATION: Then the first harvest came up / grey.
-NARRATION: Ash on the wind, from the north. / Fields dusted like hearths.
+NARRATION: Novaria. Unseen by the world / for two centuries.
+NARRATION: It lies far to the south, / across the Silver Sea.
+NARRATION: Then its harvest came up grey. / Ash on the wind, from the north.
 NARRATION: The second harvest was greyer. / The third did not come.
-NARRATION: Then the relief grain arrived. / Cheap. On time.
-NARRATION: Crates from HOBB Grain and / Freight. No office, no owner.
-NARRATION: A stencil on every crate, a / stamp on every bill.
-NARRATION: Dr. Caulder found the money, / and did not ask where from.
-NARRATION: The Directorate was in debt to a / name. It sent two orders.
-NARRATION: To his daughter Tabitha, in / writing: find who feeds us.
-NARRATION: To Dr. Caulder himself, sealed: / if there is nobody,
-NARRATION: take the north's granaries. Do / not wait for permission.
-NARRATION: The Silver Nova sailed north / under a green star on white.
+NARRATION: Then relief grain came. Cheap. / On time. Nobody asked from where.
+NARRATION: Every crate bore the same stamp: / HOBB Grain and Freight.
+NARRATION: Novaria's Directorate fell into / debt to that stamp.
+NARRATION: Its army, the Silver Nova, / answers to one man: Dr. Caulder.
+NARRATION: A scientist. His experiments / have no limits, and no ethics.
+NARRATION: His daughter Tabitha leads his / troops. She despises the weak.
+NARRATION: His youngest, Lili, was once his / experiment. Now she plays war.
+NARRATION: The Directorate sent one order: / find who feeds us.
+NARRATION: Caulder added his own, sealed: / take the north's granaries.
+NARRATION: The Silver Nova sailed north / under a silver sun.
 NARRATION: They marched because the bread / stopped.
 
 # ---------------------------------------------------------------- M1 Landfall (Tabitha; enemy Jess)
