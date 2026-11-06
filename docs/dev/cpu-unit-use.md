@@ -78,3 +78,15 @@ The campaigns' CPU audits are the existing ones (`bh_cpuai_acts` for every BH mi
 mission declares a unit a holder (role 0, `UnitDef::freeze`, `STAND`, a march) it stays; nothing in this change touches those.
 
 Scope: Dual Strike's CPU (and so every rule above) plays in Versus, the War Room (title mode 5, `ds_ai::in_scope`; its maps' AW2 personalities are mapped onto Dual Strike's profiles by the CO the army has, as Versus does), the DS Campaign and the custom campaigns (BH, BH2, Silver Nova, the Gauntlet). AW2's own campaign and Survival keep AW2's own CPU.
+
+
+## Foot soldiers: garrisons that sally, ships' land cousins
+
+Silver Nova M1 (Landfall) deploys all six of Green Earth's soldiers with role 0 (the map's `hold`); AW2's hold plus the campaign engine's skip (`custom_campaign::ai_unit`) kept them on the fort for the whole mission, with neutral cities two turns' walk away.
+Two rules, both deterministic (emulated memory only; `inspect::SIM_VERSION` needs a bump for them):
+
+- **Sally** (`custom_campaign::sally`): a role-0 Infantry or Mech with no enemy next to it is released to role 3 (capture) for good when no HQ of its team is within 3 cells (the HQ's guards stay) and a building not of its team's (neutral or an enemy's) is within two turns' walk. A soldier with nothing to take stays, so a roadblock between walls is still one.
+- **Shore drift** (`ds_ai_move::choose`): a land unit that no land way takes to any target of its role (the enemy across the water: M1's sandbar) drifts to the safe cell nearest the enemy, as a ship does (`cpu_units::drift`), instead of sitting where it was deployed.
+
+Tests and tools: `-k cpu_foot_idle` (`tests/test_cpu_foot_idle.py`): M1 with the player passive (foot soldiers take property, at least 60% of their turns are work) and with the test player landing (Green Earth takes property, at least 60% of its units act each turn),
+plus a log-only report per Silver Nova mission; `cpuports.report` now also logs, for every mission and map of `-k cpu_port_idle`, the idle foot soldiers (`foot_idle`), the share of units that acted (`acting_share`) and the neutral buildings within three turns' walk of a soldier at the end (`neutral_reachable`).

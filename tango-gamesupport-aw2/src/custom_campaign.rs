@@ -2950,8 +2950,44 @@ pub fn ai_unit(core: &mut Core) {
     let kind = core.raw_read_8(u, -1);
     if !army_out(core) && (kind == 1 || kind == 2) && core.raw_read_8(u + ROLE_AT, -1) == 0 && !enemy_adjacent(core, u)
     {
+        // A garrison that has somewhere to go is not a garrison any more ([`sally`]): it takes role 3 for good and AW2 plays it.
+        if sally(core, u) {
+            core.raw_write_8(u + ROLE_AT, -1, crate::bh_ai::CAPTURE);
+            return;
+        }
         core.gba_mut().cpu_mut().set_thumb_pc(AI_SKIP);
     }
+}
+
+/// A designer's garrison (a foot soldier deployed with role 0, AW2's hold) keeps its post only while it is a guard of the HQ or has nothing to take: the Silver Nova Campaign's Mission 1 held all
+/// six of Green Earth's soldiers on the fort for the whole mission, with neutral cities two turns' walk away. The soldier is released when no HQ of its team is within [`GUARD_RADIUS`] cells and
+/// a building not of its team's (neutral or an enemy's), free or under the soldier, is within two turns' walk of it; a soldier next to the HQ, or with no building to reach, stays (the HQ's
+/// defenders, a roadblock between walls). Deterministic: only emulated memory is read. `inspect::SIM_VERSION` 51.
+const GUARD_RADIUS: i32 = 3;
+
+fn sally(core: &Core, rec: u32) -> bool {
+    use crate::ds_ai::{Board, C_HQ, PROPERTIES};
+    let b = Board::read(core);
+    let Some(me) = b.units.iter().find(|x| x.rec == rec).copied() else {
+        return false;
+    };
+    if me.carried() {
+        return false;
+    }
+    let army = me.army;
+    let guard = (0..b.class.len()).any(|i| {
+        b.class[i] == C_HQ
+            && b.team_owns(i, army)
+            && (i as i32 % b.w - me.x).abs() + (i as i32 / b.w - me.y).abs() <= GUARD_RADIUS
+    });
+    if guard {
+        return false;
+    }
+    let reach = b.flood(army, me.t, me.x, me.y, 2 * b.moves(army, me.t), false);
+    let here = b.idx(me.x, me.y);
+    (0..reach.len()).any(|i| {
+        reach[i] >= 0 && PROPERTIES.contains(&b.class[i]) && !b.team_owns(i, army) && (b.at[i] == 0 || i == here)
+    })
 }
 
 /// The computer's buy (`sub_080610D0`) just after `BuyUnit` returned the new unit (r0) and its role (r1: AW2's roll or Dual Strike's order) is about to be stored at +0x0B.

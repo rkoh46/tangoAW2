@@ -299,7 +299,14 @@ pub(crate) fn limits_of(prof: &Profile, t: u8) -> UnitProfile {
 /// The cell unit `u` of `army` goes to this turn, and why.
 pub(crate) fn choose(core: &Core, b: &Board, army: u32, u: &Unit, role: u8, roll: u32) -> Option<((i32, i32), String)> {
     let sight = seen(b, army);
-    let (targets, what) = target_cells(b, army, u, role, &sight)?;
+    // (a land unit that no land way reaches any target, the enemy across the water: it drifts to the shore nearest the enemy as a ship does, instead of sitting where it was deployed)
+    let Some((targets, what)) = target_cells(b, army, u, role, &sight) else {
+        return if stats(u.t).group & (SEA | AIR) == 0 {
+            crate::cpu_units::drift(core, b, army, u, roll)
+        } else {
+            None
+        };
+    };
     let to = distance_to(b, army, u.t, &targets);
     let fuel = (core.raw_read_8(u.rec + 6, -1) & 0x7F) as i32;
     let moves = b.moves(army, u.t).min(fuel);
