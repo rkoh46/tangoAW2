@@ -112,10 +112,12 @@ pub fn consumed(core: &mut Core) {
 // --- Rules AW2's campaign applies that a Gauntlet run does not want ------------------------------------------------------------------------------------------------------------------------
 
 /// `sub_080261E8(army)`: in campaign mode AW2 offers the Neotank only when the army's colour has its story flag (0x65..0x68; Black Hole's colour none), which a Gauntlet session (every run a
-/// first play, no story) never has. Called by the build menu (`0x0802D6CA`). In a Gauntlet session the answer is yes, so every map's bases offer the Neotank as a Versus map with the pack does.
+/// first play, no story) and the custom campaigns (Silver Nova, BH, BH2: their own stories, never AW2's flags) never have. Called by the build menu (`0x0802D6CA`) and by the CO page's unit
+/// chart (`0x0808571C`: it picks the list without the Neotank, a blank slot). In the Gauntlet and in every custom campaign (the Dual Strike Campaign keeps its own rules) the answer is yes,
+/// so every map's bases and the chart offer the Neotank as a Versus map with the pack does. AW2's own campaign is untouched. This is the only unit AW2 gates by the campaign.
 pub const NEOTANK_OPEN: u32 = 0x0802_61E8;
 pub fn neotank_open(core: &mut Core) {
-    if !session(core) {
+    if !(session(core) || (crate::ds_campaign::active(core) && !crate::ds_campaign::is_ds(core))) {
         return;
     }
     let cpu = core.gba_mut().cpu_mut();

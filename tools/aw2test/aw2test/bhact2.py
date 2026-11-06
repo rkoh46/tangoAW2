@@ -17,10 +17,10 @@ WON = lambda upto: (1 << upto) - 1            # missions 1..upto won (their bits
 SHOTS = os.environ.get("AW2TEST_ACT2_SHOTS")   # a folder the pictures are also copied to
 
 
-def boot(ctx, won, unlocked, picks=None, at=None, save=None):
+def boot(ctx, won, unlocked, picks=None, at=None, save=None, env=None):
     """Continue with the record set: missions won (bits), COs unlocked (roster
     bits), the map's cursor at mission index `at`."""
-    e = Emu(save=save or paths.base_save(), ds=ctx.ds)
+    e = Emu(save=save or paths.base_save(), ds=ctx.ds, env=env)
     g = Game(e, ctx.image)
     ctx.games.append(g)
     d = bh.BhCampaign(g)

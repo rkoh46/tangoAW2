@@ -6,7 +6,7 @@ the data files), `co_powers.rs` (Firestorm), `co_roster.rs` (the CO table rows),
 `art-src/cos/<id>_v1.jpg` (+ `.toml` framing); tests: `aw2dev co verify`, `tests/test_es_powers.py`, `test_es_cos.py`. Check: `aw2dev co check | portrait lint | verify`.
 
 ## The family (the owner's CO pages, used as written)
-Caulder is the head of Silver Nova (bio "He seeks a world where he is free to carry out his terrible experiments", Hit: Unrestricted experiments, Miss: Ethics, quote "Fascinating..."). Lili is the youngest child of Dr. Caulder
+Caulder is the head of Silver Nova (bio "The head of Silver Nova. Free to do terrible experiments." (cut from the owner's "He seeks a world where he is free to carry out his terrible experiments" to fit AW2's page: `co_new` test `own_bios_show_whole_on_the_aw2_page`), Hit: Unrestricted experiments, Miss: Ethics, quote "Fascinating..."). Lili is the youngest child of Dr. Caulder
 (mind shattered by experiments; Hit: Mr. Bear, Miss: Broken "toys"; "Tee hee! Let's go, Mr. Bear!"). Tabitha is Caulder's daughter, extremely cruel and vindictive (Hit: Breakfast in bed, Miss: "Stupid Weak People"; "Stupid weak people!").
 Caulder is the leader and the final boss; his daughters serve under him. The quote is each CO's signature line (power quotes, Tag quote, dialogue).
 
