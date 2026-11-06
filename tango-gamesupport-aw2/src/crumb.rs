@@ -420,7 +420,7 @@ fn power_paid(core: &mut Core) {
 /// `sub_080398D0`'s pick of one of the six power quotes (r0 = rand % 6, just
 /// before it is doubled into a halfword offset): his are in the order Ration
 /// Run's, Gerald's Blessing's, the Tag Power's (twice over), so the quote
-/// is the power's own.
+/// is the power's own; the roll still chooses between the two sets.
 const QUOTE_PICK: u32 = 0x0803_98E0;
 fn quote_pick(core: &mut Core) {
     if !is_on(core) {
@@ -438,7 +438,9 @@ fn quote_pick(core: &mut Core) {
         2 => 1,
         _ => return,
     };
-    core.gba_mut().cpu_mut().set_gpr(0, k);
+    // (the game's own roll picks the set: a CO with two lines per power says either; one line, written twice, says it every time)
+    let set = if core.gba().cpu().gpr(0) as u32 % 6 >= 3 { 3 } else { 0 };
+    core.gba_mut().cpu_mut().set_gpr(0, k + set);
 }
 
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
