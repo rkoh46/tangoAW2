@@ -55,7 +55,7 @@ pub fn available(core: &Core) -> bool {
 
 /// The colour the player's army wears in a Silver Nova battle (its skin sits on it), `None` outside one.
 pub fn skin_colour(core: &Core) -> Option<u8> {
-    if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::pvp::in_battle(core) {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::ds_campaign::battle_or_turn(core) {
         return None;
     }
     let army = crate::ds_campaign::player_army(core) as u32;
@@ -69,7 +69,7 @@ pub fn skin_colour(core: &Core) -> Option<u8> {
 /// tick of such a battle the colour bytes are set to the mission's and the army's palette rows reloaded when one changes.
 pub fn sync_colours(core: &mut Core) -> Vec<(u32, u8)> {
     let mut changed = Vec::new();
-    if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::pvp::in_battle(core) {
+    if !crate::ds_campaign::active(core) || crate::ds_campaign::source(core) != SOURCE || !crate::ds_campaign::battle_or_turn(core) {
         return changed;
     }
     let Some(m) = crate::ds_campaign::campaign(core).and_then(|c| {

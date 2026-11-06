@@ -1343,6 +1343,7 @@ fn restore_backup(core: &mut Core, base: u32, max: usize) {
         let before = Rom::read(core, addr, len);
         core.raw_write_range(addr, -1, &b);
         refresh_palettes(core, &before, &b);
+        refresh_tiles(core, &before, &b);
         at += 8 + ((len as u32 + 3) & !3);
     }
     core.raw_write_32(base, -1, 0);
@@ -1367,6 +1368,7 @@ fn apply_backup(core: &mut Core, base: u32, max: usize, patches: &[Patch]) {
         let before = Rom::read(core, p.addr, p.data.len());
         core.raw_write_range(p.addr, -1, &p.data);
         refresh_palettes(core, &before, &p.data);
+        refresh_tiles(core, &before, &p.data);
     }
 }
 
@@ -1462,6 +1464,31 @@ fn sync_ds_body(core: &mut Core) {
     }
 }
 
+/// Sprite pictures the game has loaded into OBJ VRAM already keep the ROM's tiles of that moment (a sprite's tiles are copied when it is made: the army emblems on the CO page, the HQ's and
+/// the other pictures this skin patches): where OBJ VRAM holds `before` (a whole picture, 128 bytes or more, on a tile boundary), `after` goes in its place. A skin put on a colour after the
+/// map's sprites were loaded (the Silver Nova Campaign's mission starts, a skin back after a battle scene) otherwise left the CO page's emblem Orange Star's star.
+fn refresh_tiles(core: &mut Core, before: &[u8], after: &[u8]) {
+    const OBJ_VRAM: u32 = 0x0601_0000;
+    const OBJ_VRAM_LEN: usize = 0x8000;
+    if before.len() != after.len() || !(128..=2048).contains(&before.len()) || before == after || before.iter().all(|&b| b == 0) {
+        return;
+    }
+    let mut vram = vec![0u8; OBJ_VRAM_LEN];
+    core.raw_read_range(OBJ_VRAM, -1, &mut vram);
+    let mut at = 0;
+    while at + before.len() <= vram.len() {
+        if vram[at..at + before.len()] == *before {
+            core.raw_write_range(OBJ_VRAM + at as u32, -1, after);
+            at += before.len();
+        } else {
+            at += 32;
+        }
+    }
+}
+
+/// The BG palette banks the game loads the moved (done) units' greys into: 11, and 9 in a five-army game (11 is Black Hole's units there).
+const MOVED_BANKS: [usize; 2] = [9, 11];
+
 /// A palette the game has loaded already (the Teams screen loads its emblems' on entry) keeps the colours of the ROM it
 /// was loaded from: where the palette buffer or palette RAM holds a bank equal to `before`, `after` goes in its place.
 /// Only the sprite palettes (banks 16..31: the emblems): the background banks hold the windows' colours, which AW2 loads
@@ -1494,7 +1521,10 @@ fn refresh_palettes(core: &mut Core, before: &[u8], after: &[u8]) {
                 }
                 continue;
             }
-            for bank in 16..32usize {
+            // (the sprite banks, and BG bank 11: the row the game loads the moved units' greys into, one row for the army that has the turn. A skin put on a colour after the map's
+            // palettes were loaded (the Silver Nova Campaign's mission starts, a skin coming back after a battle scene) left it holding the colour's own, and the done unit was drawn in the
+            // host's colours. No window is in it, and a row of exactly the colour's moved greys is not anything else)
+            for bank in MOVED_BANKS.into_iter().chain(16..32usize) {
                 if ram[bank * 32..bank * 32 + 32] == *b {
                     core.raw_write_range(base + bank as u32 * 32, -1, a);
                 }

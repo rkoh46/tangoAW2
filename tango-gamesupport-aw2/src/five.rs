@@ -142,6 +142,8 @@ pub enum Routine {
     PropertyCensus,
     UnitPalette,
     MovedPalette,
+    /// The end of a CO power's dialogue proc: the grey goes back at once, whatever box is still listed.
+    MovedPaletteAfterPower,
     OutlineRow,
     BannerPalette,
     SetupArmy5,
@@ -469,6 +471,9 @@ const EDITOR_KEEPS: [u32; 1] = [0x0803_F848];
 pub fn sync(core: &mut Core) {
     install_data(core);
     let on = patches_on(core);
+    if on && GREY_WAITS.load(std::sync::atomic::Ordering::Relaxed) {
+        moved_palette(core);
+    }
     let hooks_on = core.raw_read_16(HOOKS[0].0, -1) == TRAP;
     let halves_on = core.raw_read_16(HALVES[0].0, -1) == HALVES[0].2;
     if hooks_on != on || halves_on != on {
@@ -663,7 +668,16 @@ fn event_script_running(core: &Core) -> bool {
 /// where it holds something else (the turn banner's colours, loaded after
 /// the turn start's grey). Palette RAM is written only where it shows the
 /// buffer, so a fade in progress is left to finish.
+/// The grey was held back for a scene or a box: it goes back on the first frame after them, whether or not a moved unit is drawn then (a CO power's dialogue closes and the map is not
+/// redrawn: the firing army's moved units kept the portrait's colours in BG palette 9 until the next turn, `five_unit_palettes_powers`). Palette only, no game state: a stale value after a
+/// rollback costs one extra write of the same grey.
+static GREY_WAITS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 fn moved_palette(core: &mut Core) {
+    moved_palette_with(core, false)
+}
+
+fn moved_palette_with(core: &mut Core, force: bool) {
     let army = core.raw_read_16(CURRENT_ARMY, -1) as u32;
     let colour = core.raw_read_8(player(army) + 0x1A, -1) as u32;
     if !(1..=5).contains(&army) || !(1..=5).contains(&colour) {
@@ -680,9 +694,11 @@ fn moved_palette(core: &mut Core) {
     // A scene runs or a dialogue box is up: its speaker's face is drawn with BG palette 9 (the bank the fifth army's moved greys borrow), so the grey waits: written over it every frame, it turned
     // every face of a five-army battle to the current army's washed-out colour (a Von Bolt or an Aria in the player's blue, an Andy in the player's green). The greys are put back
     // at the next moved unit drawn after the box has closed.
-    if event_script_running(core) || crate::fog_view::procs(core).contains(&TEXT_BOX_PROC) {
+    if !force && (event_script_running(core) || crate::fog_view::procs(core).contains(&TEXT_BOX_PROC)) {
+        GREY_WAITS.store(true, std::sync::atomic::Ordering::Relaxed);
         return;
     }
+    GREY_WAITS.store(false, std::sync::atomic::Ordering::Relaxed);
     let mut ram = [0u8; 0x20];
     core.raw_read_range(PAL_RAM + at, -1, &mut ram);
     core.raw_write_range(PAL_BUFFER + at, -1, &grey);
@@ -735,6 +751,10 @@ fn routine(core: &mut Core, r: Routine) -> Option<u32> {
         }
         Routine::MovedPalette => {
             moved_palette(core);
+            None
+        }
+        Routine::MovedPaletteAfterPower => {
+            moved_palette_with(core, true);
             None
         }
         Routine::BannerPalette => {
