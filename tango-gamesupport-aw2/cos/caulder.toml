@@ -30,10 +30,12 @@ text = "Restores 5 HP to all units. Firepower and defense rise by a further 25%.
 # on top of the day to day: +15 here and the power's own +10 the game adds make the 25 of the text (a unit totals 18 + 25 = +43%)
 mods = [ { units = "all", attack = 15, defence = 15 } ]
 heal = 5
-quote = ["Fascinating..."]
+quote = ["Fascinating... Let the", "experiment begin."]
+quote2 = ["Rise, my subjects. You", "are not finished yet."]
 
 [lines]
-tag_in = ["Fascinating..."]
+tag_in = ["Observe closely. This is", "what progress looks like."]
+tag_in2 = ["Fascinating... Two", "variables, one result."]
 victory = "As predicted. Log the result."
 defeat = "An unexpected variable."
 

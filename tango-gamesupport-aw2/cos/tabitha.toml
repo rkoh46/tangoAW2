@@ -29,10 +29,12 @@ name = "Firestorm"
 text = "Deals 8 damage automatically to the most expensive group of enemies in 13 tiles. Cannot kill."
 # 8 HP in a radius of 2 round the best site (AW2's own pick, by value, like Sturm's Meteor Strike); Von Bolt's targeting animation; no stun
 strike = { hp = 8, radius = 2, pick = "value", stun = false, can_kill = false }
-quote = ["Stupid weak people!"]
+quote = ["Firestorm! Burn, you", "stupid weak people!"]
+quote2 = ["Kneel, or burn. I", "really do not mind."]
 
 [lines]
-tag_in = ["Stupid weak people!"]
+tag_in = ["Keep up, or get out", "of my way!"]
+tag_in2 = ["Stupid weak people!", "Watch how it is done."]
 victory = "Mission complete. Dismissed."
 defeat = "I do not accept this result."
 

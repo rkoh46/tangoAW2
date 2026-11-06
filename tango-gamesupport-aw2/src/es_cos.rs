@@ -129,11 +129,16 @@ pub fn text(co: u8, which: u16) -> Option<Vec<u8>> {
         T_COP_NAME => s(v, &["cop", "name"])?,
         T_SCOP_NAME => s(v, &["scop", "name"])?,
         // the six power quotes: the CO Power's, the Super Power's and the Tag Power's, each twice
-        w if (T_QUOTES..T_QUOTES + 6).contains(&w) => match (w - T_QUOTES) % 3 {
-            0 => quote(v, &["cop", "quote"]).or_else(|| quote(v, &["scop", "quote"]))?, // (no CO Power: Aria says her Super Power's line in both slots)
-            1 => quote(v, &["scop", "quote"]).or_else(|| quote(v, &["cop", "quote"]))?, // (no Super Power: Lili says her CO Power's line in both)
-            _ => quote(v, &["lines", "tag_in"])?,
-        },
+        // (the second set, slots 3..5, says `quote2` / `tag_in2` where the file has one, else the first set's line again)
+        w if (T_QUOTES..T_QUOTES + 6).contains(&w) => {
+            let second = w - T_QUOTES >= 3;
+            let q = |a: &str, b: &str| second.then(|| quote(v, &[a, &format!("{b}2")])).flatten().or_else(|| quote(v, &[a, b]));
+            match (w - T_QUOTES) % 3 {
+                0 => q("cop", "quote").or_else(|| q("scop", "quote"))?, // (no CO Power: Aria says her Super Power's line in both slots)
+                1 => q("scop", "quote").or_else(|| q("cop", "quote"))?, // (no Super Power: Lili says her CO Power's line in both)
+                _ => q("lines", "tag_in")?,
+            }
+        }
         T_VICTORY => s(v, &["lines", "victory"])?,
         T_DEFEAT => s(v, &["lines", "defeat"])?,
         _ => return None,
@@ -201,6 +206,18 @@ pub fn art(co: u8) -> Option<CoArt> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Tabitha and Caulder have two lines per power: the second set (slots 3..5) is their own, and each line fits AW2's quote box.
+    #[test]
+    fn tabitha_and_caulder_have_two_quotes_per_power() {
+        use crate::co_new::T_QUOTES;
+        for co in [crate::es_co::TABITHA, crate::es_co::CAULDER] {
+            let q: Vec<String> = (0..6).map(|k| String::from_utf8(text(co, T_QUOTES + k).unwrap()).unwrap()).collect();
+            assert_ne!(q[1], q[4], "{co}: two Super Power lines");
+            assert_ne!(q[2], q[5], "{co}: two tag lines");
+            assert!(q.iter().all(|l| l.split('\r').count() == 2 && l.split('\r').all(|x| x.len() <= 28)), "{q:?}");
+        }
+    }
 
     #[test]
     fn the_five_have_art_texts_and_a_crop() {
