@@ -18,7 +18,8 @@ TOWERS = [(25, 5), (31, 10), (28, 16), (35, 14)]          # Javier's four Com To
 
 def build():
     m = Canvas("bh2_06", W, H)
-    m.keep_roads = [(8, 8), (8, 9), (8, 10), (7, 10), (7, 11)]      # (approved as drawn: the west piece of road is the only road within 5 cells of the village at (2,5) (DQ08); two RD03 warnings stay)
+    m.keep_roads = [(8, 8), (8, 9), (8, 10), (7, 10), (7, 11)]      # the west piece of road (the only road within 5 cells of the village at (2,5), DQ08)
+    m.extra_roads = [(3, 5), (4, 5), (5, 5), (6, 5), (7, 5), (8, 5), (9, 5), (9, 8), (6, 11), (5, 11)]      # (user, 2026-11-07: no dead end) the village joined to the road at (10,5); the west piece joined at (9,8) and onto the road at (5,12)
     S = lambda x, y: snap(m, x, y)
     # --- the spears: long wooded ridges north-west to south-east, a mountain tip at each south-east end, with clearings (gaps) between them
     ridges = [[(2, 1), (9, 7), (16, 14)], [(9, 0), (17, 7), (25, 16)], [(18, 0), (26, 7), (33, 14)], [(0, 9), (7, 16), (13, 23)], [(10, 15), (18, 22), (25, 27)], [(24, 13), (31, 20), (38, 26)], [(27, 0), (35, 6), (39, 11)]]
