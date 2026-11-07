@@ -313,12 +313,14 @@ fn entries_in_table(core: &mut Core, shown: bool) {
             h[0x3D + k] = lines.get(k).map_or(0, |en| en.0);
         }
         // (a run whose enemies are drawn when it starts shows the player's own blank slot for each of the maps' one enemy)
-        if e.random_enemies {
-            h[0x3D] = 0xFF;
-        }
         if stage > 0 {
             // (the screen draws a face for each player past the first, up to three: a later map's own count, the player's army and its lines)
             h[0x18] = 1 + lines.len().min(3) as u8;
+        }
+        // (a run whose enemies are drawn when it starts has no face to show: one player, so the screen draws no enemy faces, and no CO bytes for it to read)
+        if e.random_enemies {
+            h[0x18] = 1;
+            h[0x3D..0x40].copy_from_slice(&[0xFF; 3]);
         }
         if let Some((rom, blob)) = preview_of(e, stage).map(|(r, b)| (*r, b)) {
             let made;

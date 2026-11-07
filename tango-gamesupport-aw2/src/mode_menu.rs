@@ -334,10 +334,10 @@ fn big(core: &Core, letters: &[(u32, usize, usize)]) -> Option<Vec<u8>> {
             *v = 1;
         }
     }
-    let total: usize = letters.iter().map(|&(_, a, b)| b - a + 1).sum::<usize>() + letters.len() - 1;
+    // (a Q takes three columns more for its tail)
+    let total: usize = letters.iter().map(|&(i, a, b)| b - a + 1 + if i == Q { 3 } else { 0 }).sum::<usize>() + letters.len() - 1;
     let mut x = 4 + (120 - total) / 2;
     for &(item, a, b) in letters {
-        let x0 = x;
         let from = if item == Q { 3 } else { item } as usize;
         for sx in a..=b {
             for y in 2..22 {
@@ -350,15 +350,13 @@ fn big(core: &Core, letters: &[(u32, usize, usize)]) -> Option<Vec<u8>> {
             x += 1;
         }
         if item == Q {
-            // (the O's hole is a one-pixel slit, columns 5 of its 11, rows 6..=17: a three-pixel diagonal cut from its foot through the right stroke makes the tail)
-            for k in 0..=5usize {
-                for dy in 0..3 {
-                    let (cx, cy) = (x0 + 5 + k, 13 + k + dy);
-                    if cx < x && cy < 22 {
-                        out[cy][cx] = 1;
-                    }
+            // (the O with a tail: a diagonal foot of the letter's own colour out past its bottom right corner and one row below the others, in the three columns after it; the gap to the next letter is made wider by them)
+            for (y, from, to) in [(16usize, 0usize, 0usize), (17, 0, 1), (18, 0, 1), (19, 1, 2), (20, 1, 2), (21, 1, 2), (22, 2, 2)] {
+                for dx in from..=to {
+                    out[y][x + dx] = (5 + (x + dx) / 16).min(12) as u8;
                 }
             }
+            x += 3;
         }
         x += 1;
     }
@@ -416,7 +414,8 @@ fn small(core: &Core, letters: &[(usize, usize)]) -> Option<Vec<u8>> {
         }
     }
     let widths: Vec<(usize, usize)> = letters.iter().map(|&(s, c, _)| src[s].1[c]).collect();
-    let total: usize = widths.iter().map(|(a, b)| b - a + 1).sum::<usize>() + widths.len() + 1;
+    // (a Q takes one column more for its tail)
+    let total: usize = widths.iter().map(|(a, b)| b - a + 1).sum::<usize>() + widths.len() + 1 + letters.iter().filter(|l| l.2).count();
     let mut x = 4 + (120 - total) / 2;
     let dark_col = |out: &mut Vec<Vec<u8>>, x: usize| {
         for row in out.iter_mut().take(11).skip(4) {
@@ -426,7 +425,6 @@ fn small(core: &Core, letters: &[(usize, usize)]) -> Option<Vec<u8>> {
     dark_col(&mut out, x);
     x += 1;
     for (&(s, _, q), (a, b)) in letters.iter().zip(widths) {
-        let x0 = x;
         for sx in a..=b {
             for y in 4..11 {
                 out[y][x] = src[s].0[y][sx];
@@ -434,9 +432,11 @@ fn small(core: &Core, letters: &[(usize, usize)]) -> Option<Vec<u8>> {
             x += 1;
         }
         if q {
-            // (the O's hole is two pixels wide, rows 6..=8: the tail runs on from its foot to the corner)
-            out[9][x0 + 3] = 1;
-            out[10][x0 + 4] = 1;
+            // (the O with a tail: a column after it, dark above and the letter's own light colour on its two last rows, a foot at the bottom right corner)
+            for y in 4..11 {
+                out[y][x] = if y >= 9 { 5 } else { 1 };
+            }
+            x += 1;
         }
         dark_col(&mut out, x);
         x += 1;

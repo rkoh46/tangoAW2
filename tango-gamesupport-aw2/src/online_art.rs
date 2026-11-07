@@ -585,12 +585,13 @@ impl TitleFont {
     fn q_from(o: &Px) -> Px {
         let (edge, fill) = (o.get(0, 12), o.get(3, 12));
         let mut q = o.clone();
-        for k in 0..=10usize {
-            let (cx, cy) = (6 + k * 4 / 10, 20 + k);
+        // (a stroke outlined as the letters are, over the O's lower right and out past its corner; it ends on the O's last row, so the glyph keeps its height)
+        for k in 0..=5usize {
+            let (cx, cy) = (6 + k, 21 + k);
             for (half, colour) in [(2i32, edge), (1, fill)] {
                 for dx in -half..=half {
                     let x = cx as i32 + dx;
-                    if (0..16).contains(&x) && cy < 32 {
+                    if (0..16).contains(&x) {
                         q.set(x as usize, cy, colour);
                     }
                 }
@@ -645,8 +646,9 @@ mod tests {
         let q = TitleFont::q_from(&o);
         assert_eq!((q.w, q.h), (16, 32));
         assert_ne!(q.v, o.v, "the tail is drawn");
-        // it comes out below the O's last row, inside the 16 columns, and the O's own top is as it was
-        assert!((28..32).any(|y| (0..16).any(|x| q.get(x, y) != 0)));
+        // it stays inside the O's rows (nothing under the last), comes out past its right edge, and the O's own top is as it was
+        assert!((28..32).all(|y| (0..16).all(|x| q.get(x, y) == 0)));
+        assert!((11..14).any(|x| (20..28).any(|y| q.get(x, y) != 0)));
         assert!((0..16).all(|x| (0..8).all(|y| q.get(x, y) == o.get(x, y))));
         assert!(TITLE_ORDER.ends_with('Q') && TitleFont::index('Q') == Some(TITLE_ORDER.len() - 1));
     }
