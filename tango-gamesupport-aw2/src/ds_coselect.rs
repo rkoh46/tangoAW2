@@ -1658,6 +1658,10 @@ pub fn apply(core: &Core, rgba: &mut [u8]) {
     if crate::ds_co_page::is_open() || crate::skills_panel::is_open(core) {
         return;
     }
+    // Conquest Run's reward page over the map just won (crate::conquest_reward).
+    if crate::conquest_reward::draw(core, rgba) {
+        return;
+    }
     // The Gauntlet's map selector and army screen (crate::gauntlet_ui).
     if crate::gauntlet_ui::draw(core, rgba) {
         return;

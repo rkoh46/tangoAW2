@@ -1080,6 +1080,76 @@ def card_shots(rec, e, prefix, press_a=True):
     return True
 
 
+# ---------------------------------------------------------------------------------------------------------------- Conquest Run
+@scene("conquest", "reward_pick", pack=True)
+def conquest_reward_pick(rec):
+    """Conquest Run: the reward page over the map just won (the three rewards with each card marked in turn, the three units on offer), then the next map's first turn with the reward taken (the free unit
+    on it). Judged like every overlay: AW2's windows and plate, nothing overlapping, every string whole (`aw2dev gfx audit --scenes reward_pick`, three looks)."""
+    from . import conquest as cq
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    d = cq.Conquest(g)
+    d.begin(ga.ANDY)
+    g._units_base = g._players_base = None
+    rec.tilt(e)
+    rec.snap(e, "map1_first_turn", ["battle", "map"])
+    d.capture_enemy_hq(rec.ctx)
+    d.wait_reward()
+    rec.snap(e, "rewards_chest", ["menu", "reward"])
+    for name in ("reinforce", "repair"):
+        e.press("RIGHT", 4)
+        e.wait(14)
+        rec.snap(e, f"rewards_{name}", ["menu", "reward"])
+    e.press("RIGHT", 4)
+    e.wait(14)
+    e.press("RIGHT", 4)
+    e.wait(14)
+    e.press("A", 4)
+    e.wait(24)
+    rec.snap(e, "units_first", ["menu", "reward"])
+    e.press("RIGHT", 4)
+    e.wait(14)
+    rec.snap(e, "units_second", ["menu", "reward"])
+    e.press("A", 4)
+    for _ in range(300):
+        if cq.stage(e) == 1 and e.u8(cq.STAGE_BUSY) == 0 and d.in_battle():
+            break
+        e.wait(20)
+    g._units_base = g._players_base = None
+    d.wait_control()
+    rec.tilt(e)
+    rec.snap(e, "map2_first_turn", ["battle", "map"])
+    e.close()
+
+
+@scene("conquest", "selector_and_army", looks=("ds_flat",), pack=True)
+def conquest_selector(rec):
+    """Conquest Run's row (the first, "Conquest Run *"), SELECT stepping through its five maps' pictures (the faces: one blank slot, the enemies are drawn when the run starts), the star's hint, and the
+    army screen (one CPU card with no CO yet). Menus: one look is enough."""
+    from . import conquest as cq
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "gauntlet")
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    e.wait(60)
+    rec.snap(e, "map1", ["menu", "maplist"])
+    for k in range(1, cq.STAGES):
+        d.flip(90)
+        rec.snap(e, f"map{k + 1}", ["menu", "maplist"])
+    d.flip(90)
+    rec.snap(e, "map1_again", ["menu", "maplist"])
+    e.press("A", 6)
+    d.wait_army()
+    e.wait(60)
+    rec.snap(e, "army", ["menu", "army"])
+    e.press("R", 4)
+    e.wait(40)
+    rec.snap(e, "army_colour", ["menu", "army"])
+
+
 @scene("gauntlet", "mission_card", pack=True)
 def gauntlet_card(rec):
     """Gauntlet's title card on Dustwind Basin: the word above the name and the stamp must not say MISSION (AW2's campaign card does)."""

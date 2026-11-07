@@ -1047,6 +1047,10 @@ impl tango_backend_mgba::SharedGame for Aw2 {
         keys = crate::survival::tick(core, ds && mode.is_none(), keys, prev);
         // The Gauntlet's map selector and colour pick (offline, crate::gauntlet_ui).
         keys = crate::gauntlet_ui::tick(core, ds && mode.is_none(), keys, prev);
+        // Conquest Run's reward between maps (offline, crate::conquest).
+        if ds && mode.is_none() {
+            keys = crate::conquest::tick(core, keys, prev);
+        }
         // Versus' list: SELECT marks the second front of a two-map battle
         // (crate::ds_versus; offline, as two-front battles are).
         keys = crate::ds_versus::keys(core, ds && ds_features, mode.is_none(), keys, prev);

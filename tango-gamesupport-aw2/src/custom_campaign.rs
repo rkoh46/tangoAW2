@@ -1752,6 +1752,12 @@ fn load_map(core: &Core, src: &MapSrc) -> Result<(u8, u8, Vec<u16>, Option<Vec<u
     }
 }
 
+/// The tiles of AW2's own map `id` (width, height, tiles) from the player's ROM, as a mission with [`MapSrc::Aw2`] loads them.
+pub fn aw2_map(core: &Core, id: u8) -> Option<(u8, u8, Vec<u16>)> {
+    let at = crate::five_map::MAP_TABLE + crate::five_map::ENTRY * id as u32;
+    read_map(core, core.raw_read_32(at, -1))
+}
+
 /// An AW2 map blob in ROM (LZ77 of width, height, u16 tiles).
 fn read_map(core: &Core, at: u32) -> Option<(u8, u8, Vec<u16>)> {
     let size = (core.raw_read_32(at, -1) >> 8) as usize;
@@ -3053,11 +3059,15 @@ const END_CHECK_ALIVE: u32 = 0x0802_8C0A;
 /// The gauntlet engine: a hidden line that still sleeps is off the battlefield (controller 0, so AW2 does not count it) but its team is not beaten: it is marked alive, so destroying the
 /// line on the field (its last unit) does not end the battle; the line's fall wakes the next one instead ([`wake_after_rout`], [`Action::Reveal`]).
 fn hidden_alive(core: &mut Core) {
+    let sp = core.gba().cpu().gpr(13) as u32;
+    // (a Conquest Run's enemy is never beaten by losing its units before the last map: the map's own trigger moves the run on)
+    if crate::conquest::keeps_alive(core, 2) {
+        core.raw_write_8(sp + 2, -1, 1);
+    }
     let lines = hidden_lines(core);
     if lines.is_empty() {
         return;
     }
-    let sp = core.gba().cpu().gpr(13) as u32;
     for h in lines {
         if (1..=5).contains(&h.army) && sleeping(core, h.army) {
             core.raw_write_8(sp + h.army as u32, -1, 1);
@@ -3174,7 +3184,7 @@ fn defeat_army(core: &mut Core) {
             .unwrap_or(false);
     let s = core.raw_read_8(SCRATCH, -1);
     core.raw_write_8(SCRATCH, -1, if scene { s | 0x80 } else { s & 0x7F });
-    if sleeping(core, army as u8) {
+    if sleeping(core, army as u8) || crate::conquest::keeps_alive(core, army as u8) {
         core.gba_mut().cpu_mut().set_thumb_pc(DEFEAT_ARMY_EPILOGUE);
         return;
     }

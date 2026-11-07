@@ -414,7 +414,9 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq([d.entry_name(i) for i in ids], ga.SELECTOR_TITLES, "the list is ordered by the number of enemy COs, fewest first (ties in the Gauntlet's own order)")
     ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (0, ga.SELECTOR_ORDER[0]), "the cursor is on the first row: the mission under it is that row's map")
     ctx.eq(d.step(), ga.SELECTOR, "the selector is the first screen")
-    first = d.entry_cos(ids[0])
+    # (the first row is Conquest Run, whose enemies are drawn for each run; the maps' own rows follow it: Dustwind Basin is the second row)
+    ids, row = d.go_to_row(1)
+    first = d.entry_cos(ids[1])
     ctx.eq(first[:4], [0xFF, 73, 12, 0], "Dustwind Basin's two enemies in order (the player picks; Koal, Lash): the faces the screen draws")
     maps, enemies, _ = ga.shown(e)
     ctx.eq((maps, [c for c, _ in enemies]), (len(ga.SELECTOR_ORDER), [73, 12]), "the mirror of the highlighted map: its enemies in order")
@@ -458,7 +460,7 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq(d.selector_ids()[1], 0, "UP goes back to the first")
     e.press("A", 6)
     d.wait_army()
-    ctx.eq(e.u8(ga.UI_MAP), ga.SELECTOR_ORDER[0], "A took the first row's map, Dustwind Basin (mission 2)")
+    ctx.eq(e.u8(ga.UI_MAP), ga.SELECTOR_ORDER[0], "A took the first row's map, Conquest Run (mission 12)")
     ctx.eq((d.session()["mission"], d.session()["map_id"]), (ga.SELECTOR_ORDER[0], 0xF0), "the map is the session's mission, the battle's map id the campaign engine's")
     ctx.eq(e.u8(ga.PLAY_ST + 1), 1, "the game mode is the campaign's again")
     ctx.eq(e.u8(ga.UI_STEP), ga.ARMY, "the selector's step is over: the army screen's is up")
@@ -480,11 +482,12 @@ def gauntlet_mode_select_flips_a_two_map_runs_picture_and_faces(ctx):
     d.wait_step(ga.SELECTOR)
     ids, row = d.selector_ids()
     names = [d.entry_name(i) for i in ids]
-    ctx.eq([n for n in names if "*" in n], ["Iron Crown *"], "only the two-map run carries the mark")
+    ctx.eq([n for n in names if "*" in n], ["Conquest Run *", "Iron Crown *"], "only the runs of several maps carry the mark")
     ctx.eq(names[-1], "Iron Crown *", "the mark follows the name")
-    # a one-map entry: SELECT does nothing
-    first = ids[0]
+    # a one-map entry: SELECT does nothing (the first row is Conquest Run, a five-map run: the second row is Dustwind Basin)
     ctx.eq(row, 0, "the cursor starts on the first row")
+    ids, row = d.go_to_row(1)
+    first = ids[1]
     entry, faces, shot0 = entry_bytes(d, first), d.face_tiles(), pic(ctx, e, "selector_one_map")
     d.flip()
     SAME = lambda a, b: region_diff(a, b, PICTURE_BOX) < 0.2          # (the same picture, animated)

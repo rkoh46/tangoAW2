@@ -62,6 +62,7 @@ test, live run and release (never ad-hoc scripts in a scratchpad: they vanish).
 
 ## Where to look
 - Debug / test / release: `docs/dev/testing.md`, `online-dev.md`, `release.md`; skills `aw2-test`, `aw2-live-debug`, `aw2-online-debug`, `aw2-gfx-debug` (garbled graphics: `docs/dev/graphics.md`).
+- Conquest Run (the Gauntlet's five-map roguelike run, offline): `docs/dev/conquest.md`, skill `aw2-conquest`, `aw2dev conquest start|sheet|maps|test`.
 - How things work: `architecture-online.md`, `ram-map.md`, `rom-routines.md`, `maps.md`, `ds-pack.md`; test aids: `pad-scripts.md`, `env-aids.md`.
 - The player's logs: `~/Documents/TangoAW2/logs/tango.log` (+ `.1`..`.5`, F8 report marks with `report-<stamp>.png`): read the latest log and any
   `report-*.png` first when the user reports a bug.

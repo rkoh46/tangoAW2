@@ -112,6 +112,8 @@ mod five_map;
 mod five_map_data;
 mod five_patches;
 pub mod fog_view;
+pub mod conquest;
+pub mod conquest_reward;
 pub mod gauntlet;
 pub mod gauntlet_card;
 pub mod gauntlet_map_data;

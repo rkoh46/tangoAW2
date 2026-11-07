@@ -1917,6 +1917,7 @@ pub fn map_start(core: &mut Core) {
     set_look(core, m);
     set_controllers(core, m);
     crate::gauntlet::keep_colour(core, m);
+    crate::conquest::map_start(core);
     // Dual Strike's Setup phase before day 1 (crate::setup_phase).
     crate::setup_phase::map_start(core, player_picks(main) && main.native.as_ref().is_none_or(|n| n.setup));
     crate::two_front::map_start(core);

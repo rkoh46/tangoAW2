@@ -328,10 +328,18 @@ fn save_write_aw2(core: &mut Core) {
     // The mark follows the block, and the pairs' tail when the block carries one ([`MARK_AT`]): it used to be written over the tail (the pairs of a two-front or stage-2 mission were lost
     // on the resume); a reader looks at both places, so a save of the old layout still loads.
     let at = if core.gba().cpu().gpr(2) as u32 >= BLOCK_SIZE + TAG_LEN { BLOCK_SIZE + TAG_LEN } else { BLOCK_SIZE };
-    if let Some(k) = crate::stage::saved_state(core) {
-        // A mission saved on a later stage (crate::stage): a mark and the stage number follow (5 bytes of the record).
-        let mut t = crate::stage::SAVED_MARK.to_le_bytes().to_vec();
-        t.push(k);
+    let conquest = crate::conquest::saved(core);
+    if crate::stage::saved_state(core).is_some() || conquest.is_some() {
+        // A mission saved on a later stage (crate::stage): a mark and the stage number follow (5 bytes of the record); a Conquest Run's draw of enemy COs after them (its own mark and six bytes).
+        let mut t = Vec::new();
+        if let Some(k) = crate::stage::saved_state(core) {
+            t.extend_from_slice(&crate::stage::SAVED_MARK.to_le_bytes());
+            t.push(k);
+        }
+        if let Some(c) = conquest {
+            t.extend_from_slice(&crate::conquest::SAVED_MARK.to_le_bytes());
+            t.extend_from_slice(&c);
+        }
         core.raw_write_range(BLOCK + at, -1, &t);
         core.gba_mut().cpu_mut().set_gpr(2, (at + t.len() as u32) as i32);
     } else if let Some(fronts) = crate::two_front::saved_state(core) {
@@ -380,6 +388,18 @@ fn applied_ds(core: &mut Core) {
         let k = core.raw_read_8(BLOCK + at + 4, -1);
         crate::stage::restore_saved(core, k);
         core.raw_write_32(BLOCK + at, -1, 0);
+    }
+    // A Conquest Run saved halfway: its draw of enemy COs (after the stage mark, or alone on the first map).
+    for place in MARK_AT.into_iter().flat_map(|at| [at, at + 5]) {
+        let mut m = [0u8; 4];
+        core.raw_read_range(BLOCK + place, -1, &mut m);
+        if u32::from_le_bytes(m) == crate::conquest::SAVED_MARK {
+            let mut c = vec![0u8; crate::conquest::SAVED_LEN as usize];
+            core.raw_read_range(BLOCK + place + 4, -1, &mut c);
+            crate::conquest::restore(core, &c);
+            core.raw_write_32(BLOCK + place, -1, 0);
+            break;
+        }
     }
     // The Gauntlet's map is not in AW2's world map state (the mode has none): the saved mission (the low five bits of the block's byte) is the map the run continues on, with the stage's header
     // on a later stage; the latches just restored stay.
