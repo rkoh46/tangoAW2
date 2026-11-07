@@ -29,6 +29,7 @@ def profile(x0, x1, lo, hi, seed):
 
 def build():
     m = Canvas("bh2_25b", W, H, fill="~")
+    m.pruned_to = "f"      # (the dead-end road tiles grow over: the map would have too much open field if they went back to plain)
     for y in range(H):                                              # a diagonal coast: the land narrows to a wedge pointing east at row 11
         m.rect(".", 0, y, W - 2 - abs(y - 11), y)
     S = lambda x, y: snap(m, x, y)

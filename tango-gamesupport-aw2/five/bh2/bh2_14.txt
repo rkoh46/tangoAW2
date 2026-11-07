@@ -60,17 +60,17 @@ unit 3 10 38 4
 unit 3 11 27 3
 unit 3 14 30 8
 ............................................
-.^....^....c.....fffRRRRRR.C................
-.^^^^^.....RRRRRRRRRRff..R.R.....c.C..f.ff..
-..^......fRR...^c^^^cfff..BRCR.RRRRRRffffff.
+.^....^....c.....fffffffff.C................
+.^^^^^.....RRRRRRRRRRff..f.R.....c.C..f.ff..
+..^......fff...^c^^^cfff..BRCR.fRRRRRffffff.
 .........ff...^^^^^...ffffRRBR3.B.C.RRRRRR..
-.........ff...^^.^^cRRRRRRR....RR.R..f..fcf.
-.c.....^^^^^^^R..^^......R......R^R^^^^fff..
-...ff.f^^^RRRRR.R^^^tR.R^R.^...BR^^^.^^fff..
-.f.fffcfRcR.^^f^RRRRRR.R^R^^^^..R.^f.^^.ff..
-...ffRRRR^.^^^^^.....bRR.R.^^.^^R.R.R.^^ff..
-.....R.f.^^..^^RRRRRR.Rc.R........RfRR......
-.....R........cR....--=--=-----...Rc.R......
+.........ff...^^.^^cRRRRRRR....fR.R..f..fcf.
+.c.....^^^^^^^f..^^......R......R^f^^^^fff..
+...ff.f^^^fffff.f^^^tR.f^R.^...BR^^^.^^fff..
+.f.fffcfRcR.^^f^ffffRR.f^R^^^^..f.^f.^^.ff..
+...ffRRRR^.^^^^^.....bRR.R.^^.^^f.f.f.^^ff..
+.....R.f.^^..^^ffffff.Rc.R........ffff......
+.....R........cR....--=--=-----...Rc.f......
 -----=-----....Rc...-.R..R....-...Rf.Rc.....
 .....R...^-----=-----cR..R....----=--=------
 .....R..^...^..R......R.cRRf.ffff.R^^RC.....
@@ -79,7 +79,7 @@ unit 3 14 30 8
 .....R...ff.fffR.ff^^^cfffRcff...CR^BRR^^^^^
 c...BRR....C.ffRff^f^^.fffRRf.ffff..^^RR^.^^
 ......1.C.RB..fRfff.t..ff...ffff....RR.B.^^^
-......RRRRRRRRRR.....f.ff..RRRRRRRRRR2RR.^^^
+......RRRRRRRRRR.....f.ff..fffRRRRRRR2RR.^^^
 ....^..B...ff......b.cffff....cf.......C.^^.
 ^^^^^^....ffffRRRRRRRRRRf....ff....RRB....c^
 .^c^^.........R.c....ffRRRRRRRRRRRRR......^^

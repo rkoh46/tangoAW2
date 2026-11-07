@@ -38,6 +38,7 @@ Mission n is `bh2_NN` (the map and its spec); a second front is `bh2_NNb` (M4, M
 ## The owner's rules, and where each is enforced
 - **Inventions** (Deathray, Black Cannons, minicannons, Lasers, Black Crystals, Black Obelisks, Black Factory) are Black Hole's alone: **IV01** (error) refuses one that stands nearer to another army's HQ than to Black Hole's.
   The Deathray goes at most once a map, at the top edge (IV01 checks the row); none in Act I (a test).
+- **Roads lead somewhere (RD01/RD03)**: `Canvas.text()` of a BH2 map runs `prune_road_stubs` (dead-end road tiles go back to plain, or to wood with `m.pruned_to = "f"`; `m.keep_roads` and `m.extra_roads` are the per-map exceptions). A road may end at a property, silo, seam, bridge, beach or the sea.
 - **Rivers** run source to sea or lake with mouths: RV01..RV05 (errors), the mouths and bridges by `Canvas.river` / `bridge`; a river is never cut by a road without a bridge (RV04).
 - **Terrain**: SE01..03, TJ01..03 and RN01 (proper coast, shoal and cliff transitions), GB01/02, UN01..04 (no unit on impossible terrain), RC01..04 (no unreachable land, a Lander has a beach), RD01..02, PP01..04.
 - **Beaches**: AW2 draws a beach one cell wide and long runs only along north- and south-facing coasts (the learned tile pairs refuse a shoal on a shoal and a long vertical run: TJ01/TJ02). So

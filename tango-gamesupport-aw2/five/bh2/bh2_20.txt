@@ -65,11 +65,11 @@ unit 2 24 35 0
 .fff.fffRRRRCffR..^^^...---....c.ffRRRRBC^.f..
 ..f..ffBRffRRRRR..^^..t.-........fff..Rf.f.ff.
 .....CRRRffCf.f...^.^RRR=RR...cf..fffcRBCfff..
-......R^^^ffffRRRRRRRR..-.RRRRRffffff.RRRf..f.
-.....1..C..fRRR.f.fffc^.-...b.RRRMf^ff..2..f..
+.......^^^ffff.......R..-.RRRRRffffff.RRRf..f.
+.....1..C..f....f.fffc^.-...b.RRRMf^ff..2..f..
 ......RRR.......ff.fff..----..f.^^^^^...R..ff.
 .....CBBRRB.....ff..f.c....-..c.ff....CRR.....
-....^....RRRRRRRRRRRRRRRRRR=RRRRRf..f.fRB.....
+....^....RRRRRRRRRRRRRRRRRR=RRR..f..f.fRB.....
 ....^f...C.ffRfcf...b.f..c.-..t.ffffCRRRfff.f.
 ..f.fff....ffRf.f...c.f....-..f.ff.ffRBffffff.
 ..f...f...fffRfff...f.f..---c...fff..R.fff..f.

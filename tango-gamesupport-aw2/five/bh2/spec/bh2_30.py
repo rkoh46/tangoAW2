@@ -18,6 +18,7 @@ W, H = 44, 28
 
 def build():
     m = Canvas("bh2_30", W, H)
+    m.pruned_to = "f"      # (the dead-end road tiles grow over: the map would have too much open field if they went back to plain)
     S = lambda x, y: snap(m, x, y)
     # --- the rivers: stepped north to south, three bridges on the west one, four on the east one
     m.river([(13, 0), (13, 9), (14, 9), (14, 18), (13, 18), (13, 27)])

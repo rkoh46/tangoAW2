@@ -20,6 +20,7 @@ Y_S = 20                                           # the southern shelf's north 
 
 def build():
     m = Canvas("bh2_18", W, H, fill="~")
+    m.pruned_to = "f"      # (the dead-end road tiles grow over: the map would have too much open field if they went back to plain)
     # --- the northern land: off the top edge; fjords bite up from the channel: a big one (x 16..21, up to row 5), a small one (x 3..5, up to row 8), notches in between
     for x in range(W):
         b = Y_N
