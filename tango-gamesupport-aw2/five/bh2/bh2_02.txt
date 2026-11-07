@@ -55,7 +55,7 @@ unit 2 10 26 7 hold
 ..fffB..BR.ff.ff-..^......Rcff
 ..ffC...CRRR....-...cc.f.CRff.
 ...fff.....RRRRR=RRRRRRRffRfff
-....f.....^^....-.c^R.^RRRRf..
+....f.....^^....-.c^..^RRRRf..
 ..^.^^^...^^^fff-.^^^^...^R...
 .^^.^^^...^...f.-..ff^f..^c^^^
 ...^^^^^..^.....-..fffff.c.c^.

@@ -23,6 +23,7 @@ FLEET = [(22, 4), (25, 6), (27, 9), (30, 11), (20, 2)]            # Lili's ships
 
 def build():
     m = Canvas("bh2_32", W, H, fill="~")
+    m.extra_roads = [(8, 6)]      # (the port road ran to (8,5), one cell short of the HQ at (7,6): joined to it instead of cut off)
     for y in range(H):
         for x in range(W):
             if abs(x - y * 40 / 28) <= 8.5 + (1 if (x * 7 + y * 13) % 5 == 0 else 0) - (1 if (x * 11 + y * 3) % 7 == 0 else 0):

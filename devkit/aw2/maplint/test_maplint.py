@@ -134,6 +134,10 @@ class Lint(unittest.TestCase):
         self.assertIn("RD03", ids(build(rows)))
         rows[5] = "RRRC" + rows[5][4:]
         self.assertNotIn("RD03", ids(build(rows)))
+        # a road that ends at the sea is not a stub either
+        rows = list(FLAT)
+        rows[5] = "RRR" + "~" * (len(rows[5]) - 3)
+        self.assertNotIn("RD03", ids(build(rows)))
         rows = list(FLAT)
         rows[4] = "RRRR.RRRR.."
         self.assertIn("RD02", ids(build(rows)))

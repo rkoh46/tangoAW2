@@ -17,6 +17,8 @@ W, H = 46, 28
 
 def build():
     m = Canvas("bh2_31b", W, H)
+    m.pruned_to = "f"      # (the dead-end road tiles grow over: the map would have too much open field if they went back to plain)
+    m.keep_roads = [(31, 11)]      # (the bridge head at (31,12) is drawn only with a road above it: TJ01; one RD03 warning is left on purpose)
     S = lambda x, y: snap(m, x, y)
     # --- the highland massif with its plateau and three passes
     m.rect("^", 22, 1, 44, 11); m.rect(".", 26, 3, 41, 9)

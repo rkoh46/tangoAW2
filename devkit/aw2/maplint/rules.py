@@ -28,7 +28,7 @@ RULES = {
     "TJ02": ("error", "a river, shoal, bridge or sea tile that no game map uses for these neighbours (wrong transition tile)"),
     "TJ03": ("warn", "a mountain or the plain over it not drawn as the game draws it"),
     "RD01": ("warn", "a single road tile that joins no road, bridge or property"),
-    "RD03": ("warn", "a road stub: a road tile with one road neighbour that is not beside a property or bridge and not on the map's edge (a road that leads nowhere); failing for the Gauntlet's maps"),
+    "RD03": ("warn", "a road stub: a road tile with one road neighbour that is not beside a property, silo, seam, bridge, shoal or sea and not on the map's edge (a road that leads nowhere); failing for the Gauntlet's maps"),
     "RD02": ("warn", "two road ends one or two tiles apart in line, the gap left plain"),
     "PP01": ("error", "a pipe tile that opens onto a tile it does not join"),
     "PP02": ("error", "a pipe seam that is not inside a straight run"),
@@ -362,7 +362,7 @@ def roads(G):
     # a road that leads nowhere: one road neighbour, no property or bridge beside it, not on the map's edge (RD03). A road must join property to property, a bridge or the edge.
     for x, y in G.cells("R"):
         nb = G.nb(x, y)
-        if sum(1 for n in nb if n in "R=") == 1 and not any(n in "HBCAPTZQ" for n in nb) and not (x in (0, G.w - 1) or y in (0, G.h - 1)):
+        if sum(1 for n in nb if n in "R=") == 1 and not any(n in "HBCAPTZQM,~" for n in nb) and not (x in (0, G.w - 1) or y in (0, G.h - 1)):
             out.append(Problem("RD03", x, y, "road stub: a road end that leads nowhere"))
     # two road ends in line with a 1-2 tile gap of plain
     ends = {}
