@@ -682,6 +682,7 @@ fn main() {
     proposals(&mut c);
     if std::env::var_os("TANGOAW2_DS_ROM").is_some() {
         gauntlet(&mut c);
+        conquest(&mut c);
     }
     println!("done: {} problems", c.problems);
 }
@@ -860,6 +861,17 @@ fn proposals(c: &mut Ctx) {
     }
 }
 
+/// Conquest Run's reward page: every map's rewards with each card marked in turn, and the unit cards of every map's offer.
+fn conquest(c: &mut Ctx) {
+    use tango_gamesupport_aw2::{conquest as cq, conquest_reward as cr};
+    for k in 0..4u8 {
+        for cursor in 0..3 {
+            paint(c, &format!("conquest_rewards_{k}_{cursor}"), k == 0 && cursor == 0, |core, rgba| cr::paint(core, rgba, k, 1, cursor, cq::offered(k)));
+        }
+        paint(c, &format!("conquest_units_{k}"), k == 0, |core, rgba| cr::paint(core, rgba, k, 2, 1, cq::offered(k)));
+    }
+}
+
 /// The Gauntlet's colour pick: the widest CO names as the enemies (3 to 6 lines), every colour offered (the map selector is the game's own War Room screen).
 fn gauntlet(c: &mut Ctx) {
     use tango_gamesupport_aw2::gauntlet_mode::Entry;
@@ -886,6 +898,8 @@ fn gauntlet(c: &mut Ctx) {
         stage_titles: &[],
         stage_lines: vec![widest.iter().take(n).enumerate().map(|(k, &co)| (co, colours[k])).collect()],
         stage_maps: Vec::new(),
+        stage_aw2: Vec::new(),
+        random_enemies: false,
     };
     // (a run over two maps names both on the help plate)
     {

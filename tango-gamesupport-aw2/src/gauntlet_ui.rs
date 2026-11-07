@@ -188,7 +188,11 @@ const PREVIEW_CELLS: (usize, usize) = (32, 22);
 /// The picture's LZ77 blob (width, height, tiles) of a built map: cropped to its middle part when it is bigger than the picture area. `whole`: also a map that fits (a later stage's picture has no
 /// compiled copy of its own to point at, as the first map's header has).
 fn blob_of(m: &crate::custom_campaign::BuiltMap, whole: bool) -> Option<Vec<u8>> {
-    let (w, h) = (m.width as usize, m.height as usize);
+    blob_of_tiles(m.width, m.height, &m.tiles, whole)
+}
+
+fn blob_of_tiles(w: u8, h: u8, tiles: &[u16], whole: bool) -> Option<Vec<u8>> {
+    let (w, h) = (w as usize, h as usize);
     if !whole && w <= PREVIEW_CELLS.0 && h <= PREVIEW_CELLS.1 {
         return None;
     }
@@ -197,7 +201,7 @@ fn blob_of(m: &crate::custom_campaign::BuiltMap, whole: bool) -> Option<Vec<u8>>
     let mut raw = vec![cw as u8, ch as u8];
     for y in 0..ch {
         for x in 0..cw {
-            raw.extend_from_slice(&m.tiles[(y0 + y) * w + x0 + x].to_le_bytes());
+            raw.extend_from_slice(&tiles[(y0 + y) * w + x0 + x].to_le_bytes());
         }
     }
     let mut lz = crate::lz77::compress(&raw);
@@ -225,12 +229,34 @@ fn previews() -> &'static Vec<Vec<Option<(u32, Vec<u8>)>>> {
             .iter()
             .map(|e| {
                 let first = crate::custom_campaign::built_map(e.key).and_then(|m| blob_of(m, false)).and_then(&mut take);
-                std::iter::once(first)
-                    .chain(e.stage_maps.iter().map(|k| k.and_then(crate::custom_campaign::built_map).and_then(|m| blob_of(m, true)).and_then(&mut take)))
-                    .collect()
+                // (a later stage that is one of AW2's own maps has a slot reserved with no blob yet: it is made from the player's ROM when the selector needs it, [`aw2_blob`])
+                let rest: Vec<_> = e
+                    .stage_maps
+                    .iter()
+                    .zip(&e.stage_aw2)
+                    .map(|(k, aw2)| match (k, aw2) {
+                        (Some(k), _) => crate::custom_campaign::built_map(k).and_then(|m| blob_of(m, true)).and_then(&mut take),
+                        (None, Some(_)) => take(Vec::new()),
+                        _ => None,
+                    })
+                    .collect();
+                std::iter::once(first).chain(rest).collect()
             })
             .collect()
     })
+}
+
+/// The picture of AW2's own map `id` for a selector slot: cropped to the picture area, made from the ROM once and kept.
+fn aw2_blob(core: &Core, id: u8) -> Option<Vec<u8>> {
+    static CACHE: std::sync::Mutex<Vec<(u8, Vec<u8>)>> = std::sync::Mutex::new(Vec::new());
+    let mut c = CACHE.lock().unwrap();
+    if let Some(b) = c.iter().find(|b| b.0 == id) {
+        return Some(b.1.clone());
+    }
+    let (w, h, tiles) = crate::custom_campaign::aw2_map(core, id)?;
+    let blob = blob_of_tiles(w, h, &tiles, true)?;
+    c.push((id, blob.clone()));
+    Some(blob)
 }
 
 /// The picture of map `stage` of entry `e` (0 the first), from the first map's where a stage has none of its own.
@@ -274,17 +300,35 @@ fn entries_in_table(core: &mut Core, shown: bool) {
         for k in 0..3 {
             h[0x3D + k] = lines.get(k).map_or(0, |en| en.0);
         }
+        // (a run whose enemies are drawn when it starts shows the player's own blank slot for each of the maps' one enemy)
+        if e.random_enemies {
+            h[0x3D] = 0xFF;
+        }
         if stage > 0 {
             // (the screen draws a face for each player past the first, up to three: a later map's own count, the player's army and its lines)
             h[0x18] = 1 + lines.len().min(3) as u8;
         }
         if let Some((rom, blob)) = preview_of(e, stage).map(|(r, b)| (*r, b)) {
-            let mut have = vec![0u8; blob.len()];
-            core.raw_read_range(rom, -1, &mut have);
-            if &have != blob {
-                core.raw_write_range(rom, -1, blob);
+            let made;
+            let blob = if blob.is_empty() {
+                match stage.checked_sub(1).and_then(|k| e.stage_aw2.get(k).copied().flatten()).and_then(|id| aw2_blob(core, id)) {
+                    Some(b) => {
+                        made = b;
+                        &made
+                    }
+                    None => blob,
+                }
+            } else {
+                blob
+            };
+            if !blob.is_empty() {
+                let mut have = vec![0u8; blob.len()];
+                core.raw_read_range(rom, -1, &mut have);
+                if &have != blob {
+                    core.raw_write_range(rom, -1, blob);
+                }
+                h[0x2C..0x30].copy_from_slice(&rom.to_le_bytes());
             }
-            h[0x2C..0x30].copy_from_slice(&rom.to_le_bytes());
         }
         let at = table + crate::five_map::ENTRY * id as u32;
         let mut now = [0u8; 0x5C];
@@ -415,6 +459,8 @@ pub fn apply(core: &mut Core) {
     if core.raw_read_8(crate::gauntlet::CONTINUING, -1) == 0 {
         // (the new run has begun: the one saved halfway is dropped, from the game's directory now and from Flash with the next write)
         crate::suspend::drop_mid_of(core, crate::gauntlet::SOURCE);
+        // (a Conquest Run draws its enemies now)
+        crate::conquest::begin_run(core);
     }
     let co = core.raw_read_8(CO_PICK, -1);
     core.raw_write_8(CO_PICKS, -1, co);
@@ -561,9 +607,12 @@ fn mirror(core: &mut Core) {
 /// The most enemy cards the screen shows: Versus' Teams screen has five armies, the player's the first. A map with more lines (Iron Crown's Asuka stage) shows the first four.
 const MAX_ENEMIES: usize = 4;
 
-/// The army screen's cards: (CO, army code) of the player first, then the enemies in the order they come.
-fn cards(e: &Entry, co: u8, colour: u8) -> Vec<(u8, u8)> {
-    std::iter::once((co, colour)).chain(e.enemies.iter().take(MAX_ENEMIES).map(|&(co, c)| (co, e.shown_colour(c)))).collect()
+/// The army screen's cards: (CO, army code) of the player first, then the enemies in the order they come. A run whose enemies are drawn when it starts has one enemy card with no CO yet.
+fn cards(e: &Entry, co: u8, colour: u8) -> Vec<(Option<u8>, u8)> {
+    if e.random_enemies {
+        return vec![(Some(co), colour), (None, e.enemies.first().map_or(1, |&(_, c)| e.shown_colour(c)))];
+    }
+    std::iter::once((Some(co), colour)).chain(e.enemies.iter().take(MAX_ENEMIES).map(|&(co, c)| (Some(co), e.shown_colour(c)))).collect()
 }
 
 /// The help plate's width in pixels (a line wider is cut).
@@ -580,7 +629,7 @@ pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
         .enumerate()
         .map(|(k, (co, colour))| Seat {
             name: if k == 0 { "Player 1".into() } else { "CPU".into() },
-            co: Some(co),
+            co,
             colour,
             team: None,
             partner: crate::army_cards::NONE,
@@ -599,7 +648,9 @@ pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
 /// The help plate's first line: the map's name and what to do ("Dustwind Basin: choose your CO and colour."), or, on a run over several maps, the maps ("Iron Crown + Asuka's Keep: 2 maps"); the name
 /// alone when the line would not fit the plate.
 fn help_title(core: &Core, e: &Entry) -> String {
-    let full = if e.stage_titles.is_empty() {
+    let full = if e.random_enemies {
+        format!("{}: {} maps, a new CO each", e.title.trim_end_matches(" *"), 1 + e.stage_titles.len())
+    } else if e.stage_titles.is_empty() {
         format!("{}: choose your CO and colour.", e.title)
     } else {
         let maps: Vec<&str> = std::iter::once(e.title).chain(e.stage_titles.iter().copied()).collect();
@@ -707,7 +758,9 @@ mod tests {
             assert_eq!(e.stage_lines.len(), n, "{}: enemy lines map by map", e.title);
             assert!(e.stage_lines.iter().all(|l| !l.is_empty()));
             assert_eq!(e.stage_lines.concat(), e.enemies, "the lines map by map are the run's enemies in order");
-            assert_eq!(e.stage_lines.last().unwrap()[0].0, crate::co_new::ASUKA, "Iron Crown's second map is Asuka's");
+            if !e.random_enemies {
+                assert_eq!(e.stage_lines.last().unwrap()[0].0, crate::co_new::ASUKA, "Iron Crown's second map is Asuka's");
+            }
         }
     }
 

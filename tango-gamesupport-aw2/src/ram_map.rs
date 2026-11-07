@@ -117,6 +117,7 @@ pub const REGIONS: &[(&str, Region)] = &[
     ("DS Campaign", (0x0203_FD10, 0x50)),
     ("Gauntlet's map selector and colour pick (crate::gauntlet_ui::STATE)", (crate::gauntlet_ui::STATE, crate::gauntlet_ui::STATE_LEN)),
     ("Gauntlet's records: the selector's record rows, then the top-five table (crate::gauntlet::BLOCK)", (crate::gauntlet::BLOCK, crate::gauntlet::BLOCK_LEN)),
+    ("Conquest Run: the reward page's state and the run's enemy COs (crate::conquest::STATE)", (crate::conquest::STATE, crate::conquest::STATE_LEN)),
     ("CPU tactics, heal effect, Oozium, stun, battle distance, Teams list", (0x0203_FD60, 0x1A0)),
     ("design list, joypad and invention picks", (0x0203_FF00, 0x100)),
     ("five armies: the player table, moved (crate::five::PLAYERS: six 0x3C-byte slots)", (crate::five::PLAYERS, 6 * 0x3C)),

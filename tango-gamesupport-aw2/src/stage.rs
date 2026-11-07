@@ -62,7 +62,7 @@ const OOZIUM: u8 = crate::roster::OOZIUM;
 /// The stubs and the swap's script (free ROM between the Setup phase's and the Black Onyx's... see `rom_layout.rs`).
 pub const ROM: u32 = 0x08E7_6000;
 pub(crate) const ROM_END: u32 = 0x08E7_6800;
-const ROM_MAGIC: u32 = 0x3147_5453; // "STG1"
+const ROM_MAGIC: u32 = 0x3247_5453; // "STG2"
 const STUBS_AT: u32 = ROM + 0x10;
 const SCRIPT: u32 = ROM + 0x200;
 
@@ -71,6 +71,7 @@ const SCRIPT: u32 = ROM + 0x200;
 enum Stub {
     Begin = 1,
     ScriptsWait,
+    Reward,
     Setup,
     PatchWait,
     Load,
@@ -80,9 +81,10 @@ enum Stub {
     State,
     End,
 }
-const STUBS: [Stub; 10] = [
+const STUBS: [Stub; 11] = [
     Stub::Begin,
     Stub::ScriptsWait,
+    Stub::Reward,
     Stub::Setup,
     Stub::PatchWait,
     Stub::Load,
@@ -113,6 +115,8 @@ fn script() -> Vec<u8> {
     let v: Vec<[u8; 8]> = vec![
         call(Stub::Begin),
         op(stub_at(Stub::ScriptsWait) | 1, 0, 0x18),
+        // (a Conquest Run's reward is picked here, over the map just won: [`crate::conquest::reward_wait`]; every other stage switch passes at once)
+        op(stub_at(Stub::Reward) | 1, 0, 0x18),
         op(0, 0x10, 0x1E),
         op(FADES_RUNNING | 1, 0, 0x18),
         call(Stub::Setup),
@@ -237,6 +241,7 @@ pub fn request(core: &mut Core) -> u32 {
         return 0;
     }
     snapshot(core, &rt);
+    crate::conquest::reward_reset(core);
     core.raw_write_8(BUSY, -1, Stub::Begin as u8);
     let cpu = core.gba_mut().cpu_mut();
     cpu.set_gpr(0, SCRIPT as i32);
@@ -309,6 +314,34 @@ fn snapshot(core: &mut Core, rt: &StageRuntime) {
     crate::gauntlet::carry_score_out(core, army);
 }
 
+/// The survivors waiting in the carry buffer (a Conquest Run's reward changes them before the swap puts them on the next map).
+pub(crate) fn carried(core: &Core) -> Vec<[u8; 12]> {
+    (0..core.raw_read_8(CARRY_N, -1) as u32)
+        .map(|k| {
+            let mut r = [0u8; 12];
+            core.raw_read_range(CARRY + 12 * k, -1, &mut r);
+            r
+        })
+        .collect()
+}
+
+pub(crate) fn put_carried(core: &mut Core, recs: &[[u8; 12]]) {
+    let n = recs.len().min(CARRY_MAX as usize);
+    core.raw_write_8(CARRY_N, -1, n as u8);
+    for (k, r) in recs.iter().take(n).enumerate() {
+        core.raw_write_range(CARRY + 12 * k as u32, -1, r);
+    }
+}
+
+/// The funds carried to the next map.
+pub(crate) fn carried_funds(core: &Core) -> u32 {
+    core.raw_read_32(CARRY_FUNDS, -1)
+}
+
+pub(crate) fn set_carried_funds(core: &mut Core, f: u32) {
+    core.raw_write_32(CARRY_FUNDS, -1, f.min(999_999));
+}
+
 fn value_of(core: &Core, r: &[u8; 12]) -> u32 {
     value(core, r)
 }
@@ -363,6 +396,12 @@ pub fn magic(core: &mut Core, id: u32) {
         Stub::ScriptsWait => {
             core.raw_write_16(MAP_STATE, -1, STATE_IDLE);
             return_to(core, events_running(core) as u32)
+        }
+        // (1 while the Conquest Run's reward is being picked: the op waits for 0)
+        Stub::Reward => {
+            core.raw_write_16(MAP_STATE, -1, STATE_IDLE);
+            let waiting = crate::conquest::reward_wait(core);
+            return_to(core, waiting as u32)
         }
         Stub::Setup => {
             setup(core);
@@ -434,6 +473,10 @@ fn setup(core: &mut Core) {
         let mut co = native.cos[k as usize].0;
         if native.keep && native.five.is_none() && k == 0 {
             co = keep_co;
+        }
+        // (a Conquest Run's enemy is the run's draw for this map)
+        if k == 1 && crate::conquest::session(core) {
+            co = crate::conquest::enemy_co(core, next).unwrap_or(co);
         }
         core.raw_write_8(COS + 1 + k, -1, if present { co } else { 0 });
         let human = present && native.five.is_none() && k == 0;

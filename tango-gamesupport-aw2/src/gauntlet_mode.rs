@@ -1472,6 +1472,10 @@ pub struct Entry {
     pub stage_lines: Vec<Vec<(u8, u8)>>,
     /// The built map of each later stage (`stage_titles`' order; None for a stage whose map is not a built one: the selector then keeps the first map's picture).
     pub stage_maps: Vec<Option<&'static str>>,
+    /// The AW2 map id of each later stage whose map is one of AW2's own ([`MapSrc::Aw2`], read from the ROM at run time: Conquest Run's); None for the others.
+    pub stage_aw2: Vec<Option<u8>>,
+    /// The run's enemy COs are drawn when it starts (Conquest Run): the selector and the army screen show no face for them.
+    pub random_enemies: bool,
 }
 
 impl Entry {
@@ -1539,6 +1543,8 @@ pub fn entries() -> &'static [Entry] {
                     stage_titles: m.stage_titles,
                     stage_lines: stages.clone(),
                     stage_maps: m.stages.iter().map(|s| if let MapSrc::Built(n) = &s.map { Some(*n) } else { None }).collect(),
+                    stage_aw2: m.stages.iter().map(|s| if let MapSrc::Aw2 { id } = &s.map { Some(*id) } else { None }).collect(),
+                    random_enemies: m.key == crate::conquest::KEY,
                 }
             })
             .collect()
@@ -1551,7 +1557,13 @@ pub fn entries() -> &'static [Entry] {
 pub fn order() -> &'static [usize] {
     static O: std::sync::OnceLock<Vec<usize>> = std::sync::OnceLock::new();
     O.get_or_init(|| {
-        order_of(&entries().iter().map(|e| e.enemies.len()).collect::<Vec<_>>())
+        let mut v = order_of(&entries().iter().map(|e| e.enemies.len()).collect::<Vec<_>>());
+        // (Conquest Run is the first row of the list, whatever its count of enemies)
+        if let Some(at) = v.iter().position(|&m| entries()[m].key == crate::conquest::KEY) {
+            let m = v.remove(at);
+            v.insert(0, m);
+        }
+        v
     })
 }
 
@@ -1619,7 +1631,7 @@ fn add_music(m: &mut MissionDef) {
 /// Days a well-played run needs for each enemy line (AW2's Speed is 100 up to the map's par day, then falls to 0 at four times the par: a Gauntlet's par is a run's days, not one line's).
 pub const PAR_PER_LINE: u16 = 12;
 /// Maps whose par is not [`PAR_PER_LINE`] times their lines: the two largest, whose walls and distances cost more days a line (the data: add a map here to give it its own par).
-pub const PAR_OVERRIDES: &[(&str, u16)] = &[("gauntlet_11", 52), ("gauntlet_12", 52)];
+pub const PAR_OVERRIDES: &[(&str, u16)] = &[("gauntlet_11", 52), ("gauntlet_12", 52), (crate::conquest::KEY, crate::conquest::PAR_PER_MAP * crate::conquest::STAGES as u16)];
 
 /// The enemy lines a mission fights: every CO the map fixes, the first stage's and each later stage's (Iron Crown's four and Asuka: five). The same count the selector lists as enemies.
 pub fn line_count(m: &MissionDef) -> usize {
@@ -1640,6 +1652,8 @@ pub fn par_days(m: &MissionDef) -> u16 {
 /// The Gauntlet mode's maps as a campaign (its missions; no prologue, staff roll or world map: the mode starts a map from Select Mode).
 pub fn def() -> CampaignDef {
     let mut missions = vec![cinder_sea(), iron_crown(), dustwind_basin(), brass_canal(), granite_spine(), harvest_run(), chrome_meridian(), tidewater_atoll(), silverpine_ford(), neon_row(), blue_bastion(), last_eclipse()];
+    // (Conquest Run is always the last mission, whatever the number of maps: a new map is added to the list above and the run's index follows; the selector lists it first, `order`)
+    missions.push(crate::conquest::mission());
     missions.iter_mut().for_each(crate::bh_ai::spawn_orders);
     missions.iter_mut().for_each(add_music);
     missions.iter_mut().for_each(|m| m.rank_days = par_days(m));
@@ -1854,7 +1868,7 @@ mod tests {
 
     #[test]
     fn every_map_is_wired_as_a_gauntlet_by_the_rout_rule() {
-        for m in def().missions.iter() {
+        for m in def().missions.iter().filter(|m| m.key != crate::conquest::KEY) {
             let n = m.hidden.len();
             assert!(n >= 1, "{}: at least two lines", m.key);
             let first = m.held_hq.unwrap_or_else(|| panic!("{}: the first line's HQ is held", m.key));
@@ -1882,7 +1896,7 @@ mod tests {
 
     #[test]
     fn every_map_wave_lands_on_ground_inside_its_zone() {
-        let skip = ["gauntlet_01", "gauntlet_08"]; // (Cinder Sea and Tidewater Atoll are sea maps: their waves stand on water and shore)
+        let skip = ["gauntlet_01", "gauntlet_08", crate::conquest::KEY]; // (Cinder Sea and Tidewater Atoll are sea maps: their waves stand on water and shore; Conquest Run's maps are AW2's own, read from the ROM, with no waves)
         for m in def().missions.iter().filter(|m| !skip.contains(&m.key)) {
             let map = crate::custom_campaign::built_map(m.key).unwrap_or_else(|| panic!("{}: the map is built (aw2dev maps gen --campaign gauntlet)", m.key));
             let r = rows(text_of(m.key), map.width as usize);
@@ -1913,10 +1927,12 @@ mod tests {
         let e = entries();
         let order = order();
         assert_eq!(order.len(), e.len());
-        let counts: Vec<usize> = order.iter().map(|&m| e[m].enemies.len()).collect();
+        // (Conquest Run is the first row whatever its count; the maps follow, fewest enemies first)
+        assert_eq!(e[order[0]].key, crate::conquest::KEY);
+        let counts: Vec<usize> = order.iter().skip(1).map(|&m| e[m].enemies.len()).collect();
         assert!(counts.windows(2).all(|w| w[0] <= w[1]), "fewest enemies first: {counts:?}");
         // ties keep the definition's order (the older, easier map first), a permutation of the missions, and rank_of is its inverse
-        for w in order.windows(2) {
+        for w in order.windows(2).skip(1) {
             if e[w[0]].enemies.len() == e[w[1]].enemies.len() {
                 assert!(w[0] < w[1]);
             }
@@ -1930,7 +1946,7 @@ mod tests {
         // Iron Crown (four lines and Asuka's stage) is last; the maps with two enemies are first
         let keys: Vec<&str> = order.iter().map(|&m| e[m].key).collect();
         assert_eq!(keys.last(), Some(&"gauntlet_02"));
-        assert!(e[order[0]].enemies.len() == 2);
+        assert!(e[order[1]].enemies.len() == 2);
     }
 
     #[test]
@@ -1968,7 +1984,8 @@ mod tests {
     fn no_two_maps_share_an_enemy_co_but_the_named_exceptions() {
         use std::collections::BTreeMap;
         let mut seen: BTreeMap<u8, Vec<&str>> = BTreeMap::new();
-        for e in entries() {
+        // (Conquest Run's enemies are drawn when a run starts: its stand-in CO is not a line-up)
+        for e in entries().iter().filter(|e| !e.random_enemies) {
             let mut cos: Vec<u8> = e.enemies.iter().map(|x| x.0).collect();
             // (a CO appears once on a map, except Harvest Run's and Blue Bastion's one-army lines, which are four different COs)
             cos.sort();
@@ -2003,6 +2020,8 @@ mod tests {
             assert_eq!(m.rank_days, par_days(m), "{}: the header's par is the Gauntlet's", m.key);
             let natural = PAR_PER_LINE * e.enemies.len() as u16;
             match PAR_OVERRIDES.iter().find(|o| o.0 == m.key) {
+                // (Conquest Run's par is a day budget of its own: eight days a map)
+                Some(o) if m.key == crate::conquest::KEY => assert_eq!(o.1, crate::conquest::PAR_PER_MAP * crate::conquest::STAGES as u16),
                 Some(o) => assert!(o.1 >= natural, "{}: an override only gives more days", m.key),
                 None => assert_eq!(m.rank_days, natural, "{}", m.key),
             }
@@ -2036,9 +2055,10 @@ mod tests {
         assert_eq!(cols("gauntlet_12"), vec![colour::BLACK_HOLE, colour::BLACK_HOLE, colour::ORANGE_STAR, colour::BLACK_HOLE]);
         let f = by("gauntlet_12").free();
         assert!(!f.contains(&colour::BLACK_HOLE) && !f.contains(&colour::ORANGE_STAR) && f.contains(&colour::BLUE_MOON));
-        // twelve maps, the two-enemy maps first and the four-enemy maps last
-        assert_eq!(e.len(), 12);
-        let counts: Vec<usize> = order().iter().map(|&m| e[m].enemies.len()).collect();
+        // twelve maps and Conquest Run, listed first; then the two-enemy maps first and the four-enemy maps last
+        assert_eq!(e.len(), 13);
+        assert_eq!(e[order()[0]].key, crate::conquest::KEY);
+        let counts: Vec<usize> = order().iter().skip(1).map(|&m| e[m].enemies.len()).collect();
         assert_eq!(counts.iter().filter(|&&c| c == 2).count(), 4);
         assert!(counts.windows(2).all(|w| w[0] <= w[1]));
         assert!(counts[counts.len() - 4..].iter().all(|&c| c >= 4), "{counts:?}");
