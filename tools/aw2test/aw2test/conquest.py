@@ -1,5 +1,5 @@
 """Driving Conquest Run (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine; its map selector lists the one row), five of AW2's Versus
-maps in a row with the survivors and funds carried over, a reward between maps, the run's record under key `gauntlet_50` in the Gauntlet's record table. The Gauntlet's own driver (`Gauntlet`) does the
+maps in a row with the survivors and funds carried over, a reward between maps, the run's record under key `gauntlet_51` in the Gauntlet's record table. The Gauntlet's own driver (`Gauntlet`) does the
 selector, the army screen and the end; this adds the run's maps and the stage steps."""
 
 from . import dscampaign as dc
@@ -7,24 +7,29 @@ from . import gauntlet as ga
 from .game import NavError
 
 MISSION = ga.CONQUEST_MISSION      # crate::gauntlet_mode::def(): the run's mission is the last of the campaign's list (the Gauntlet's selector does not list it)
-RECORD_ID = 50                     # crate::conquest::KEY, gauntlet_50
-STAGES = 5
+RECORD_ID = 51                     # crate::conquest::KEY, gauntlet_51 (the five-map run kept its results under 50)
+STAGES = 9
 STAGE_BUSY = ga.STAGE_AT + 1       # crate::stage: a swap is running
 
 # crate::conquest::MAPS: (name, map id, size, player's HQ, enemy's HQ, the enemy's starting units, its funds, the player's starting units)
 MAPS = [
     {"name": "Sabre Range", "id": 0x18, "size": (15, 11), "player": (1, 9), "enemy": (13, 1), "funds": 3000, "force": 3, "mine": 4},
-    {"name": "Switchback", "id": 0x1C, "size": (21, 15), "player": (1, 13), "enemy": (19, 1), "funds": 6000, "force": 4, "mine": 0},
-    {"name": "Piston Dam", "id": 0x22, "size": (26, 14), "player": (2, 1), "enemy": (23, 12), "funds": 10000, "force": 6, "mine": 0},
-    {"name": "Cube Keys", "id": 0x0E, "size": (32, 30), "player": (5, 6), "enemy": (26, 23), "funds": 15000, "force": 7, "mine": 0},
+    {"name": "Asphalt Maze", "id": 0x19, "size": (15, 11), "player": (1, 9), "enemy": (13, 1), "funds": 4000, "force": 3, "mine": 0},
+    {"name": "Switchback", "id": 0x1C, "size": (21, 15), "player": (1, 13), "enemy": (19, 1), "funds": 5500, "force": 4, "mine": 0},
+    {"name": "Piston Dam", "id": 0x22, "size": (26, 14), "player": (2, 1), "enemy": (23, 12), "funds": 7500, "force": 5, "mine": 0},
+    {"name": "Hourglass Isle", "id": 0x26, "size": (16, 24), "player": (8, 2), "enemy": (7, 21), "funds": 9500, "force": 5, "mine": 0},
+    {"name": "Ruby Keys", "id": 0x1D, "size": (29, 15), "player": (1, 1), "enemy": (26, 14), "funds": 12000, "force": 6, "mine": 0},
+    {"name": "Vision Bridge", "id": 0x21, "size": (31, 24), "player": (2, 14), "enemy": (28, 13), "funds": 14500, "force": 7, "mine": 0},
+    {"name": "Cube Keys", "id": 0x0E, "size": (32, 30), "player": (5, 6), "enemy": (26, 23), "funds": 17500, "force": 7, "mine": 0},
     {"name": "Mial's Hope", "id": 0x75, "size": (45, 28), "player": (4, 16), "enemy": (34, 23), "funds": 22000, "force": 9, "mine": 0},
 ]
 BLACK_HOLE = 5
-STATE = 0x0203D0E0                 # crate::conquest::STATE: +0 the reward page (0 none, 1 rewards, 2 units), +1 the cursor, +2 taken, +3 the map won, +4..+6 the units on offer
+STATE = 0x0203D0E0                 # crate::conquest::STATE: +0 the reward page (0 none, 1 rewards, 2 units), +1 the cursor, +2 taken, +3 the map won, +4..+6 the units on offer, +8..+0x10 the nine enemy COs, +0x15 drawn
 PAGE, CURSOR, TAKEN, WON, OFFER = STATE, STATE + 1, STATE + 2, STATE + 3, STATE + 4
 CHEST, REINFORCE, REPAIR = 0, 1, 2
-CHEST_FUNDS = [10000, 15000, 20000, 25000]        # crate::conquest::chest_funds
-OFFERED = [[5, 3, 19], [3, 11, 16], [8, 11, 17], [4, 8, 17]]   # crate::conquest::offered: Tank, Md Tank, B Copter; Md Tank, Rockets, Fighter; Neotank, Rockets, Bomber; Megatank, Neotank, Bomber
+CHEST_FUNDS = [8000 + 2500 * k for k in range(8)]        # crate::conquest::chest_funds: 8,000 to 25,500
+# crate::conquest::offered (Tank 5, Md Tank 3, B Copter 19, Rockets 11, Fighter 16, Bomber 17, Neotank 8, Megatank 4)
+OFFERED = [[5, 3, 19], [3, 11, 16], [3, 11, 17], [8, 11, 16], [8, 11, 17], [8, 4, 17], [4, 8, 16], [4, 8, 17]]
 UNIT_MAX = {1: (0, 99), 3: (8, 50), 4: (3, 50), 5: (9, 70), 8: (9, 99), 11: (6, 50), 16: (9, 99), 17: (9, 99), 19: (6, 99)}   # (not used for checks: read from the ROM)
 
 

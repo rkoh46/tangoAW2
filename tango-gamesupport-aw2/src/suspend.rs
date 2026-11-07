@@ -461,6 +461,16 @@ pub fn drop_mid_of(core: &mut Core, source: usize) {
     }
 }
 
+/// Whether the mission saved halfway in `slot` has `mark` after its block (where the stage mark and a mode's tail marks are: [`MARK_AT`], and five bytes on when a stage mark comes first).
+pub fn tail_has(core: &Core, slot: u8, mark: u32) -> bool {
+    let Some(i) = mid_sector(core, slot) else { return false };
+    MARK_AT.iter().flat_map(|&place| [place, place + 5]).any(|place| {
+        let mut m = [0u8; 4];
+        core.raw_read_range(FLASH + 0x1000 * i + 0x52 + place, -1, &mut m);
+        u32::from_le_bytes(m) == mark
+    })
+}
+
 /// [`drop_mid_of`] for the saves of `source` whose mission `mine` accepts (the Gauntlet's source holds Conquest Run's missions too: a run of one never drops the other's save).
 pub fn drop_mid_where(core: &mut Core, source: usize, mine: impl Fn(u8) -> bool) {
     let slot = crate::campaign_model::SOURCES[source].mid_slot;

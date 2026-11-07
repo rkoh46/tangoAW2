@@ -1,4 +1,4 @@
-"""Conquest Run (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine), a run of five AW2 Versus maps with the survivors and funds carried
+"""Conquest Run (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine), a run of nine AW2 Versus maps with the survivors and funds carried
 over, one loss ends it, a win after the fifth map records a result; the wheel entry, its one-row selector and its Continue / New box apart from the Gauntlet's. `-k conquest`."""
 
 import os
@@ -170,11 +170,14 @@ def conquest_a_defeat_ends_the_run(ctx):
 
 @test(name="conquest_a_full_run_records_a_result", modes=("ds",))
 def conquest_a_full_run_records_a_result(ctx):
-    """Five maps won in a row (each by the HQ capture) end in VICTORY, and the Gauntlet's top-five table has a row for gauntlet_50 with this run's CO, days and score."""
+    """Nine maps won in a row (each by the HQ capture) end in VICTORY, and the Gauntlet's top-five table has a row for gauntlet_51 with this run's CO, days and score."""
     e, g, d = start(ctx)
     for k in range(cq.STAGES):
         ctx.eq(cq.stage(e), k, f"on map {k + 1}")
         ctx.eq(d.size(), cq.MAPS[k]["size"], f"{cq.MAPS[k]['name']}")
+        g._units_base = g._players_base = None
+        ctx.eq(len(g.units(army=2)), cq.MAPS[k]["force"], f"{cq.MAPS[k]['name']}: the enemy's starting force")
+        ctx.eq([d.owner(cq.MAPS[k]["player"]), d.owner(cq.MAPS[k]["enemy"])], [1, 2], f"{cq.MAPS[k]['name']}: both HQs")
         if k + 1 < cq.STAGES:
             d.win_map(ctx, k)
         else:
@@ -384,12 +387,12 @@ def conquest_reward_field_repair_restores_every_survivor(ctx):
 
 # -- the run's enemies and Save / Continue -----------------------------------------------------------------------------------------------------------------------------
 
-ENEMIES = cq.STATE + 0x10          # crate::conquest: the five drawn COs, then the flag
+ENEMIES = cq.STATE + 0x08          # crate::conquest: the nine drawn COs (the flag is at +0x15)
 PLAYER_CO = 0x1D                   # the player record's CO byte
 
 
 def draw_of(e):
-    return list(e.read(ENEMIES, 5)), e.u8(ENEMIES + 5)
+    return list(e.read(ENEMIES, cq.STAGES)), e.u8(cq.STATE + 0x15)
 
 
 def enemy_co(e, g):
@@ -398,13 +401,13 @@ def enemy_co(e, g):
 
 @test(name="conquest_enemy_cos_are_drawn_when_the_run_starts", modes=("ds",))
 def conquest_enemy_cos_are_drawn_when_the_run_starts(ctx):
-    """The run draws one enemy CO a map when it starts: five different ones, never the player's, from the roster's COs that fit the enemy side; each map's army 2 has the map's CO (map 1 from the start,
+    """The run draws one enemy CO a map when it starts: nine different ones, never the player's, from the roster's COs that fit the enemy side; each map's army 2 has the map's CO (map 1 from the start,
     the others at each switch); another run, started a moment later, draws other ones."""
     pool = set(range(0, 19)) | set(range(72, 81)) | {92, 93}   # (AW2's 19 COs, Dual Strike's nine, Asuka and Aria; not Clone Andy 81, Crumb 82 or the Silver Nova three 86..88)
     e, g, d = start(ctx, ga.SAMI)
     cos, drawn = draw_of(e)
     ctx.eq(drawn, 1, "a draw is held")
-    ctx.eq(len(set(cos)), 5, f"five different enemy COs ({cos})")
+    ctx.eq(len(set(cos)), cq.STAGES, f"nine different enemy COs ({cos})")
     ctx.check(ga.SAMI not in cos, "never the player's CO")
     ctx.check(all(c in pool for c in cos), f"all from the roster's usable COs ({cos})")
     ctx.eq(e.u8(g.players_base + 0x3C + PLAYER_CO), ga.SAMI, "the player is Sami")
@@ -427,7 +430,7 @@ def conquest_enemy_cos_are_drawn_when_the_run_starts(ctx):
     d.into_battle()
     second, _ = draw_of(e)
     ctx.check(second != first, f"a second run draws other enemies ({first} then {second})")
-    ctx.eq(len(set(second)), 5, "five different again")
+    ctx.eq(len(set(second)), cq.STAGES, "nine different again")
     ctx.eq(enemy_co(e, g), second[0], "and map 1's enemy is its first")
     e.close()
 
@@ -467,7 +470,7 @@ def conquest_save_and_continue_on_map_three_keeps_the_run(ctx):
     ctx.eq(cq.stage(e), 2, "continued on map 3")
     ctx.eq(d.session()["mission"], cq.MISSION, "the run's mission")
     ctx.eq(d.size(), cq.MAPS[2]["size"], "Piston Dam")
-    ctx.eq(draw_of(e)[0], cos, "the same five enemy COs came back with the run")
+    ctx.eq(draw_of(e)[0], cos, "the same nine enemy COs came back with the run")
     ctx.eq(enemy_co(e, g), cos[2], "the enemy on the field is still map 3's")
     ctx.eq((d.units_by_type(1), d.units_by_type(2)), (mine, theirs), "both armies as saved")
     ctx.eq((d.funds(1), d.funds(2)), money, "the funds as saved")
@@ -526,7 +529,7 @@ def conquest_wheel_entry_has_its_label_and_help_line(ctx):
     ctx.eq(ga.wheel_items(e), [2, 4, 3, 1, 9, 10, 0, 5, 8], "the nine entries: Conquest above Gauntlet")
     ctx.eq(saves.position(e, "conquest"), 5, "position 5")
     pos = saves.position(e, "conquest")
-    ctx.eq(text_of(e, e.u16(HELP + 2 * pos)), "Five maps in a row. One loss ends the run.", "the help line")
+    ctx.eq(text_of(e, e.u16(HELP + 2 * pos)), "Nine maps in a row. One loss ends the run.", "the help line")
     ctx.eq([text_of(e, e.u16(OPTIONS + 2 * (2 * pos + k))) for k in (0, 1)], ["Continue your saved Conquest run.", "Start a new run. The saved run is dropped."], "the box's two lines")
     ctx.eq(text_of(e, e.u16(HELP + 2 * saves.position(e, "gauntlet"))), "Beat a map's COs one after another.", "the Gauntlet's help line is its own")
     saves.wheel_to(e, "conquest")
@@ -712,7 +715,7 @@ def conquest_tool_start(ctx):
 
 @test(name="conquest_pictures", modes=("ds",))
 def conquest_pictures(ctx):
-    """The whole run in the three looks (AW2 graphics, Dual Strike graphics with the tilt, without it): the reward page, the unit page and each of the five maps' first turn, one row a look on one
+    """The whole run in the three looks (AW2 graphics, Dual Strike graphics with the tilt, without it): the reward page, the unit page and each of the nine maps' first turn, one row a look on one
     contact sheet `conquest_sheet.png` (AW2TEST_SHEET copies it where a person looks)."""
     from PIL import Image, ImageDraw
     rows = []
@@ -758,4 +761,4 @@ def conquest_pictures(ctx):
         import shutil
         shutil.copy(p, dest)
     ctx.log(f"sheet {p}: rows {[r[0] for r in rows]}")
-    ctx.check(all(len(r[1]) == 7 for r in rows), "seven pictures a look: the reward page, the units and the five maps")
+    ctx.check(all(len(r[1]) == cq.STAGES + 2 for r in rows), "eleven pictures a look: the reward page, the units and the nine maps")

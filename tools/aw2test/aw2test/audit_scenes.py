@@ -1163,7 +1163,7 @@ def conquest_wheel_and_box(rec):
 
 @scene("conquest", "selector_and_army", pack=True)
 def conquest_selector(rec):
-    """CONQUEST's one-row map selector ("Conquest Run *" alone), SELECT stepping through its five maps' pictures (the faces: one blank slot, the enemies are drawn when the run starts), the star's hint, and the
+    """CONQUEST's one-row map selector ("Conquest Run *" alone), SELECT stepping through its nine maps' pictures (the faces: one blank slot, the enemies are drawn when the run starts), the star's hint, and the
     army screen (one CPU card with no CO yet), in the three looks."""
     from . import conquest as cq
     from . import gauntlet as ga
