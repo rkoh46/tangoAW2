@@ -53,7 +53,7 @@ def bh2_secret_pictures_scene(ctx):
     sheets = boxshots.sheet(ctx, paths, "m32_pre")
     for p in sheets:
         keep(ctx, p, os.path.basename(p))
-    ctx.check(len(paths) >= 20, f"{len(paths)} boxes photographed")
+    ctx.check(len(paths) >= 12, f"{len(paths)} boxes photographed (the scene was tightened to about 17 shown boxes)")
     e.close()
 
 
@@ -128,15 +128,17 @@ def bh2_secret_lander_cargo(ctx):
             g.end_turn(human=1, max_frames=60000)
             d.wait_control()
         except Exception as ex:
-            ctx.log(f"stuck: army {g.current_army()} day {e.u16(0x03004080)} scripts {d.scripts_running()} text {d.text_shown()!r}: {ex}")
+            # (the test player only ends its turns: the computer can win the battle first, back on the world map; a slot emptied before that counts)
+            ctx.log(f"turns over: army {g.current_army()} day {e.u16(0x03004080)} in battle {d.in_battle()} scripts {d.scripts_running()} text {d.text_shown()!r}: {ex}")
             e.shot(os.path.join(ctx.out, 'stuck'))
             break
         g._units_base = g._players_base = None
         l = g.unit(lander["id"])
         raw = e.read(g.unit_addr(lander["id"]), 12)
         ctx.log(f"day {e.u16(0x03004080)}: Lander at {(l['x'], l['y'])} cargo {list(raw[7:9])}")
-        if not any(raw[7:9]):
-            unloaded = True
-            break
+        if list(raw[7:9]) != ids:
+            unloaded = True          # (a unit left the hold: the transport unloads; the second may wait for a free beach cell)
+            if not any(raw[7:9]):
+                break
     ctx.check(unloaded, "the Lander unloaded its cargo on a beach")
     e.close()

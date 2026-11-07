@@ -242,7 +242,7 @@ fn at_create(core: &mut Core) {
             .best
             .parts
             .iter()
-            .take(3)
+            .take(5)          // (five: a small but deciding reason, such as M27's "enemy fleet in sight +14" behind three bigger ones, stays in the log the tests read)
             .map(|p| format!("{} {:+}", p.0, p.1))
             .collect();
         let pool: Vec<String> = d

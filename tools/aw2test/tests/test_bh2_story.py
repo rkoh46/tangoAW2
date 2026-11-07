@@ -153,6 +153,7 @@ def story_trace_bh2_prologue_frames(ctx):
     out = out_dir(ctx)
     os.makedirs(out, exist_ok=True)
     rows, kept, dup = [], None, 0
+    m1_first = first_words("act1.txt", "m01_pre")
     for _ in range(3000):
         e.press("A", 4)              # (the New confirmation, then every page: A types the next two lines or closes the box)
         e.wait(20)
@@ -167,6 +168,8 @@ def story_trace_bh2_prologue_frames(ctx):
                 break
             e.wait(15)
         t = story.clean(d.text_shown())
+        if t and t.startswith(m1_first):
+            break          # (mission 1's intro: the prologue is over)
         if t and (kept is None or pixel_diff(kept, cur) > ARROW_PIXELS):
             name = f"prologue_{len(rows):03d}.bmp"
             os.replace(bmp, os.path.join(out, name))
@@ -190,6 +193,19 @@ def pixel_diff(a, b):
     from PIL import ImageChops
     d = ImageChops.difference(a, b).convert("L").point(lambda v: 255 if v else 0)
     return sum(1 for v in d.getdata() if v)
+
+
+def first_words(fname, key, n=24):
+    """The first n characters of a scene's first box as the box shows it (speaker and the " / " line break left out)."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "tango-gamesupport-aw2", "src", "bh2_text", fname)
+    on = False
+    for l in open(path):
+        l = l.rstrip("\n")
+        if l.startswith("== "):
+            on = l[3:].split("|")[0].strip() == key
+        elif on and l and not l.startswith(("@", "#")) and ": " in l:
+            return l.split(": ", 1)[1].replace(" / ", " ")[:n]
+    return "\0"
 
 
 def prologue_boxes():
