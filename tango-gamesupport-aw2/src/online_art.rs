@@ -572,7 +572,12 @@ impl TitleFont {
                     .max()
                     .unwrap_or(15)
             })
-            .collect();
+            .collect::<Vec<_>>();
+        // (the Q's tail runs out under the next letter's outline: it moves on by the O's width and two, not past its tail)
+        let mut right = right;
+        if let (Some(q), Some(o)) = (Self::index('Q'), Self::index('O')) {
+            right[q] = right[o] + 2;
+        }
         Some(TitleFont { tiles, px, right })
     }
 
@@ -585,16 +590,20 @@ impl TitleFont {
     fn q_from(o: &Px) -> Px {
         let (edge, fill) = (o.get(0, 12), o.get(3, 12));
         let mut q = o.clone();
-        // (a stroke outlined as the letters are, over the O's lower right and out past its corner; it ends on the O's last row, so the glyph keeps its height)
-        for k in 0..=5usize {
-            let (cx, cy) = (6 + k, 21 + k);
-            for (half, colour) in [(2i32, edge), (1, fill)] {
-                for dx in -half..=half {
-                    let x = cx as i32 + dx;
-                    if (0..16).contains(&x) {
-                        q.set(x as usize, cy, colour);
+        // (a stroke three pixels wide through the O's hole and out past its lower right corner, outlined as the letters are where it leaves the O; it ends above the O's last row, so the glyph keeps its height)
+        let tail: Vec<(usize, usize)> = (0..8usize).flat_map(|k| (0..3usize).map(move |d| (5 + k + d, 18 + k))).collect();
+        for &(x, y) in &tail {
+            for nx in x - 1..=x + 1 {
+                for ny in y - 1..=y + 1 {
+                    if nx < 16 && ny < 28 && q.get(nx, ny) == 0 {
+                        q.set(nx, ny, edge);
                     }
                 }
+            }
+        }
+        for &(x, y) in &tail {
+            if x < 16 {
+                q.set(x, y, fill);
             }
         }
         q

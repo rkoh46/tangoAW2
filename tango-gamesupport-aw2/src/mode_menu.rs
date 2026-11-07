@@ -334,8 +334,8 @@ fn big(core: &Core, letters: &[(u32, usize, usize)]) -> Option<Vec<u8>> {
             *v = 1;
         }
     }
-    // (a Q takes three columns more for its tail)
-    let total: usize = letters.iter().map(|&(i, a, b)| b - a + 1 + if i == Q { 3 } else { 0 }).sum::<usize>() + letters.len() - 1;
+    // (a Q takes four columns more for its tail)
+    let total: usize = letters.iter().map(|&(i, a, b)| b - a + 1 + if i == Q { 4 } else { 0 }).sum::<usize>() + letters.len() - 1;
     let mut x = 4 + (120 - total) / 2;
     for &(item, a, b) in letters {
         let from = if item == Q { 3 } else { item } as usize;
@@ -350,13 +350,14 @@ fn big(core: &Core, letters: &[(u32, usize, usize)]) -> Option<Vec<u8>> {
             x += 1;
         }
         if item == Q {
-            // (the O with a tail: a diagonal foot of the letter's own colour out past its bottom right corner and one row below the others, in the three columns after it; the gap to the next letter is made wider by them)
-            for (y, from, to) in [(16usize, 0usize, 0usize), (17, 0, 1), (18, 0, 1), (19, 1, 2), (20, 1, 2), (21, 1, 2), (22, 2, 2)] {
-                for dx in from..=to {
-                    out[y][x + dx] = (5 + (x + dx) / 16).min(12) as u8;
+            // (the O with a tail: a solid diagonal of the letter's own colour from its bottom right corner out into the four columns after it, one row below the others)
+            let x0 = x - (b - a + 1);
+            for (y, from, to) in [(18usize, 9usize, 11usize), (19, 9, 12), (20, 9, 13), (21, 9, 14), (22, 12, 14)] {
+                for cx in x0 + from..=x0 + to {
+                    out[y][cx] = (5 + cx / 16).min(12) as u8;
                 }
             }
-            x += 3;
+            x += 4;
         }
         x += 1;
     }
@@ -432,9 +433,13 @@ fn small(core: &Core, letters: &[(usize, usize)]) -> Option<Vec<u8>> {
             x += 1;
         }
         if q {
-            // (the O with a tail: a column after it, dark above and the letter's own light colour on its two last rows, a foot at the bottom right corner)
+            // (the O with a tail: the hole's lower right filled, the foot's right corner squared and a pixel after it on the last row)
+            let x0 = x - (b - a + 1);
+            let (ink, paper) = (out[7][x0], out[4][x0]);
+            out[8][x0 + 3] = ink;
+            out[10][x - 1] = ink;
             for y in 4..11 {
-                out[y][x] = if y >= 9 { 5 } else { 1 };
+                out[y][x] = if y == 10 { ink } else { paper };
             }
             x += 1;
         }
