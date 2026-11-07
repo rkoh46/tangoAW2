@@ -123,7 +123,8 @@ def each_new_co_turn_plays_its_song(ctx):
         e.wait((60 if co == "vonbolt" else 20) * 60)
         n, rate = e.audio_end(os.path.join(out_dir(ctx), f"{co}_tangoaw2.wav"))
         ctx.check(playing(e, song), f"{co}: song {song} playing after 20 s")
-        ctx.eq(channels(e), 12, f"{co}: 12 channels while it plays")
+        want = 8 if co in OWN_SONG_COS else 12          # our own songs run on AW2's 8-channel player; Dual Strike's pack songs use 12
+        ctx.eq(channels(e), want, f"{co}: {want} channels while it plays")
         ctx.log(f"{co}: {n / rate:.1f} s recorded")
 
 

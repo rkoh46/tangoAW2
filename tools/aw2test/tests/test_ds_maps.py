@@ -208,8 +208,12 @@ def beach_check(ctx, name, grid, armies):
     and an enemy beach as far from its HQ."""
     bal = traverse.beach_balance(grid)
     ctx.log(f"{name}: beaches (count, HQ to nearest enemy beach) per army {bal}")
-    same = {bal[a] for a in traverse.symmetric_armies(armies)}
-    ctx.check(len(same) == 1, f"{name}: every army gets the same beaches ({bal})")
+    sym = traverse.symmetric_armies(armies)
+    counts = {bal[a][0] for a in sym}
+    dists = [bal[a][1] for a in sym if bal[a][1] is not None]          # (None: a map with no beaches)
+    # (on a three-army map the third army is mirrored by hand and islets on odd columns cannot mirror exactly: the nearest enemy beach may be one cell nearer for one army)
+    slack = 1 if armies == 3 else 0
+    ctx.check(len(counts) == 1 and (not dists or (len(dists) == len(sym) and max(dists) - min(dists) <= slack)), f"{name}: every army gets the same beaches ({bal})")
 
 
 def export(ctx, bmp, label):

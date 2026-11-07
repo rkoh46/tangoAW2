@@ -77,6 +77,13 @@ def scene(ctx, co, kind="tank", env=None):
     return g
 
 
+def icons_shown(g):
+    """The low fuel / ammunition icons blink on the console's frame count (48 frames, off for about 12 of them), while the units' own animation keeps the battle's clock:
+    two games start their battles ~26 frames apart, so a check of the icons waits for the same point of the blink (icons shown) in each game."""
+    while g.e.frame % 48 != 30:
+        g.e.wait(1)
+
+
 def cam(g):
     return g.e.u16(CAM), g.e.u16(CAM + 2)
 
@@ -130,13 +137,21 @@ def aria_vengeance_signs_map(ctx):
         shutil.copy(os.path.join(ctx.out, "andy_map.bmp"), os.path.join(REVIEW, f"{KIND}_map_andy.bmp"))
         with open(os.path.join(REVIEW, f"{KIND}_map_box.txt"), "w") as fh:
             fh.write(" ".join(map(str, digit_box(a, 2) + digit_box(a, 11))))
+    # the low fuel / ammunition icons (the 6 and 4 HP Tanks' upper right corner) are checked at the end, at the same point of their blink in both games
+    icon_boxes = [(cell(a, x, ROW)[0] + 8, cell(a, x, ROW)[1] - 3, cell(a, x, ROW)[0] + 16, cell(a, x, ROW)[1] + 5) for x in (6, 8)]
+    in_icon = lambda p: any(b[0] <= p[0] < b[2] and b[1] <= p[1] <= b[3] for b in icon_boxes)          # (the icon's outline reaches the digit box's top row)
+    icons_shown(a)
+    icons_shown(base)
+    ja, jb = load(ctx.shot(a, "aria_icons")), load(ctx.shot(base, "andy_icons"))
     expect = set()
     for k, hp in enumerate(HPS):
         x, h = 2 + k, shown(hp)
-        got = diff(ia, ib, digit_box(a, x))
+        # (the 6 and 4 HP digits sit under the blinking icons: compared on the pictures taken at the same point of the blink)
+        pa_, pb_ = (ja, jb) if x in (6, 8) else (ia, ib)
+        got = diff(pa_, pb_, digit_box(a, x))
         if 1 <= h <= 8:
             ctx.check(len(got) >= 6, f"{h} HP (column {x}): the digit changed colour ({len(got)} pixels)")
-            bad = [p for p in got if ib.getpixel(p) != WHITE or ia.getpixel(p) != ramp_rgb(h)]
+            bad = [p for p in got if pb_.getpixel(p) != WHITE or pa_.getpixel(p) != ramp_rgb(h)]
             ctx.check(not bad, f"{h} HP: the pixels that changed are the digit's own white, now {ramp_rgb(h)} (wrong: {[(p, ia.getpixel(p)) for p in bad[:3]]})")
             expect.update(got)
         elif STRICT or h == 9:
@@ -146,14 +161,16 @@ def aria_vengeance_signs_map(ctx):
     ox, oy = cell(a, 13, ROW)
     # everything else of the frame (Andy's 5, the black outline, the icons, the ground) is the twin's
     # (the CO panel and its power meter at the top left are Aria's in one game and Andy's in the other)
-    stray = [p for p in diff(ia, ib) if p not in expect and not (p[0] < 80 and p[1] < 37) and not (ox - 4 <= p[0] < ox + 20 and oy - 8 <= p[1] < oy + 16)]
+    blink = icon_boxes + [digit_box(a, 6), digit_box(a, 8)]          # (checked on the pictures at the same point of the blink)
+    in_blink = lambda p: any(b[0] <= p[0] < b[2] and b[1] <= p[1] <= b[3] for b in blink)
+    stray = [p for p in diff(ia, ib) if p not in expect and not in_blink(p) and not (p[0] < 80 and p[1] < 37) and not (ox - 4 <= p[0] < ox + 20 and oy - 8 <= p[1] < oy + 16)]
     ctx.check(not stray or not STRICT, f"nothing else of the frame changed ({len(stray)} pixels differ, e.g. {stray[:4]})")
     # the icons are there (AW2's low fuel on the 6 HP Tank, no ammunition on the 4 HP one: the cell's upper right) and untouched
-    for x in (6, 8):
-        cx, cy = cell(a, x, ROW)
-        box = (cx + 8, cy - 3, cx + 16, cy + 5)
-        n = sum(1 for yy in range(box[1], box[3]) for xx in range(box[0], box[2]) if not mm.is_ground(ib.getpixel((xx, yy))))
-        ctx.check(n >= 12 and not diff(ia, ib, box), f"column {x}: the icon is there ({n} pixels) and as in the twin")
+    # (the Tank under the box animates on the battle's clock, out of step between the games: the icon is counted in each game, not compared pixel for pixel)
+    count = lambda im, box: sum(1 for yy in range(box[1], box[3]) for xx in range(box[0], box[2]) if not mm.is_ground(im.getpixel((xx, yy))))
+    for x, box in zip((6, 8), icon_boxes):
+        na, nb = count(ja, box), count(jb, box)
+        ctx.check(nb >= 12 and abs(na - nb) <= 4, f"column {x}: the icon is there in her game ({na} pixels) as in the twin ({nb})")
     # the tiles and the palette: our eight tiles, once each, in a bank whose colours 1..8 are the ramp
     used = ours(a.e)
     ctx.eq(sorted(used), list(range(0x340, 0x348)), "BG tiles 0x340..0x347 are in use, once for each HP 1..8")
@@ -391,6 +408,7 @@ def aria_vengeance_signs_tilt(ctx):
         g = scene(ctx, co, KIND, dict(ENV, **env))
         for _ in range(12):
             g.e.shot(os.path.join(ctx.out, "warm"))
+        icons_shown(g)          # (only colours are counted here: the icons, white, must be shown in both)
         shots[co] = load(ctx.shot(g, f"{co}_tilt"))
         g.e.close()
     ia, ib = shots["aria"], shots["andy"]
@@ -411,8 +429,8 @@ def aria_vengeance_signs_tilt(ctx):
     def whites(p):
         return [c for c in components({q: v for q, v in p.items() if y0 <= q[1] <= y1 and q[0] > 100}, 960, 640, lambda v: v == WHITE) if len(c) >= 40]
     wa, wb = whites(pa), whites(pb)
-    ctx.eq(len(wb) - len(wa), 8, f"the white numbers left in her row: {len(wa)} (9 HP, Oozium, Andy's Tank) against the twin's {len(wb)}")
-    ctx.check(len(wa) >= 3, "9 HP, the Oozium and Andy's Tank keep white numbers")
+    ctx.eq(len(wb) - len(wa), 8, f"the white numbers left in her row: {len(wa)} (9 HP, Oozium, the two icons) against the twin's {len(wb)}")
+    ctx.check(len(wa) >= 2, "9 HP and the Oozium keep white numbers (Andy's Tank is rows above the band measured)")
     if REVIEW:
         os.makedirs(REVIEW, exist_ok=True)
         ia.crop((0, y0, 960, y1)).save(os.path.join(REVIEW, f"{KIND}_tilt_aria.png"))

@@ -315,18 +315,19 @@ def tag_versus_five_armies(ctx):
     ctx.eq(e.u8(ram.FIVE_ON), 1, "a five-army game")
     boxes = sorted(s[2] & 0x3FF for s in oam(e) if (s[2] & 0x3FF) in (0x100, 0x110, 0x120, 0x130, 0x140))
     ctx.eq(boxes, [0x100, 0x110, 0x120, 0x130, 0x140], "five partner slots, empty")
-    for _ in range(12):
-        if e.u8(g.teams_addr() + 0x32) == 8:
-            break
-        e.press("RIGHT", 6)
-        e.wait(14)
-    e.press("START", 4)
-    e.wait(10)
-    for _ in range(3):
-        e.press("DOWN", 4)
+    with tag.aw2_arrows(e):          # (with Dual Strike's graphics the Teams screen takes DS's arrows: the pad steps below are AW2's, as in Game.set_teams)
+        for _ in range(12):
+            if e.u8(g.teams_addr() + 0x32) == 8:
+                break
+            e.press("RIGHT", 6)
+            e.wait(14)
+        e.press("START", 4)
         e.wait(10)
-    e.press("START", 4)
-    e.wait(10)
+        for _ in range(3):
+            e.press("DOWN", 4)
+            e.wait(10)
+        e.press("START", 4)
+        e.wait(10)
     bh = e.u8(tag.TEAMS_PARTNER + 4)
     ctx.check(bh != tag.NONE, "Black Hole's partner picked with the pad")
     for a, p in ((1, "max"), (3, "eagle"), (4, "drake")):
