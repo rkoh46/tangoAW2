@@ -525,6 +525,8 @@ pub fn draw(core: &Core, rgba: &mut [u8], seats: &[Seat], tag_pairs: bool, help:
         };
         cv.text(core, wx + 3, wy + 2, &name, name_ink, SHADE);
         let co_name = seat.co.map(|c| co_label(core, c)).unwrap_or_default();
+        // (a CPU seat of the Gauntlet's screen with no CO yet: Conquest Run draws its enemies when the run starts)
+        let co_name = if co_name.is_empty() && seat.tag.is_some() && !seat.mine { "Random".to_string() } else { co_name };
         if seat.ready {
             let l = "READY";
             let lw = online::text_width(core, l);

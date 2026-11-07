@@ -41,9 +41,8 @@ fn rewards(k: u8) -> [(String, Vec<String>); 3] {
         (
             "Field repair".to_string(),
             vec![
-                "Every unit to".to_string(),
-                "10 HP, with".to_string(),
-                "full fuel".to_string(),
+                "All units to".to_string(),
+                "10 HP, fuel".to_string(),
                 "and ammo".to_string(),
             ],
         ),
