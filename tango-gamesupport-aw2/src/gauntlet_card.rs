@@ -79,18 +79,29 @@ pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
     };
     let height = bottom - top + 1;
     let mut canvas: Vec<Vec<f32>> = vec![vec![]; height];
+    // (a letter is as wide as its body, the rows above its last quarter: a tail lower down, the Q's, runs on into the gap after it instead of widening the letter)
+    let body_rows = top..top + height * 3 / 4;
+    let mut overflow: Vec<Vec<f32>> = vec![vec![]; height];
     for (n, g) in glyphs.iter().enumerate() {
         let cols: Vec<usize> = (0..16).filter(|&x| g.iter().any(|r| r[x] > 0.0)).collect();
-        let (Some(&a), Some(&b)) = (cols.first(), cols.last()) else {
+        let (Some(&a), Some(&last)) = (cols.first(), cols.last()) else {
             continue;
         };
+        let b = (a..=last).filter(|&x| body_rows.clone().any(|y| g[y][x] > 0.0)).max().unwrap_or(last);
         if n > 0 {
             for row in canvas.iter_mut() {
                 row.extend(std::iter::repeat_n(0.0, gap));
             }
         }
         for (y, row) in canvas.iter_mut().enumerate() {
+            let start = row.len().saturating_sub(gap);
+            for (k, v) in overflow[y].drain(..).enumerate() {
+                if let Some(c) = row.get_mut(start + k) {
+                    *c = c.max(v);
+                }
+            }
             row.extend((a..=b).map(|x| g[top + y][x]));
+            overflow[y] = (b + 1..=last).map(|x| g[top + y][x]).collect();
         }
     }
     let w = canvas.first().map_or(0, Vec::len);
