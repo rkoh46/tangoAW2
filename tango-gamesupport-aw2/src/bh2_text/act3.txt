@@ -6,25 +6,16 @@
 @SONG co:grit
 NARRATION: Blue Moon's palace, the day / before. A long hall of ice and files.
 OLAF: Blue Moon has read the ledger! / Blue Moon is OUTRAGED! Again!
-SASHA: Olaf, outrage is not a policy. / Colin, shut the window.
-COLIN: Y-yes, Sis! It's... very cold / out there. And in here. Everywhere.
-OLAF: The border will hold! Grit holds / one end of the rail, Javier the other!
-SASHA: Green Earth's knight and our / sniper. An odd pair.
 COLIN: S-Sis? What if she comes for / the lab island? What do we say?
 SASHA: Nothing, Colin. We say nothing. / That is the first rule of trade.
 NARRATION: Blue Moon's border. Snow to / the horizon, and one railway.
 NARRATION: The Iron Road. Green Earth's / exiles and Blue Moon guard it.
 JAVIER: Hark! Behold the Long Border! / A line of honour drawn in snow!
 GRIT: It's a fence with an attitude, / son.
-JAVIER: Sir Grit! A knight does not / call his duty a fence!
-GRIT: A knight can call it what he / likes. I call it cold.
 ASUKA: The Iron Road. Thirty years of / iron down one rail, four seals,
 ASUKA: and a buyer with no name, only / a keyhole. I am following it.
 GRIT: Ma'am. Reckon you didn't come / for the view.
 ASUKA: No, Grit. I came for the rail.
-GRIT: Fair enough. Rail's this way. / You'll have to get past me.
-JAVIER: The Accord kept us safe behind / a fence of honour!
-GRIT: It kept us quiet, son. We never / asked what we were hidin'.
 @IF ASUKA
 ASUKA: Snow keeps every footprint. / I can follow a trail in it.
 @IF CRUMB CO
@@ -71,16 +62,12 @@ CLONE ANDY: Okay! Snow! I can fix any-- / ...any ice! Sure!
 @PARTNER CLONE ANDY
 [CO2]: Hey! I've got your back! Okay! / I can fix any-- ...yeah!
 @END
-JAVIER: On my honour, no churl crosses / the Long Border!
-GRIT: Reckon some will. Hold the rail, / son. Don't blow it up.
 ASUKA: Take the rail and spare the / sleepers. I want the line intact.
 
 == m14_day5
 GRIT: Long gun, line three. Easy, / now. Don't breathe.
 JAVIER: A knight does not creep, Sir / Grit! A knight charges!
 GRIT: A knight gets shot. Wait for / the whistle.
-JAVIER: ...What whistle?
-GRIT: That one. Charge.
 
 == m14_post
 @SONG co:javier
@@ -90,27 +77,18 @@ JAVIER: was it Blue Moon iron? Is that / what I never asked?
 ASUKA: Sir Javier, your Com Towers are / made of Calder iron.
 ASUKA: The same iron that went down / this rail for thirty years.
 JAVIER: Then my honour stands on a / keyhole. ...Alas.
-GRIT: Easy, son. You're a man with / some towers. That's all.
-JAVIER: A knight who builds on stolen / iron. Is he still a knight?
-ASUKA: He is the only honest / signature on the continent.
-JAVIER: You said that at Calder. I / took it for a taunt.
-ASUKA: It was a fact. I do not taunt. / I state facts.
 JAVIER: ...Then I shall ride to Olaf / and think. Is that permitted?
 ASUKA: Ride, Sir Javier. Think. We / will meet again at the Pass.
-GRIT: Reckon he'll come back with a / sword and a conscience.
 GRIT: Ma'am. The iron went down that / rail to a place called Lot 42.
 GRIT: Blue Moon's lab island. Ask / Sasha. She keeps the books.
 ASUKA: Thank you, Grit.
 GRIT: Don't. I ain't helpin' you. I'm / hurtin' the Accord. Slowly.
-GRIT: Reckon somebody ought to.
 
 == m14_map
 @SONG enemy2
 CRUMB CO: Ma'am! Gerald says Grit is a / good man.
 MORTAR: Crumb. He just shot at us.
 CRUMB CO: A good man with a long gun, / Sergeant.
-WICK: Is it all right if I think a / border is the quietest kind of war?
-MORTAR: Wick. It is snowing. Everything / is quiet. Leave it be.
 ASUKA: Lot 42. Blue Moon's lab island. / The rail runs to the sea.
 ASUKA: Everything runs to the sea. / And then to the door.
 
@@ -127,16 +105,11 @@ HAWKE: A Marshal. A traitor sells out / for profit. I did not.
 HAWKE: I replaced a poor plan with / a better one.
 OLAF: You sat at our summits for / thirty years! You drank our tea!
 HAWKE: I drank coffee, Commander. And / your border was badly defended.
-OLAF: HOW DARE YOU!
-HAWKE: The tea was excellent. The / border was not.
-OLAF: Ha! He insults the Gate! Then / he shall eat it!
 ASUKA: Marshal. Iron Gate Pass is the / only door into Blue Moon's valley.
 ASUKA: Open it. I need the foundry / ledgers on the other side.
-HAWKE: A door. Very well, Asuka.
 HAWKE: Commander Olaf. Stand aside, / please. I will not ask twice.
 OLAF: Never! I am Blue Moon's shining / star! I am the Gate!
 HAWKE: Then the whole pass rests on / one man. That is a weakness.
-HAWKE: Thank you for telling me.
 OLAF: Soldiers! Into the snow! Hold / the road with ice and honour!
 HAWKE: Ice does not move. That makes / it easy to plan around.
 
@@ -150,18 +123,11 @@ HAWKE: Your heart is racing. You / should rest, Commander.
 @SONG co:olaf
 OLAF(s): The Gate... has fallen. A / thousand winters. ...Six hundred.
 HAWKE: Six hundred and eleven. I was / being generous.
-OLAF: Marshal! You are a cold man!
-HAWKE: A careful one. From far away / they look the same.
 OLAF: Colin is on the lab island with / Sasha! Do not touch my Colin!
 HAWKE: I do not fight boys, Commander. / I cut supply lines.
-OLAF: ...You do not?
-HAWKE: It is written down. Page nine.
-OLAF: Ha! A man with a folder! Olaf / respects a folder!
 OLAF: Marshal. Why did you do it? / The Accord kept us safe.
 HAWKE: It kept you still, Commander. / That is not the same thing.
-OLAF: ...Colin said that. In a letter. / Colin is clever.
-HAWKE: Then listen to Colin.
-OLAF: Ha! The enemy gives advice! / Soldiers! Back to the valley!
+OLAF: Ha! Soldiers! Back to the / valley!
 OLAF: Ice and honour! Olaf lives! Olaf / will return! With more snow!
 HAWKE: I look forward to it.
 
@@ -186,14 +152,12 @@ JUGGER: ARRIVAL: LOGGED. TEMPERATURE: / COLD. EMOTION: NONE. OPERATIONAL.
 GRIT: Well, if it ain't the tin fella. / Howdy.
 JUGGER: GREETINGS, SNIPER GRIT. / QUERY: WHY "TIN".
 GRIT: It's a fond word, son. Means a / fella made of good stuff.
-JUGGER: ...SENTIMENT DETECTED. SOURCE: / GRIT. LOGGED.
 ASUKA: Jugger. The Wire carries every / dispatch the Iron Road sent home.
 ASUKA: Cut the seams, and read what / comes through.
 JUGGER: AFFIRMATIVE. SEAMS: SIXTEEN. / TASK: CUT. READ. CUT AGAIN.
 GRIT: Reckon I can't stop you. But / I can slow you down some.
 GRIT: Blue Moon built a robot once. / Had a tin ear, same as you.
 JUGGER: CORRECTION: EAR IS NOT TIN. / EAR IS CERAMIC.
-GRIT: Is it, now.
 JUGGER: AFFIRMATIVE. MOST FRIENDS DO / NOT ASK. SENTIMENT: DETECTED.
 GRIT: ...Well, I'm askin', tin fella. / That's what friends do.
 
@@ -202,13 +166,11 @@ GRIT: Long gun, line two. Easy does it.
 JUGGER: SNIPER GRIT. YOUR LINE IS / 94 PERCENT PREDICTABLE.
 GRIT: And the other six?
 JUGGER: QUERY. WHAT IS THE OTHER SIX.
-GRIT: Patience, tin fella.
 
 == m16_day9
 GRIT: Tin fella, I got a question. / Why do you talk in capitals?
 JUGGER: CORRECTION: I TALK IN VOLUME. / QUERY: IS IT TOO MUCH.
 GRIT: Nope. Reckon it's honest. Most / folks whisper their lies.
-JUGGER: LOGGED. HONESTY: WORTH THE / VOLUME. SENTIMENT: DETECTED.
 GRIT: Next round's on me, then. If / either of us is still standin'.
 JUGGER: AFFIRMATIVE. I WILL BRING / SOUP. FLAK MADE EXTRA.
 
@@ -218,12 +180,8 @@ JUGGER: SEAM SIX: CUT. READING THE / FLOW. DISPATCH FOLLOWS.
 JUGGER: "FOUNDRY NINE TO LOT 42 / SITE. IRON, NINE HUNDRED TONS."
 JUGGER: "CONSIGNEE: KEYHOLE SYMBOL. / ACCOUNT: ACCORD QUARTERMASTER."
 JUGGER: "REGISTRAR: ERASED. SEALS: / FOUR. SIGNATORIES: FOUR."
-ASUKA: Read the last field again.
-JUGGER: "SIGNATORIES: FOUR." / SENTIMENT: DETECTED. SOURCE: ME.
 ASUKA: Four nations, one account, and / a registrar who does not exist.
-JUGGER: AFFIRMATIVE. I FOUND A HOLE. / THE HOLE HAS A NAME.
-GRIT: ...What name?
-JUGGER: NEGATIVE. ERASED. THE HOLE / IS WHERE THE NAME WAS.
+JUGGER: AFFIRMATIVE. I FOUND A HOLE. / THE NAME WAS ERASED.
 GRIT: Reckon somebody hid a man in / the paperwork.
 
 == m16_post
@@ -234,19 +192,13 @@ JUGGER: NEGATIVE. I DID NOT SHOOT. / ASUKA ORDERED. I OBEYED.
 GRIT: That's the difference, tin fella. / I'm a free man.
 JUGGER: ...CONSIDERING. IS FREE A / GOOD STATE.
 GRIT: Lonelier. But it's mine.
-JUGGER: LOGGED. FREE: LONELIER. BUT / YOURS. QUERY: DESIRABLE.
-GRIT: Ask me again in the spring.
 GRIT: Tell Sasha the tin fella can / count. She'll know what I mean.
-ASUKA: Grit. Thank you for fighting / fairly.
-GRIT: Ma'am. Reckon I'd do it again. / Reckon I'd lose again, too.
 GRIT: Mind the ice on the south road. / It bites.
 
 == m16_map
 @SONG enemy1
 JUGGER: ASUKA. NEW FIELD: GRIT. NOT / AN ENEMY. QUERY: ALLY.
 ASUKA: An honest opponent, Jugger. / Rarer than an ally. More useful.
-JUGGER: LOGGED. HONEST OPPONENTS: / USEFUL. HOW MANY DO WE HAVE.
-ASUKA: Two. Possibly three.
 JUGGER: NEW FIELD: LOT 42. LOCATION: / SASHA'S ISLAND.
 ASUKA: Yes. Pack your cables.
 JUGGER: AFFIRMATIVE. HUMOUR: NOT / FOUND. SOMETHING NEAR IT: FOUND.
@@ -260,9 +212,6 @@ NARRATION: A Black Obelisk stands on the / shore. This one is Black Hole's.
 LASH: Ooh! A whole lab island! And an / Obelisk on MY side! Heehee!
 SASHA: Welcome to Lot 42. Hands off / the pier. It was just painted.
 COLIN: H-hi! I'm Colin! I'm not / scared! My s-sister says I'm not!
-LASH: Hi, Colin! You're smaller than / the briefing said! Cute!
-COLIN: I'm n-not small! I'm... / compact! It's different!
-SASHA: Colin. Do not talk to the / invaders. It encourages them.
 @PARTNER ASUKA
 [CO2]: Sasha. I know the four seals on / Lot 42. I want the name behind them.
 @PARTNER CRUMB CO
@@ -299,42 +248,20 @@ SASHA: It is a black iron frame with / ambitions.
 == m17_post
 @SONG co:sasha
 SASHA(s): The pier is lost. The island / is lost. Colin, stand by me.
-COLIN: I'm... I'm here, Sis. I'm not / scared. Mostly.
 ASUKA: Sasha. I will ask once. Who / bought Lot 42?
-SASHA: ...You have the ledger. You / know the seals.
-ASUKA: I know four seals. I do not know / who stood in front of them.
 SASHA: I did. It was my sale. A black / iron frame, thirty metres tall.
-SASHA: Found in the glacier. It could / not be moved for eleven winters.
 SASHA: Then one winter a buyer came. / One chit, four seals.
-SASHA: Orange Star's seal came first. / Nell's. Gold ink. I knew it.
 COLIN: N-Nell? Nell bought...?
 SASHA: Nell signed first. Then Yellow / Comet, then Green Earth. Then me.
 SASHA: Blue Moon sold the frame, Colin. / The money built your navy.
-COLIN: My n-navy... was paid for with / the Obelisk's door?
 SASHA: I did not know what it was. The / chit said "memorial".
 ASUKA: Who carried the chit?
-SASHA: A clerk. Quiet. A grey coat. / I never saw him again.
+SASHA: A clerk. Quiet. A grey coat. / The registry has no such man.
 LASH: A grey coat! ...Hee... no. Oh. / Oh no.
-SASHA: The next year the registry said / there had never been such a clerk.
-ASUKA: Erased.
-SASHA: Yes. For thirty years I have / wondered why I felt relieved.
-COLIN: Sis... my ships were bought / with a door.
-SASHA: The ships were bought with a / debt, Colin. Mine. I am sorry.
-COLIN: ...I'm not angry. I'm just very, / very cold.
-LASH: Doors need handles. And keys. / And... I need to sit down. A bit.
 ASUKA: Sasha. Keep your island and / your navy. I want your testimony.
-SASHA: For what?
-ASUKA: For the day the Accord denies / all of it. And it will.
-SASHA: I will give it. For a price.
-ASUKA: Name it.
-SASHA: Do not hurt my brother.
-LASH: Hey! Don't look at me like / that! I wouldn't!
-COLIN: ...She wouldn't. She's just / loud.
 
 == m17_map
 @SONG enemy2
-LASH: Okay. Okay. I'll be quiet for a / minute. Heehee. Starting now.
-ASUKA: That would be a first, Doctor.
 LASH: It's a door, isn't it? The / Obelisk. Not a monument.
 ASUKA: The evidence says a frame.
 LASH: Frames have doors in them. / That's what frames are for.
@@ -349,17 +276,13 @@ LASH: ...Okay. I'll build a lock for / the handle instead. Heehee. Hee.
 NARRATION: Whiteout Harbour in a / snowstorm. Ships, shore, and white fog.
 FLAK: Big water! Snowy! Flak no like! / Flak like snack!
 OLAF: Behold! Whiteout Harbour! My / fleet! My pride! My snow!
-OLAF: Who comes to my harbour? A / brute?! A beast?!
-FLAK: Flak. Flak is Flak. Big man! / Flak smash big man!
 OLAF: Ha! A brute! You are nothing / but muscle!
 FLAK: Flak is muscle. Flak is also / Flak. Both true.
-OLAF: Hm! That is surprisingly / sound reasoning!
 ASUKA: Flak. The harbour has ships and / ground troops. Hit what is in front.
 FLAK: Hit front. Yes.
 ASUKA: Eat after.
 FLAK: Eat after? Promise?
 ASUKA: Promise.
-FLAK: Good boss. Flak loves boss. / Flak hits good.
 OLAF: Soldiers! Into the snow! Hold the / harbour with ice and honour!
 FLAK: Ice! Cold! Flak hits cold / things! Easy!
 
@@ -368,8 +291,6 @@ COLIN: Olaf! O-Olaf! Sis sold the / Obelisk! The Accord bought it!
 OLAF: WHAT?! Colin, speak slowly!
 COLIN: Four seals! Nell's first! The / navy was built on it!
 OLAF: ...Sasha would never! ...The / Accord would never! ...Would they?
-FLAK: Big man sad. Flak waits.
-OLAF: Flak, you are a brute, but a / decent one. Wait.
 
 == m18_post
 @SONG co:olaf
@@ -377,16 +298,10 @@ OLAF(s): My harbour! My fleet! My... / my navy! The Obelisk's door!
 FLAK: Big man cry?
 OLAF: Olaf does not cry! It is frost!
 FLAK: Frost cry. Flak knows. Flak / gives soup.
-OLAF: You have SOUP?
-FLAK: Flak always has soup. Hot. Fish. / Frozen harbour fish.
 NARRATION: Flak ladles a thick stew from / the pot on his back.
 OLAF: ...It is delicious.
-FLAK: Flak knows.
-OLAF: Brute. What is your name?
-FLAK: Flak.
 OLAF: Flak. Thank you. Olaf has been / robbed by the Accord.
 OLAF: Olaf will not fall back. Olaf / will think. In the snow.
-FLAK: Think good. Flak go eat.
 ASUKA: Flak. You kept your promise.
 FLAK: Flak always keeps. Boss keeps / too. Good team.
 ASUKA: ...Yes. It is.
@@ -396,9 +311,6 @@ ASUKA: ...Yes. It is.
 CRUMB CO: Ma'am! Flak sent me a letter! / It says "SNACK".
 ASUKA: A long letter.
 CRUMB CO: He drew a bowl too. It's a very / nice bowl.
-MORTAR: Crumb. He drew a bowl because / he cannot write.
-CRUMB CO: He drew a bowl because he's / my friend, Sergeant.
-MORTAR: ...Yes. That too.
 KOAL: The harbour has three quays and / no camber. I will repave tomorrow.
 FLAK: Flak not break quay. Flak break / boats. Boats not quay.
 KOAL: A fair distinction. I agree.
@@ -411,10 +323,7 @@ NARRATION: Foundry Valley. Nine furnaces, / one archive, one volcano.
 NARRATION: The heart of Blue Moon. Olaf and / Grit hold the valley road.
 OLAF: Black Hole! Thief of books! Olaf / will not let you in!
 OLAF: The Accord robbed us. But Blue / Moon's books belong to Blue Moon!
-GRIT: Reckon he's got a point, ma'am. / Pride counts for somethin'.
-ASUKA: Commander Olaf. I do not want / your pride. I want the ledger.
-ASUKA: It proves the Accord sold you / the door. You can use that.
-OLAF: Use it?! Olaf will use it on / you! With ice!
+ASUKA: Commander Olaf. I do not want / your valley. I want the ledger.
 @IF ASUKA
 ASUKA: I read ledgers. I do not tear / them. Hand it over.
 @IF CRUMB CO
@@ -468,26 +377,16 @@ GRIT: Reckon this is the last one, / son. Aim true.
 OLAF: The volcano stirs! Even the / mountain disapproves!
 GRIT: It's Thursday. It always stirs / on a Thursday.
 ASUKA: Then do not stand under it.
-OLAF: Ha! She gives sensible advice / to her enemy!
 
 == m19_post
 @SONG co:olaf
 OLAF(s): Take it, thief. The books are / yours. Blue Moon hides nothing.
-OLAF: Except everything. ...Alas.
 NARRATION: The archive. Sixty shelves, / and one locked drawer: the ledger.
 ASUKA: Thirty years. Four columns. / Four seals every winter.
 ASUKA: Iron out, "storage fees" in. / Blue Moon's harbours. Green Earth's
 ASUKA: sea lanes. Orange Star's lab. / Yellow Comet's wall.
-GRIT: Reckon I got paid too. My long / gun was booked as a "survey".
-OLAF: My navy! My harbours! All of / it paid for by the door!
-ASUKA: Everyone sold. Everyone was / paid. The Accord was a cash box.
-OLAF: Ha...! The great Accord! Olaf's / beloved Accord! A cash box!
-GRIT: Easy, Olaf. Sit down.
 CRUMB CO: Ma'am? One drawer was locked. / I picked it.
-MORTAR: Crumb. Where did you learn to / pick a lock?
-CRUMB CO: On the biscuit tin, Sergeant. / It was a very hard tin.
 NARRATION: In the drawer, a page cut out / with a razor. Under it, a carbon.
-CRUMB CO: It says "Registry. Office of / the Quartermaster."
 CRUMB CO: "Hobb, Philip. Quartermaster / of the Accord's Office of Works."
 CRUMB CO: "Built the inner works of the / Obelisk. Struck from the rolls."
 CRUMB CO: "Heirs: one grandson, location / unknown. Item: one hardtack biscuit."
@@ -496,15 +395,10 @@ CRUMB CO: Issue... number one. That's / Gerald. That's GERALD.
 CRUMB CO(s): A grandson. Is that me, / ma'am? Am I the grandson?
 ASUKA: Yes, Commander. You are.
 CRUMB CO(s): My grandpa built the / Obelisk. And they erased him.
-ASUKA: They erased his name so they / could bury what he built.
 CRUMB CO: What did he build, ma'am?
 ASUKA: I do not know yet. The crate / knows. It is addressed to him.
-CRUMB CO: And to me. Because I'm the / last one.
-MORTAR: Crumb. Come here. Sit.
-MORTAR: Soup. Eat.
+MORTAR: Crumb. Sit. Soup. Eat.
 CRUMB CO(h): ...Thank you, Sergeant.
-WICK: Is it all right if I cry? Just / a little?
-MORTAR: Yes. All of us.
 @IF ASUKA
 ASUKA: Issue number one. I will not / forget that number.
 @IF CRUMB CO
@@ -547,9 +441,7 @@ JESS: Green Earth read it too. I / stamped those pages blind.
 KANBEI: Kanbei's seal, on a paper he / never read. It is a shame.
 HACHI: Everyone sold, kids. Everyone / got paid. I told you so.
 SAMI: Roger. But Nell is still in / a tower, and the book is open.
-MAX: Unbelievable! We sold a door! / I wanna punch something!
 SASHA: Colin and I will testify. Lot / 42 was sold. We sold it.
-COLIN: I-it's all right, Sis. We're all / in the same boat. A sold boat.
 GRIT: Hold on. Hold the book. Don't / read it to the world yet.
 HACHI: Grit's right. If one nation / reads it out first, the rest riot.
 ANDY: Then we get Nell out. She / signed first. She speaks first.
@@ -559,16 +451,12 @@ NARRATION: Far off, a gavel taps once on / the cushion of the empty chair.
 CRUMB CO: Flak! It's Crumb! Please don't / eat the harbour!
 FLAK: Crumb! Crumb is food name! Flak / happy! Flak not eat harbour!
 OLAF: Who is this Crumb? A tiny / voice on the Black Hole radio?
-FLAK: Crumb friend. Crumb small. / Crumb good.
-OLAF: Ha! A brute with a small friend! / Olaf likes it. Continue!
 CRUMB CO: Flak, I made stew! It's in the / second boat!
 FLAK: Stew! Flak go! After win!
 
 == m17_day8
 COLIN: S-Sis! The Obelisk is aiming at / the pier! Where I'm standing!
 SASHA: Then stand somewhere else, / Colin. Politely.
-LASH: Hi, Colin! I'm aiming at your / pier! Don't take it personally!
-COLIN: I-it's very personal! It's MY / pier!
 LASH: Heehee! I like him! Can I keep / him?
 SASHA: You may not keep my brother.
 
@@ -579,12 +467,10 @@ STURM: The orange flag in my hall. / Does it still stand?
 ASUKA: It stands, Lord Sturm. The tower / holds her. She is reading my ledger.
 STURM: Then let her read, and learn what / reading costs.
 HAWKE: A divided house falls easily. / I take no pleasure in it.
-VON BOLT: Divide and conquer! Kehh-heh! / My favourite. Divide, then bill.
 LASH: Lab 7 is in Orange Star. I / HELPED build it! Can I go home?
 ASUKA: Clone Andy goes. Doctor, you / help him over the radio.
 CLONE ANDY: Okay. Okay! I'm going home. / Sort of. It's a little scary.
 ASUKA: I know. I will be with you. / In writing.
-JUGGER: ORANGE STAR: LOGGED. ASSETS: / ONE TOWER. ONE LAB. ONE DEPOT.
 ADDER: The sky, at last. My stage. I / shall take it with flair.
 CRUMB CO: Ma'am. The crate hums every / night now. At the same hour.
 ASUKA: Yes. I have noticed. It is / counting down to something.
