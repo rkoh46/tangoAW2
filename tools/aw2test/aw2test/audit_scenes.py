@@ -807,7 +807,7 @@ def sn_dialogue_faces(rec):
 # ---------------------------------------------------------------------------------------------------------------- Gauntlet
 @scene("gauntlet", "selector_and_army", pack=True)
 def gauntlet_selector(rec):
-    """Gauntlet: the wheel entry, the map selector (the list, the R records box), the army screen (CO, colour)."""
+    """Gauntlet: the wheel entry, the map selector (its twelve maps, no Conquest Run: the list, the R records box), the army screen (CO, colour)."""
     from . import gauntlet as ga
     e, g = rec.emu()
     d = ga.Gauntlet(g)
@@ -1122,16 +1122,56 @@ def conquest_reward_pick(rec):
     e.close()
 
 
-@scene("conquest", "selector_and_army", looks=("ds_flat",), pack=True)
+@scene("conquest", "wheel_and_box", pack=True)
+def conquest_wheel_and_box(rec):
+    """Select Mode's CONQUEST entry (directly above GAUNTLET): the wheel on CONQUEST and its neighbours (the label, the side labels, the help line), then, over a Conquest run saved halfway, the item box
+    (Continue / New, each row under the cursor, its two lines under the wheel) and GAUNTLET beside it with no box."""
+    from . import conquest as cq
+    from . import gauntlet as ga
+    e, g = rec.emu()
+    saves.to_select_mode(e)
+    for name, tag in (("gauntlet", "wheel_gauntlet"), ("conquest", "wheel_conquest"), ("campaign", "wheel_campaign")):
+        saves.wheel_to(e, name)
+        e.wait(40)
+        rec.snap(e, tag, ["menu", "wheel"])
+    e.close()
+    e, g = rec.emu()
+    cq.Conquest(g).begin(ga.ANDY)
+    saves.suspend(g)
+    path = e.save(os.path.join(rec.out, "saved_run"))
+    e.close()
+    e, g = rec.emu(save=path)
+    d = cq.Conquest(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "conquest")
+    e.wait(40)
+    rec.snap(e, "wheel_saved_run", ["menu", "wheel"])
+    e.press("A", 8)
+    e.wait_until(d.box_open, 120, step=4)
+    e.wait(100)
+    rec.snap(e, "box_continue", ["menu", "wheel"])
+    e.press("DOWN", 6)
+    e.wait(100)
+    rec.snap(e, "box_new", ["menu", "wheel"])
+    e.press("B", 8)
+    e.wait(60)
+    rec.snap(e, "box_closed", ["menu", "wheel"])
+    saves.wheel_to(e, "gauntlet")
+    e.wait(40)
+    rec.snap(e, "gauntlet_beside_the_box", ["menu", "wheel"])
+
+
+@scene("conquest", "selector_and_army", pack=True)
 def conquest_selector(rec):
-    """Conquest Run's row (the first, "Conquest Run *"), SELECT stepping through its five maps' pictures (the faces: one blank slot, the enemies are drawn when the run starts), the star's hint, and the
-    army screen (one CPU card with no CO yet). Menus: one look is enough."""
+    """CONQUEST's one-row map selector ("Conquest Run *" alone), SELECT stepping through its five maps' pictures (the faces: one blank slot, the enemies are drawn when the run starts), the star's hint, and the
+    army screen (one CPU card with no CO yet), in the three looks."""
     from . import conquest as cq
     from . import gauntlet as ga
     e, g = rec.emu()
     d = ga.Gauntlet(g)
     saves.to_select_mode(e)
-    saves.wheel_to(e, "gauntlet")
+    saves.wheel_to(e, "conquest")
+    rec.snap(e, "wheel", ["menu", "wheel"])
     e.press("A", 8)
     d.wait_step(ga.SELECTOR)
     e.wait(60)
@@ -1160,6 +1200,19 @@ def gauntlet_card(rec):
     d.wait_army()
     e.press("A", 6)
     card_shots(rec, e, "gauntlet_card", press_a=False)
+    e.close()
+
+
+@scene("conquest", "mission_card", pack=True)
+def conquest_card(rec):
+    """Conquest Run's title card on Sabre Range: the word above the name and the stamp say CONQUEST (not MISSION, not GAUNTLET)."""
+    from . import conquest as cq
+    e, g = rec.emu()
+    d = cq.Conquest(g)
+    d.open(True)
+    d.wait_army()
+    e.press("A", 6)
+    card_shots(rec, e, "conquest_card", press_a=False)
     e.close()
 
 

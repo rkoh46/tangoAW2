@@ -47,6 +47,17 @@ const BAND_CENTRE: i32 = 79;
 const BAND_ROWS: usize = 12;
 
 const WORD: &str = "GAUNTLET";
+/// Conquest Run's card says CONQUEST (its Q is the title font's made one, [`TitleFont::load`]).
+const CONQUEST_WORD: &str = "CONQUEST";
+
+/// The word the session's card says.
+fn word(core: &Core) -> &'static str {
+    if crate::conquest::session(core) {
+        CONQUEST_WORD
+    } else {
+        WORD
+    }
+}
 
 /// The stamp's ink ramp: palette index 1 is full colour, each next one dimmer (the red channel of the card's palette
 /// words 0x14BF, 109D, 109B, 1098, 0C76, 0C73, 0851, 084E, 084C, 0429, 0427, 0005, 0002 over 31): the coverage each stands for.
@@ -126,7 +137,7 @@ fn word_index(c: f32) -> u8 {
     }
 }
 
-fn glyphs(core: &Core) -> Option<Vec<Cov>> {
+fn glyphs(core: &Core, word: &str) -> Option<Vec<Cov>> {
     static FONT: OnceLock<Option<TitleFont>> = OnceLock::new();
     let font = FONT.get_or_init(|| TitleFont::load(core)).as_ref()?;
     // The letters' fill and the edge value of their soft corners: across the middle of an I (as online.rs finds them).
@@ -134,7 +145,7 @@ fn glyphs(core: &Core) -> Option<Vec<Cov>> {
     let row: Vec<u8> = (0..16).map(|x| i.get(x, 16)).collect();
     let first = row.iter().position(|&v| v != 0)?;
     let (fill, soft) = (row[(first + 4).min(15)], row[first].saturating_sub(1));
-    WORD.chars()
+    word.chars()
         .map(|c| {
             let g = &font.px[TitleFont::index(c)?];
             Some(
@@ -232,9 +243,22 @@ fn frame(core: &mut Core) {
     if !crate::gauntlet::session(core) {
         return;
     }
-    let Some(letters) = glyphs(core) else { return };
-    static WORD_ART: OnceLock<Vec<u8>> = OnceLock::new();
-    put(core, OBJ_VRAM, WORD_ART.get_or_init(|| word_tiles(&letters)));
+    let word = word(core);
+    let Some(letters) = glyphs(core, word) else { return };
+    // (the word's art made once for each word: the Gauntlet's and Conquest's)
+    static WORD_ART: std::sync::Mutex<Vec<(&'static str, Vec<u8>)>> = std::sync::Mutex::new(Vec::new());
+    let art = {
+        let mut cache = WORD_ART.lock().unwrap();
+        match cache.iter().find(|a| a.0 == word) {
+            Some(a) => a.1.clone(),
+            None => {
+                let t = word_tiles(&letters);
+                cache.push((word, t.clone()));
+                t
+            }
+        }
+    };
+    put(core, OBJ_VRAM, &art);
     put(
         core,
         OBJ_VRAM + 32 * DIGIT_TILES.start as u32,

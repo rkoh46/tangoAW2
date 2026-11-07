@@ -1,11 +1,12 @@
-"""Driving Conquest Run (crate::conquest, docs/dev/conquest.md): the first row of the Gauntlet's map selector, five of AW2's Versus maps in a row with the survivors and funds carried over, a reward
-between maps, the run's record under key `gauntlet_50`. The Gauntlet's own driver (`Gauntlet`) does the selector, the army screen and the end; this adds the run's maps and the stage steps."""
+"""Driving Conquest Run (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine; its map selector lists the one row), five of AW2's Versus
+maps in a row with the survivors and funds carried over, a reward between maps, the run's record under key `gauntlet_50` in the Gauntlet's record table. The Gauntlet's own driver (`Gauntlet`) does the
+selector, the army screen and the end; this adds the run's maps and the stage steps."""
 
 from . import dscampaign as dc
 from . import gauntlet as ga
 from .game import NavError
 
-MISSION = max(ga.SELECTOR_ORDER)   # crate::gauntlet_mode::def(): the run's mission is the last of the list (the selector lists it first)
+MISSION = ga.CONQUEST_MISSION      # crate::gauntlet_mode::def(): the run's mission is the last of the campaign's list (the Gauntlet's selector does not list it)
 RECORD_ID = 50                     # crate::conquest::KEY, gauntlet_50
 STAGES = 5
 STAGE_BUSY = ga.STAGE_AT + 1       # crate::stage: a swap is running
@@ -32,10 +33,15 @@ def stage(e):
 
 
 class Conquest(ga.Gauntlet):
-    """The Gauntlet's driver on the run's row."""
+    """The Gauntlet's driver on the CONQUEST wheel entry (its selector is the one row)."""
+    ENTRY = "conquest"
+
+    def open(self, from_title=True, pick=True, map=MISSION, box=None):
+        """CONQUEST, A (the box over a saved Conquest run: `box="continue"` / `"new"`), the one-row selector's A."""
+        return super().open(from_title, pick, map, box)
 
     def begin(self, co=ga.ANDY, colour=None, from_title=True, box=None):
-        """From the title: GAUNTLET, the first row (Conquest Run), the army screen's CO and colour, the battle on day 1 of the first map with the player in control."""
+        """From the title: CONQUEST, the one row (Conquest Run), the army screen's CO and colour, the battle on day 1 of the first map with the player in control."""
         return self.start(co, from_title=from_title, colour=colour, map=MISSION, box=box)
 
     def size(self):

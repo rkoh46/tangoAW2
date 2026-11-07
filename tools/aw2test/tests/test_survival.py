@@ -118,7 +118,7 @@ def hud_shown(e):
 
 @test()
 def survival_on_select_mode(ctx):
-    """Survival and Gauntlet are the seventh and eighth entries on the wheel with the pack, offline; without
+    """Survival, Gauntlet and Conquest are the seventh to ninth entries on the wheel with the pack, offline; without
     it the wheel turns its six as ever."""
     e, g = boot(ctx)
     sv.to_select_mode(e)
@@ -133,7 +133,7 @@ def survival_on_select_mode(ctx):
         ctx.eq(sorted(seen), list(range(6)), "six wheel positions")
         ctx.eq(e.u32(0x080814F0), 0x0861696C, "the wheel reads the game's own item table")
         return
-    ctx.eq(sorted(seen), list(range(8)), "eight wheel positions")
+    ctx.eq(sorted(seen), list(range(9)), "nine wheel positions")
     ctx.require(sv.wheel_to(e, sv.SURVIVAL_POSITION), "Survival reached")
     e.wait(40)
     shot(ctx, e, "select_mode")

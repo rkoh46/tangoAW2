@@ -19,7 +19,9 @@ from aw2test.harness import test
 OBJ_VRAM = 0x06010000
 GAUNTLET_SMALL_TILES = (0x2E0, 32)         # crate::mode_menu::EXTRAS: the Gauntlet's small label tiles and OBJ palette
 SURVIVAL_SMALL_TILES = (0x320, 32)
-GAUNTLET_PALETTE, SURVIVAL_PALETTE = 14, 13
+CONQUEST_SMALL_TILES = (0x3B0, 32)
+BADGE_TILES = range(0x3E0, 0x400)           # crate::branding: the badge draws OBJ palette 15's colours 0..4; Conquest's label has the same bank's colours 5..15
+GAUNTLET_PALETTE, SURVIVAL_PALETTE, CONQUEST_PALETTE = 14, 13, 15
 # Battle Maps points (C420 +0x00 spendable, +0x04 the most ever held): every won battle earns them (AW2's campaign, the War Room, Survival, a DS mission, the Gauntlet)
 POINTS = (saves.c420(0x00, 4), saves.c420(0x04, 4))
 CHOOSER_ENTRIES = 5                        # AW2 CAMPAIGN, DS, BH, BH2 and Silver Nova's: the Gauntlet is not one of them
@@ -46,8 +48,8 @@ def pic(ctx, e, name):
 
 
 @test()
-def gauntlet_mode_wheel_has_eight_entries_with_the_pack_and_six_without(ctx):
-    """The pack's Select Mode wheel turns eight entries and the Gauntlet is directly above Versus (position 4, Versus 3, Campaign 5); without the pack it is AW2's own six."""
+def gauntlet_mode_wheel_has_nine_entries_with_the_pack_and_six_without(ctx):
+    """The pack's Select Mode wheel turns nine entries: the Gauntlet is directly above Versus (position 4, Versus 3) and Conquest directly above the Gauntlet (5, Campaign 6); without the pack it is AW2's own six."""
     e, g, d = boot(ctx)
     saves.to_select_mode(e)
     seen, pictures = [], {}
@@ -65,15 +67,16 @@ def gauntlet_mode_wheel_has_eight_entries_with_the_pack_and_six_without(ctx):
         ctx.eq(e.u8(dc.ACTIVE), 0, "no Gauntlet session")
         # nothing of the Gauntlet's is drawn: its small label's tiles and palette are untouched
         ctx.check(all(b == 0 for b in e.read(OBJ_VRAM + 32 * GAUNTLET_SMALL_TILES[0], 32 * GAUNTLET_SMALL_TILES[1])), "the Gauntlet's OBJ tiles stay empty")
+        # (Conquest's tiles, 0x3B0.., hold the title screen's badge left over, which the game never clears: the survey test says the wheel does not write them)
         return
-    ctx.eq(sorted(seen), list(range(8)), "eight wheel positions with the pack")
-    ctx.eq(e.u32(ga.ITEM_TABLE_POOL), ga.PACK_TABLE, "the wheel reads tangoAW2's eight-item table")
+    ctx.eq(sorted(seen), list(range(9)), "nine wheel positions with the pack")
+    ctx.eq(e.u32(ga.ITEM_TABLE_POOL), ga.PACK_TABLE, "the wheel reads tangoAW2's nine-item table")
     items = ga.wheel_items(e)
-    ctx.eq(items, [2, 4, 3, 1, 9, 0, 5, 8], "positions 0..7: Battle Maps, Online, Design Room, Versus, GAUNTLET, Campaign, War Room, Survival")
-    ctx.eq((items[saves.position(e, "versus")], items[saves.position(e, "gauntlet")], items[saves.position(e, "campaign")]), (1, 9, 0), "Gauntlet sits between Versus and Campaign")
-    # On the screen the wheel lists positions from the top down, highest first: the picture with Gauntlet in the centre has Campaign above it and Versus below it.
+    ctx.eq(items, [2, 4, 3, 1, 9, 10, 0, 5, 8], "positions 0..8: Battle Maps, Online, Design Room, Versus, GAUNTLET, CONQUEST, Campaign, War Room, Survival")
+    ctx.eq((items[saves.position(e, "versus")], items[saves.position(e, "gauntlet")], items[saves.position(e, "conquest")], items[saves.position(e, "campaign")]), (1, 9, 10, 0), "Gauntlet sits above Versus, Conquest above Gauntlet, Campaign above Conquest")
+    # On the screen the wheel lists positions from the top down, highest first: the picture with Conquest in the centre has Campaign above it and Gauntlet below it.
     ctx.log(f"pictures: {[png(p) for p in pictures.values()]}")
-    for name in ("gauntlet", "versus", "campaign", "survival"):
+    for name in ("gauntlet", "conquest", "versus", "campaign", "survival"):
         saves.wheel_to(e, name)
         e.wait(30)
         png(pic(ctx, e, f"wheel_at_{name}"))
@@ -85,7 +88,7 @@ def gauntlet_mode_wheel_with_the_pack_on_online_play_is_unchanged(ctx):
     reads a word of the new table only through crate::mode_menu::tick."""
     e, g, d = boot(ctx)
     saves.to_select_mode(e)
-    ctx.eq(e.u32(ga.ITEM_TABLE_POOL), ga.PACK_TABLE, "offline: the eight-entry wheel")
+    ctx.eq(e.u32(ga.ITEM_TABLE_POOL), ga.PACK_TABLE, "offline: the nine-entry wheel")
     ctx.eq(e.u8(ga.PICKED), 0, "nothing picked")
     e.close()
 
@@ -414,9 +417,7 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq([d.entry_name(i) for i in ids], ga.SELECTOR_TITLES, "the list is ordered by the number of enemy COs, fewest first (ties in the Gauntlet's own order)")
     ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (0, ga.SELECTOR_ORDER[0]), "the cursor is on the first row: the mission under it is that row's map")
     ctx.eq(d.step(), ga.SELECTOR, "the selector is the first screen")
-    # (the first row is Conquest Run, whose enemies are drawn for each run; the maps' own rows follow it: Dustwind Basin is the second row)
-    ids, row = d.go_to_row(1)
-    first = d.entry_cos(ids[1])
+    first = d.entry_cos(ids[0])
     ctx.eq(first[:4], [0xFF, 73, 12, 0], "Dustwind Basin's two enemies in order (the player picks; Koal, Lash): the faces the screen draws")
     maps, enemies, _ = ga.shown(e)
     ctx.eq((maps, [c for c, _ in enemies]), (len(ga.SELECTOR_ORDER), [73, 12]), "the mirror of the highlighted map: its enemies in order")
@@ -460,7 +461,7 @@ def gauntlet_mode_selector_is_the_war_rooms_own_screen_listing_the_gauntlet_maps
     ctx.eq(d.selector_ids()[1], 0, "UP goes back to the first")
     e.press("A", 6)
     d.wait_army()
-    ctx.eq(e.u8(ga.UI_MAP), ga.SELECTOR_ORDER[0], "A took the first row's map, Conquest Run (mission 12)")
+    ctx.eq(e.u8(ga.UI_MAP), ga.SELECTOR_ORDER[0], "A took the first row's map, Dustwind Basin (mission 2)")
     ctx.eq((d.session()["mission"], d.session()["map_id"]), (ga.SELECTOR_ORDER[0], 0xF0), "the map is the session's mission, the battle's map id the campaign engine's")
     ctx.eq(e.u8(ga.PLAY_ST + 1), 1, "the game mode is the campaign's again")
     ctx.eq(e.u8(ga.UI_STEP), ga.ARMY, "the selector's step is over: the army screen's is up")
@@ -482,12 +483,11 @@ def gauntlet_mode_select_flips_a_two_map_runs_picture_and_faces(ctx):
     d.wait_step(ga.SELECTOR)
     ids, row = d.selector_ids()
     names = [d.entry_name(i) for i in ids]
-    ctx.eq([n for n in names if "*" in n], ["Conquest Run *", "Iron Crown *"], "only the runs of several maps carry the mark")
+    ctx.eq([n for n in names if "*" in n], ["Iron Crown *"], "only the two-map run carries the mark")
     ctx.eq(names[-1], "Iron Crown *", "the mark follows the name")
-    # a one-map entry: SELECT does nothing (the first row is Conquest Run, a five-map run: the second row is Dustwind Basin)
+    # a one-map entry: SELECT does nothing
+    first = ids[0]
     ctx.eq(row, 0, "the cursor starts on the first row")
-    ids, row = d.go_to_row(1)
-    first = ids[1]
     entry, faces, shot0 = entry_bytes(d, first), d.face_tiles(), pic(ctx, e, "selector_one_map")
     d.flip()
     SAME = lambda a, b: region_diff(a, b, PICTURE_BOX) < 0.2          # (the same picture, animated)
@@ -1056,19 +1056,21 @@ def gauntlet_mode_a_bh_save_in_the_shared_slot_is_neither_offered_nor_dropped(ct
 
 @test()
 def gauntlet_mode_wheel_obj_resources_are_free(ctx):
-    """The wheel's two extra entries use OBJ palettes 13 (Survival) and 14 (Gauntlet) and OBJ tiles 0x320..0x33F and 0x2E0..0x2FF (crate::mode_menu::EXTRAS). Every position of the wheel is visited (the
+    """The wheel's three extra entries use OBJ palettes 13 (Survival), 14 (Gauntlet) and 15 (Conquest: the badge's bank, its colours 5..15) and OBJ tiles 0x320..0x33F, 0x2E0..0x2FF and 0x3B0..0x3CF (crate::mode_menu::EXTRAS). Every position of the wheel is visited (the
     pad frame by frame while it turns) and each item that has a box (Design Room, Versus, Campaign, War Room: not Battle Maps and Link, which start their mode) is opened. Without the pack, with markers
-    written to those tiles, no sprite ever draws with palette 13 or 14 or with those tiles and the markers are never overwritten (the game never writes them); with the pack, the only sprites that draw
-    with 13 and 14 are the entries' own (their small label tiles, or the centre tiles on the way to the centre), and the tiles hold exactly their art."""
+    written to those tiles, no sprite ever draws with palette 13 or 14 or with those tiles, bank 15 draws only the badge, and the markers are never overwritten (the game never writes them); with the pack, the only sprites that draw
+    with 13 and 14 are the entries' own (and bank 15's are the badge's and Conquest's) (their small label tiles, or the centre tiles on the way to the centre), and the tiles hold exactly their art."""
     e, g, d = boot(ctx)
     saves.to_select_mode(e)
     marker = bytes([0x77]) * 32
-    mine = set(range(GAUNTLET_SMALL_TILES[0], GAUNTLET_SMALL_TILES[0] + 32)) | set(range(SURVIVAL_SMALL_TILES[0], SURVIVAL_SMALL_TILES[0] + 32))
+    mine = set()
+    for first, nn in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES):
+        mine |= set(range(first, first + nn))
     if not ctx.ds:
-        for first, n in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES):
+        for first, n in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES):
             e.write(OBJ_VRAM + 32 * first, marker * n)
     uses = {}
-    n = 8 if ctx.ds else 6
+    n = 9 if ctx.ds else 6
     for _ in range(n + 1):
         for _ in range(12):
             e.wait(6)
@@ -1089,16 +1091,18 @@ def gauntlet_mode_wheel_obj_resources_are_free(ctx):
     ctx.log(f"OBJ palettes seen: { {p: (min(t), max(t)) for p, t in uses.items()} }")
     ctx.require(d.select_mode_up(), "still on Select Mode")
     if not ctx.ds:
-        ctx.check(13 not in uses and 14 not in uses, f"no sprite draws with palette 13 or 14 ({sorted(uses)})")
+        ctx.check(not ({13, 14} & set(uses)), f"no sprite draws with palette 13 or 14 ({sorted(uses)})")
+        ctx.check(set(uses.get(15, ())) <= set(BADGE_TILES), f"bank 15 is the badge's alone without the pack ({sorted(uses.get(15, ()))[:4]})")
         ctx.check(not any(t in mine for ts in uses.values() for t in ts), "no sprite draws with the entries' small label tiles")
-        for first, nn in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES):
+        for first, nn in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES):
             ctx.check(e.read(OBJ_VRAM + 32 * first, 32 * nn) == marker * nn, f"tiles {first:#x}..{first + nn - 1:#x}: the game never wrote them")
     else:
-        for pal, small in ((GAUNTLET_PALETTE, GAUNTLET_SMALL_TILES), (SURVIVAL_PALETTE, SURVIVAL_SMALL_TILES)):
+        for pal, small in ((GAUNTLET_PALETTE, GAUNTLET_SMALL_TILES), (SURVIVAL_PALETTE, SURVIVAL_SMALL_TILES), (CONQUEST_PALETTE, CONQUEST_SMALL_TILES)):
             tiles = uses.get(pal, set())
             ctx.check(tiles, f"palette {pal} is drawn with (the entry's sprites)")
-            ctx.check(all(small[0] <= t < small[0] + small[1] or 0x198 <= t < 0x1D8 for t in tiles), f"palette {pal} draws only the entry's own small label and centre tiles ({sorted(tiles)[:4]}..)")
-        for pal in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15):
+            badge = BADGE_TILES if pal == CONQUEST_PALETTE else ()
+            ctx.check(all(small[0] <= t < small[0] + small[1] or 0x198 <= t < 0x1D8 or t in badge for t in tiles), f"palette {pal} draws only the entry's own small label and centre tiles{' (and the badge)' if badge else ''} ({sorted(tiles)[:4]}..)")
+        for pal in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12):
             ctx.check(not (uses.get(pal, set()) & mine), f"palette {pal}'s sprites never draw the entries' small label tiles")
     e.close()
 

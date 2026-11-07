@@ -1,6 +1,6 @@
 # The Gauntlet mode: plumbing (`crate::gauntlet`, `crate::mode_menu`)
 
-Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, then one army screen (any CO the game has, no partner, and an army colour the map leaves free), then fight a map's enemy COs one after another in a single battle (the gauntlet engine,
+Select Mode's **GAUNTLET** (with the Dual Strike pack, offline; **CONQUEST**, directly above it, is a separate mode on the same engine: [conquest.md](conquest.md)): pick a map, then one army screen (any CO the game has, no partner, and an army colour the map leaves free), then fight a map's enemy COs one after another in a single battle (the gauntlet engine,
 [gauntlet.md](gauntlet.md): hidden lines that arrive when the lines before them fall), AW2's results, back on Select Mode. The maps are the content (`crate::gauntlet_mode`: `def()` returns a
 `CampaignDef` whose missions are the maps, `ROSTER` every CO, `SOURCE` 4; Cinder Sea is `gauntlet_01`, twelve maps today, room for 32: the table in gauntlet.md); this page is how the mode is wired. Code: `gauntlet.rs`, `gauntlet_ui.rs` (the map selector and the army screen), `mode_menu.rs`, `ds_campaign.rs`
 (`start_gauntlet`, `gauntlet_start_script`, `gauntlet_end_script`, `after_map`, `end_of_battle`), `campaign_model.rs` (the source), tests `tools/aw2test/tests/test_gauntlet_mode.py`.
@@ -16,6 +16,7 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
    no army screen). **New** goes to the selector and the army screen; **the save is dropped only when the new run really starts** (`gauntlet_ui::apply`, the army screen's A: from the game's directory at once, from
    Flash with the next write), so B, B back to Select Mode keeps it (the wheel is back with the box open on New). Slot 12 is shared with the BH Campaigns (saves are told apart by the source tag): a BH save is
    neither offered as Continue nor dropped by a new Gauntlet run; the Gauntlet's own Save replaces whatever halfway save the slot holds (one at a time, as the BH Campaigns replace each other's).
+   The shared slot holds one run: **only a Gauntlet map's save offers Continue here** (a Conquest save, the same source with the Conquest mission, is CONQUEST's: `-k conquest_box`).
    Tests: `-k gauntlet_mode_a_saved_run` (the box and its two lines), `gauntlet_mode_continue_in_the_box` (byte for byte), `gauntlet_mode_new_in_the_box` (the drop timing), `gauntlet_mode_a_bh_save` (shared slot);
    the audit scene `aw2dev gfx audit --scenes wheel_box` shows the box in AW2, DS + tilt and DS flat. The test driver: `Gauntlet.open(box="continue"|"new")`, `choose_in_box`.
 2. The game's own Campaign New handler (`0x0803BA4C`, trapped by `ds_campaign::start`) runs `start_gauntlet`: the record from Flash (kept), the session's flags and wins cleared (every run is a first
@@ -75,13 +76,22 @@ Select Mode's **GAUNTLET** (with the Dual Strike pack, offline): pick a map, the
    Retrying is picking GAUNTLET again.
 
 ## The wheel (`mode_menu.rs`)
-Eight entries with the pack: position 0 Battle Maps, 1 Online, 2 Design Room, 3 Versus, **4 Gauntlet** (directly above Versus on the screen, which lists positions from the top down, highest first),
-5 Campaign, 6 War Room, 7 Survival; item table `[5, 8, 2, 4, 3, 1, 9, 0]` read at `(position + 2) % 8`. `DivRem(x, 6)` sites become 8, the position wraps 7, the help and options tables are
-re-ordered by position (the harness resolves a position by name: `saves.position(e, "gauntlet")`, `saves.wheel_to`). An entry is an `Extra`: item id, its data in the ROM image
-(palette, highlight, big label, small label), its OBJ palette and the first OBJ tile of its small label. Free on this screen (an OBJ survey, `gauntlet_mode_wheel_obj_resources_are_free`: no sprite
-of AW2's own wheel or boxes draws palette 13 or 14 or tiles 0x2E0..0x33F, and the game never writes them): palette 13 and tiles 0x320.. (Survival), palette 14 and tiles 0x2E0.. (Gauntlet);
-the Campaign chooser uses 8 and 10..12 and tiles 0x340..0x387, the badge 0x3E0. ROM data `0x08E40000..0x08E41FFF` (`rom_layout`). Labels are composed at run time from the letters of the
-game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of the game's (Versus red and Battle Maps gold = orange); nothing is committed.
+Nine entries with the pack: position 0 Battle Maps, 1 Online, 2 Design Room, 3 Versus, **4 Gauntlet** (directly above Versus on the screen, which lists positions from the top down, highest first),
+**5 Conquest** (directly above Gauntlet: [conquest.md](conquest.md)), 6 Campaign, 7 War Room, 8 Survival; item table `[5, 8, 2, 4, 3, 1, 9, 10, 0]` read at `(position + 2) % 9`. `DivRem(x, 6)` sites become 9,
+the position wraps 8, the help and options tables are re-ordered by position (the harness resolves a position by name: `saves.position(e, "gauntlet")`, `saves.wheel_to`). An entry is an `Extra`:
+item id, its data in the ROM image (palette, highlight, big label, small label), its OBJ palette and the first OBJ tile of its small label. The centre label is drawn by the game from its own copy
+of the entry's palette in OBJ bank 8 (the highlight palette is a ramp over the colour indices that shimmers across the letters: **the label art keeps its colour indices**); the side labels use the
+entry's own bank and tiles. Free on this screen (an OBJ survey, `gauntlet_mode_wheel_obj_resources_are_free`: no sprite of AW2's own wheel or boxes draws palette 13 or 14 or tiles
+0x2E0..0x2FF and 0x320..0x33F, and the game never writes them): palette 13 and tiles 0x320.. (Survival), palette 14 and tiles 0x2E0.. (Gauntlet). Conquest has **no bank of its own**: every other
+OBJ palette is the game's (0..12 draw on the wheel and its boxes) or the badge's (15), so it shares the badge's bank 15: a label's art uses colours 1 (the white the badge's WHITE also is), 2, 3, 5..12 and
+15, the badge 4, 13 and 14 (`branding::COLOURS`, written entry by entry), and `mode_menu::tick` writes the Conquest palette without those three (`Extra::others`); its small label is in tiles 0x3B0..0x3CF
+(free: the Campaign chooser ends at 0x3AB, the badge starts at 0x3E0; the title screen's badge leaves its tiles there, which the wheel overwrites). Item 10's side tile would be the game's
+0x318.. on palette 12: `remap` points those sprites at Conquest's tiles and bank. The Campaign chooser uses 8 and 10..12 and tiles 0x340..0x3AB, the badge 0x3E0. ROM data `0x08E40000..0x08E42FFF` (`rom_layout`).
+Labels are composed at run time from the letters of the game's own labels (BIG_LETTERS / small cells), the palette is a blend of two of the game's (Versus red and Battle Maps gold = orange; Campaign blue
+and Versus red = Conquest's purple). No label of the game has a **Q**: CONQUEST's is the O of DESIGN ROOM with a diagonal slit cut from the hole's foot to the corner (big and small); nothing is committed.
+**Adding an entry** needs: an item id, a position (a wrap for the new count: `HALVES`, the `DivRem` sites follow `N`), an OBJ palette (a survey: none is free any more, so share a bank by colour index
+as Conquest does) and 32 small-label tiles, 0xCC0 bytes of ROM data (`rom_layout`), a help line and, with a box, two lines (text slots of Survival's block, 41..45 are taken), and the harness's
+`PACK_WHEEL` / `wheel_items`.
 
 ## Records and saves
 - **The record: the top five of each map, as the War Room keeps them.** AW2's War Room keeps five records per map, each one word (`CO | days << 8 | score << 20`: CO, days, points; no rank letter is stored or
@@ -169,7 +179,11 @@ map with the pack offers (airports and ports never had the gate; the computer's 
 
 The same rule hid the Neotank in the Silver Nova Campaign (its player is Orange Star, whose story flag is never set): the base's menu had no Neotank and the CO page's unit chart (AW2's own, `sub_08085708` calls `sub_080261E8` at `0x0808571C`) took the list with a blank slot for it. `neotank_open` now answers yes in a Gauntlet session and in every custom campaign (`ds_campaign::active` and not the Dual Strike Campaign's source); AW2's own campaign and the DS Campaign are untouched. It is the only unit AW2 gates by the campaign. The BH and BH2 Campaigns play Black Hole, whose colour the function never gated, so they were not affected. Test `-k campaign_units` (SN M1 and M2, BH M1, BH2 M1: the base offers every unit, the chart's two pages have no blank slot). `SIM_VERSION` 51.
 
-**Conquest Run** is the selector's first row, a mode within the mode: five AW2 Versus maps in a row with a reward between them ([conquest.md](conquest.md)). It is the last mission of `def()` (`gauntlet_50`) and `gauntlet_mode::order` pins it to the top whatever its count of enemies; its enemy COs are drawn per run, so the selector's faces and the army screen's CPU card show none.
+**Conquest Run** is no longer a row of this selector: it is the **CONQUEST** wheel entry, a game mode of its own on this engine ([conquest.md](conquest.md)). It is still the last mission of `def()`
+(`gauntlet_50`, mission index 12, record id 50 in this table) and `gauntlet_mode::order` still ranks it first (so the map-table ids of the twelve maps are as they were), but the selector lists
+only the entries `gauntlet_ui::listed` says for the mode flag (`conquest::mode`: set by CONQUEST's pick, cleared by GAUNTLET's): this selector lists the twelve maps, CONQUEST's lists the one row. A
+run saved halfway in the shared slot is told apart by its mission (`conquest::is_mission`): `gauntlet::saved` is a Gauntlet map's save only, `conquest::run_saved` Conquest's, and a new run drops
+only its own (`gauntlet::drop_own_save`).
 
 ## A run of several maps (Iron Crown)
 A mission with stages (`MissionDef::stages`) is several maps in one run. The selector's list shows such a mission under `MissionDef::list_title` ("Iron Crown *": the star, which the AW2 font has, marks a map with a hidden second one; a second text id, `Built::list_names`,

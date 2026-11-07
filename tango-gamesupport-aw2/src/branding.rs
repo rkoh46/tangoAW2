@@ -74,18 +74,21 @@ fn glyph(c: char) -> [&'static str; 7] {
     }
 }
 
-/// Palette indices: 0 transparent, then navy, white, yellow, shadow.
-const NAVY: u8 = 1;
-const WHITE: u8 = 2;
-const YELLOW: u8 = 3;
-const SHADOW: u8 = 4;
-const COLOURS: [u16; 5] = [
-    0,
-    bgr(24, 40, 104),
-    bgr(248, 248, 248),
-    bgr(248, 208, 48),
-    bgr(8, 16, 48),
+/// Palette indices: 0 transparent, then white, navy, yellow, shadow. Bank 15 is shared with Select Mode's CONQUEST label ([`crate::mode_menu`]), whose art uses indices 1 (the same white),
+/// 2, 3, 5..=12 and 15: the badge's colours are the free indices 4, 13 and 14 and the white they share, and only those entries are written.
+const WHITE: u8 = 1;
+const NAVY: u8 = 4;
+const YELLOW: u8 = 13;
+const SHADOW: u8 = 14;
+/// The badge's (index, colour) entries of its palette bank.
+pub(crate) const COLOURS: [(u8, u16); 4] = [
+    (WHITE, bgr(248, 248, 248)),
+    (NAVY, bgr(24, 40, 104)),
+    (YELLOW, bgr(248, 208, 48)),
+    (SHADOW, bgr(8, 16, 48)),
 ];
+/// The OBJ palette bank the badge draws with.
+pub(crate) const BANK: u32 = PALETTE;
 
 const fn bgr(r: u16, g: u16, b: u16) -> u16 {
     (r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10)
@@ -259,12 +262,14 @@ pub fn tick(core: &mut Core) {
             core.raw_write_range(at, -1, &tiles);
         }
     }
-    let mut pal = [0u8; 32];
-    for (i, c) in COLOURS.iter().enumerate() {
-        pal[i * 2..i * 2 + 2].copy_from_slice(&c.to_le_bytes());
-    }
+    // (only the badge's own colours: the rest of the bank is the Select Mode wheel's CONQUEST label's, crate::mode_menu)
     for base in [PAL_BUFFER, PAL_RAM] {
-        core.raw_write_range(base + 0x200 + PALETTE * 32, -1, &pal);
+        for &(i, c) in &COLOURS {
+            let at = base + 0x200 + PALETTE * 32 + 2 * i as u32;
+            if core.raw_read_16(at, -1) != c {
+                core.raw_write_16(at, -1, c);
+            }
+        }
     }
 }
 

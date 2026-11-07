@@ -461,6 +461,15 @@ pub fn drop_mid_of(core: &mut Core, source: usize) {
     }
 }
 
+/// [`drop_mid_of`] for the saves of `source` whose mission `mine` accepts (the Gauntlet's source holds Conquest Run's missions too: a run of one never drops the other's save).
+pub fn drop_mid_where(core: &mut Core, source: usize, mine: impl Fn(u8) -> bool) {
+    let slot = crate::campaign_model::SOURCES[source].mid_slot;
+    match saved_raw(core, slot) {
+        Some(b) if b & 0xE0 != source_tag(source) || !mine(b & 0x1F) => {}
+        _ => drop_mid(core, slot),
+    }
+}
+
 /// DS CAMPAIGN's Continue over a mission saved halfway (the session set
 /// up): AW2's own resume of [`DS_SLOT`], tail-called from the trapped
 /// Continue handler's first instruction (it returns to its caller).

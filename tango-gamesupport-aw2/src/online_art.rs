@@ -540,8 +540,8 @@ impl LinkFont {
 // --- The title font ---------------------------------------------------------------------------
 
 pub const TITLE_FONT: u32 = 0x081C_C038;
-/// The glyphs' order in the font.
-pub const TITLE_ORDER: &str = "ACDEGHIKLMNOPRSTUWY*B";
+/// The glyphs' order in the font; the last, Q, is not the game's (it has none): [`TitleFont::load`] makes it from the O.
+pub const TITLE_ORDER: &str = "ACDEGHIKLMNOPRSTUWY*BQ";
 
 /// The title font: each glyph's 8 tiles (16x32, 2 wide) and its last column (the next glyph starts there: the
 /// two share their outline's column).
@@ -553,12 +553,17 @@ pub struct TitleFont {
 
 impl TitleFont {
     pub fn load(core: &Core) -> Option<TitleFont> {
-        let tiles = rom_lz(core, TITLE_FONT, 0x1800)?;
+        let mut tiles = rom_lz(core, TITLE_FONT, 0x1800)?;
         let n = TITLE_ORDER.len();
-        if tiles.len() < n * 256 {
+        if tiles.len() < (n - 1) * 256 {
             return None;
         }
-        let px: Vec<Px> = (0..n).map(|g| sprites_to_px(&tiles[g * 256..], 16, 4, 2)).collect();
+        tiles.truncate((n - 1) * 256);
+        let mut px: Vec<Px> = (0..n - 1).map(|g| sprites_to_px(&tiles[g * 256..], 16, 4, 2)).collect();
+        // (the Q: the O with a tail)
+        let q = Self::q_from(&px[TITLE_ORDER.find('O')?]);
+        tiles.extend(px_to_sprites(&q, 2));
+        px.push(q);
         let right = px
             .iter()
             .map(|p| {
@@ -573,6 +578,25 @@ impl TitleFont {
 
     pub fn index(c: char) -> Option<usize> {
         TITLE_ORDER.find(c)
+    }
+
+    /// The title font's Q (the game has none, CONQUEST needs one): the O with a diagonal tail, a fill-coloured stroke in the outline's colour running from inside the O's foot out past its
+    /// bottom right corner (the glyph has four empty rows under the O, and its last columns free).
+    fn q_from(o: &Px) -> Px {
+        let (edge, fill) = (o.get(0, 12), o.get(3, 12));
+        let mut q = o.clone();
+        for k in 0..=10usize {
+            let (cx, cy) = (6 + k * 4 / 10, 20 + k);
+            for (half, colour) in [(2i32, edge), (1, fill)] {
+                for dx in -half..=half {
+                    let x = cx as i32 + dx;
+                    if (0..16).contains(&x) && cy < 32 {
+                        q.set(x as usize, cy, colour);
+                    }
+                }
+            }
+        }
+        q
     }
 
     /// A glyph's 8 tiles.
@@ -608,6 +632,24 @@ impl TitleFont {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_title_fonts_q_is_the_o_with_a_tail_inside_the_glyph() {
+        // (an O as the game draws it: outline 14, fill 1, a hole of outline)
+        let mut o = Px::new(16, 32, 0);
+        for y in 4..28 {
+            for x in 0..11 {
+                o.set(x, y, if (2..9).contains(&x) && (6..26).contains(&y) { 1 } else { 14 });
+            }
+        }
+        let q = TitleFont::q_from(&o);
+        assert_eq!((q.w, q.h), (16, 32));
+        assert_ne!(q.v, o.v, "the tail is drawn");
+        // it comes out below the O's last row, inside the 16 columns, and the O's own top is as it was
+        assert!((28..32).any(|y| (0..16).any(|x| q.get(x, y) != 0)));
+        assert!((0..16).all(|x| (0..8).all(|y| q.get(x, y) == o.get(x, y))));
+        assert!(TITLE_ORDER.ends_with('Q') && TitleFont::index('Q') == Some(TITLE_ORDER.len() - 1));
+    }
 
     #[test]
     fn literal_lz_round_trips() {

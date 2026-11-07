@@ -160,16 +160,16 @@ def aw2_campaign_unchanged(ctx):
 
 @test(modes=("ds",))
 def ds_campaign_with_survival(ctx):
-    """One boot: the wheel's eight entries (Survival's and Gauntlet's included), Survival's
+    """One boot: the wheel's nine entries (Survival's, Gauntlet's and Conquest's included), Survival's
     SELECT MAP and back, then Campaign's sub-menu and the DS Campaign."""
     e, g, d = boot(ctx)
     sv.to_select_mode(e)
     seen = set()
-    for _ in range(8):
+    for _ in range(9):
         seen.add(e.u8(sv.SELECT_MODE_CURSOR))
         e.press("UP", 8)
         e.wait(60)
-    ctx.eq(sorted(seen), list(range(8)), "eight wheel positions")
+    ctx.eq(sorted(seen), list(range(9)), "nine wheel positions")
     ctx.require(sv.wheel_to(e, sv.SURVIVAL_POSITION), "Survival reached")
     e.wait(30)
     ctx.eq(e.u8(dc.MENU_LEVEL), 0, "no Campaign sub-menu on Survival")

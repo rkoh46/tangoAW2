@@ -1,9 +1,10 @@
-//! Conquest Run (docs/dev/conquest.md): a roguelike run of five maps in a row, offline, the first row of the Gauntlet's map selector. The maps are AW2's own two-player Versus maps read
+//! Conquest Run (docs/dev/conquest.md): a roguelike run of five maps in a row, offline, Select Mode's CONQUEST entry ([`crate::mode_menu`]). The maps are AW2's own two-player Versus maps read
 //! from the player's ROM ([`crate::custom_campaign::MapSrc::Aw2`]), small to large; the survivors and the funds carry over at every map switch (the stage engine, [`crate::stage`]), a reward
-//! is picked between maps ([`crate::conquest_reward`]), one loss ends the run and the whole run's score goes to the Gauntlet's records under the key [`KEY`].
+//! is picked between maps ([`crate::conquest_reward`]), one loss ends the run and the whole run's score goes to the Gauntlet's record table under the key [`KEY`].
 //!
-//! The run is a mission of the Gauntlet's campaign ([`crate::gauntlet_mode::def`]): stage 0 is the mission's own map and each later map one of its [`StageDef`]s, so records, Save / Continue,
-//! EXP and the results screen come from the Gauntlet's plumbing. A map is won when the player takes the enemy HQ or destroys every enemy unit (the enemy HQ is held, so a capture defeats
+//! It is its own game mode on the Gauntlet's engine: a mission of the Gauntlet's campaign ([`crate::gauntlet_mode::def`]; stage 0 is the mission's own map and each later map one of its
+//! [`StageDef`]s), so records, Save / Continue, EXP and the results screen come from the Gauntlet's plumbing, but the wheel's CONQUEST entry picks it ([`picked`] sets the mode flag [`mode`],
+//! which makes the map selector list this one row and the Gauntlet's list never has it) and a run saved halfway is told from the Gauntlet's by its mission ([`is_mission`], [`run_saved`]). A map is won when the player takes the enemy HQ or destroys every enemy unit (the enemy HQ is held, so a capture defeats
 //! nobody and the trigger moves the battle on; the engine's own defeat of an army with no units is held off on every map but the last: [`keeps_alive`]); the last map's win wins the run.
 
 use mgba::core::Core;
@@ -223,12 +224,41 @@ fn deploy_cells(hq: (u8, u8)) -> Vec<(u8, u8)> {
     v
 }
 
+/// 1 from the wheel's CONQUEST pick until the next pick of GAUNTLET (which clears it): the map selector lists this run's row alone instead of the Gauntlet's maps, and the way back from the
+/// run's end puts the wheel on CONQUEST. The one byte of [`STATE`] past the run's draw (+0x16).
+const MODE: u32 = STATE + 0x16;
+
+/// The wheel's CONQUEST pick (a new run, or `cont`: Continue over the run saved halfway): the Gauntlet's request ([`crate::gauntlet::picked`]) and the mode flag.
+pub fn picked(core: &mut Core, cont: bool) {
+    crate::gauntlet::picked(core, cont);
+    set_mode(core, true);
+}
+
+pub(crate) fn set_mode(core: &mut Core, on: bool) {
+    if core.raw_read_8(MODE, -1) != on as u8 {
+        core.raw_write_8(MODE, -1, on as u8);
+    }
+}
+
+/// The last pick on Select Mode was CONQUEST (not GAUNTLET).
+pub fn mode(core: &Core) -> bool {
+    core.raw_read_8(MODE, -1) == 1
+}
+
+/// Whether the Gauntlet-campaign mission index `m` is the Conquest Run.
+pub fn is_mission(m: u8) -> bool {
+    crate::gauntlet_mode::entries().get(m as usize).is_some_and(|e| e.key == KEY)
+}
+
+/// A Conquest Run is saved halfway (the shared slot's save tagged with the Gauntlet's source and this mission).
+pub fn run_saved(core: &Core) -> bool {
+    crate::suspend::saved_mission_of(core, crate::gauntlet::SOURCE).is_some_and(is_mission)
+}
+
 /// Whether the Gauntlet's session is a Conquest Run.
 pub fn session(core: &Core) -> bool {
     crate::gauntlet::session(core)
-        && crate::gauntlet_mode::entries()
-            .get(crate::ds_campaign::mission(core) as usize)
-            .is_some_and(|e| e.key == KEY)
+        && is_mission(crate::ds_campaign::mission(core))
 }
 
 /// The engine's own end of a map (the enemy army with no units: `DefeatArmy`, and the end check's alive marks) is held off while the run goes on: a map is won by [`won`]'s trigger, which moves the
@@ -572,6 +602,23 @@ mod tests {
         // and the session is the Gauntlet's, which Select Mode starts only offline
         let src = include_str!("conquest.rs");
         assert!(src.contains("crate::gauntlet::session(core) &&"));
+    }
+
+    /// The mission tells a Conquest save from a Gauntlet map's in the shared slot (the saved byte's low five bits are the mission, the top three the source): Conquest's is the one mission with
+    /// its key, below 32, and the mode flag is a byte of the state block.
+    #[test]
+    fn the_run_is_told_from_the_gauntlets_maps_by_its_mission_and_its_mode_flag_is_in_the_block() {
+        let entries = crate::gauntlet_mode::entries();
+        let ours: Vec<usize> = (0..entries.len()).filter(|&m| is_mission(m as u8)).collect();
+        assert_eq!(ours, vec![entries.len() - 1], "one mission, the last of the campaign");
+        assert!(entries.len() <= 32, "the saved byte keeps the mission in five bits");
+        assert!(!is_mission(entries.len() as u8) && !is_mission(0));
+        assert!(MODE >= STATE && MODE < STATE + STATE_LEN);
+        assert!(![PAGE, CURSOR, TAKEN, WON, OFFER, OFFER + 1, OFFER + 2, DRAWN].contains(&MODE));
+        assert!(MODE < ENEMIES || MODE > ENEMIES + STAGES as u32, "not one of the draw's bytes");
+        assert!(MODE != DRAWN);
+        // reward_reset clears the first eight bytes of the block only: the flag survives a map switch
+        assert!(MODE - STATE >= 8);
     }
 
     #[test]

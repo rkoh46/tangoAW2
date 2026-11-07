@@ -19,7 +19,7 @@ TABLE_LEN = SLOTS * SLOT_LEN
 RECORD_LEN = 0x20 + TABLE_LEN              # the progress record (version byte at +5: 2), then the table
 WHEEL_LAST = 0x03005934           # the wheel's remembered position
 ITEM_TABLE_POOL = 0x080814F0       # a word of the wheel's code that points at its item table
-GAME_TABLE, PACK_TABLE = 0x0861696C, 0x08E40000   # AW2's six-item table; tangoAW2's eight-item one (crate::mode_menu)
+GAME_TABLE, PACK_TABLE = 0x0861696C, 0x08E40000   # AW2's six-item table; tangoAW2's nine-item one (crate::mode_menu)
 
 # crate::gauntlet_ui::STATE: the map selector (step 1) and the army screen (step 2); the army screen's CO cursor (an index into the roster) and the CO it is on (an AW2 CO id)
 UI = 0x0203D080
@@ -55,26 +55,36 @@ def shown(e):
     return b[0], [(b[2 + 2 * k], b[3 + 2 * k]) for k in range(b[1])], list(b[0x0F:0x0F + b[0x0E]])
 
 
-# The selector lists the maps by their number of enemy COs, fewest first (crate::gauntlet_mode::order; ties in the definition's order): the missions by row and their names. A map's identity is its
-# mission (the record, `Gauntlet.open(map=<mission>)`), never its row.
-SELECTOR_ORDER = [12, 2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
+# The Gauntlet's selector lists the maps by their number of enemy COs, fewest first (crate::gauntlet_mode::order; ties in the definition's order): the missions by row and their names. A map's identity
+# is its mission (the record, `Gauntlet.open(map=<mission>)`), never its row. Conquest Run is a mission of the same campaign (the last, CONQUEST_MISSION) that the Gauntlet's selector does not list:
+# the CONQUEST wheel entry's selector lists it alone (a one-row list).
+SELECTOR_ORDER = [2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
+CONQUEST_MISSION = 12
 # (the names the list shows: a two-map run is listed under `MissionDef::list_title`)
-SELECTOR_TITLES = ["Conquest Run *", "Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown *"]
+SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown *"]
+CONQUEST_TITLE = "Conquest Run *"
 
 
 def list_ids(span=0):
-    """The map-table ids the selector lists, in its order: the last n of SLOT_IDS (with `span` more than n, the ids laid out for that many maps, as the app does under the test aid TANGOAW2_GAUNTLET_SLOTS=<span>:
-    it borrows Survival's entries)."""
-    n = len(SELECTOR_ORDER)
+    """The map-table ids the Gauntlet's selector lists, in its order: the ids are laid out for every mission of the campaign (Conquest Run's is the first, `conquest_id`), the Gauntlet's maps take the
+    ones after it (with `span` more than that, the ids laid out for that many maps, as the app does under the test aid TANGOAW2_GAUNTLET_SLOTS=<span>: it borrows Survival's entries)."""
+    n = len(SELECTOR_ORDER) + 1
     span = max(n, min(MAX_MAPS, span))
-    return SLOT_IDS[len(SLOT_IDS) - span:][:n]
+    return SLOT_IDS[len(SLOT_IDS) - span:][1:n]
+
+
+def conquest_id(span=0):
+    """The map-table id Conquest Run's one-row selector lists (the first of the ids laid out for the campaign's missions: Survival's last entry, 0xEF, borrowed while the selector is up)."""
+    n = len(SELECTOR_ORDER) + 1
+    span = max(n, min(MAX_MAPS, span))
+    return SLOT_IDS[len(SLOT_IDS) - span]
 
 def row_of(mission):
     """The selector's row (and the record row the game reads for it) of the map of this mission."""
     return SELECTOR_ORDER.index(mission)
 
 
-SELECTOR_ENEMIES = [5, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5]    # the number of enemy COs of each row (fewest first, but Conquest Run's five are the first row)
+SELECTOR_ENEMIES = [2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5]    # the number of enemy COs of each row (fewest first)
 
 # crate::gauntlet_mode (Cinder Sea): the HQs and the enemy COs in order
 CINDER = {"player": (3, 18), "drake": (27, 18), "sensei": (3, 3), "hawke": (29, 3)}
@@ -96,6 +106,7 @@ EVERY_CO = 35                      # crate::gauntlet_mode::ROSTER
 class Gauntlet(BhCampaign):
     """The BH Campaign's driver (CO screen, Setup, dialogue helpers) on the Gauntlet's entry."""
     picks = {0: 1}
+    ENTRY = "gauntlet"          # the wheel entry the driver opens (Conquest: "conquest")
 
     def total_picks(self):
         return 1
@@ -176,7 +187,7 @@ class Gauntlet(BhCampaign):
         e = self.e
         if from_title:
             saves.to_select_mode(e)
-        saves.wheel_to(e, "gauntlet")
+        saves.wheel_to(e, self.ENTRY)
         e.press("A", 8)
         if box:
             self.choose_in_box(box)
@@ -462,9 +473,9 @@ def with_record(save_path, out_path, region):
 
 
 def wheel_items(e):
-    """The wheel's item ids by position: the pack's eight-entry table or AW2's six (read from the ROM image the console runs)."""
+    """The wheel's item ids by position: the pack's nine-entry table or AW2's six (read from the ROM image the console runs)."""
     if e.ds:
-        t = list(e.read(PACK_TABLE, 8))
-        return [t[(p + 2) % 8] for p in range(8)]
+        t = list(e.read(PACK_TABLE, 9))
+        return [t[(p + 2) % 9] for p in range(9)]
     t = list(e.read(GAME_TABLE, 6))
     return [t[(p + 2) % 6] for p in range(6)]
