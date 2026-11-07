@@ -6,50 +6,37 @@
 @SONG ending1
 NARRATION: Dawn in the Last Citadel's / Great Hall. Four banners hang as one.
 ARIA: The Accord's seal. Orange Star's / gold, with all four marks on it.
-ARIA: It's hung in this hall since the / fence went up. It's heavier than it looks.
-NELL: We kept it for the Accord. The / Accord is gone. It was always paper.
-ARIA: Take it. Not for Sturm. He's / gone. Take it for the work.
+NELL: The Accord is gone. It was always / paper.
+ARIA: Take the seal. Not for Sturm. / Take it for the work.
 ASUKA: I accept it as a trustee. Not / as a prize.
 ARIA: Don't be modest. I'd rather you / were smug. Then I could hate you.
 ASUKA: Aria, I am smug. In writing. / Signed.
 ARIA: ...Hah. That's almost a joke.
-NELL(h): Aria laughed! Oh, my / goodness. Somebody write it down.
-MAX: Ha! She smiled! I saw it! / Everybody saw it!
-SAMI: Roger. We saw it. Quiet, Max.
+NELL(h): Aria laughed! Somebody write / it down.
 NARRATION: Marshal Hawke steps forward / and kneels. Not to Asuka. To the ranks.
 HAWKE: Black Hole's Marshal kneels to / the army. Not to a person.
-HAWKE: A person ends. The army does / not.
+HAWKE: A person ends. The army does / not. Chapter Two is called Succession.
 ASUKA: Marshal. Stand up.
 HAWKE: When the army says so, / Commander. Not before.
-SOLDIER: Stand, Marshal! Stand!
-HAWKE: ...Chapter Two is finished. It / is called Succession.
-KANBEI: Kanbei has one more matter. A / table is set in his hall.
-KANBEI: The seventh chair has a scarf / on it. It is warm.
+KANBEI: Kanbei has one more matter. A / table is set. The seventh chair is warm.
 ASUKA: I will come, Emperor. One day. / To eat. When the work is done.
 KANBEI: Kanbei will keep the soup warm. / However long it takes.
 SENSEI: Old men forget, you know. / Mostly. Sometimes the right things.
 == epilogue_toasts
 @SONG ending1
-JAKE: Yo, I never saw so many sad / people smile at once.
-RACHEL: By the book, that's allowed.
 OLAF: Blue Moon salutes! With snow! / Olaf brought a great deal of snow!
 SASHA: Olaf. It is a ceremony, not a / weather event.
-COLIN: I-I think the snow's lovely, / Sis.
-SASHA: ...It is rather lovely.
 VON BOLT: Kehh-heh! Every coin / accounted for! In the black!
 KOAL: One road now. No borders. / Mind the lane.
 KINDLE: To me, darlings. And to the / audience, I suppose. Applause?
 JUGGER: WAR: OVER. PURPOSE: PENDING. / HUMOUR: FOUND. QUERY: HOW.
 LASH: He laughed! Jugger laughed! / Heehee! Write it down! I taught him!
 FLAK: Flak full. Flak sleepy. Good / war. Boss good.
-ADDER: Photographed from every angle. / Every one of them mine. Again.
 CLONE ANDY: Clone Andy. That's me. / ...And I can fix anything.
-ANDY(h): He can, too. I watched.
 CRUMB CO: Ma'am! Quartermaster's log! / I keep Gerald! And the key!
 ASUKA: Commander Hobb. The key is / yours. So is the decision.
 CRUMB CO: Closed, ma'am. Not locked. / In case Sir comes home.
 MORTAR: Crumb. Eat your soup.
-CRUMB CO: Yes, Sergeant! Two bowls!
 NARRATION: In the depot, a key hums. At / the Obelisk, a door hums with it.
 NARRATION: Closed, not locked. Beyond it, / a storm listens. And waits.
 
@@ -59,22 +46,14 @@ NARRATION: Closed, not locked. Beyond it, / a storm listens. And waits.
 @SONG co:caulder
 NARRATION: Black Hole's home island. / Desert, wind, and strange sails.
 CAULDER: Doctor Caulder, of the Silver / Nova. We followed the black light.
-CAULDER: It carried us the last leagues. An / unplanned variable. Charming.
 ASUKA: Caulder. This is Black Hole's / island. You are trespassing.
-TABITHA: Stupid weak people! Hiding on / a rock, like crabs!
-TABITHA: The stencil on the crates leads / here. It reads HOBB. Explain.
+TABITHA: Stupid weak people! The crates' / stencil leads here. It reads HOBB.
 CRUMB CO: That's me, sir! I'm the Hobb! / Hello! Gerald says hello!
 LILI: Tee hee! The stamp on your crates / is on our freight bills! Look!
-LILI: Three years of grain! Paid for by / nobody! Signed by no creditor!
-LILI: Mr. Bear counted the nails, too. / They match. Nails do not tell fibs.
-CAULDER: The vanguard is restless, girls. / It wishes to fight. Let it.
-TABITHA: Father. We are guests. For now. / Keep your toys on their leash.
-CAULDER: Guests with a vanguard. A very / polite kind of threat. Do go on.
-ASUKA: You came a long way.
-TABITHA: Eleven days of sea in a single / night. Lili counted it. Badly.
-LILI: Twice! Hee hee. The answer was / still wrong. Mr. Bear got dizzy.
+LILI: Three years of grain, paid for by / nobody! Mr. Bear counted the nails.
+TABITHA: Eleven days of sea in a single / night. We cannot go back. Fix it.
 ASUKA: That was the door. It is closed / now.
-TABITHA: We noticed. We cannot go back / the way we came. Fix it. Now.
+CAULDER: My vanguard is restless, girls. / It wishes to test their walls.
 @IF ASUKA
 ASUKA: A corps at my door with the / same stencil. I do enjoy a coincidence.
 @IF CRUMB CO
@@ -125,34 +104,26 @@ WICK: Sergeant. One of ours fired on / a landing boat. By accident.
 MORTAR: Wick. Tell me it was not you.
 WICK: ...Is it all right if it was?
 CAULDER: Fascinating. They fired. Then / the vanguard may advance, girls.
-TABITHA: Father, wait. ...Too late. / He has already sent the order.
 ASUKA: Then we fight. Hold the depot, / whoever they are.
 
 == m32_day3
 @SONG co:caulder
-CAULDER: The Second Corps' vanguard. / Riders, banners, and haste.
-CAULDER: I told them to wait. They / preferred to run the test early.
-LILI: Daddy! That is a very expensive / charge! Whee!
+CAULDER: The Second Corps' vanguard. I / told them to wait. They did not.
 TABITHA: The depot has walls. Riders do / not climb. Idiots.
-CAULDER: Then they will learn to, or / fail. Either result is of use.
 LILI: Ooh! The first rider will ride / into the moat! Watch! Watch!
-TABITHA: I know. Let him drown. Slowly. / I want to watch.
 LEGIONARY: Ow. The moat is WET.
 ASUKA: Sergeant, note it. The moat has / claimed a corps soldier.
 
 == m32_day5
 @SONG co:lili
 LILI: Toys are up, Daddy! Big rams at / forty paces! Boom, boom!
-LILI: The depot walls are old! Good / stone, two metres, and no mortar!
-LILI: Who builds without mortar? Silly. / Silly, silly man.
+LILI: The depot walls are old! Two metres / of stone, and no mortar! Silly man.
 ASUKA: A quartermaster who wanted a / basement, not a wall.
 LILI: I like him. I am sorry about / his wall. Mr. Bear is sorry too.
 TABITHA: Fire. The walls only. Not the / depot. I want what is inside.
-LILI: Okay! The walls are pretty. / They will fall so nicely!
-CRUMB CO: Miss Lili? Would you like a / biscuit while you work?
-LILI: ...Me? Thank you. Nobody gives me / biscuits. Mr. Bear says thank you.
-CRUMB CO: It's from my grandpa. It's very, / very old!
-LILI: ...It is a very good biscuit. Is / it okay if I like it, Sister?
+CRUMB CO: Miss Lili? Would you like a / biscuit? It's very, very old!
+LILI: ...Nobody gives me biscuits. It is / a very good biscuit.
+LILI: Is it okay if I like it, Sister?
 
 == m32_day7
 @SONG co:lili
@@ -160,48 +131,31 @@ LILI: The fleet is here! Every ship, on / time! Good toys! Good, good toys!
 LILI: Your shoreline is under our / guns. Daddy says we may talk.
 VON BOLT: Terms! Kehh-heh! A lady who / speaks my language!
 LILI: Colonel! Your fence rates on the / Cinder Coast were eleven percent!
-LILI: That would be naughty in Novaria.
-VON BOLT: Novaria? Where is Novaria? Does / it have a market?
+VON BOLT: Eleven? Is that high? Does / Novaria have a market?
 LILI: It has a Directorate, and a ledger.
 VON BOLT: A ledger! Show me! Kehh... / show me, show me!
 LILI: ...Hee hee. You are the first man / to ask me that with joy. I like you.
-VON BOLT: I am old. Joy is cheap. I / recommend it.
-CRUMB CO: Ma'am, she wants to talk.
-ASUKA: She wants to be paid. It is a / fine instinct.
+ASUKA: She wants to talk. And to be / paid. It is a fine instinct.
 
 == m32_post
 @SONG co:tabitha
 TABITHA: The depot holds. The shore / holds. ...Annoying. Insulting.
 ASUKA: Tabitha. Enough. Both armies / stand. Neither wins.
-TABITHA: I know. Father has lost / three horses. Fool horses.
+TABITHA: Father has lost three horses. / Fool horses.
 CAULDER: Two, Tabitha. The third / merely declined. A useful result.
 FLAK: Flak sorry. Flak ate horse's / oats. Oats good.
-CAULDER: You ate the oats. ...Were they / good oats? Describe the taste.
-FLAK: Best oats. Flak thanks horse.
-CAULDER: Fascinating... I find him / instructive.
-LILI: Your Doctor built a catapult out of / a typewriter! Hee hee!
-LASH: It had good bones! Heehee! It / threw a very small anvil!
-LILI: Eleven paces! Mr. Bear is / jealous. Let's go, Mr. Bear!
-LILI: Marshal! Your ledgers are very / neat! Can I read them? Please?
-HAWKE: Child. Mine belong to the / army, yours to the Directorate?
-LILI: ...Okay. Hee hee.
-TABITHA: Asuka. I will ask once. Who / is Hobb? Answer, worm.
+CAULDER: Fascinating. Describe the taste.
+TABITHA: Asuka. Who is Hobb? Answer, / worm.
 CRUMB CO: Me, sir! And my grandpa! He / built a door. Then they erased him.
 CRUMB CO: He left a reserve in the depot. / I think he fed you, too.
-LILI: Three grey harvests! Grain from / a ship with no owner!
-LILI: Someone fed us on purpose, and / never sent a bill! Who does that?
-LILI: He was a quartermaster. Not / a general. A nice one.
-TABITHA: A weak man who fed an army / he never met. Pathetic.
+LILI: Three grey harvests, from a ship / with no owner! Who does that?
+TABITHA: A weak man who fed an army he / never met. Pathetic.
 CRUMB CO: Sir. That's what we do. Hobbs.
 TABITHA: ...Hobb. Your family holds a / debt of mine. I hate that.
-LILI: I have coins! Hee hee. We / can talk terms.
-CAULDER: Everything is an account, girls. / I shall keep this one. Open.
+CAULDER: I shall keep this one open, / girls.
 TABITHA: Father. Not this one. I said so.
 ASUKA: Tabitha. The door is closed, not / locked. You may leave when you wish.
-HAWKE: Tabitha. You fought / for a shore you did not choose.
-TABITHA: Marshal. Discipline is the / only currency I trust.
-TABITHA: We will not leave yet. We / camp at the edge of your map.
-TABITHA: We will watch. And we will / take the rest. All of it.
+TABITHA: We will not leave yet. We camp / at the edge of your map. We will watch.
 ASUKA: I look forward to being asked.
 
 == m32_epilogue
