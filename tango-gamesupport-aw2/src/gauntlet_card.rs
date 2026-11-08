@@ -47,6 +47,17 @@ const BAND_CENTRE: i32 = 79;
 const BAND_ROWS: usize = 12;
 
 const WORD: &str = "GAUNTLET";
+/// Conquest Run's card says CONQUEST (its Q is the title font's made one, [`TitleFont::load`]).
+const CONQUEST_WORD: &str = "CONQUEST";
+
+/// The word the session's card says.
+fn word(core: &Core) -> &'static str {
+    if crate::conquest::session(core) {
+        CONQUEST_WORD
+    } else {
+        WORD
+    }
+}
 
 /// The stamp's ink ramp: palette index 1 is full colour, each next one dimmer (the red channel of the card's palette
 /// words 0x14BF, 109D, 109B, 1098, 0C76, 0C73, 0851, 084E, 084C, 0429, 0427, 0005, 0002 over 31): the coverage each stands for.
@@ -59,7 +70,7 @@ pub type Cov = Vec<[f32; 16]>;
 
 /// A word's letters as one picture: the glyphs' solid columns side by side `gap` apart, their common rows area-averaged to
 /// `rows`. Returns the rows (each as wide as the word).
-pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
+pub fn compose(glyphs: &[Cov], gap: usize, rows: usize, tail: Option<usize>) -> Vec<Vec<f32>> {
     let used: Vec<usize> = (0..32)
         .filter(|&y| glyphs.iter().any(|g| g[y].iter().any(|&v| v > 0.0)))
         .collect();
@@ -68,10 +79,18 @@ pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
     };
     let height = bottom - top + 1;
     let mut canvas: Vec<Vec<f32>> = vec![vec![]; height];
+    // (the `tail` letter, the Q, is as wide as its body, the rows above its last quarter: its tail lower down runs on into the gap after it instead of widening the letter)
+    let body_rows = top..top + height * 3 / 4;
+    let mut overflow: Vec<Vec<f32>> = vec![vec![]; height];
     for (n, g) in glyphs.iter().enumerate() {
         let cols: Vec<usize> = (0..16).filter(|&x| g.iter().any(|r| r[x] > 0.0)).collect();
-        let (Some(&a), Some(&b)) = (cols.first(), cols.last()) else {
+        let (Some(&a), Some(&last)) = (cols.first(), cols.last()) else {
             continue;
+        };
+        let b = if tail == Some(n) {
+            (a..=last).filter(|&x| body_rows.clone().any(|y| g[y][x] > 0.0)).max().unwrap_or(last)
+        } else {
+            last
         };
         if n > 0 {
             for row in canvas.iter_mut() {
@@ -79,7 +98,14 @@ pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
             }
         }
         for (y, row) in canvas.iter_mut().enumerate() {
+            let start = row.len().saturating_sub(gap);
+            for (k, v) in overflow[y].drain(..).enumerate() {
+                if let Some(c) = row.get_mut(start + k) {
+                    *c = c.max(v);
+                }
+            }
             row.extend((a..=b).map(|x| g[top + y][x]));
+            overflow[y] = (b + 1..=last).map(|x| g[top + y][x]).collect();
         }
     }
     let w = canvas.first().map_or(0, Vec::len);
@@ -126,7 +152,7 @@ fn word_index(c: f32) -> u8 {
     }
 }
 
-fn glyphs(core: &Core) -> Option<Vec<Cov>> {
+fn glyphs(core: &Core, word: &str) -> Option<Vec<Cov>> {
     static FONT: OnceLock<Option<TitleFont>> = OnceLock::new();
     let font = FONT.get_or_init(|| TitleFont::load(core)).as_ref()?;
     // The letters' fill and the edge value of their soft corners: across the middle of an I (as online.rs finds them).
@@ -134,7 +160,7 @@ fn glyphs(core: &Core) -> Option<Vec<Cov>> {
     let row: Vec<u8> = (0..16).map(|x| i.get(x, 16)).collect();
     let first = row.iter().position(|&v| v != 0)?;
     let (fill, soft) = (row[(first + 4).min(15)], row[first].saturating_sub(1));
-    WORD.chars()
+    word.chars()
         .map(|c| {
             let g = &font.px[TitleFont::index(c)?];
             Some(
@@ -160,8 +186,8 @@ fn glyphs(core: &Core) -> Option<Vec<Cov>> {
 }
 
 /// The word's 24 tiles (4 bits a pixel), GAUNTLET right-aligned in the 96 x 16 the three sprites cover.
-pub fn word_tiles(letters: &[Cov]) -> Vec<u8> {
-    let pic = compose(letters, 2, WORD_ROWS);
+pub fn word_tiles(letters: &[Cov], tail: Option<usize>) -> Vec<u8> {
+    let pic = compose(letters, 2, WORD_ROWS, tail);
     let mut out = vec![0u8; WORD_TILES * 32];
     let w = pic.first().map_or(0, Vec::len).min(WORD_W);
     let ox = WORD_W - w;
@@ -182,7 +208,7 @@ pub fn word_tiles(letters: &[Cov]) -> Vec<u8> {
 
 /// The seal's picture with the band's words replaced: `tiles` (256 tiles of 64 bytes) and `map` (32 x 32 cells), or None when a
 /// band cell is shared with another part of the picture (then nothing is changed).
-pub fn seal_band(map: &[u8], tiles: &mut [u8], letters: &[Cov]) -> Option<()> {
+pub fn seal_band(map: &[u8], tiles: &mut [u8], letters: &[Cov], tail: Option<usize>) -> Option<()> {
     let mut uses = [0u32; 256];
     for &t in map.iter().take(1024) {
         uses[t as usize] += 1;
@@ -196,7 +222,7 @@ pub fn seal_band(map: &[u8], tiles: &mut [u8], letters: &[Cov]) -> Option<()> {
             }
         }
     }
-    let pic = compose(letters, 1, BAND_ROWS);
+    let pic = compose(letters, 1, BAND_ROWS, tail);
     let w = pic.first().map_or(0, Vec::len) as i32;
     let x0 = BAND_CENTRE - w / 2;
     let y0 = *BAND_Y.start();
@@ -232,9 +258,22 @@ fn frame(core: &mut Core) {
     if !crate::gauntlet::session(core) {
         return;
     }
-    let Some(letters) = glyphs(core) else { return };
-    static WORD_ART: OnceLock<Vec<u8>> = OnceLock::new();
-    put(core, OBJ_VRAM, WORD_ART.get_or_init(|| word_tiles(&letters)));
+    let word = word(core);
+    let Some(letters) = glyphs(core, word) else { return };
+    // (the word's art made once for each word: the Gauntlet's and Conquest's)
+    static WORD_ART: std::sync::Mutex<Vec<(&'static str, Vec<u8>)>> = std::sync::Mutex::new(Vec::new());
+    let art = {
+        let mut cache = WORD_ART.lock().unwrap();
+        match cache.iter().find(|a| a.0 == word) {
+            Some(a) => a.1.clone(),
+            None => {
+                let t = word_tiles(&letters, word.find('Q'));
+                cache.push((word, t.clone()));
+                t
+            }
+        }
+    };
+    put(core, OBJ_VRAM, &art);
     put(
         core,
         OBJ_VRAM + 32 * DIGIT_TILES.start as u32,
@@ -244,7 +283,7 @@ fn frame(core: &mut Core) {
     core.raw_read_range(SEAL_MAP, -1, &mut map);
     let mut tiles = vec![0u8; 256 * 64];
     core.raw_read_range(SEAL_TILES, -1, &mut tiles);
-    if seal_band(&map, &mut tiles, &letters).is_some() {
+    if seal_band(&map, &mut tiles, &letters, word.find('Q')).is_some() {
         put(core, SEAL_TILES, &tiles);
     }
 }
@@ -292,7 +331,7 @@ mod tests {
 
     #[test]
     fn compose_keeps_columns_and_shrinks_rows() {
-        let pic = compose(&[block(), block()], 2, 10);
+        let pic = compose(&[block(), block()], 2, 10, None);
         assert_eq!(pic.len(), 10);
         assert_eq!(pic[0].len(), 6 + 2 + 6);
         assert!(pic.iter().all(|r| r[0] == 1.0 && r[6] == 0.0 && r[8] == 1.0));
@@ -307,7 +346,7 @@ mod tests {
 
     #[test]
     fn word_fits_the_sprites() {
-        let t = word_tiles(&[block(), block(), block(), block(), block(), block(), block(), block()]);
+        let t = word_tiles(&[block(), block(), block(), block(), block(), block(), block(), block()], None);
         assert_eq!(t.len(), WORD_TILES * 32);
         assert!(t.iter().any(|&b| b != 0));
     }
@@ -316,18 +355,18 @@ mod tests {
     fn seal_band_refuses_shared_cells() {
         let mut map = vec![0u8; 1024];
         let mut tiles = vec![0u8; 256 * 64];
-        assert!(seal_band(&map, &mut tiles, &[block()]).is_none());
+        assert!(seal_band(&map, &mut tiles, &[block()], None).is_none());
         for (i, m) in map.iter_mut().enumerate() {
             *m = (i % 255 + 1) as u8;
         }
         // (cells repeat every 255: a band cell shared with a cell 255 away is refused)
-        assert!(seal_band(&map, &mut tiles, &[block()]).is_none());
+        assert!(seal_band(&map, &mut tiles, &[block()], None).is_none());
         let mut unique = vec![0u8; 1024];
         for y in 9..11 {
             for x in 0..32 {
                 unique[y * 32 + x] = (1 + (y - 9) * 32 + x) as u8;
             }
         }
-        assert!(seal_band(&unique, &mut tiles, &[block()]).is_some());
+        assert!(seal_band(&unique, &mut tiles, &[block()], None).is_some());
     }
 }

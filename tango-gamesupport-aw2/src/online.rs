@@ -1496,7 +1496,7 @@ fn nav(core: &mut Core) -> Option<u32> {
                 }
                 0
             } else {
-                let n = if crate::mode_menu::active(core) { 8 } else { 6 };
+                let n = crate::mode_menu::count(core) as i32;
                 let up = (target as i32 - cur as i32).rem_euclid(n) <= n / 2;
                 pulse(t, 48, if up { KEY_UP } else { KEY_DOWN })
             }

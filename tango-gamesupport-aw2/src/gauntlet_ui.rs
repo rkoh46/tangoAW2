@@ -136,7 +136,7 @@ pub fn up(core: &Core) -> bool {
 pub fn begin_select(core: &mut Core) {
     core.raw_write_8(ANSWER, -1, 0);
     core.raw_write_8(STEP, -1, SELECT);
-    core.raw_write_8(MAP_CURSOR, -1, 0);
+    core.raw_write_8(MAP_CURSOR, -1, first_listed(core) as u8);
     core.raw_write_8(STAGE_SHOWN, -1, 0);
     // (the screen opens on the first map; it records its pick in the play state's map id, 0 until A)
     core.raw_write_32(LIST_FIRST, -1, 0);
@@ -274,11 +274,23 @@ fn shown_stage(core: &Core, mission: usize) -> usize {
     }
 }
 
-/// The Gauntlet's map entries in the map table: each mission's compiled header with the tab the list shows ([`TAB`] while the selector is up, a tab no list shows otherwise).
+/// The maps the selector lists now: Conquest's pick lists the Conquest Run alone, the Gauntlet's lists its own maps (Conquest Run is a mission of the Gauntlet's campaign, but a game mode of its
+/// own on the wheel: [`crate::conquest::mode`]).
+fn listed(core: &Core, e: &Entry) -> bool {
+    (e.key == crate::conquest::KEY) == crate::conquest::mode(core)
+}
+
+/// The mission of the selector's first row now.
+fn first_listed(core: &Core) -> usize {
+    gm::order().iter().copied().find(|&m| gm::entries().get(m).is_some_and(|e| listed(core, e))).unwrap_or(0)
+}
+
+/// The Gauntlet's map entries in the map table: each mission's compiled header with the tab the list shows ([`TAB`] while the selector is up and the map is one it lists, a tab no list shows otherwise).
 fn entries_in_table(core: &mut Core, shown: bool) {
     let Some(table) = crate::ds_campaign::selector_table(core) else { return };
     for e in gm::entries().iter().take(MAX_MAPS) {
         let id = id_of(e.mission);
+        let shown = shown && listed(core, e);
         if !shown && id <= 0xEF {
             // (a borrowed Survival entry goes back whole)
             crate::survival::restore_entry(core, id);
@@ -301,12 +313,14 @@ fn entries_in_table(core: &mut Core, shown: bool) {
             h[0x3D + k] = lines.get(k).map_or(0, |en| en.0);
         }
         // (a run whose enemies are drawn when it starts shows the player's own blank slot for each of the maps' one enemy)
-        if e.random_enemies {
-            h[0x3D] = 0xFF;
-        }
         if stage > 0 {
             // (the screen draws a face for each player past the first, up to three: a later map's own count, the player's army and its lines)
             h[0x18] = 1 + lines.len().min(3) as u8;
+        }
+        // (a run whose enemies are drawn when it starts has no face to show: one player, so the screen draws no enemy faces, and no CO bytes for it to read)
+        if e.random_enemies {
+            h[0x18] = 1;
+            h[0x3D..0x40].copy_from_slice(&[0xFF; 3]);
         }
         if let Some((rom, blob)) = preview_of(e, stage).map(|(r, b)| (*r, b)) {
             let made;
@@ -458,7 +472,7 @@ fn begin_army(core: &mut Core, mission: usize) {
 pub fn apply(core: &mut Core) {
     if core.raw_read_8(crate::gauntlet::CONTINUING, -1) == 0 {
         // (the new run has begun: the one saved halfway is dropped, from the game's directory now and from Flash with the next write)
-        crate::suspend::drop_mid_of(core, crate::gauntlet::SOURCE);
+        crate::gauntlet::drop_own_save(core);
         // (a Conquest Run draws its enemies now)
         crate::conquest::begin_run(core);
     }
@@ -585,7 +599,7 @@ fn mirror(core: &mut Core) {
     let entries = gm::entries();
     let cursor = core.raw_read_8(MAP_CURSOR, -1) as usize;
     let mut b = [0u8; 0x17];
-    b[0] = entries.len() as u8;
+    b[0] = entries.iter().filter(|e| listed(core, e)).count() as u8;
     let shown = if step(core) == SELECT { entries.get(cursor) } else { picked(core) };
     if let Some(e) = shown {
         b[1] = e.enemies.len().min(6) as u8;
@@ -623,7 +637,7 @@ const HELP_WIDTH: i32 = 228;
 pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
     use crate::army_cards::{Field, Help, Seat};
     let cv = &mut Rgba(rgba);
-    crate::army_cards::teams_frame(core, cv, "GAUNTLET");
+    crate::army_cards::teams_frame(core, cv, if e.key == crate::conquest::KEY { "CONQUEST" } else { "GAUNTLET" });
     let seats: Vec<Seat> = cards(e, co, colour)
         .into_iter()
         .enumerate()
@@ -692,6 +706,21 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Conquest Run is ranked first among the campaign's missions, so the Gauntlet's twelve maps have the ids they had before it existed (the last twelve, the free ones: Survival's entries untouched)
+    /// and Conquest's one row has the id before them (Survival's last entry, borrowed only while its selector is up).
+    #[test]
+    fn the_gauntlets_maps_keep_their_ids_and_conquests_row_has_the_one_before() {
+        assert_eq!(span(), gm::entries().len(), "no test aid in a unit test");
+        let conquest = gm::entries().iter().find(|e| e.key == crate::conquest::KEY).unwrap();
+        let theirs: Vec<u8> = gm::entries().iter().filter(|e| e.key != crate::conquest::KEY).map(|e| id_of(e.mission)).collect();
+        let mut sorted = theirs.clone();
+        sorted.sort();
+        assert_eq!(sorted, ids_for(theirs.len()), "the Gauntlet's maps are the last ids, as before Conquest Run");
+        assert!(theirs.iter().all(|&i| i >= 0xF2), "none of Survival's entries is touched by the Gauntlet's list");
+        assert_eq!(id_of(conquest.mission), ids_for(theirs.len() + 1)[0]);
+        assert!(id_of(conquest.mission) <= 0xEF && !theirs.contains(&id_of(conquest.mission)));
+    }
 
     /// The list at its maximum: 32 maps get 32 ascending ids that avoid the campaigns' and the battle's (0xF0, 0xF1, 0xFE), the record rows cover every id, a map's identity (its record key) never moves when
     /// maps are added, and 32 maps' records keep their own top fives. The first twelve maps never touch Survival's entries.

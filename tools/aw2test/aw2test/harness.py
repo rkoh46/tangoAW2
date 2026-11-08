@@ -14,7 +14,7 @@ from .save import DesignMap
 
 
 def replay_lines(timeline):
-    """The run's inputs for a netplay replay: the steps between the wheel markers (Select Mode's extra Gauntlet step, which only the pack's eight-entry offline wheel has: the replay's peers
+    """The run's inputs for a netplay replay: the steps between the wheel markers (Select Mode's extra Conquest and Gauntlet steps, which only the pack's nine-entry offline wheel has: the replay's peers
     turn AW2's six) are left out, the markers always."""
     out, skip = [], False
     for l in timeline:

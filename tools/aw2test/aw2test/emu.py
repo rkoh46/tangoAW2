@@ -21,7 +21,7 @@ class EmuError(RuntimeError):
 class Emu:
     def __init__(self, save=None, rom=None, ds=False, log=None, trace=None, env=None):
         self.rom = rom or paths.aw2_rom()
-        self.ds = ds          # (the Dual Strike pack is on: Select Mode's wheel has eight entries, not six)
+        self.ds = ds          # (the Dual Strike pack is on: Select Mode's wheel has nine entries, not six)
         self_env = env
         env = dict(os.environ)
         if ds:

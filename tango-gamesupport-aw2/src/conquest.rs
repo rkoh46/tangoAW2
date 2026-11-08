@@ -1,9 +1,10 @@
-//! Conquest Run (docs/dev/conquest.md): a roguelike run of five maps in a row, offline, the first row of the Gauntlet's map selector. The maps are AW2's own two-player Versus maps read
+//! Conquest Run (docs/dev/conquest.md): a roguelike run of nine maps in a row, offline, Select Mode's CONQUEST entry ([`crate::mode_menu`]). The maps are AW2's own two-player Versus maps read
 //! from the player's ROM ([`crate::custom_campaign::MapSrc::Aw2`]), small to large; the survivors and the funds carry over at every map switch (the stage engine, [`crate::stage`]), a reward
-//! is picked between maps ([`crate::conquest_reward`]), one loss ends the run and the whole run's score goes to the Gauntlet's records under the key [`KEY`].
+//! is picked between maps ([`crate::conquest_reward`]), one loss ends the run and the whole run's score goes to the Gauntlet's record table under the key [`KEY`].
 //!
-//! The run is a mission of the Gauntlet's campaign ([`crate::gauntlet_mode::def`]): stage 0 is the mission's own map and each later map one of its [`StageDef`]s, so records, Save / Continue,
-//! EXP and the results screen come from the Gauntlet's plumbing. A map is won when the player takes the enemy HQ or destroys every enemy unit (the enemy HQ is held, so a capture defeats
+//! It is its own game mode on the Gauntlet's engine: a mission of the Gauntlet's campaign ([`crate::gauntlet_mode::def`]; stage 0 is the mission's own map and each later map one of its
+//! [`StageDef`]s), so records, Save / Continue, EXP and the results screen come from the Gauntlet's plumbing, but the wheel's CONQUEST entry picks it ([`picked`] sets the mode flag [`mode`],
+//! which makes the map selector list this one row and the Gauntlet's list never has it) and a run saved halfway is told from the Gauntlet's by its mission ([`is_mission`], [`run_saved`]). A map is won when the player takes the enemy HQ or destroys every enemy unit (the enemy HQ is held, so a capture defeats
 //! nobody and the trigger moves the battle on; the engine's own defeat of an army with no units is held off on every map but the last: [`keeps_alive`]); the last map's win wins the run.
 
 use mgba::core::Core;
@@ -11,10 +12,11 @@ use mgba::core::Core;
 use crate::custom_campaign::{colour, unit, *};
 use crate::online::{KEY_A, KEY_B, KEY_LEFT, KEY_RIGHT};
 
-/// The run's record key: record id 50 (never reused; the Gauntlet's maps are 1..12).
-pub const KEY: &str = "gauntlet_50";
+/// The run's record key: record id 51 (never reused; the Gauntlet's maps are 1..12). The first, five-map run's results were kept under id 50, which nothing reads any more: a nine-map run's score is
+/// of another scale, so the old results neither show beside the new ones nor keep a new run out of the top five.
+pub const KEY: &str = "gauntlet_51";
 /// The maps of a run.
-pub const STAGES: usize = 5;
+pub const STAGES: usize = 9;
 
 /// One map of the run: AW2's Versus map `id`, where the armies stand and what the enemy starts with.
 pub struct Stage {
@@ -32,7 +34,8 @@ pub struct Stage {
     pub mine: &'static [(u8, (u8, u8))],
 }
 
-/// The five maps, small to large, easy to hard (HQs 20 to 39 cells apart, an equal share of bases, no sea to cross): Sabre Range, Switchback, Piston Dam, Cube Keys, Mial's Hope.
+/// The nine maps, small to large, easy to hard (HQs 20 to 39 cells apart, an equal share of bases, a land road between the HQs): Sabre Range, Asphalt Maze, Switchback, Piston Dam, Hourglass Isle, Ruby Keys,
+/// Vision Bridge, Cube Keys, Mial's Hope. The enemy's funds and force grow every map (3,000 / 3 units up to 22,000 / 9).
 /// The cells are the Versus maps' own properties (read from the ROM by `aw2dev conquest maps`).
 pub const MAPS: [Stage; STAGES] = [
     Stage {
@@ -54,11 +57,24 @@ pub const MAPS: [Stage; STAGES] = [
         ],
     },
     Stage {
+        id: 0x19,
+        name: "Asphalt Maze",
+        player: (1, 9),
+        enemy: (13, 1),
+        funds: 4000,
+        force: &[
+            (unit::INFANTRY, (13, 0)),
+            (unit::INFANTRY, (12, 1)),
+            (unit::RECON, (14, 1)),
+        ],
+        mine: &[],
+    },
+    Stage {
         id: 0x1C,
         name: "Switchback",
         player: (1, 13),
         enemy: (19, 1),
-        funds: 6000,
+        funds: 5500,
         force: &[
             (unit::INFANTRY, (18, 2)),
             (unit::INFANTRY, (20, 2)),
@@ -72,14 +88,61 @@ pub const MAPS: [Stage; STAGES] = [
         name: "Piston Dam",
         player: (2, 1),
         enemy: (23, 12),
-        funds: 10000,
+        funds: 7500,
         force: &[
             (unit::INFANTRY, (20, 11)),
             (unit::INFANTRY, (21, 11)),
             (unit::TANK, (22, 1)),
             (unit::TANK, (23, 1)),
             (unit::MD_TANK, (24, 1)),
-            (unit::ARTILLERY, (20, 4)),
+        ],
+        mine: &[],
+    },
+    Stage {
+        id: 0x26,
+        name: "Hourglass Isle",
+        player: (8, 2),
+        enemy: (7, 21),
+        funds: 9500,
+        force: &[
+            (unit::INFANTRY, (6, 20)),
+            (unit::INFANTRY, (9, 20)),
+            (unit::TANK, (8, 21)),
+            (unit::TANK, (6, 21)),
+            (unit::ARTILLERY, (7, 22)),
+        ],
+        mine: &[],
+    },
+    Stage {
+        id: 0x1D,
+        name: "Ruby Keys",
+        player: (1, 1),
+        enemy: (26, 14),
+        funds: 12000,
+        force: &[
+            (unit::INFANTRY, (27, 13)),
+            (unit::INFANTRY, (28, 13)),
+            (unit::MECH, (28, 11)),
+            (unit::TANK, (26, 13)),
+            (unit::MD_TANK, (27, 14)),
+            (unit::ARTILLERY, (28, 14)),
+        ],
+        mine: &[],
+    },
+    Stage {
+        id: 0x21,
+        name: "Vision Bridge",
+        player: (2, 14),
+        enemy: (28, 13),
+        funds: 14500,
+        force: &[
+            (unit::INFANTRY, (29, 13)),
+            (unit::INFANTRY, (28, 14)),
+            (unit::MECH, (29, 14)),
+            (unit::TANK, (27, 14)),
+            (unit::TANK, (26, 14)),
+            (unit::MD_TANK, (27, 13)),
+            (unit::ARTILLERY, (30, 14)),
         ],
         mine: &[],
     },
@@ -88,7 +151,7 @@ pub const MAPS: [Stage; STAGES] = [
         name: "Cube Keys",
         player: (5, 6),
         enemy: (26, 23),
-        funds: 15000,
+        funds: 17500,
         force: &[
             (unit::INFANTRY, (26, 22)),
             (unit::MECH, (25, 23)),
@@ -164,8 +227,8 @@ pub fn mission() -> MissionDef {
     let first = &MAPS[0];
     let mut m = MissionDef::new(KEY, "Conquest Run");
     m.list_title = "Conquest Run *";
-    m.stage_titles = &["Switchback", "Piston Dam", "Cube Keys", "Mial's Hope"];
-    m.objective = "Win five maps in a row: survivors and funds come along, a reward waits between maps.";
+    m.stage_titles = &["Asphalt Maze", "Switchback", "Piston Dam", "Hourglass Isle", "Ruby Keys", "Vision Bridge", "Cube Keys", "Mial's Hope"];
+    m.objective = "Win nine maps in a row: survivors and funds come along, a reward waits between maps.";
     m.map = MapSrc::Aw2 { id: first.id };
     m.armies = armies(first, true);
     m.units = crate::bh_ai::orders(
@@ -223,12 +286,43 @@ fn deploy_cells(hq: (u8, u8)) -> Vec<(u8, u8)> {
     v
 }
 
+/// 1 from the wheel's CONQUEST pick until the next pick of GAUNTLET (which clears it): the map selector lists this run's row alone instead of the Gauntlet's maps, and the way back from the
+/// run's end puts the wheel on CONQUEST. The one byte of [`STATE`] past the run's draw (+0x16).
+const MODE: u32 = STATE + 0x16;
+
+/// The wheel's CONQUEST pick (a new run, or `cont`: Continue over the run saved halfway): the Gauntlet's request ([`crate::gauntlet::picked`]) and the mode flag.
+pub fn picked(core: &mut Core, cont: bool) {
+    crate::gauntlet::picked(core, cont);
+    set_mode(core, true);
+}
+
+pub(crate) fn set_mode(core: &mut Core, on: bool) {
+    if core.raw_read_8(MODE, -1) != on as u8 {
+        core.raw_write_8(MODE, -1, on as u8);
+    }
+}
+
+/// The last pick on Select Mode was CONQUEST (not GAUNTLET).
+pub fn mode(core: &Core) -> bool {
+    core.raw_read_8(MODE, -1) == 1
+}
+
+/// Whether the Gauntlet-campaign mission index `m` is the Conquest Run.
+pub fn is_mission(m: u8) -> bool {
+    crate::gauntlet_mode::entries().get(m as usize).is_some_and(|e| e.key == KEY)
+}
+
+/// A Conquest Run is saved halfway (the shared slot's save tagged with the Gauntlet's source and this mission). A five-map run saved before the run had nine maps (its tail mark is the old one) is
+/// not offered: its stage numbers are other maps now. It stays in the slot until a new run starts, which drops it ([`crate::gauntlet::drop_own_save`]).
+pub fn run_saved(core: &Core) -> bool {
+    let slot = crate::campaign_model::SOURCES[crate::gauntlet::SOURCE].mid_slot;
+    crate::suspend::saved_mission_of(core, crate::gauntlet::SOURCE).is_some_and(is_mission) && !crate::suspend::tail_has(core, slot, OLD_SAVED_MARK)
+}
+
 /// Whether the Gauntlet's session is a Conquest Run.
 pub fn session(core: &Core) -> bool {
     crate::gauntlet::session(core)
-        && crate::gauntlet_mode::entries()
-            .get(crate::ds_campaign::mission(core) as usize)
-            .is_some_and(|e| e.key == KEY)
+        && is_mission(crate::ds_campaign::mission(core))
 }
 
 /// The engine's own end of a map (the enemy army with no units: `DefeatArmy`, and the end check's alive marks) is held off while the run goes on: a map is won by [`won`]'s trigger, which moves the
@@ -249,13 +343,16 @@ const TAKEN: u32 = STATE + 2;
 const WON: u32 = STATE + 3;
 const OFFER: u32 = STATE + 4;
 
-/// The run's draw: +0x10..+0x14 the enemy CO of each map (AW2 CO ids), +0x15 1 once a run has drawn them. Saved with a run saved halfway ([`saved`]).
-const ENEMIES: u32 = STATE + 0x10;
+/// The run's draw: +0x08..+0x10 the enemy CO of each of the nine maps (AW2 CO ids; past the 8 bytes the reward's reset clears), +0x15 1 once a run has drawn them. Saved with a run saved halfway
+/// ([`saved`]).
+const ENEMIES: u32 = STATE + 0x08;
 const DRAWN: u32 = STATE + 0x15;
-/// The bytes of the run's draw that go into a saved run: the five COs and the flag.
-pub const SAVED_LEN: u32 = 6;
-/// The tail mark of a saved run's draw, after AW2's block.
-pub const SAVED_MARK: u32 = 0x4E52_5143; // "CQRN"
+/// The bytes of the run's draw that go into a saved run: the nine COs and the flag.
+pub const SAVED_LEN: u32 = STAGES as u32 + 1;
+/// The tail mark of a saved run's draw, after AW2's block. The five-map run's was `CQRN` with six bytes: a run saved then is another run (its stage numbers are other maps) and is not offered
+/// ([`run_saved`]).
+pub const SAVED_MARK: u32 = 0x3952_5143; // "CQR9"
+pub const OLD_SAVED_MARK: u32 = 0x4E52_5143; // "CQRN"
 
 /// The COs an enemy is drawn from: the roster less the five tangoAW2 COs that need the Silver Nova skin or a pack of their own to be an enemy (Clone Andy, Crumb, Tabitha, Lili, Caulder).
 pub fn pool() -> Vec<u8> {
@@ -324,20 +421,22 @@ pub fn map_start(core: &mut Core) {
     core.raw_write_8(0x0300_3FC0 + 0x3D + 1, -1, co);
 }
 
-/// The run's draw as saved with a run saved halfway (the five COs and the flag), None outside a Conquest Run.
+/// The run's draw as saved with a run saved halfway (the nine COs and the flag), None outside a Conquest Run.
 pub fn saved(core: &Core) -> Option<Vec<u8>> {
     if !session(core) || core.raw_read_8(DRAWN, -1) == 0 {
         return None;
     }
-    let mut b = vec![0u8; SAVED_LEN as usize];
+    let mut b = vec![0u8; STAGES];
     core.raw_read_range(ENEMIES, -1, &mut b);
+    b.push(1);
     Some(b)
 }
 
 /// A saved run continues: its draw comes back.
 pub fn restore(core: &mut Core, b: &[u8]) {
     if b.len() >= SAVED_LEN as usize {
-        core.raw_write_range(ENEMIES, -1, &b[..SAVED_LEN as usize]);
+        core.raw_write_range(ENEMIES, -1, &b[..STAGES]);
+        core.raw_write_8(DRAWN, -1, b[STAGES]);
     }
 }
 
@@ -346,9 +445,9 @@ pub const CHEST: u8 = 0;
 pub const REINFORCE: u8 = 1;
 pub const REPAIR: u8 = 2;
 
-/// The war chest after map `k` (0 the first): 10,000, growing by 5,000 a map.
+/// The war chest after map `k` (0 the first): 8,000, growing by 2,500 a map (25,500 after the eighth).
 pub fn chest_funds(k: u8) -> u32 {
-    10_000 + 5_000 * k as u32
+    8_000 + 2_500 * k as u32
 }
 
 /// The three units a free unit is chosen from after map `k`: better ones later.
@@ -356,12 +455,16 @@ pub fn offered(k: u8) -> [u8; 3] {
     match k {
         0 => [unit::TANK, unit::MD_TANK, unit::B_COPTER],
         1 => [unit::MD_TANK, unit::ROCKETS, unit::FIGHTER],
-        2 => [unit::NEOTANK, unit::ROCKETS, unit::BOMBER],
+        2 => [unit::MD_TANK, unit::ROCKETS, unit::BOMBER],
+        3 => [unit::NEOTANK, unit::ROCKETS, unit::FIGHTER],
+        4 => [unit::NEOTANK, unit::ROCKETS, unit::BOMBER],
+        5 => [unit::NEOTANK, unit::MEGATANK, unit::BOMBER],
+        6 => [unit::MEGATANK, unit::NEOTANK, unit::FIGHTER],
         _ => [unit::MEGATANK, unit::NEOTANK, unit::BOMBER],
     }
 }
 
-/// The map the reward is for (the one just won, 0..=3).
+/// The map the reward is for (the one just won, 0..=7).
 pub fn won_map(core: &Core) -> u8 {
     core.raw_read_8(WON, -1)
 }
@@ -509,7 +612,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_run_has_five_maps_with_hqs_far_apart() {
+    fn the_run_has_nine_maps_with_hqs_far_apart() {
         assert_eq!(MAPS.len(), STAGES);
         let m = mission();
         assert_eq!(m.stages.len(), STAGES - 1);
@@ -522,6 +625,20 @@ mod tests {
         for w in MAPS.windows(2) {
             assert!(w[1].funds > w[0].funds && w[1].force.len() >= w[0].force.len());
         }
+        // no two units share a cell, and the maps are all different
+        for s in MAPS.iter() {
+            let mut cells: Vec<(u8, u8)> = s.force.iter().chain(s.mine).map(|u| u.1).collect();
+            let n = cells.len();
+            cells.sort();
+            cells.dedup();
+            assert_eq!(cells.len(), n, "{}: two units on one cell", s.name);
+        }
+        let mut ids: Vec<u8> = MAPS.iter().map(|s| s.id).collect();
+        ids.sort();
+        ids.dedup();
+        assert_eq!(ids.len(), STAGES, "no map twice");
+        assert_eq!(MAPS[STAGES - 1].name, "Mial's Hope", "the largest is last");
+        assert_eq!((MAPS[STAGES - 1].funds, MAPS[STAGES - 1].force.len()), (22000, 9));
         assert_eq!(m.stage_titles.len(), STAGES - 1);
         for (t, s) in m.stage_titles.iter().zip(MAPS.iter().skip(1)) {
             assert_eq!(*t, s.name);
@@ -530,17 +647,19 @@ mod tests {
 
     #[test]
     fn the_rewards_grow_and_the_units_get_better() {
-        assert_eq!((chest_funds(0), chest_funds(3)), (10_000, 25_000));
-        assert_ne!(offered(0), offered(3));
-        for k in 0..4 {
+        assert_eq!((chest_funds(0), chest_funds(STAGES as u8 - 2)), (8_000, 25_500));
+        assert!(chest_funds(STAGES as u8 - 2) <= 30_000);
+        assert_ne!(offered(0), offered(STAGES as u8 - 2));
+        for k in 0..STAGES as u8 - 1 {
             assert_eq!(offered(k).len(), 3);
         }
     }
 
     #[test]
-    fn a_draw_is_five_different_cos_never_the_players_and_changes_with_the_seed() {
+    fn a_draw_is_nine_different_cos_never_the_players_and_changes_with_the_seed() {
         let pool = pool();
         assert_eq!(pool.len(), crate::gauntlet_mode::ROSTER.len() - 5);
+        assert!(pool.len() - 1 >= STAGES, "nine enemies without the player's CO");
         let mut seen = std::collections::HashSet::new();
         for seed in 0..400u64 {
             let player = pool[(seed as usize) % pool.len()];
@@ -574,8 +693,28 @@ mod tests {
         assert!(src.contains("crate::gauntlet::session(core) &&"));
     }
 
+    /// The mission tells a Conquest save from a Gauntlet map's in the shared slot (the saved byte's low five bits are the mission, the top three the source): Conquest's is the one mission with
+    /// its key, below 32, and the mode flag is a byte of the state block.
+    #[test]
+    fn the_run_is_told_from_the_gauntlets_maps_by_its_mission_and_its_mode_flag_is_in_the_block() {
+        let entries = crate::gauntlet_mode::entries();
+        let ours: Vec<usize> = (0..entries.len()).filter(|&m| is_mission(m as u8)).collect();
+        assert_eq!(ours, vec![entries.len() - 1], "one mission, the last of the campaign");
+        assert!(entries.len() <= 32, "the saved byte keeps the mission in five bits");
+        assert!(!is_mission(entries.len() as u8) && !is_mission(0));
+        assert!(MODE >= STATE && MODE < STATE + STATE_LEN);
+        assert!(![PAGE, CURSOR, TAKEN, WON, OFFER, OFFER + 1, OFFER + 2, DRAWN].contains(&MODE));
+        assert!(MODE < ENEMIES || MODE > ENEMIES + STAGES as u32, "not one of the draw's bytes");
+        assert!(MODE != DRAWN);
+        // reward_reset clears the first eight bytes of the block only: the flag survives a map switch
+        assert!(MODE - STATE >= 8);
+        // the draw's nine bytes lie past the bytes the reward's reset clears and end before the flag
+        assert!(ENEMIES - STATE >= 8 && ENEMIES + STAGES as u32 <= DRAWN && DRAWN < STATE + STATE_LEN);
+        assert_eq!(SAVED_LEN as usize, STAGES + 1);
+    }
+
     #[test]
     fn the_key_is_a_record_id() {
-        assert_eq!(crate::gauntlet::record_id(KEY), Some(50));
+        assert_eq!(crate::gauntlet::record_id(KEY), Some(51));
     }
 }

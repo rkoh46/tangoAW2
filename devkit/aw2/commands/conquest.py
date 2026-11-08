@@ -1,10 +1,10 @@
-"""aw2dev conquest: Conquest Run, the Gauntlet's five-map roguelike run, in the offline harness (docs/dev/conquest.md).
+"""aw2dev conquest: Conquest Run, Select Mode's CONQUEST entry (a five-map roguelike run on the Gauntlet's engine), in the offline harness (docs/dev/conquest.md).
 
-  conquest start [--co N] [--out DIR]   boots the harness straight into a run (title, Select Mode, GAUNTLET, the first row "Conquest Run *", the army screen with CO N, map 1, the reward page after its
+  conquest start [--co N] [--out DIR]   boots the harness straight into a run (title, Select Mode, CONQUEST, the one-row selector "Conquest Run *", the army screen with CO N, map 1, the reward page after its
                                         capture, map 2) and leaves a picture of each screen: 1_wheel, 2_map_selector, 3_army_screen, 4_first_turn, 5_reward_page, 6_reward_units, 7_second_map
                                         (PNG, in DIR or a temp folder; fails when one is missing)
-  conquest sheet [--out FILE]           one contact sheet in the three looks (AW2 graphics, Dual Strike graphics + tilt, Dual Strike flat): the reward page, the unit page and each of the five maps' first turn
-  conquest maps [--all]                 the five maps as the ROM has them (size, HQs, distance) against the constants of `crate::conquest::MAPS` (exit 1 on a mismatch); --all lists every two-player
+  conquest sheet [--out FILE]           one contact sheet in the three looks (AW2 graphics, Dual Strike graphics + tilt, Dual Strike flat): the reward page, the unit page and each of the nine maps' first turn
+  conquest maps [--all]                 the nine maps as the ROM has them (size, HQs, distance) against the constants of `crate::conquest::MAPS` (exit 1 on a mismatch); --all lists every two-player
                                         Versus map with its HQ distance and bases (to choose another map for a stage: docs/dev/conquest.md "Adding or changing a map")
   conquest test                         the run's regression tests (`run.py -k conquest --mode ds`)
 """
@@ -22,7 +22,7 @@ CONQUEST_RS = cfg.REPO / "tango-gamesupport-aw2" / "src" / "conquest.rs"
 def register(sub):
     g = sub.add_parser("conquest", help="Conquest Run: boot into a run with pictures, the contact sheet, the maps check, its tests (docs/dev/conquest.md)")
     gs = g.add_subparsers(dest="conquestcmd", required=True)
-    a = gs.add_parser("start", help="title -> GAUNTLET -> Conquest Run -> army screen -> map 1 -> reward page -> map 2, with a picture of each screen")
+    a = gs.add_parser("start", help="title -> CONQUEST -> army screen -> map 1 -> reward page -> map 2, with a picture of each screen")
     a.add_argument("--co", type=int, default=1, help="AW2 CO id to pick (default 1, Andy)")
     a.add_argument("--out", help="folder for the pictures (default: a temp folder, printed)")
     a.add_argument("-v", "--verbose", action="store_true")
@@ -30,7 +30,7 @@ def register(sub):
     a = gs.add_parser("sheet", help="the reward page and each map's first turn in the three looks, one contact sheet")
     a.add_argument("--out", help="the sheet's PNG (default: devkit/work/conquest/sheet.png)")
     a.set_defaults(fn=sheet)
-    a = gs.add_parser("maps", help="the run's five maps read from the ROM against the Rust constants; --all lists every 2P Versus map")
+    a = gs.add_parser("maps", help="the run's nine maps read from the ROM against the Rust constants; --all lists every 2P Versus map")
     a.add_argument("--all", action="store_true", help="every two-player Versus map with its HQ distance and bases")
     a.set_defaults(fn=maps)
     a = gs.add_parser("test", help="run the Conquest Run tests")

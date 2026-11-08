@@ -1701,7 +1701,7 @@ fn end_of_battle(core: &mut Core) {
     if source(core) == crate::gauntlet::SOURCE {
         // The Gauntlet: no progress, no map. The record (`best_score`) is saved by the end proc.
         crate::five::set_campaign(core, false, 0, 0);
-        crate::suspend::drop_mid_of(core, source(core));
+        crate::gauntlet::drop_own_save(core);
         core.raw_write_8(LAST_RESULT, -1, if won { 1 } else { 2 });
         core.raw_write_8(LAST_RESULT + 1, -1, index);
         core.raw_write_16(LAST_RESULT + 2, -1, core.raw_read_16(0x0300_4080, -1));

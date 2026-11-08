@@ -70,7 +70,7 @@ LOOKS = (
 @test(modes=("ds",))
 def gauntlet_pictures_selector_and_army_screen_in_the_three_looks(ctx):
     """The map selector (the War Room's own SELECT MAP: both maps) and the army screen in AW2's graphics, the DS map graphics with the tilt and without it (the owner's standing rule: every
-    visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns the top of the list, the R box on a map with five records, the fourth row, the last row (Iron Crown, the list scrolled to its end: twelve maps and Conquest Run), the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
+    visual is looked at in all three). A sheet `selector_sheet.png`: a row a look, columns the top of the list, the R box on a map with five records, the fourth row, the last row (Iron Crown, the list scrolled to its end: twelve maps), the colour pick; `AW2TEST_SHEET` copies it where a person looks."""
     from PIL import Image
     rows = []
     for look, env in LOOKS:
@@ -84,7 +84,6 @@ def gauntlet_pictures_selector_and_army_screen_in_the_three_looks(ctx):
         # the R box on a map with records: the top row's map (Dustwind Basin, record id 3) gets five results, the game's own box draws them
         five = [(ga.ANDY, 12, 345), (ga.MAX, 14, 310), (ga.SAMI, 9, 280), (ga.KANBEI, 20, 250), (ga.JAVIER, 31, 120)]
         d.put_results(3, five)
-        d.put_results(50, five)          # (the top row is Conquest Run, record id 50: its box shows a run's five results)
         e.wait(20)
         e.press("R", 6)
         e.wait(60)
@@ -96,7 +95,7 @@ def gauntlet_pictures_selector_and_army_screen_in_the_three_looks(ctx):
             e.press("DOWN", 4)
             e.wait(40)
         row.append(shot(ctx, e, f"{look}_selector_4"))
-        for _ in range(len(ga.SELECTOR_ORDER) - 4):
+        for _ in range(8):
             e.press("DOWN", 4)
             e.wait(40)
         ctx.eq(d.selector_ids()[1], len(ga.SELECTOR_ORDER) - 1, f"{look}: DOWN scrolls the list to its last row")

@@ -63,13 +63,22 @@ pub fn session(core: &Core) -> bool {
     crate::ds_campaign::active(core) && crate::ds_campaign::source(core) == SOURCE
 }
 
-/// A run is saved halfway (the Gauntlet's own: the slot is shared with the BH Campaigns', told apart by the save's source tag).
+/// A run is saved halfway (the Gauntlet's own: the slot is shared with the BH Campaigns', told apart by the save's source tag, and with Conquest Run's, which is a mission of this source
+/// that the Gauntlet's wheel entry never offers: [`crate::conquest::run_saved`]).
 pub fn saved(core: &Core) -> bool {
-    crate::suspend::saved_mission_of(core, SOURCE).is_some()
+    crate::suspend::saved_mission_of(core, SOURCE).is_some_and(|m| !crate::conquest::is_mission(m))
+}
+
+/// The session's own run saved halfway is dropped (a new run begins, or the run ends): a Gauntlet run's save, or a Conquest run's, never the other's (the slot holds one save of the source).
+pub fn drop_own_save(core: &mut Core) {
+    let conquest = crate::conquest::session(core);
+    crate::suspend::drop_mid_where(core, SOURCE, |m| crate::conquest::is_mission(m) == conquest);
 }
 
 /// The wheel's pick: the request for this source, New (the pick with no save, a trap at the item's `cmp r0, #4`; or the box's New) or Continue (the box's, over a run saved halfway).
 pub fn picked(core: &mut Core, cont: bool) {
+    // (Conquest's pick sets its flag after this call)
+    crate::conquest::set_mode(core, false);
     core.raw_write_8(PICKED, -1, 1);
     core.raw_write_8(CONTINUING, -1, cont as u8);
     core.raw_write_8(crate::ds_campaign::SOURCE, -1, SOURCE as u8);
@@ -81,7 +90,7 @@ pub fn is_picked(core: &Core) -> bool {
     core.raw_read_8(PICKED, -1) == 1
 }
 
-/// The run's end starts the way back to Select Mode: the wheel is to come back on GAUNTLET (AW2's campaign end puts its remembered position back on Campaign, so [`tick`]
+/// The run's end starts the way back to Select Mode: the wheel is to come back on GAUNTLET, or on CONQUEST after a Conquest Run (AW2's campaign end puts its remembered position back on Campaign, so [`tick`]
 /// keeps it until the wheel is up).
 pub fn returning(core: &mut Core) {
     core.raw_write_8(PICKED, -1, RETURNING);
@@ -97,7 +106,8 @@ pub fn tick(core: &mut Core) {
         core.raw_write_8(PICKED, -1, 0);
         return;
     }
-    if let Some(p) = crate::mode_menu::position_of(core, crate::mode_menu::GAUNTLET) {
+    let item = if crate::conquest::mode(core) { crate::mode_menu::CONQUEST } else { crate::mode_menu::GAUNTLET };
+    if let Some(p) = crate::mode_menu::position_of(core, item) {
         if core.raw_read_32(WHEEL_LAST, -1) != p {
             core.raw_write_32(WHEEL_LAST, -1, p);
         }

@@ -13,9 +13,9 @@ from . import ram, saveimg
 from .game import NavError, SELECT_MODE_CURSOR, MAP_TAB
 
 # Select Mode's wheel (0x0300591C): UP steps +1. The wheel's positions depend on the pack (crate::mode_menu): AW2's own six (Battle Maps 0, Online 1, Design Room 2, Versus 3,
-# Campaign 4, War Room 5), and with the pack eight: Gauntlet is 4 (directly above Versus on the screen) and Campaign, War Room and Survival follow. `position(e, name)` says
+# Campaign 4, War Room 5), and with the pack nine: Gauntlet is 4 (directly above Versus on the screen), Conquest 5 and Campaign, War Room and Survival follow. `position(e, name)` says
 # where an entry is on this console's wheel; `wheel_to` takes a position or a name.
-PACK_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "gauntlet": 4, "campaign": 5, "war_room": 6, "survival": 7}
+PACK_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "gauntlet": 4, "conquest": 5, "campaign": 6, "war_room": 7, "survival": 8}
 AW2_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "campaign": 4, "war_room": 5}
 VERSUS, CAMPAIGN, WAR_ROOM, SURVIVAL, GAUNTLET = 3, "campaign", "war_room", "survival", "gauntlet"
 DESIGN_ROOM = 2
