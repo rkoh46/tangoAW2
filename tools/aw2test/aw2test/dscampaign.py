@@ -932,12 +932,15 @@ class DsCampaign:
             opts["seed"] = seed
         prefs = cos if cos is not None else opts.pop("cos", None)
         opts.pop("cos", None)
-        # (a plan search: AW2TEST_SEED=<n> and AW2TEST_COS=v1|v2|v3|default replace the plan's seed and CO
+        # (a plan search: AW2TEST_SEED=<n>, AW2TEST_COS=v1|v2|v3|default and AW2TEST_PLAN=<json> replace the plan's seed, CO
         # preferences for this run, so a mission's winning style can be found by trying several in parallel)
         if os.environ.get("AW2TEST_SEED"):
             opts["seed"] = int(os.environ["AW2TEST_SEED"])
         if os.environ.get("AW2TEST_COS"):
             prefs = {"v1": _V1, "v2": _V2, "v3": _V3, "default": None}[os.environ["AW2TEST_COS"]]
+        if os.environ.get("AW2TEST_PLAN"):
+            import json
+            opts.update(json.loads(os.environ["AW2TEST_PLAN"]))   # (more of the plan's options for a search: {"stance": "auto", "cap": 30})
         player = player or opts.pop("player", "bot")
         opts.pop("player", None)
         self.start(step=step)

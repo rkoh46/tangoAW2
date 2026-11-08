@@ -50,6 +50,8 @@ development byte `0x0203E3FF`; `AW2TEST_BH_BALANCE_DAYS` caps the days), `AW2TES
 same battle with each factory, every spawn photographed and logged) and `AW2TEST_BH_PICS=<dir>` (pictures of the
 factory's choices). Each console logs the factory's decisions to `<save>.bhlog` (`Emu.decisions()`).
 
+`AW2TEST_SEED=<n>`, `AW2TEST_COS=v1|v2|v3|default` and `AW2TEST_PLAN=<json>` replace the test player's seed, CO preferences and other options (`dscampaign.PLANS`) for one `ds_campaign_win_NN` run, to search for the style that wins a mission after a rules or AI change (use `AW2TEST_OUT=<dir>` per parallel run).
+
 `AW2TEST_OBJ_SURVEY=<dir>` (tests that start a battle through `ctx.start`, and the Tag ones) fills every unused OBJ tile with a marker once the battle is up and writes, per console, the tiles that changed and the tiles the OAM named (`survey_arm` in `aw2test/emu.py`): a tile in no file is free for new art. It pokes VRAM, so not together with the netplay tests.
 
 `tests/test_bh_cpuai.py` audits the BH Campaign's enemy AI (docs/AW2.md, "The enemy's orders"): `-k bh_cpuai_acts` (every mission: the
