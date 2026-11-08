@@ -70,7 +70,7 @@ pub type Cov = Vec<[f32; 16]>;
 
 /// A word's letters as one picture: the glyphs' solid columns side by side `gap` apart, their common rows area-averaged to
 /// `rows`. Returns the rows (each as wide as the word).
-pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
+pub fn compose(glyphs: &[Cov], gap: usize, rows: usize, tail: Option<usize>) -> Vec<Vec<f32>> {
     let used: Vec<usize> = (0..32)
         .filter(|&y| glyphs.iter().any(|g| g[y].iter().any(|&v| v > 0.0)))
         .collect();
@@ -79,7 +79,7 @@ pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
     };
     let height = bottom - top + 1;
     let mut canvas: Vec<Vec<f32>> = vec![vec![]; height];
-    // (a letter is as wide as its body, the rows above its last quarter: a tail lower down, the Q's, runs on into the gap after it instead of widening the letter)
+    // (the `tail` letter, the Q, is as wide as its body, the rows above its last quarter: its tail lower down runs on into the gap after it instead of widening the letter)
     let body_rows = top..top + height * 3 / 4;
     let mut overflow: Vec<Vec<f32>> = vec![vec![]; height];
     for (n, g) in glyphs.iter().enumerate() {
@@ -87,7 +87,11 @@ pub fn compose(glyphs: &[Cov], gap: usize, rows: usize) -> Vec<Vec<f32>> {
         let (Some(&a), Some(&last)) = (cols.first(), cols.last()) else {
             continue;
         };
-        let b = (a..=last).filter(|&x| body_rows.clone().any(|y| g[y][x] > 0.0)).max().unwrap_or(last);
+        let b = if tail == Some(n) {
+            (a..=last).filter(|&x| body_rows.clone().any(|y| g[y][x] > 0.0)).max().unwrap_or(last)
+        } else {
+            last
+        };
         if n > 0 {
             for row in canvas.iter_mut() {
                 row.extend(std::iter::repeat_n(0.0, gap));
@@ -182,8 +186,8 @@ fn glyphs(core: &Core, word: &str) -> Option<Vec<Cov>> {
 }
 
 /// The word's 24 tiles (4 bits a pixel), GAUNTLET right-aligned in the 96 x 16 the three sprites cover.
-pub fn word_tiles(letters: &[Cov]) -> Vec<u8> {
-    let pic = compose(letters, 2, WORD_ROWS);
+pub fn word_tiles(letters: &[Cov], tail: Option<usize>) -> Vec<u8> {
+    let pic = compose(letters, 2, WORD_ROWS, tail);
     let mut out = vec![0u8; WORD_TILES * 32];
     let w = pic.first().map_or(0, Vec::len).min(WORD_W);
     let ox = WORD_W - w;
@@ -204,7 +208,7 @@ pub fn word_tiles(letters: &[Cov]) -> Vec<u8> {
 
 /// The seal's picture with the band's words replaced: `tiles` (256 tiles of 64 bytes) and `map` (32 x 32 cells), or None when a
 /// band cell is shared with another part of the picture (then nothing is changed).
-pub fn seal_band(map: &[u8], tiles: &mut [u8], letters: &[Cov]) -> Option<()> {
+pub fn seal_band(map: &[u8], tiles: &mut [u8], letters: &[Cov], tail: Option<usize>) -> Option<()> {
     let mut uses = [0u32; 256];
     for &t in map.iter().take(1024) {
         uses[t as usize] += 1;
@@ -218,7 +222,7 @@ pub fn seal_band(map: &[u8], tiles: &mut [u8], letters: &[Cov]) -> Option<()> {
             }
         }
     }
-    let pic = compose(letters, 1, BAND_ROWS);
+    let pic = compose(letters, 1, BAND_ROWS, tail);
     let w = pic.first().map_or(0, Vec::len) as i32;
     let x0 = BAND_CENTRE - w / 2;
     let y0 = *BAND_Y.start();
@@ -263,7 +267,7 @@ fn frame(core: &mut Core) {
         match cache.iter().find(|a| a.0 == word) {
             Some(a) => a.1.clone(),
             None => {
-                let t = word_tiles(&letters);
+                let t = word_tiles(&letters, word.find('Q'));
                 cache.push((word, t.clone()));
                 t
             }
@@ -279,7 +283,7 @@ fn frame(core: &mut Core) {
     core.raw_read_range(SEAL_MAP, -1, &mut map);
     let mut tiles = vec![0u8; 256 * 64];
     core.raw_read_range(SEAL_TILES, -1, &mut tiles);
-    if seal_band(&map, &mut tiles, &letters).is_some() {
+    if seal_band(&map, &mut tiles, &letters, word.find('Q')).is_some() {
         put(core, SEAL_TILES, &tiles);
     }
 }
@@ -327,7 +331,7 @@ mod tests {
 
     #[test]
     fn compose_keeps_columns_and_shrinks_rows() {
-        let pic = compose(&[block(), block()], 2, 10);
+        let pic = compose(&[block(), block()], 2, 10, None);
         assert_eq!(pic.len(), 10);
         assert_eq!(pic[0].len(), 6 + 2 + 6);
         assert!(pic.iter().all(|r| r[0] == 1.0 && r[6] == 0.0 && r[8] == 1.0));
@@ -342,7 +346,7 @@ mod tests {
 
     #[test]
     fn word_fits_the_sprites() {
-        let t = word_tiles(&[block(), block(), block(), block(), block(), block(), block(), block()]);
+        let t = word_tiles(&[block(), block(), block(), block(), block(), block(), block(), block()], None);
         assert_eq!(t.len(), WORD_TILES * 32);
         assert!(t.iter().any(|&b| b != 0));
     }
@@ -351,18 +355,18 @@ mod tests {
     fn seal_band_refuses_shared_cells() {
         let mut map = vec![0u8; 1024];
         let mut tiles = vec![0u8; 256 * 64];
-        assert!(seal_band(&map, &mut tiles, &[block()]).is_none());
+        assert!(seal_band(&map, &mut tiles, &[block()], None).is_none());
         for (i, m) in map.iter_mut().enumerate() {
             *m = (i % 255 + 1) as u8;
         }
         // (cells repeat every 255: a band cell shared with a cell 255 away is refused)
-        assert!(seal_band(&map, &mut tiles, &[block()]).is_none());
+        assert!(seal_band(&map, &mut tiles, &[block()], None).is_none());
         let mut unique = vec![0u8; 1024];
         for y in 9..11 {
             for x in 0..32 {
                 unique[y * 32 + x] = (1 + (y - 9) * 32 + x) as u8;
             }
         }
-        assert!(seal_band(&unique, &mut tiles, &[block()]).is_some());
+        assert!(seal_band(&unique, &mut tiles, &[block()], None).is_some());
     }
 }
