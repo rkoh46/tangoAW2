@@ -932,6 +932,12 @@ class DsCampaign:
             opts["seed"] = seed
         prefs = cos if cos is not None else opts.pop("cos", None)
         opts.pop("cos", None)
+        # (a plan search: AW2TEST_SEED=<n> and AW2TEST_COS=v1|v2|v3|default replace the plan's seed and CO
+        # preferences for this run, so a mission's winning style can be found by trying several in parallel)
+        if os.environ.get("AW2TEST_SEED"):
+            opts["seed"] = int(os.environ["AW2TEST_SEED"])
+        if os.environ.get("AW2TEST_COS"):
+            prefs = {"v1": _V1, "v2": _V2, "v3": _V3, "default": None}[os.environ["AW2TEST_COS"]]
         player = player or opts.pop("player", "bot")
         opts.pop("player", None)
         self.start(step=step)
@@ -1039,7 +1045,7 @@ PLANS = {1: {"protect": [1], "stance": "attack"}, 9: {"protect": [23]},
          12: {"rush": True, "finish": 9, "seed": 24},
          # Muck Amok!: army 3's HQ (14, 1) taken (Dual Strike's way: its
          # Ooziums vanish), the units that capture keeping clear of them.
-         16: {"goals": [(14, 1)], "ooze": True, "seed": 2, "cos": _V2},
+         16: {"goals": [(14, 1)], "ooze": True, "seed": 0, "cos": _V2},
          # Tag Battle: the game's CPU plays the player's side.
          7: {"player": "cpu"},
          # The Long March, Omens and Signs, Into the Woods, Crystal Calamity,
@@ -1050,6 +1056,8 @@ PLANS = {1: {"protect": [1], "stance": "attack"}, 9: {"protect": [23]},
          # Into the Woods: the enemy HQ rushed, ours held.
          15: {"rush": True, "garrison": True, "seed": 1, "cos": _V1},
          18: {"seed": 0},
+         # Dark Ambition: no plan before; its style found again after the power meters charged as in Dual Strike.
+         19: {"seed": 1},
          22: {"player": "cpu", "cos": _V1},
          23: {"seed": 0},
          # Victory or Death!, Pincer Strike: the test player's style found
@@ -1062,7 +1070,7 @@ PLANS = {1: {"protect": [1], "stance": "attack"}, 9: {"protect": [23]},
          # Snow Hunters: two pipe seams in the west wall broken open (Dual
          # Strike's hint: "if we create an opening in the pipe..."), our HQ
          # held, the minicannons beyond them.
-         13: {"seams": [(8, 5), (8, 3)], "garrison": True, "seed": 4},
+         13: {"seams": [(8, 5), (8, 3)], "garrison": True, "seed": 0, "cos": _V1},
          # Spiral Garden: the seam into the east corridor broken open (the
          # player's part of the spiral holds 12 properties at most), the
          # lab its capturers' goal, the enemy's capturers hunted, our HQ held.
