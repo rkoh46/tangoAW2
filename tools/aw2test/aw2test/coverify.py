@@ -1360,6 +1360,7 @@ def hq_mission(ctx, n):
     from . import escampaign as es
     e, g, d = es.enter(ctx, n)
     g.e.wait(60)
+    ctx.shot(g, f"hq_map_m{n}")
     shown = hq_check(ctx, g, "tabitha d2d", skin_armies=(1,))
     chk(ctx, "tabitha d2d", shown >= 1, f"M{n}: {shown} army/armies show the Silver Nova HQ", "hq")
     e.close()

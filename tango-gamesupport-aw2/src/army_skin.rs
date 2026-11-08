@@ -2664,6 +2664,11 @@ fn hq_loaded(core: &mut Core) {
         if army == 5 && !crate::five::active(core) {
             continue;
         }
+        // An army that is not in this game (control byte 0) keeps the colour byte of its blank player block, which can be the skin's host colour:
+        // its slot of the sheet is never drawn, but it must not hold a second copy of the skin's HQ.
+        if core.raw_read_8(crate::five::players(core) + 0x3C * army + 0x1B, -1) == 0 {
+            continue;
+        }
         let Some(skin) = hq_skin(core, army) else { continue };
         let mut art = [0u8; 0x100];
         core.raw_read_range(hq_art(skin, snow), -1, &mut art);
