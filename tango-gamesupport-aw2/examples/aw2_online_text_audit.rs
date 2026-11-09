@@ -861,14 +861,37 @@ fn proposals(c: &mut Ctx) {
     }
 }
 
-/// Conquest Run's reward page: every map's rewards with each card marked in turn, and the unit cards of every map's offer.
+/// The Conquest runs' reward pages: every map's rewards with each card marked in turn, and the unit cards of every map's offer, for each run (run 1's pages keep the names `conquest_*`, the next
+/// runs' are `conquest2_*`...).
 fn conquest(c: &mut Ctx) {
     use tango_gamesupport_aw2::{conquest as cq, conquest_reward as cr};
-    for k in 0..cq::STAGES as u8 - 1 {
-        for cursor in 0..3 {
-            paint(c, &format!("conquest_rewards_{k}_{cursor}"), (k == 0 && cursor == 0) || k + 2 == cq::STAGES as u8, |core, rgba| cr::paint(core, rgba, k, 1, cursor, cq::offered(k)));
+    // (each run's army screen: the help plate names the run and its map count, whole on the plate; the widest CO name as the player's pick)
+    let (co, widths) = {
+        let core = c.link.core();
+        // (the Gauntlet's own roster, all 35, as `gauntlet` does)
+        let list: Vec<u8> = tango_gamesupport_aw2::gauntlet_mode::ROSTER.iter().map(|r| r.0).collect();
+        let labels: Vec<String> = list.iter().map(|&co| tango_gamesupport_aw2::online_teams::co_label(core, co)).collect();
+        let widest = (0..list.len()).max_by_key(|&i| tango_gamesupport_aw2::online::text_width(core, &labels[i])).unwrap();
+        let widths: Vec<i32> = cq::RUNS.iter().map(|run| tango_gamesupport_aw2::online::text_width(core, &format!("{}: {} maps, a new CO each", run.title, run.len()))).collect();
+        (list[widest], widths)
+    };
+    for (r, run) in cq::RUNS.iter().enumerate() {
+        if widths[r] > 228 {
+            println!("PROBLEM conquest_army_help_{}: \"{}: {} maps, a new CO each\" is {} px, wider than the help plate (228): it falls back to the title alone", r + 1, run.title, run.len(), widths[r]);
+            c.problems += 1;
         }
-        paint(c, &format!("conquest_units_{k}"), k == 0 || k == 4 || k + 2 == cq::STAGES as u8, |core, rgba| cr::paint(core, rgba, k, 2, 1, cq::offered(k)));
+        let e = tango_gamesupport_aw2::gauntlet_mode::entries().iter().find(|e| e.key == run.key).expect("the run's entry");
+        paint(c, &format!("conquest_army_{}", r + 1), true, |core, rgba| tango_gamesupport_aw2::gauntlet_ui::paint_army(core, rgba, e, co, 1));
+    }
+    for (r, run) in cq::RUNS.iter().enumerate() {
+        let tag = if r == 0 { "conquest".to_string() } else { format!("conquest{}", r + 1) };
+        let last = run.len() as u8 - 2;
+        for k in 0..=last {
+            for cursor in 0..3 {
+                paint(c, &format!("{tag}_rewards_{k}_{cursor}"), (k == 0 && cursor == 0) || k == last, |core, rgba| cr::paint(core, rgba, run, k, 1, cursor, run.offered(k)));
+            }
+            paint(c, &format!("{tag}_units_{k}"), k == 0 || k == 4 || k == last, |core, rgba| cr::paint(core, rgba, run, k, 2, 1, run.offered(k)));
+        }
     }
 }
 

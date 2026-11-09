@@ -56,28 +56,37 @@ def shown(e):
 
 
 # The Gauntlet's selector lists the maps by their number of enemy COs, fewest first (crate::gauntlet_mode::order; ties in the definition's order): the missions by row and their names. A map's identity
-# is its mission (the record, `Gauntlet.open(map=<mission>)`), never its row. Conquest Run is a mission of the same campaign (the last, CONQUEST_MISSION) that the Gauntlet's selector does not list:
-# the CONQUEST wheel entry's selector lists it alone (a one-row list).
+# is its mission (the record, `Gauntlet.open(map=<mission>)`), never its row. The Conquest runs are missions of the same campaign (the last ones, CONQUEST_MISSION on: run 1's is 12) that the Gauntlet's
+# selector does not list: the CONQUEST wheel entry's selector lists them alone, a row each in the runs' order.
 SELECTOR_ORDER = [2, 3, 7, 8, 0, 4, 9, 5, 6, 10, 11, 1]
 CONQUEST_MISSION = 12
+CONQUEST_RUNS = 2                  # crate::conquest::RUNS
+CONQUEST_MISSIONS = [CONQUEST_MISSION + i for i in range(CONQUEST_RUNS)]
 # (the names the list shows: a two-map run is listed under `MissionDef::list_title`)
 SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown *"]
 CONQUEST_TITLE = "Conquest Run *"
+CONQUEST_TITLES = ["Conquest Run *", "Long Conquest *"]
 
 
 def list_ids(span=0):
-    """The map-table ids the Gauntlet's selector lists, in its order: the ids are laid out for every mission of the campaign (Conquest Run's is the first, `conquest_id`), the Gauntlet's maps take the
-    ones after it (with `span` more than that, the ids laid out for that many maps, as the app does under the test aid TANGOAW2_GAUNTLET_SLOTS=<span>: it borrows Survival's entries)."""
-    n = len(SELECTOR_ORDER) + 1
+    """The map-table ids the Gauntlet's selector lists, in its order: the ids are laid out for every mission of the campaign (the Conquest runs' are the first, `conquest_ids`), the Gauntlet's maps take the
+    ones after them (with `span` more than that, the ids laid out for that many maps, as the app does under the test aid TANGOAW2_GAUNTLET_SLOTS=<span>: it borrows Survival's entries)."""
+    n = len(SELECTOR_ORDER) + CONQUEST_RUNS
     span = max(n, min(MAX_MAPS, span))
-    return SLOT_IDS[len(SLOT_IDS) - span:][1:n]
+    return SLOT_IDS[len(SLOT_IDS) - span:][CONQUEST_RUNS:n]
 
 
-def conquest_id(span=0):
-    """The map-table id Conquest Run's one-row selector lists (the first of the ids laid out for the campaign's missions: Survival's last entry, 0xEF, borrowed while the selector is up)."""
-    n = len(SELECTOR_ORDER) + 1
+def conquest_ids(span=0):
+    """The map-table ids CONQUEST's selector lists, one a run in the runs' order (the first of the ids laid out for the campaign's missions: Survival's last entries, 0xEE and 0xEF, borrowed while the selector is up)."""
+    n = len(SELECTOR_ORDER) + CONQUEST_RUNS
     span = max(n, min(MAX_MAPS, span))
-    return SLOT_IDS[len(SLOT_IDS) - span]
+    return SLOT_IDS[len(SLOT_IDS) - span:][:CONQUEST_RUNS]
+
+
+def conquest_id(span=0, run=0):
+    """The map-table id of run `run`'s row."""
+    return conquest_ids(span)[run]
+
 
 def row_of(mission):
     """The selector's row (and the record row the game reads for it) of the map of this mission."""

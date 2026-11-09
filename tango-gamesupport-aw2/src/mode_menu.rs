@@ -508,7 +508,7 @@ pub const GAUNTLET_NEW: &str = "Start a new run. The saved run is dropped.";
 const GAUNTLET_CONTINUE_K: u16 = 41;
 const GAUNTLET_NEW_K: u16 = 42;
 /// Conquest's help line and box lines (text slots 45, 43 and 44 of the same block).
-pub const CONQUEST_HELP: &str = "Nine maps in a row. One loss ends the run.";
+pub const CONQUEST_HELP: &str = "Win every map in a row. One loss ends the run.";
 pub const CONQUEST_CONTINUE: &str = "Continue your saved Conquest run.";
 pub const CONQUEST_NEW: &str = "Start a new run. The saved run is dropped.";
 const CONQUEST_CONTINUE_K: u16 = 43;

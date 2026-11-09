@@ -390,16 +390,20 @@ fn applied_ds(core: &mut Core) {
         core.raw_write_32(BLOCK + at, -1, 0);
     }
     // A Conquest Run saved halfway: its draw of enemy COs (after the stage mark, or alone on the first map).
+    // (the current mark, `CQRM` with the run's 12 COs and the flag; run 1's first format, `CQR9` with nine and the flag, still loads as run 1's)
     for place in MARK_AT.into_iter().flat_map(|at| [at, at + 5]) {
         let mut m = [0u8; 4];
         core.raw_read_range(BLOCK + place, -1, &mut m);
-        if u32::from_le_bytes(m) == crate::conquest::SAVED_MARK {
-            let mut c = vec![0u8; crate::conquest::SAVED_LEN as usize];
-            core.raw_read_range(BLOCK + place + 4, -1, &mut c);
-            crate::conquest::restore(core, &c);
-            core.raw_write_32(BLOCK + place, -1, 0);
-            break;
-        }
+        let len = match u32::from_le_bytes(m) {
+            crate::conquest::SAVED_MARK => crate::conquest::SAVED_LEN,
+            crate::conquest::SAVED_MARK_V1 => crate::conquest::SAVED_LEN_V1,
+            _ => continue,
+        };
+        let mut c = vec![0u8; len as usize];
+        core.raw_read_range(BLOCK + place + 4, -1, &mut c);
+        crate::conquest::restore(core, &c);
+        core.raw_write_32(BLOCK + place, -1, 0);
+        break;
     }
     // The Gauntlet's map is not in AW2's world map state (the mode has none): the saved mission (the low five bits of the block's byte) is the map the run continues on, with the stage's header
     // on a later stage; the latches just restored stay.
@@ -713,6 +717,17 @@ mod tests {
         assert_eq!(TAG_AT - BLOCK, MARK_AT[0], "the tail starts at the first place");
         let longest = MARK_AT[1] + 4 + crate::two_front::SAVED_LEN;
         assert!(longest <= STAGING && longest <= SLOT_MAX, "{longest} bytes");
+    }
+
+    /// A Conquest run's draw (twelve COs and the flag) after the stage mark, behind the pairs' tail, still fits the staging buffer and the slot's two sectors; its two marks are different and neither is
+    /// another tail mark.
+    #[test]
+    fn a_conquest_save_fits_the_slot() {
+        let longest = MARK_AT[1] + 5 + 4 + crate::conquest::SAVED_LEN;
+        assert!(longest <= STAGING && longest <= SLOT_MAX, "{longest} bytes");
+        assert_ne!(crate::conquest::SAVED_MARK, crate::conquest::SAVED_MARK_V1);
+        assert_ne!(crate::conquest::SAVED_MARK, crate::conquest::OLD_SAVED_MARK);
+        assert!(![crate::stage::SAVED_MARK, FRONTS_MARK, FIVE_MARK].contains(&crate::conquest::SAVED_MARK));
     }
 
     #[test]

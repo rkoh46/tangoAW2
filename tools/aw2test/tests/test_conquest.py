@@ -1,5 +1,6 @@
-"""Conquest Run (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine), a run of nine AW2 Versus maps with the survivors and funds carried
-over, one loss ends it, a win after the fifth map records a result; the wheel entry, its one-row selector and its Continue / New box apart from the Gauntlet's. `-k conquest`."""
+"""Conquest (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine), runs of AW2 Versus maps with the survivors and funds carried
+over, one loss ends it, a win after the last map records a result under the run's own key; the wheel entry, its selector (a row a run) and its Continue / New box apart from the Gauntlet's. Run 1 is
+Conquest Run (9 maps); run 2, "Long Conquest", is a PROVISIONAL placeholder that exercises the several-runs path. `-k conquest`."""
 
 import os
 import subprocess
@@ -20,20 +21,35 @@ def png(ctx, e, name):
     return p + ".png"
 
 
-def start(ctx, co=ga.ANDY, colour=None, save=None, env=None):
-    """Conquest Run started from Select Mode: (emu, game, driver) with the player in control on day 1 of the first map."""
+def start(ctx, co=ga.ANDY, colour=None, save=None, env=None, run=0):
+    """Run `run` (0-based) of CONQUEST started from Select Mode: (emu, game, driver) with the player in control on day 1 of the first map."""
     e = Emu(save=save or paths.base_save(), ds=ctx.ds, env=env)
     g = Game(e, ctx.image)
     ctx.games.append(g)
-    d = cq.Conquest(g)
+    d = cq.Conquest(g, run=run)
     d.begin(co, colour)
     return e, g, d
 
 
-@test(name="conquest_selector_is_one_row_with_its_title", modes=("ds",))
-def conquest_selector_is_one_row_with_its_title(ctx):
-    """CONQUEST's map selector (the War Room's own screen) lists Conquest Run * alone (the star: several maps) on its own map-table id, the cursor on it; A takes it to the army screen. The Gauntlet's
-    list never has it."""
+def preview_size(e, d, id_):
+    """The picture a map-table entry shows (header +0x2C: its LZ77 tiles in the ROM): the (width, height) in cells, or None when it points into the game's own maps."""
+    from aw2test import rom
+    ptr = e.u32(d.table() + 0x5C * id_ + 0x2C)
+    raw = rom.lz10(bytes(e.read(ptr, 0x800)))
+    return raw[0], raw[1]
+
+
+def record_row(e, id_):
+    """The War Room record row the selector's record box reads for map-table id `id_`: five words (CO byte, score above)."""
+    b = bytes(e.read(ga.ROWS + 0x14 * (id_ - ga.ROW_BASE), 0x14))
+    return [int.from_bytes(b[4 * k:4 * k + 4], "little") for k in range(5)]
+
+
+@test(name="conquest_selector_has_a_row_for_each_run", modes=("ds",))
+def conquest_selector_has_a_row_for_each_run(ctx):
+    """CONQUEST's map selector (the War Room's own screen) lists a row a run, "Conquest Run *" then "Long Conquest *" (the star: several maps), each on its own map-table id, the cursor on the first and
+    DOWN / UP between them; SELECT flips through the highlighted run's own maps' pictures (cropped from the ROM into the shared slots); each row's record box shows its own run's results; A takes
+    the highlighted run to the army screen. The Gauntlet's list never has them."""
     e = Emu(save=paths.base_save(), ds=ctx.ds)
     g = Game(e, ctx.image)
     ctx.games.append(g)
@@ -41,27 +57,76 @@ def conquest_selector_is_one_row_with_its_title(ctx):
     d.open(pick=False)
     d.wait_step(ga.SELECTOR)
     ids, row = d.selector_ids()
-    ctx.eq([d.entry_name(i) for i in ids], [ga.CONQUEST_TITLE], "the one row")
-    ctx.eq(ids, [ga.conquest_id()], "on its own map-table id")
-    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (0, cq.MISSION), "the cursor is on it: mission 12")
-    ctx.eq(ga.shown(e)[0], 1, "the screen's mirror lists one map")
-    png(ctx, e, "selector")
+    ctx.eq([d.entry_name(i) for i in ids], ga.CONQUEST_TITLES, "one row a run")
+    ctx.eq(ids, ga.conquest_ids(), "on their own map-table ids")
+    ctx.eq((row, e.u8(ga.UI_MAP_CURSOR)), (0, cq.RUNS[0]["mission"]), "the cursor is on the first: mission 12")
+    ctx.eq(ga.shown(e)[0], len(cq.RUNS), "the screen's mirror lists the runs")
+    png(ctx, e, "selector_run1")
+    # (each run's rows hold only its own results: the record box reads the row of its id)
+    d.put_results(51, [(ga.ANDY, 70, 400)])
+    d.put_results(52, [(ga.SAMI, 90, 300), (ga.MAX, 95, 200)])
+    e.wait(20)
+    rows = [record_row(e, i) for i in ga.conquest_ids()]
+    ctx.eq([w & 0xFF for w in rows[0][:2]], [ga.ANDY, 0], "run 1's row holds run 1's result")
+    ctx.eq([w & 0xFF for w in rows[1][:2]], [ga.SAMI, ga.MAX], "run 2's row holds run 2's two results")
+    ctx.eq(preview_size(e, d, ga.conquest_id(run=0)), cq.RUNS[0]["maps"][0]["size"], "run 1's picture is Sabre Range's")
+    e.press("DOWN", 4)
+    e.wait(60)
+    ctx.eq((d.selector_ids()[1], e.u8(ga.UI_MAP_CURSOR)), (1, cq.RUNS[1]["mission"]), "DOWN moves to the second run: mission 13")
+    png(ctx, e, "selector_run2")
+    # SELECT flips through run 2's nine maps (the cursor's row only), the picture the size of the map's crop, and round to the first again
+    maps = cq.RUNS[1]["maps"]
+    for k in range(1, len(maps) + 1):
+        d.flip(90)
+        want = k % len(maps)
+        ctx.eq(e.u8(ga.UI_STAGE), want, f"SELECT: map {want + 1} of the run")
+        w, h = maps[want]["size"]
+        if want > 0:
+            ctx.eq(preview_size(e, d, ga.conquest_id(run=1)), (min(w, 32), min(h, 22)), f"the picture is {maps[want]['name']}'s, cropped to the picture area")
+        if want in (1, len(maps) - 1):
+            png(ctx, e, f"selector_run2_map{want + 1}")
+    e.press("UP", 4)
+    e.wait(60)
+    ctx.eq((d.selector_ids()[1], e.u8(ga.UI_MAP_CURSOR), e.u8(ga.UI_STAGE)), (0, cq.RUNS[0]["mission"], 0), "UP is the first run, on its first map")
     e.press("DOWN", 4)
     e.wait(40)
-    ctx.eq((d.selector_ids()[1], e.u8(ga.UI_MAP_CURSOR)), (0, cq.MISSION), "DOWN has nowhere to go")
+    e.press("DOWN", 4)
+    e.wait(40)
+    ctx.eq((d.selector_ids()[1], e.u8(ga.UI_MAP_CURSOR)), (1, cq.RUNS[1]["mission"]), "DOWN has nowhere further to go")
+    e.press("UP", 4)
+    e.wait(40)
     e.press("A", 6)
     d.wait_army()
-    ctx.eq(e.u8(ga.UI_MAP), cq.MISSION, "A took Conquest Run to the army screen")
+    ctx.eq(e.u8(ga.UI_MAP), cq.RUNS[0]["mission"], "A took Conquest Run to the army screen")
     free = ga.shown(e)[2]
     ctx.check(cq.BLACK_HOLE not in free, f"the enemy wears Black Hole's colour, so the player's pick leaves it ({free})")
     png(ctx, e, "army_screen")
     e.close()
 
 
+@test(name="conquest_second_run_is_picked_on_its_row", modes=("ds",))
+def conquest_second_run_is_picked_on_its_row(ctx):
+    """A on the second row takes "Long Conquest" (mission 13) to its own army screen (its title and map count are in the picture) and starts it on its first map; B on the selector goes back to the wheel on
+    CONQUEST."""
+    e = Emu(save=paths.base_save(), ds=ctx.ds)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = cq.Conquest(g, run=1)
+    d.open()
+    d.wait_army()
+    ctx.eq(e.u8(ga.UI_MAP), cq.RUNS[1]["mission"], "A took Long Conquest to the army screen")
+    png(ctx, e, "army_screen_run2")
+    d.pick_army(ga.ANDY)
+    d.into_battle()
+    ctx.eq((d.session()["mission"], d.session()["source"]), (cq.RUNS[1]["mission"], ga.GAUNTLET), "the run is the Gauntlet's mission 13")
+    ctx.eq(cq.stage(e), 0, "stage 0")
+    e.close()
+
+
 @test(name="conquest_gauntlet_selector_does_not_list_it", modes=("ds",))
 def conquest_gauntlet_selector_does_not_list_it(ctx):
-    """The Gauntlet's own selector lists its twelve maps and not Conquest Run (its map-table entry is hidden, Survival's borrowed entry given back whole); Conquest's pick afterwards lists the one row again,
-    the Gauntlet's the twelve."""
+    """The Gauntlet's own selector lists its twelve maps and not the Conquest runs (their map-table entries are hidden, Survival's borrowed entries given back whole); Conquest's pick afterwards lists
+    the runs' rows again, the Gauntlet's the twelve."""
     e = Emu(save=paths.base_save(), ds=ctx.ds)
     g = Game(e, ctx.image)
     ctx.games.append(g)
@@ -70,7 +135,7 @@ def conquest_gauntlet_selector_does_not_list_it(ctx):
     d.wait_step(ga.SELECTOR)
     ids, row = d.selector_ids()
     ctx.eq([d.entry_name(i) for i in ids], ga.SELECTOR_TITLES, "the Gauntlet's twelve maps")
-    ctx.check("Conquest Run *" not in [d.entry_name(i) for i in ids], "no Conquest Run among them")
+    ctx.check(not set(ga.CONQUEST_TITLES) & {d.entry_name(i) for i in ids}, "no Conquest run among them")
     ctx.eq(ga.shown(e)[0], len(ga.SELECTOR_ORDER), "the mirror lists twelve maps")
     ctx.eq(e.u8(ga.UI_MAP_CURSOR), ga.SELECTOR_ORDER[0], "the cursor is on the first row's map")
     # B, B back to Select Mode on GAUNTLET, then CONQUEST: the one row
@@ -82,7 +147,7 @@ def conquest_gauntlet_selector_does_not_list_it(ctx):
     e.press("A", 8)
     d.wait_step(ga.SELECTOR)
     ids, _ = d.selector_ids()
-    ctx.eq([d.entry_name(i) for i in ids], [ga.CONQUEST_TITLE], "CONQUEST lists Conquest Run alone")
+    ctx.eq([d.entry_name(i) for i in ids], ga.CONQUEST_TITLES, "CONQUEST lists the runs, not the Gauntlet's maps")
     e.press("B", 8)
     ctx.require(e.wait_until(lambda: d.select_mode_up() and e.u8(dc.ACTIVE) == 0, 900, step=10), "B: back on Select Mode")
     e.wait(60)
@@ -391,8 +456,9 @@ ENEMIES = cq.STATE + 0x08          # crate::conquest: the nine drawn COs (the fl
 PLAYER_CO = 0x1D                   # the player record's CO byte
 
 
-def draw_of(e):
-    return list(e.read(ENEMIES, cq.STAGES)), e.u8(cq.STATE + 0x15)
+def draw_of(e, n=cq.STAGES):
+    """The run's draw: its `n` enemy COs and the flag (the draw's bytes are +0x08..+0x13, up to twelve)."""
+    return list(e.read(ENEMIES, n)), e.u8(cq.STATE + 0x15)
 
 
 def enemy_co(e, g):
@@ -435,11 +501,11 @@ def conquest_enemy_cos_are_drawn_when_the_run_starts(ctx):
     e.close()
 
 
-def resume(ctx, path):
+def resume(ctx, path, run=0):
     e = Emu(save=path, ds=ctx.ds)
     g = Game(e, ctx.image)
     ctx.games.append(g)
-    d = cq.Conquest(g)
+    d = cq.Conquest(g, run=run)
     d.open(pick=False, box="continue")
     ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1800, step=10), "Continue in CONQUEST's box brings the battle back")
     g._units_base = g._players_base = None
@@ -498,6 +564,190 @@ def conquest_save_and_continue_on_the_first_map_keeps_the_draw(ctx):
     e.close()
 
 
+# -- the second run: the several-runs path (a PROVISIONAL placeholder run) --------------------------------------------------------------------------------------------------
+
+def run_two(ctx, co=ga.ANDY):
+    return start(ctx, co, run=1)
+
+
+@test(name="conquest_run_two_starts_on_its_first_map", modes=("ds",))
+def conquest_run_two_starts_on_its_first_map(ctx):
+    """Run 2 ("Long Conquest *", mission 13) started from its row: its own first map (Pay Dirt, 16 x 12, read from the ROM), the player's starting force, the enemy's force and funds, Black Hole's colour
+    for the enemy; a draw of nine enemy COs is held; the first win brings its own second map (Pivot Isle) with the draw's second CO and the reward page's war chest."""
+    e, g, d = run_two(ctx, ga.SAMI)
+    m = cq.RUNS[1]["maps"][0]
+    ctx.eq((d.session()["mission"], d.session()["source"]), (13, ga.GAUNTLET), "the run is the Gauntlet's mission 13")
+    ctx.eq(cq.stage(e), 0, "stage 0")
+    ctx.eq(d.size(), m["size"], f"{m['name']}")
+    ctx.eq((len(g.units(army=1)), len(g.units(army=2))), (m["mine"], m["force"]), "the starting forces")
+    ctx.eq([d.owner(m["player"]), d.owner(m["enemy"])], [1, 2], "both HQs")
+    ctx.eq(e.u8(g.players_base + 0x3C * 2 + 0x1A), cq.BLACK_HOLE, "the enemy wears Black Hole's colour")
+    cos, drawn = draw_of(e)
+    ctx.eq((drawn, len(set(cos))), (1, 9), f"nine different enemy COs are drawn ({cos})")
+    ctx.check(ga.SAMI not in cos, "never the player's CO")
+    ctx.eq(list(e.read(ENEMIES + 9, 3)), [0, 0, 0], "a nine-map run leaves the draw's other bytes 0")
+    ctx.eq(enemy_co(e, g), cos[0], "map 1's enemy is the draw's first")
+    png(ctx, e, "run2_first_turn")
+    d.capture_enemy_hq(ctx)
+    d.wait_reward()
+    ctx.eq((d.reward_page(), e.u8(cq.WON)), (1, 0), "the reward page opens over map 1")
+    funds = d.funds(1)
+    d.choose_reward(cq.CHEST)
+    d.wait_stage(1, reward=cq.CHEST)
+    n = cq.RUNS[1]["maps"][1]
+    ctx.eq(d.size(), n["size"], f"{n['name']} is run 2's second map")
+    ctx.eq(len(g.units(army=2)), n["force"], "its enemy force")
+    ctx.eq(enemy_co(e, g), cos[1], "the draw's second CO")
+    ctx.check(d.funds(1) >= cq.CHEST_FUNDS[0], f"the war chest came along ({funds} -> {d.funds(1)})")
+    e.close()
+
+
+@test(name="conquest_run_two_full_run_records_under_its_own_key", modes=("ds",))
+def conquest_run_two_full_run_records_under_its_own_key(ctx):
+    """Run 2's nine maps won in a row end in VICTORY; the Gauntlet's top-five table has a row for gauntlet_52 (the run's own key) with this run's CO, days and score, and none for run 1's gauntlet_51; back on
+    the wheel on CONQUEST."""
+    e, g, d = run_two(ctx)
+    maps = cq.RUNS[1]["maps"]
+    for k in range(len(maps)):
+        ctx.eq(cq.stage(e), k, f"on map {k + 1}")
+        ctx.eq(d.size(), maps[k]["size"], maps[k]["name"])
+        g._units_base = g._players_base = None
+        ctx.eq(len(g.units(army=2)), maps[k]["force"], f"{maps[k]['name']}: the enemy's starting force")
+        ctx.eq([d.owner(maps[k]["player"]), d.owner(maps[k]["enemy"])], [1, 2], f"{maps[k]['name']}: both HQs")
+        if k + 1 < len(maps):
+            d.win_map(ctx, k)
+        else:
+            d.capture_enemy_hq(ctx, k)
+    ctx.eq(d.through_results(), 1, "taking the last HQ wins the run")
+    e.wait(60)
+    got = d.results(cq.RUNS[1]["record"])
+    ctx.eq(len(got), 1, f"one result under run 2's key ({got})")
+    ctx.eq(d.results(cq.RUNS[0]["record"]), [], "none under run 1's")
+    co, days, score = got[0]
+    ctx.eq(co, ga.ANDY, "Andy's run")
+    ctx.check(days >= 1 and score > 0, f"days {days}, score {score}")
+    done = saves.flash(e, os.path.join(ctx.out, "finished2"))
+    rec = ga.saved_record(done)
+    ctx.check(rec is not None and ga.record_best(rec, 52) is not None and ga.record_best(rec, 51) is None, "the win was written to Flash slot 13 under id 52 only")
+    ctx.eq(ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)], 10, "the wheel is on CONQUEST after the run")
+    e.close()
+
+
+@test(name="conquest_run_two_save_and_continue_on_map_three_keeps_its_draw", modes=("ds",))
+def conquest_run_two_save_and_continue_on_map_three_keeps_its_draw(ctx):
+    """Run 2 saved from the map menu on map 3 (Sole Harbor) and continued from CONQUEST's box: it is run 2 again (mission 13, its own maps), with the same enemy draw, armies and funds; the win of map 3 brings
+    map 4 (Twin Isle) with the draw's fourth CO."""
+    e, g, d = run_two(ctx, 5)
+    cos, _ = draw_of(e)
+    d.win_map(ctx, 0, reward=cq.CHEST)
+    d.win_map(ctx, 1, reward=cq.REINFORCE, unit=1)
+    ctx.eq(cq.stage(e), 2, "on map 3")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    mine, theirs, money = d.units_by_type(1), d.units_by_type(2), (d.funds(1), d.funds(2))
+    ctx.eq(enemy_co(e, g), cos[2], "map 3's enemy")
+    cells = g.empty_cells
+    g.empty_cells = lambda: sorted(cells(), key=lambda c: abs(c[0] - 6) + abs(c[1] - 6))
+    saves.suspend(g)
+    saved = saves.flash(e, os.path.join(ctx.out, "saved2"))
+    ctx.check(not saved.problems(), f"every slot passes its check ({saved.problems()})")
+    e.close()
+    e, g, d = resume(ctx, saved.path, run=1)
+    maps = cq.RUNS[1]["maps"]
+    ctx.eq(cq.stage(e), 2, "continued on map 3")
+    ctx.eq(d.session()["mission"], 13, "run 2's mission")
+    ctx.eq(d.size(), maps[2]["size"], maps[2]["name"])
+    ctx.eq(draw_of(e)[0], cos, "the same enemy draw came back with the run")
+    ctx.eq(enemy_co(e, g), cos[2], "the enemy on the field is still map 3's")
+    ctx.eq((d.units_by_type(1), d.units_by_type(2)), (mine, theirs), "both armies as saved")
+    ctx.eq((d.funds(1), d.funds(2)), money, "the funds as saved")
+    d.win_map(ctx, 2, reward=cq.CHEST)
+    ctx.eq(cq.stage(e), 3, "map 4 after the continue")
+    ctx.eq(d.size(), maps[3]["size"], maps[3]["name"])
+    ctx.eq(enemy_co(e, g), cos[3], "map 4's enemy is the draw's fourth CO, drawn before the save")
+    e.close()
+
+
+@test(name="conquest_run_two_box_and_isolation", modes=("ds",))
+def conquest_run_two_box_and_isolation(ctx):
+    """The box isolation holds with the second run: CONQUEST's box offers Continue over a run 2 save (and Continue is run 2); GAUNTLET goes straight to its selector over it, the save untouched; a new run
+    of run 1 drops it; a new run of run 2 keeps a Gauntlet save and drops only Conquest's."""
+    two = saved_run_of(ctx, lambda g: cq.Conquest(g, run=1), "conquest2_saved")
+    e, g = select_mode_on(ctx, two.path)
+    d = cq.Conquest(g)
+    saves.wheel_to(e, "conquest")
+    e.press("A", 8)
+    ctx.require(e.wait_until(d.box_open, 120, step=4), "CONQUEST opens its box over a run 2 save")
+    e.wait(45)
+    png(ctx, e, "box_run2")
+    e.press("B", 8)
+    e.wait(40)
+    saves.wheel_to(e, "gauntlet")
+    e.press("A", 8)
+    gd = ga.Gauntlet(g)
+    gd.wait_step(ga.SELECTOR)
+    ctx.check(not d.box_open(), "GAUNTLET goes to its selector at once over a Conquest run 2 save")
+    ctx.check(mid_in_directory(e), "the run 2 save is still there")
+    e.close()
+    # Continue in CONQUEST's box is run 2
+    e, g, d = resume(ctx, two.path, run=1)
+    ctx.eq(d.session()["mission"], 13, "Continue in CONQUEST's box is run 2")
+    e.close()
+    # a new run of run 1 over the run 2 save drops it
+    e, g = select_mode_on(ctx, two.path)
+    d = cq.Conquest(g)
+    saves.wheel_to(e, "conquest")
+    e.press("A", 8)
+    d.choose_in_box("new")
+    d.wait_step(ga.SELECTOR)
+    e.press("A", 6)
+    d.pick_army(ga.ANDY)
+    d.into_battle()
+    ctx.eq(d.session()["mission"], 12, "a new run of run 1")
+    ctx.check(not mid_in_directory(e), "it dropped the run 2 save")
+    e.close()
+    # a new run 2 over a Gauntlet save keeps it
+    ga_save = saved_run_of(ctx, ga.Gauntlet, "gauntlet_saved")
+    e, g = select_mode_on(ctx, ga_save.path)
+    d = cq.Conquest(g, run=1)
+    d.open(from_title=False)
+    d.pick_army(ga.ANDY)
+    d.into_battle()
+    ctx.eq(d.session()["mission"], 13, "a run 2 started over the Gauntlet save")
+    ctx.check(mid_in_directory(e), "the Gauntlet save is kept by the new run 2")
+    e.close()
+
+
+@test(name="conquest_an_old_cqr9_save_continues_as_run_one", modes=("ds",))
+def conquest_an_old_cqr9_save_continues_as_run_one(ctx):
+    """A run saved before runs had a table (tail mark CQR9: nine COs and the flag, mission 12) still continues: as run 1, with its draw. The old record is made from a new one by rewriting the tail's mark
+    and length."""
+    from aw2test import saveimg
+    e, g, d = start(ctx, 0)
+    cos, _ = draw_of(e)
+    cells = g.empty_cells
+    g.empty_cells = lambda: sorted(cells(), key=lambda c: abs(c[0] - 4) + abs(c[1] - 4))
+    saves.suspend(g)
+    saved = saves.flash(e, os.path.join(ctx.out, "saved_new"))
+    e.close()
+
+    def old_format(payload):
+        i = payload.find(b"CQRM")
+        assert i >= 0, "the new format's mark is in the save"
+        return payload[:i] + b"CQR9" + payload[i + 4:i + 13] + payload[i + 16:i + 17] + payload[i + 17:]
+
+    old = saveimg.rewrite_slot(saved.path, os.path.join(ctx.out, "saved_old.sav"), ga.MID_SLOT, old_format)
+    chk = saveimg.Image(old).slot(ga.MID_SLOT)
+    ctx.check(b"CQR9" in chk and b"CQRM" not in chk, "the save now has the old mark")
+    e, g, d = resume(ctx, old, run=0)
+    ctx.eq((d.session()["mission"], cq.stage(e)), (12, 0), "continued as run 1, on map 1")
+    ctx.eq(draw_of(e), (cos, 1), "the old save's draw came back")
+    d.win_map(ctx, 0, reward=cq.CHEST)
+    ctx.eq(enemy_co(e, g), cos[1], "map 2's enemy is the draw's second")
+    ctx.eq(d.size(), cq.RUNS[0]["maps"][1]["size"], "Asphalt Maze")
+    e.close()
+
+
 # -- the wheel entry and its box --------------------------------------------------------------------------------------------------------------------------------------------
 
 OPTIONS, HELP = 0x08E40080, 0x08E40010      # crate::mode_menu: the open item's two lines a position, the help line a position (text ids; the wheel's own copies of AW2's tables)
@@ -529,7 +779,7 @@ def conquest_wheel_entry_has_its_label_and_help_line(ctx):
     ctx.eq(ga.wheel_items(e), [2, 4, 3, 1, 9, 10, 0, 5, 8], "the nine entries: Conquest above Gauntlet")
     ctx.eq(saves.position(e, "conquest"), 5, "position 5")
     pos = saves.position(e, "conquest")
-    ctx.eq(text_of(e, e.u16(HELP + 2 * pos)), "Nine maps in a row. One loss ends the run.", "the help line")
+    ctx.eq(text_of(e, e.u16(HELP + 2 * pos)), "Win every map in a row. One loss ends the run.", "the help line")
     ctx.eq([text_of(e, e.u16(OPTIONS + 2 * (2 * pos + k))) for k in (0, 1)], ["Continue your saved Conquest run.", "Start a new run. The saved run is dropped."], "the box's two lines")
     ctx.eq(text_of(e, e.u16(HELP + 2 * saves.position(e, "gauntlet"))), "Beat a map's COs one after another.", "the Gauntlet's help line is its own")
     saves.wheel_to(e, "conquest")
@@ -602,7 +852,7 @@ def conquest_box_is_offered_for_a_conquest_save_only(ctx):
     d.wait_step(ga.SELECTOR)
     ctx.check(not d.box_open(), "CONQUEST goes to its selector at once over a Gauntlet save")
     ids, _ = d.selector_ids()
-    ctx.eq([d.entry_name(i) for i in ids], [ga.CONQUEST_TITLE], "the one row")
+    ctx.eq([d.entry_name(i) for i in ids], ga.CONQUEST_TITLES, "the runs' rows")
     ctx.check(mid_in_directory(e), "the Gauntlet save is still there")
     e.press("B", 8)
     ctx.require(e.wait_until(lambda: d.select_mode_up() and e.u8(dc.ACTIVE) == 0, 900, step=10), "B: back on Select Mode")
@@ -716,19 +966,21 @@ def conquest_tool_start(ctx):
 @test(name="conquest_pictures", modes=("ds",))
 def conquest_pictures(ctx):
     """The whole run in the three looks (AW2 graphics, Dual Strike graphics with the tilt, without it): the reward page, the unit page and each of the nine maps' first turn, one row a look on one
-    contact sheet `conquest_sheet.png` (AW2TEST_SHEET copies it where a person looks)."""
+    contact sheet `conquest_sheet.png` (AW2TEST_SHEET copies it where a person looks). AW2TEST_CONQUEST_RUN (1-based, default 1) picks the run: `aw2dev conquest sheet --run 2`."""
     from PIL import Image, ImageDraw
+    run = max(1, int(os.environ.get("AW2TEST_CONQUEST_RUN", "1") or 1)) - 1
+    stages = len(cq.RUNS[run]["maps"])
     rows = []
     for look, env in LOOKS:
         e = Emu(save=paths.base_save(), ds=ctx.ds, env=env)
         g = Game(e, ctx.image)
         ctx.games.append(g)
-        d = cq.Conquest(g)
+        d = cq.Conquest(g, run=run)
         d.begin(ga.ANDY)
         shots = {}
         shots["map1"] = png(ctx, e, f"{look}_map1")
-        for k in range(cq.STAGES):
-            if k + 1 == cq.STAGES:
+        for k in range(stages):
+            if k + 1 == stages:
                 break
             d.capture_enemy_hq(ctx, k)
             d.wait_reward()
@@ -745,7 +997,7 @@ def conquest_pictures(ctx):
                 e.wait(10)
             d.wait_stage(k + 1, reward=cq.CHEST)
             shots[f"map{k + 2}"] = png(ctx, e, f"{look}_map{k + 2}")
-        order = ["reward", "units"] + [f"map{k + 1}" for k in range(cq.STAGES)]
+        order = ["reward", "units"] + [f"map{k + 1}" for k in range(stages)]
         rows.append((look, [Image.open(shots[n]).convert("RGB") for n in order if n in shots]))
         e.close()
     w, h = rows[0][1][0].size
@@ -761,4 +1013,4 @@ def conquest_pictures(ctx):
         import shutil
         shutil.copy(p, dest)
     ctx.log(f"sheet {p}: rows {[r[0] for r in rows]}")
-    ctx.check(all(len(r[1]) == cq.STAGES + 2 for r in rows), "eleven pictures a look: the reward page, the units and the nine maps")
+    ctx.check(all(len(r[1]) == stages + 2 for r in rows), "the reward page, the units and every map: a picture each in every look")

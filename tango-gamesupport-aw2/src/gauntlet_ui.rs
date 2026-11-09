@@ -215,6 +215,9 @@ fn blob_of_tiles(w: u8, h: u8, tiles: &[u16], whole: bool) -> Option<Vec<u8>> {
 /// The cropped pictures: for each map (by mission) and each of its stages (0 the first map), the ROM place and the blob, or None when the picture is the map's own (the first map when it fits the
 /// area; a stage whose map is not a built one). The places are the 0x800-byte slots of [`PREVIEW_ROM`] in this order, the first map's (when it needs one) and then its later stages'; the slots of all
 /// maps and stages together are at most [`MAX_MAPS`] (`previews_fit_their_slots`).
+/// The Conquest runs' later maps (AW2's own, cropped from the player's ROM when shown) share slots: the one of stage k is the same for every run, and the highlighted row is the only one that shows a
+/// later stage, so a run needs only as many slots as its maps. Those slots are the first of the room, over the Gauntlet's: the two lists are never up together, and a map that is not listed gets
+/// no picture written ([`entries_in_table`]).
 fn previews() -> &'static Vec<Vec<Option<(u32, Vec<u8>)>>> {
     static B: std::sync::OnceLock<Vec<Vec<Option<(u32, Vec<u8>)>>>> = std::sync::OnceLock::new();
     B.get_or_init(|| {
@@ -225,9 +228,15 @@ fn previews() -> &'static Vec<Vec<Option<(u32, Vec<u8>)>>> {
             assert!(slot as usize <= MAX_MAPS, "the pictures need more room than PREVIEW_ROM's {MAX_MAPS} slots");
             Some((at, lz))
         };
+        // (the Conquest runs' shared slots: slot k-1 for the later map k)
+        let shared = |k: usize| Some((PREVIEW_ROM + PREVIEW_SIZE * (k as u32 - 1), Vec::new()));
         gm::entries()
             .iter()
             .map(|e| {
+                if e.random_enemies {
+                    assert!(e.stage_aw2.len() < MAX_MAPS, "a run's maps share the first slots");
+                    return std::iter::once(None).chain((1..=e.stage_aw2.len()).map(shared)).collect();
+                }
                 let first = crate::custom_campaign::built_map(e.key).and_then(|m| blob_of(m, false)).and_then(&mut take);
                 // (a later stage that is one of AW2's own maps has a slot reserved with no blob yet: it is made from the player's ROM when the selector needs it, [`aw2_blob`])
                 let rest: Vec<_> = e
@@ -274,10 +283,10 @@ fn shown_stage(core: &Core, mission: usize) -> usize {
     }
 }
 
-/// The maps the selector lists now: Conquest's pick lists the Conquest Run alone, the Gauntlet's lists its own maps (Conquest Run is a mission of the Gauntlet's campaign, but a game mode of its
-/// own on the wheel: [`crate::conquest::mode`]).
+/// The maps the selector lists now: Conquest's pick lists the Conquest runs (a row each), the Gauntlet's lists its own maps (the runs are missions of the Gauntlet's campaign, but a game mode of
+/// their own on the wheel: [`crate::conquest::mode`]).
 fn listed(core: &Core, e: &Entry) -> bool {
-    (e.key == crate::conquest::KEY) == crate::conquest::mode(core)
+    crate::conquest::is_key(e.key) == crate::conquest::mode(core)
 }
 
 /// The mission of the selector's first row now.
@@ -322,7 +331,8 @@ fn entries_in_table(core: &mut Core, shown: bool) {
             h[0x18] = 1;
             h[0x3D..0x40].copy_from_slice(&[0xFF; 3]);
         }
-        if let Some((rom, blob)) = preview_of(e, stage).map(|(r, b)| (*r, b)) {
+        // (a map that is not listed has no picture written: the Conquest runs' slots lie over the Gauntlet's, `previews`)
+        if let Some((rom, blob)) = preview_of(e, stage).map(|(r, b)| (*r, b)).filter(|_| shown) {
             let made;
             let blob = if blob.is_empty() {
                 match stage.checked_sub(1).and_then(|k| e.stage_aw2.get(k).copied().flatten()).and_then(|id| aw2_blob(core, id)) {
@@ -637,7 +647,7 @@ const HELP_WIDTH: i32 = 228;
 pub fn paint_army(core: &Core, rgba: &mut [u8], e: &Entry, co: u8, colour: u8) {
     use crate::army_cards::{Field, Help, Seat};
     let cv = &mut Rgba(rgba);
-    crate::army_cards::teams_frame(core, cv, if e.key == crate::conquest::KEY { "CONQUEST" } else { "GAUNTLET" });
+    crate::army_cards::teams_frame(core, cv, if e.random_enemies { "CONQUEST" } else { "GAUNTLET" });
     let seats: Vec<Seat> = cards(e, co, colour)
         .into_iter()
         .enumerate()
@@ -707,19 +717,20 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
 mod tests {
     use super::*;
 
-    /// Conquest Run is ranked first among the campaign's missions, so the Gauntlet's twelve maps have the ids they had before it existed (the last twelve, the free ones: Survival's entries untouched)
-    /// and Conquest's one row has the id before them (Survival's last entry, borrowed only while its selector is up).
+    /// The Conquest runs are ranked first among the campaign's missions (in the runs' order), so the Gauntlet's twelve maps have the ids they had before they existed (the last twelve, the free ones:
+    /// Survival's entries untouched) and each run's row has an id before them (Survival's last entries, borrowed only while its selector is up), ascending in the runs' order.
     #[test]
-    fn the_gauntlets_maps_keep_their_ids_and_conquests_row_has_the_one_before() {
+    fn the_gauntlets_maps_keep_their_ids_and_the_runs_rows_have_the_ones_before() {
         assert_eq!(span(), gm::entries().len(), "no test aid in a unit test");
-        let conquest = gm::entries().iter().find(|e| e.key == crate::conquest::KEY).unwrap();
-        let theirs: Vec<u8> = gm::entries().iter().filter(|e| e.key != crate::conquest::KEY).map(|e| id_of(e.mission)).collect();
+        let runs: Vec<&Entry> = crate::conquest::RUNS.iter().map(|r| gm::entries().iter().find(|e| e.key == r.key).unwrap()).collect();
+        let theirs: Vec<u8> = gm::entries().iter().filter(|e| !crate::conquest::is_key(e.key)).map(|e| id_of(e.mission)).collect();
         let mut sorted = theirs.clone();
         sorted.sort();
         assert_eq!(sorted, ids_for(theirs.len()), "the Gauntlet's maps are the last ids, as before Conquest Run");
         assert!(theirs.iter().all(|&i| i >= 0xF2), "none of Survival's entries is touched by the Gauntlet's list");
-        assert_eq!(id_of(conquest.mission), ids_for(theirs.len() + 1)[0]);
-        assert!(id_of(conquest.mission) <= 0xEF && !theirs.contains(&id_of(conquest.mission)));
+        let mine: Vec<u8> = runs.iter().map(|e| id_of(e.mission)).collect();
+        assert_eq!(mine, ids_for(theirs.len() + runs.len())[..runs.len()].to_vec(), "the runs' rows, in the runs' order, just before the Gauntlet's");
+        assert!(mine.iter().all(|i| *i <= 0xEF && !theirs.contains(i)));
     }
 
     /// The list at its maximum: 32 maps get 32 ascending ids that avoid the campaigns' and the battle's (0xF0, 0xF1, 0xFE), the record rows cover every id, a map's identity (its record key) never moves when
@@ -772,12 +783,23 @@ mod tests {
     /// The pictures of every map and stage take distinct 0x800-byte slots inside PREVIEW_ROM's room, and a map with a later stage has a picture and enemy lines for each of its maps (SELECT shows them).
     #[test]
     fn previews_fit_their_slots_and_a_two_map_run_has_a_picture_and_lines_for_each_map() {
-        let all: Vec<u32> = previews().iter().flatten().flatten().map(|p| p.0).collect();
-        let mut distinct = all.clone();
+        // (the Gauntlet's pictures have a slot each; the Conquest runs' later maps share the first slots, stage k of every run in the same one, over the Gauntlet's: the two lists are never up together)
+        let gauntlet: Vec<u32> = previews().iter().zip(gm::entries()).filter(|(_, e)| !e.random_enemies).flat_map(|(p, _)| p.iter().flatten().map(|p| p.0)).collect();
+        let mut distinct = gauntlet.clone();
         distinct.sort();
         distinct.dedup();
-        assert_eq!(distinct.len(), all.len(), "one slot a picture");
+        assert_eq!(distinct.len(), gauntlet.len(), "one slot a picture");
+        let all: Vec<u32> = previews().iter().flatten().flatten().map(|p| p.0).collect();
         assert!(all.iter().all(|&a| a >= PREVIEW_ROM && a + PREVIEW_SIZE <= PREVIEW_ROM + PREVIEW_SIZE * MAX_MAPS as u32));
+        for (p, e) in previews().iter().zip(gm::entries()).filter(|(_, e)| e.random_enemies) {
+            let mut at: Vec<u32> = p.iter().flatten().map(|x| x.0).collect();
+            assert_eq!(at.len(), e.stage_aw2.len(), "{}: a slot for each later map", e.title);
+            at.sort();
+            at.dedup();
+            assert_eq!(at.len(), e.stage_aw2.len(), "{}: its own slot for each", e.title);
+            assert_eq!(at[0], PREVIEW_ROM, "the shared slots start the room");
+        }
+        assert!(crate::conquest::MAX_RUN_MAPS - 1 <= MAX_MAPS, "the longest run's later maps fit the room");
         let two: Vec<&Entry> = gm::entries().iter().filter(|e| !e.stage_titles.is_empty()).collect();
         assert!(!two.is_empty(), "a two-map run exists today (Iron Crown)");
         for e in two {
