@@ -1,6 +1,6 @@
 """Driving Conquest (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine; its map selector lists a row for each of the runs `RUNS`), AW2's
 Versus maps in a row with the survivors and funds carried over, a reward between maps, each run's record under its own key (run 1: `gauntlet_51`) in the Gauntlet's record table. The Gauntlet's own
-driver (`Gauntlet`) does the selector, the army screen and the end; this adds the runs' maps and the stage steps. `Conquest(g, run=N)` plays run N (0-based: 0 Conquest Run, 1 Long Conquest)."""
+driver (`Gauntlet`) does the selector, the army screen and the end; this adds the runs' maps and the stage steps. `Conquest(g, run=N)` plays run N (0-based: 0 Conquest Run, 1 Harbor Run)."""
 
 from . import dscampaign as dc
 from . import gauntlet as ga
@@ -24,22 +24,22 @@ MAPS = [
     {"name": "Cube Keys", "id": 0x0E, "size": (32, 30), "player": (5, 6), "enemy": (26, 23), "funds": 17500, "force": 7, "mine": 0},
     {"name": "Mial's Hope", "id": 0x75, "size": (45, 28), "player": (4, 16), "enemy": (34, 23), "funds": 22000, "force": 9, "mine": 0},
 ]
-# crate::conquest::RUN_2_MAPS (PROVISIONAL placeholder maps: the designer will choose the real ones; `aw2dev conquest maps` checks the HQs against the Rust)
+# crate::conquest::RUN_2_MAPS (Harbor Run; `aw2dev conquest maps` checks the HQs against the Rust)
 MAPS_2 = [
     {"name": "Pay Dirt", "id": 0x80, "size": (16, 12), "player": (1, 1), "enemy": (13, 9), "funds": 3000, "force": 3, "mine": 4},
     {"name": "Pivot Isle", "id": 0x70, "size": (21, 14), "player": (1, 1), "enemy": (18, 10), "funds": 4000, "force": 3, "mine": 0},
     {"name": "Sole Harbor", "id": 0x6F, "size": (22, 15), "player": (1, 1), "enemy": (15, 12), "funds": 5500, "force": 4, "mine": 0},
     {"name": "Twin Isle", "id": 0x78, "size": (22, 16), "player": (2, 2), "enemy": (19, 13), "funds": 7500, "force": 5, "mine": 0},
-    {"name": "Mirror Islands", "id": 0x0F, "size": (32, 15), "player": (1, 7), "enemy": (30, 7), "funds": 9500, "force": 5, "mine": 0},
-    {"name": "Alara Range", "id": 0x09, "size": (32, 15), "player": (3, 3), "enemy": (28, 12), "funds": 12000, "force": 6, "mine": 0},
-    {"name": "Duo Falls", "id": 0x6E, "size": (33, 13), "player": (4, 6), "enemy": (27, 5), "funds": 14500, "force": 7, "mine": 0},
-    {"name": "Shark Strait", "id": 0x10, "size": (37, 30), "player": (4, 13), "enemy": (31, 16), "funds": 17500, "force": 7, "mine": 0},
-    {"name": "Squash Island", "id": 0x0D, "size": (48, 15), "player": (5, 7), "enemy": (42, 8), "funds": 22000, "force": 9, "mine": 0},
+    {"name": "Duo Falls", "id": 0x6E, "size": (33, 13), "player": (4, 6), "enemy": (27, 5), "funds": 9500, "force": 5, "mine": 0},
+    {"name": "Mirror Islands", "id": 0x0F, "size": (32, 15), "player": (1, 7), "enemy": (30, 7), "funds": 12000, "force": 6, "mine": 0},
+    {"name": "Alara Range", "id": 0x09, "size": (32, 15), "player": (3, 3), "enemy": (28, 12), "funds": 14500, "force": 7, "mine": 0},
+    {"name": "Squash Island", "id": 0x0D, "size": (48, 15), "player": (5, 7), "enemy": (42, 8), "funds": 17500, "force": 7, "mine": 0},
+    {"name": "Shark Strait", "id": 0x10, "size": (37, 30), "player": (4, 13), "enemy": (31, 16), "funds": 22000, "force": 9, "mine": 0},
 ]
 # crate::conquest::RUNS: the title, the selector's row, the record key and id, the mission index (the Gauntlet's twelve, then the runs in order), the maps, the war chest (first, step) and the par
 RUNS = [
     {"title": "Conquest Run", "row": "Conquest Run *", "key": "gauntlet_51", "record": 51, "mission": MISSION, "maps": MAPS, "chest": (8000, 2500), "par": 72},
-    {"title": "Long Conquest", "row": "Long Conquest *", "key": "gauntlet_52", "record": 52, "mission": MISSION + 1, "maps": MAPS_2, "chest": (8000, 2500), "par": 72},
+    {"title": "Harbor Run", "row": "Harbor Run *", "key": "gauntlet_52", "record": 52, "mission": MISSION + 1, "maps": MAPS_2, "chest": (8000, 2500), "par": 72},
 ]
 BLACK_HOLE = 5
 STATE = 0x0203D0E0                 # crate::conquest::STATE: +0 the reward page (0 none, 1 rewards, 2 units), +1 the cursor, +2 taken, +3 the map won, +4..+6 the units on offer, +8..+0x10 the nine enemy COs, +0x15 drawn

@@ -65,7 +65,7 @@ CONQUEST_MISSIONS = [CONQUEST_MISSION + i for i in range(CONQUEST_RUNS)]
 # (the names the list shows: a two-map run is listed under `MissionDef::list_title`)
 SELECTOR_TITLES = ["Dustwind Basin", "Brass Canal", "Tidewater Atoll", "Silverpine Ford", "Cinder Sea", "Granite Spine", "Neon Row", "Harvest Run", "Chrome Meridian", "Blue Bastion", "Last Eclipse", "Iron Crown *"]
 CONQUEST_TITLE = "Conquest Run *"
-CONQUEST_TITLES = ["Conquest Run *", "Long Conquest *"]
+CONQUEST_TITLES = ["Conquest Run *", "Harbor Run *"]
 
 
 def list_ids(span=0):

@@ -1,6 +1,6 @@
 """Conquest (crate::conquest, docs/dev/conquest.md): Select Mode's CONQUEST entry (a game mode of its own on the Gauntlet's engine), runs of AW2 Versus maps with the survivors and funds carried
 over, one loss ends it, a win after the last map records a result under the run's own key; the wheel entry, its selector (a row a run) and its Continue / New box apart from the Gauntlet's. Run 1 is
-Conquest Run (9 maps); run 2, "Long Conquest", is a PROVISIONAL placeholder that exercises the several-runs path. `-k conquest`."""
+Conquest Run (9 maps); run 2, "Harbor Run", nine more maps on the same engine. `-k conquest`."""
 
 import os
 import subprocess
@@ -47,7 +47,7 @@ def record_row(e, id_):
 
 @test(name="conquest_selector_has_a_row_for_each_run", modes=("ds",))
 def conquest_selector_has_a_row_for_each_run(ctx):
-    """CONQUEST's map selector (the War Room's own screen) lists a row a run, "Conquest Run *" then "Long Conquest *" (the star: several maps), each on its own map-table id, the cursor on the first and
+    """CONQUEST's map selector (the War Room's own screen) lists a row a run, "Conquest Run *" then "Harbor Run *" (the star: several maps), each on its own map-table id, the cursor on the first and
     DOWN / UP between them; SELECT flips through the highlighted run's own maps' pictures (cropped from the ROM into the shared slots); each row's record box shows its own run's results; A takes
     the highlighted run to the army screen. The Gauntlet's list never has them."""
     e = Emu(save=paths.base_save(), ds=ctx.ds)
@@ -106,7 +106,7 @@ def conquest_selector_has_a_row_for_each_run(ctx):
 
 @test(name="conquest_second_run_is_picked_on_its_row", modes=("ds",))
 def conquest_second_run_is_picked_on_its_row(ctx):
-    """A on the second row takes "Long Conquest" (mission 13) to its own army screen (its title and map count are in the picture) and starts it on its first map; B on the selector goes back to the wheel on
+    """A on the second row takes "Harbor Run" (mission 13) to its own army screen (its title and map count are in the picture) and starts it on its first map; B on the selector goes back to the wheel on
     CONQUEST."""
     e = Emu(save=paths.base_save(), ds=ctx.ds)
     g = Game(e, ctx.image)
@@ -114,7 +114,7 @@ def conquest_second_run_is_picked_on_its_row(ctx):
     d = cq.Conquest(g, run=1)
     d.open()
     d.wait_army()
-    ctx.eq(e.u8(ga.UI_MAP), cq.RUNS[1]["mission"], "A took Long Conquest to the army screen")
+    ctx.eq(e.u8(ga.UI_MAP), cq.RUNS[1]["mission"], "A took Harbor Run to the army screen")
     png(ctx, e, "army_screen_run2")
     d.pick_army(ga.ANDY)
     d.into_battle()
@@ -564,7 +564,7 @@ def conquest_save_and_continue_on_the_first_map_keeps_the_draw(ctx):
     e.close()
 
 
-# -- the second run: the several-runs path (a PROVISIONAL placeholder run) --------------------------------------------------------------------------------------------------
+# -- the second run: the several-runs path (Harbor Run) --------------------------------------------------------------------------------------------------
 
 def run_two(ctx, co=ga.ANDY):
     return start(ctx, co, run=1)
@@ -572,7 +572,7 @@ def run_two(ctx, co=ga.ANDY):
 
 @test(name="conquest_run_two_starts_on_its_first_map", modes=("ds",))
 def conquest_run_two_starts_on_its_first_map(ctx):
-    """Run 2 ("Long Conquest *", mission 13) started from its row: its own first map (Pay Dirt, 16 x 12, read from the ROM), the player's starting force, the enemy's force and funds, Black Hole's colour
+    """Run 2 ("Harbor Run *", mission 13) started from its row: its own first map (Pay Dirt, 16 x 12, read from the ROM), the player's starting force, the enemy's force and funds, Black Hole's colour
     for the enemy; a draw of nine enemy COs is held; the first win brings its own second map (Pivot Isle) with the draw's second CO and the reward page's war chest."""
     e, g, d = run_two(ctx, ga.SAMI)
     m = cq.RUNS[1]["maps"][0]

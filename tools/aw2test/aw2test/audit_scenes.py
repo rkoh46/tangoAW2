@@ -1163,7 +1163,7 @@ def conquest_wheel_and_box(rec):
 
 @scene("conquest", "selector_and_army", pack=True)
 def conquest_selector(rec):
-    """CONQUEST's map selector with a row for each run ("Conquest Run *" and the PROVISIONAL "Long Conquest *"), SELECT stepping through each highlighted run's maps' pictures (the faces: one blank slot, the
+    """CONQUEST's map selector with a row for each run ("Conquest Run *" and "Harbor Run *"), SELECT stepping through each highlighted run's maps' pictures (the faces: one blank slot, the
     enemies are drawn when the run starts), the star's hint, and each run's army screen (one CPU card with no CO yet, the help line naming the run and its map count), in the three looks."""
     from . import conquest as cq
     from . import gauntlet as ga

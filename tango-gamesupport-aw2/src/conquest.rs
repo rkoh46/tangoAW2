@@ -90,17 +90,17 @@ pub const RUNS: &[Run] = &[
         par_per_map: 8,
         provisional: false,
     },
-    // PROVISIONAL: a placeholder run so the several-runs path is exercised; the designer will choose its real maps (docs/dev/conquest.md "Adding a run").
+    // Harbor Run: harbours and air power, ending on Shark Strait.
     Run {
         key: "gauntlet_52",
-        title: "Long Conquest",
-        list_title: "Long Conquest *",
+        title: "Harbor Run",
+        list_title: "Harbor Run *",
         stage_titles: RUN_2_TITLES,
         objective: "Win nine more maps in a row: survivors and funds come along, a reward waits between maps.",
         maps: &RUN_2_MAPS,
         chest: (8_000, 2_500),
         par_per_map: 8,
-        provisional: true,
+        provisional: false,
     },
 ];
 
@@ -300,9 +300,8 @@ pub const RUN_1_MAPS: [Stage; STAGES] = [
     },
 ];
 
-/// PROVISIONAL placeholder maps for run 2 ("Long Conquest *"): nine of AW2's two-player Versus maps not in run 1, drafted by `aw2dev conquest maps --draft` (HQs 20+ cells apart, a land route
-/// between the HQs; four of the nine have a base more on one side: Pay Dirt, Pivot Isle, Twin Isle, Alara Range), small to large with run 1's enemy ladder. The designer will choose the real maps;
-/// replacing this list (and `RUN_2_TITLES`) is all a swap takes ([`RUNS`], docs/dev/conquest.md "Adding a run").
+/// Run 2, "Harbor Run": nine of AW2's two-player Versus maps not in run 1, small to large with run 1's enemy ladder (HQs 20+ cells apart, a road a Tank can take between the HQs): harbours and
+/// air power, from Pay Dirt's single airport to Shark Strait's eight airports and four ports. Pay Dirt, Pivot Isle, Twin Isle and Alara Range have a base more on one side (`aw2dev conquest maps --all`).
 pub const RUN_2_MAPS: [Stage; 9] = [
     Stage {
         id: 0x80,
@@ -365,17 +364,33 @@ pub const RUN_2_MAPS: [Stage; 9] = [
         mine: &[],
     },
     Stage {
+        id: 0x6E,
+        name: "Duo Falls",
+        player: (4, 6),
+        enemy: (27, 5),
+        funds: 9500,
+        force: &[
+            (unit::INFANTRY, (27, 4)),
+            (unit::INFANTRY, (26, 5)),
+            (unit::TANK, (28, 5)),
+            (unit::TANK, (27, 6)),
+            (unit::ARTILLERY, (30, 4)),
+        ],
+        mine: &[],
+    },
+    Stage {
         id: 0x0F,
         name: "Mirror Islands",
         player: (1, 7),
         enemy: (30, 7),
-        funds: 9500,
+        funds: 12000,
         force: &[
             (unit::INFANTRY, (30, 6)),
             (unit::INFANTRY, (29, 7)),
-            (unit::TANK, (30, 8)),
+            (unit::MECH, (30, 8)),
             (unit::TANK, (28, 10)),
-            (unit::ARTILLERY, (30, 12)),
+            (unit::MD_TANK, (30, 12)),
+            (unit::ARTILLERY, (29, 2)),
         ],
         mine: &[],
     },
@@ -384,48 +399,15 @@ pub const RUN_2_MAPS: [Stage; 9] = [
         name: "Alara Range",
         player: (3, 3),
         enemy: (28, 12),
-        funds: 12000,
+        funds: 14500,
         force: &[
             (unit::INFANTRY, (28, 11)),
             (unit::INFANTRY, (27, 12)),
             (unit::MECH, (28, 13)),
             (unit::TANK, (29, 12)),
-            (unit::MD_TANK, (28, 10)),
-            (unit::ARTILLERY, (27, 11)),
-        ],
-        mine: &[],
-    },
-    Stage {
-        id: 0x6E,
-        name: "Duo Falls",
-        player: (4, 6),
-        enemy: (27, 5),
-        funds: 14500,
-        force: &[
-            (unit::INFANTRY, (27, 4)),
-            (unit::INFANTRY, (26, 5)),
-            (unit::MECH, (28, 5)),
-            (unit::TANK, (27, 6)),
-            (unit::TANK, (30, 4)),
-            (unit::MD_TANK, (25, 2)),
-            (unit::ARTILLERY, (29, 8)),
-        ],
-        mine: &[],
-    },
-    Stage {
-        id: 0x10,
-        name: "Shark Strait",
-        player: (4, 13),
-        enemy: (31, 16),
-        funds: 17500,
-        force: &[
-            (unit::INFANTRY, (31, 15)),
-            (unit::MECH, (30, 16)),
-            (unit::MD_TANK, (32, 16)),
-            (unit::MD_TANK, (31, 17)),
-            (unit::ARTILLERY, (29, 15)),
-            (unit::ANTI_AIR, (31, 10)),
-            (unit::B_COPTER, (33, 12)),
+            (unit::TANK, (28, 10)),
+            (unit::MD_TANK, (27, 11)),
+            (unit::ARTILLERY, (26, 12)),
         ],
         mine: &[],
     },
@@ -434,22 +416,39 @@ pub const RUN_2_MAPS: [Stage; 9] = [
         name: "Squash Island",
         player: (5, 7),
         enemy: (42, 8),
-        funds: 22000,
+        funds: 17500,
         force: &[
             (unit::INFANTRY, (41, 8)),
-            (unit::INFANTRY, (43, 8)),
-            (unit::MECH, (42, 9)),
+            (unit::MECH, (43, 8)),
+            (unit::MD_TANK, (42, 9)),
             (unit::MD_TANK, (42, 6)),
-            (unit::MD_TANK, (41, 7)),
-            (unit::MEGATANK, (43, 7)),
-            (unit::ROCKETS, (40, 8)),
-            (unit::ANTI_AIR, (44, 8)),
-            (unit::B_COPTER, (41, 9)),
+            (unit::ARTILLERY, (41, 7)),
+            (unit::ANTI_AIR, (43, 7)),
+            (unit::B_COPTER, (40, 8)),
+        ],
+        mine: &[],
+    },
+    Stage {
+        id: 0x10,
+        name: "Shark Strait",
+        player: (4, 13),
+        enemy: (31, 16),
+        funds: 22000,
+        force: &[
+            (unit::INFANTRY, (31, 15)),
+            (unit::INFANTRY, (30, 16)),
+            (unit::MECH, (32, 16)),
+            (unit::MD_TANK, (31, 17)),
+            (unit::MD_TANK, (29, 15)),
+            (unit::MEGATANK, (31, 10)),
+            (unit::ROCKETS, (33, 12)),
+            (unit::ANTI_AIR, (28, 13)),
+            (unit::B_COPTER, (32, 9)),
         ],
         mine: &[],
     },
 ];
-pub const RUN_2_TITLES: &[&str] = &["Pivot Isle", "Sole Harbor", "Twin Isle", "Mirror Islands", "Alara Range", "Duo Falls", "Shark Strait", "Squash Island"];
+pub const RUN_2_TITLES: &[&str] = &["Pivot Isle", "Sole Harbor", "Twin Isle", "Duo Falls", "Mirror Islands", "Alara Range", "Squash Island", "Shark Strait"];
 
 /// The enemy army's colour on every map (Black Hole's: the player's pick offers the other four and Silver Nova).
 pub const ENEMY_COLOUR: u8 = colour::BLACK_HOLE;
@@ -963,8 +962,8 @@ mod tests {
         titles.dedup();
         assert_eq!(titles.len(), RUNS.len());
         assert_eq!(RUNS.len(), 2);
-        assert!(RUNS[1].provisional && !RUNS[0].provisional);
-        // a run's maps are its own: run 2's placeholder maps are none of run 1's
+        assert!(RUNS.iter().all(|r| !r.provisional));
+        // a run's maps are its own: run 2's maps are none of run 1's
         let first: Vec<u8> = RUNS[0].maps.iter().map(|s| s.id).collect();
         assert!(RUNS[1].maps.iter().all(|s| !first.contains(&s.id)));
     }
