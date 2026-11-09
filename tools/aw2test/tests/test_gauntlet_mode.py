@@ -1060,14 +1060,16 @@ def gauntlet_mode_wheel_obj_resources_are_free(ctx):
     pad frame by frame while it turns) and each item that has a box (Design Room, Versus, Campaign, War Room: not Battle Maps and Link, which start their mode) is opened. Without the pack, with markers
     written to those tiles, no sprite ever draws with palette 13 or 14 or with those tiles, bank 15 draws only the badge, and the markers are never overwritten (the game never writes them); with the pack, the only sprites that draw
     with 13 and 14 are the entries' own (and bank 15's are the badge's and Conquest's) (their small label tiles, or the centre tiles on the way to the centre), and the tiles hold exactly their art."""
+    # (CONTINUE's four 8-tile sprites, on the wheel only over a saved Conquest run: the game never draws or writes them either, crate::mode_menu::CONTINUE_SMALL_TILES)
+    SMALL_RANGES = (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES) + tuple((t, 8) for t in (0x304, 0x30C, 0x314, 0x3D0))
     e, g, d = boot(ctx)
     saves.to_select_mode(e)
     marker = bytes([0x77]) * 32
     mine = set()
-    for first, nn in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES):
+    for first, nn in SMALL_RANGES:
         mine |= set(range(first, first + nn))
     if not ctx.ds:
-        for first, n in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES):
+        for first, n in SMALL_RANGES:
             e.write(OBJ_VRAM + 32 * first, marker * n)
     uses = {}
     n = 9 if ctx.ds else 6
@@ -1094,7 +1096,7 @@ def gauntlet_mode_wheel_obj_resources_are_free(ctx):
         ctx.check(not ({13, 14} & set(uses)), f"no sprite draws with palette 13 or 14 ({sorted(uses)})")
         ctx.check(set(uses.get(15, ())) <= set(BADGE_TILES), f"bank 15 is the badge's alone without the pack ({sorted(uses.get(15, ()))[:4]})")
         ctx.check(not any(t in mine for ts in uses.values() for t in ts), "no sprite draws with the entries' small label tiles")
-        for first, nn in (GAUNTLET_SMALL_TILES, SURVIVAL_SMALL_TILES, CONQUEST_SMALL_TILES):
+        for first, nn in SMALL_RANGES:
             ctx.check(e.read(OBJ_VRAM + 32 * first, 32 * nn) == marker * nn, f"tiles {first:#x}..{first + nn - 1:#x}: the game never wrote them")
     else:
         for pal, small in ((GAUNTLET_PALETTE, GAUNTLET_SMALL_TILES), (SURVIVAL_PALETTE, SURVIVAL_SMALL_TILES), (CONQUEST_PALETTE, CONQUEST_SMALL_TILES)):

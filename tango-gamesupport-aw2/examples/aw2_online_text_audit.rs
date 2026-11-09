@@ -875,6 +875,17 @@ fn conquest(c: &mut Ctx) {
         let widths: Vec<i32> = cq::RUNS.iter().map(|run| tango_gamesupport_aw2::online::text_width(core, &format!("{}: {} maps, a new CO each", run.title, run.len()))).collect();
         (list[widest], widths)
     };
+    // (the wheel's help strip is the screen wide (240 px): CONTINUE's help line, the entry on the wheel over a saved run, shows whole without scrolling)
+    {
+        let core = c.link.core();
+        let w = tango_gamesupport_aw2::online::text_width(core, tango_gamesupport_aw2::mode_menu::CONTINUE_HELP);
+        if w > 232 {
+            println!("PROBLEM wheel_continue_help: \"{}\" is {} px, wider than the wheel's help strip (232)", tango_gamesupport_aw2::mode_menu::CONTINUE_HELP, w);
+            c.problems += 1;
+        } else {
+            println!("wheel_continue_help: \"{}\" is {} px (strip 232)", tango_gamesupport_aw2::mode_menu::CONTINUE_HELP, w);
+        }
+    }
     for (r, run) in cq::RUNS.iter().enumerate() {
         if widths[r] > 228 {
             println!("PROBLEM conquest_army_help_{}: \"{}: {} maps, a new CO each\" is {} px, wider than the help plate (228): it falls back to the title alone", r + 1, run.title, run.len(), widths[r]);

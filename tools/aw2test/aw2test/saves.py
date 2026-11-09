@@ -16,23 +16,40 @@ from .game import NavError, SELECT_MODE_CURSOR, MAP_TAB
 # Campaign 4, War Room 5), and with the pack nine: Gauntlet is 4 (directly above Versus on the screen), Conquest 5 and Campaign, War Room and Survival follow. `position(e, name)` says
 # where an entry is on this console's wheel; `wheel_to` takes a position or a name.
 PACK_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "gauntlet": 4, "conquest": 5, "campaign": 6, "war_room": 7, "survival": 8}
+# With a Conquest run saved halfway the pack's wheel has a tenth entry, CONTINUE, directly above CONQUEST (position 6): Campaign, War Room and Survival are one higher (crate::mode_menu::TABLE_SAVED).
+PACK_WHEEL_SAVED = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "gauntlet": 4, "conquest": 5, "continue": 6, "campaign": 7, "war_room": 8, "survival": 9}
 AW2_WHEEL = {"battle_maps": 0, "online": 1, "design_room": 2, "versus": 3, "campaign": 4, "war_room": 5}
 VERSUS, CAMPAIGN, WAR_ROOM, SURVIVAL, GAUNTLET = 3, "campaign", "war_room", "survival", "gauntlet"
 DESIGN_ROOM = 2
+PACK_TABLE = 0x08E40000        # crate::mode_menu::DATA: the wheel's item table in the ROM image (nine entries, ten with CONTINUE: item 11 at index 8)
+CONTINUE_ITEM = 11
+
+
+def with_continue(e):
+    """CONTINUE is on this console's wheel now (the pack's wheel, a Conquest run saved: the table in the ROM image the console runs has it)."""
+    return bool(getattr(e, "ds", False)) and e.u8(PACK_TABLE + 8) == CONTINUE_ITEM
 
 
 def position(e, where):
-    """The wheel position of an entry by name ("campaign", "war_room", "survival", "gauntlet", ...; a number is itself)."""
+    """The wheel position of an entry by name ("campaign", "war_room", "survival", "gauntlet", "continue", ...; a number is itself). The pack's wheel has "continue" only over a saved Conquest run, and the
+    entries above it are one higher then."""
     if isinstance(where, int):
         return where
-    table = PACK_WHEEL if getattr(e, "ds", False) else AW2_WHEEL
+    if getattr(e, "ds", False):
+        table = PACK_WHEEL_SAVED if with_continue(e) else PACK_WHEEL
+    else:
+        table = AW2_WHEEL
     if where not in table:
-        raise NavError(f"the {'pack' if getattr(e, 'ds', False) else 'AW2'} wheel has no {where!r}")
+        raise NavError(f"the {'pack' if getattr(e, 'ds', False) else 'AW2'} wheel{' (with CONTINUE)' if with_continue(e) else ''} has no {where!r}")
     return table[where]
 
 
 def wheel_size(e):
-    return len(PACK_WHEEL) if getattr(e, "ds", False) else len(AW2_WHEEL)
+    if getattr(e, "ds", False):
+        return len(PACK_WHEEL_SAVED) if with_continue(e) else len(PACK_WHEEL)
+    return len(AW2_WHEEL)
+
+
 WHEELS = (0x08616A08, 0x08616A40)
 PROC_POOL = (0x0200D610, 0x0200E418)
 # Select Map's list: ids per row, the last row, the cursor row and first row shown.
@@ -91,13 +108,16 @@ def wheel(e):
 
 def wheel_to(e, where):
     position = globals()["position"](e, where)
-    for _ in range(10):
+    for _ in range(wheel_size(e) + 1):      # (UP only: at most one turn round the wheel, and the last step is checked)
         cur = e.u8(SELECT_MODE_CURSOR)
         if cur == position:
             e.wait(20)
             return
         e.press("UP", 8)
         e.wait(60)
+    if e.u8(SELECT_MODE_CURSOR) == position:
+        e.wait(20)
+        return
     raise NavError(f"Select Mode cursor at {e.u8(SELECT_MODE_CURSOR)}, wanted {position}")
 
 

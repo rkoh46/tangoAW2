@@ -64,12 +64,17 @@ use std::sync::OnceLock;
 pub const ITEM: u8 = 8;
 pub const GAUNTLET: u8 = 9;
 pub const CONQUEST: u8 = 10;
+/// CONTINUE: on the wheel only while a Conquest run is saved halfway, directly above CONQUEST (a tenth position).
+pub const CONTINUE: u8 = 11;
 /// The wheel's positions, by table index (the game reads `table[(position +
-/// 2) % 9]`): War Room, Survival, Battle Maps, Link, Design Room, Versus,
+/// 2) % n]`): War Room, Survival, Battle Maps, Link, Design Room, Versus,
 /// Gauntlet, Conquest, Campaign.
 const TABLE: [u8; 9] = [5, ITEM, 2, 4, 3, 1, GAUNTLET, CONQUEST, 0];
-/// The entries on the wheel with the pack.
+/// The same with a Conquest run saved: CONTINUE between Conquest and Campaign (ten entries).
+const TABLE_SAVED: [u8; 10] = [5, ITEM, 2, 4, 3, 1, GAUNTLET, CONQUEST, CONTINUE, 0];
+/// The entries on the wheel with the pack, without and with CONTINUE.
 const N: usize = 9;
+const N_SAVED: usize = 10;
 
 const GAME_TABLE: u32 = 0x0861_696C;
 const HELP_TABLE: u32 = 0x0861_6FA4;
@@ -90,7 +95,8 @@ const DATA_OPTIONS: u32 = DATA + 0x80;
 const SURVIVAL_AT: u32 = DATA + 0x40;
 const GAUNTLET_AT: u32 = DATA + 0x1000;
 const CONQUEST_AT: u32 = DATA + 0x2000;
-pub(crate) const SENTINEL: u32 = DATA + 0x2FFC;
+const CONTINUE_AT: u32 = DATA + 0x3000;
+pub(crate) const SENTINEL: u32 = DATA + 0x3FFC;
 const MAGIC: u32 = 0x554E_454E; // "NEMU"
 
 /// One extra entry of the wheel.
@@ -101,8 +107,12 @@ struct Extra {
     /// Its OBJ palette and the first OBJ tile of its small label on the Select Mode screen.
     palette: u32,
     tile: u32,
+    /// Where its small label's four sprites (eight tiles each) are in OBJ VRAM when they are not one run of 32 tiles from `tile`.
+    chunks: Option<[u32; 4]>,
     /// Colours of its OBJ palette that are not the entry's: an entry on the badge's bank ([`crate::branding`]) leaves the badge's.
     others: &'static [u8],
+    /// Colours of its own palette it keeps in another index of the shared bank: (its index, the bank's index). Only CONTINUE has them (its small label is drawn with them).
+    lent: &'static [(u8, u8)],
 }
 
 impl Extra {
@@ -125,32 +135,65 @@ impl Extra {
     fn game_palette(&self) -> u32 {
         self.item as u32 + 2
     }
+    /// The first OBJ tile of each of the small label's four sprites.
+    fn sprite_tiles(&self) -> [u32; 4] {
+        self.chunks.unwrap_or([self.tile, self.tile + 8, self.tile + 16, self.tile + 24])
+    }
+    /// The OBJ tile for the game's side tile `tile` (of this item's 32).
+    fn side_tile(&self, tile: u32) -> u32 {
+        let k = tile - self.game_tile();
+        self.sprite_tiles()[(k / 8) as usize] + k % 8
+    }
+    /// Only on the wheel with a Conquest run saved.
+    fn optional(&self) -> bool {
+        self.item == CONTINUE
+    }
 }
+
+/// CONTINUE's small label is four sprites of eight tiles in OBJ tiles the survey finds free (0x304..0x31B and 0x3D0..0x3D7: one run of 32 does not exist), its colours in the bank CONQUEST's label uses: its art's
+/// colour indices 2, 3, 5 and 15 are placed at 9..12 of that bank (the small labels draw only 0, 1, 2, 3, 5 and 15, the bands 5..12 are the big labels', which the bank only draws on the way to the centre).
+const CONTINUE_SMALL_TILES: [u32; 4] = [0x304, 0x30C, 0x314, 0x3D0];
+const CONTINUE_LENT: [(u8, u8); 4] = [(2, 9), (3, 10), (5, 11), (15, 12)];
 
 /// Survival: teal; the small label in OBJ tiles 0x320.., palette 13. Gauntlet: orange, tiles 0x2E0.., palette 14. Conquest: purple, tiles 0x3B0.., palette 15 (every other bank is the game's or the other
 /// entries': the survey finds none free; the badge uses only the colours 4, 13 and 14 of its bank and the white that is every label's colour 1, `branding::COLOURS`).
 /// The label art keeps its colour indices on every entry: the centre label's palette is the game's own copy of the entry's palette (bank 8), whose highlight is a ramp over the indices.
-const EXTRAS: [Extra; 3] = [
+const EXTRAS: [Extra; 4] = [
     Extra {
         item: ITEM,
         at: SURVIVAL_AT,
         palette: 13,
         tile: 0x320,
+        chunks: None,
         others: &[],
+        lent: &[],
     },
     Extra {
         item: GAUNTLET,
         at: GAUNTLET_AT,
         palette: 14,
         tile: 0x2E0,
+        chunks: None,
         others: &[],
+        lent: &[],
     },
     Extra {
         item: CONQUEST,
         at: CONQUEST_AT,
         palette: 15,
         tile: 0x3B0,
+        chunks: None,
         others: &[4, 13, 14],
+        lent: &[],
+    },
+    Extra {
+        item: CONTINUE,
+        at: CONTINUE_AT,
+        palette: 15,
+        tile: CONTINUE_SMALL_TILES[0],
+        chunks: Some(CONTINUE_SMALL_TILES),
+        others: &[0, 1, 2, 3, 4, 5, 6, 7, 8, 13, 14, 15],
+        lent: &CONTINUE_LENT,
     },
 ];
 
@@ -170,18 +213,29 @@ const CENTRE_TILES: (u32, u32) = (0x198, 0x1D8);
 const PAL_BUFFER: u32 = 0x0300_20C0;
 const PAL_RAM: u32 = 0x0500_0000;
 
-/// (address, original, patched) halfwords besides the DivRem sites.
-const HALVES: [(u32, u16, u16); 9] = [
-    (0x0808_0F68, 0x1D08, 0x1DC8), // SetMainMenuCarouselPosition: (i + 4) % 6 -> (i + 7) % 9
-    (0x0808_1DF0, 0x2805, 0x2808), // UP: position 5 -> 0 becomes 8 -> 0
-    (0x0808_1E2C, 0x2005, 0x2008), // DOWN: 0 -> 5 becomes 0 -> 8
-    (0x0808_280C, 0x2805, 0x2808), // the rotation's own wraps
-    (0x0808_2830, 0x2005, 0x2008),
-    (0x0808_0F7E, 0x2905, 0x2908), // SetMainMenuCarouselPosition: i <= 8
-    (0x0808_4630, 0x2506, 0x2509), // help: Sound Room line 6 -> 9
-    (0x0808_464E, 0x2507, 0x250A), // help: Hard Campaign line 7 -> 10
-    (0x0808_464A, 0x2800, 0x2808), // help: Campaign is table index 8
+/// (address, original) halfwords besides the DivRem sites, and what each becomes with `n` entries on the wheel.
+const HALVES: [(u32, u16); 9] = [
+    (0x0808_0F68, 0x1D08), // SetMainMenuCarouselPosition: (i + 4) % 6 -> (i + n - 2) % n: `adds r0, r1, #7` for nine (ten: [`bias`] adds the eighth)
+    (0x0808_1DF0, 0x2805), // UP: position 5 -> 0 becomes n-1 -> 0
+    (0x0808_1E2C, 0x2005), // DOWN: 0 -> 5 becomes 0 -> n-1
+    (0x0808_280C, 0x2805), // the rotation's own wraps
+    (0x0808_2830, 0x2005),
+    (0x0808_0F7E, 0x2905), // SetMainMenuCarouselPosition: i <= n-1
+    (0x0808_4630, 0x2506), // help: Sound Room line 6 -> n
+    (0x0808_464E, 0x2507), // help: Hard Campaign line 7 -> n + 1
+    (0x0808_464A, 0x2800), // help: Campaign is table index n-1
 ];
+
+fn halve(at: u32, old: u16, n: usize) -> u16 {
+    let n = n as u16;
+    match at {
+        0x0808_0F68 => 0x1DC8,
+        0x0808_4630 => 0x2500 | n,
+        0x0808_464E => 0x2500 | (n + 1),
+        0x0808_464A => 0x2800 | (n - 1),
+        _ => (old & 0xFF00) | (n - 1),
+    }
+}
 
 struct Built {
     divrem_sites: Vec<u32>,
@@ -324,6 +378,18 @@ const CONQUEST_LETTERS: [(u32, usize, usize); 8] = [
     (2, 39, 49),  // T of BATTLEMAPS
 ];
 
+/// "CONTINUE": every letter is in the game's labels (C of CAMPAIGN, O N I of DESIGN ROOM, T and E of BATTLE MAPS, U of VERSUS).
+const CONTINUE_LETTERS: [(u32, usize, usize); 8] = [
+    (0, 4, 17),   // C of CAMPAIGN
+    (3, 87, 97),  // O of DESIGN ROOM
+    (3, 60, 71),  // N of DESIGN ROOM
+    (2, 39, 49),  // T of BATTLEMAPS
+    (3, 39, 45),  // I of DESIGN ROOM
+    (3, 60, 71),  // N again
+    (1, 84, 101), // U of VERSUS
+    (2, 62, 70),  // E of BATTLEMAPS
+];
+
 fn big(core: &Core, letters: &[(u32, usize, usize)]) -> Option<Vec<u8>> {
     let src: Vec<Vec<Vec<u8>>> = (0..4)
         .map(|i| label(core, i, 0).map(|d| to_pixels(&d, 4, 8)))
@@ -458,6 +524,22 @@ const SMALL_Q: usize = 99;
 /// C O N Q U E S T: C and N of CAMPAIGN, O of DESIGN ROOM, the Q made from it, U and S of VERSUS, E and T of BATTLE MAPS.
 const CONQUEST_SMALL: [(usize, usize); 8] = [(0, 0), (4, 7), (0, 7), (SMALL_Q, 0), (1, 4), (2, 4), (1, 3), (2, 2)];
 
+/// C O N T I N U E: C, I and N of CAMPAIGN, O of DESIGN ROOM, T and E of BATTLE MAPS, U of VERSUS.
+const CONTINUE_SMALL: [(usize, usize); 8] = [(0, 0), (4, 7), (0, 7), (2, 2), (0, 5), (0, 7), (1, 4), (2, 4)];
+
+/// A label's tiles with colour indices exchanged (`map`: from, to).
+fn recolour(tiles: &mut [u8], map: &[(u8, u8)]) {
+    for b in tiles.iter_mut() {
+        let mut v = [*b & 15, *b >> 4];
+        for c in v.iter_mut() {
+            if let Some(&(_, to)) = map.iter().find(|m| m.0 == *c) {
+                *c = to;
+            }
+        }
+        *b = v[0] | v[1] << 4;
+    }
+}
+
 /// A palette: each colour, channel by channel, `f(a, b)` of two items' palettes (`first` is the index of the palette table's entries: items, or 6 + item for the highlights).
 fn palette(core: &Core, a: u32, b: u32, f: fn(usize, u16, u16) -> u16) -> [u8; 32] {
     let mut out = [0u8; 32];
@@ -494,6 +576,15 @@ fn purple(_ch: usize, a: u16, b: u16) -> u16 {
     (a + b) / 2
 }
 
+/// Rose, from Campaign's blue and Versus' red: the greater red and blue, the lesser green (a pink beside CONQUEST's purple).
+fn rose(ch: usize, a: u16, b: u16) -> u16 {
+    if ch == 1 {
+        a.min(b)
+    } else {
+        a.max(b)
+    }
+}
+
 fn installed(core: &Core) -> bool {
     core.raw_read_32(SENTINEL, -1) == MAGIC
 }
@@ -511,35 +602,28 @@ const GAUNTLET_NEW_K: u16 = 42;
 pub const CONQUEST_HELP: &str = "Win every map in a row. One loss ends the run.";
 pub const CONQUEST_CONTINUE: &str = "Continue your saved Conquest run.";
 pub const CONQUEST_NEW: &str = "Start a new run. The saved run is dropped.";
+/// CONTINUE's help line is the Conquest box's Continue line (the same string in the same text slot, 43).
+pub const CONTINUE_HELP: &str = CONQUEST_CONTINUE;
 const CONQUEST_CONTINUE_K: u16 = 43;
 const CONQUEST_NEW_K: u16 = 44;
 const CONQUEST_HELP_K: u16 = 45;
 
-fn install(core: &mut Core, help_text: u16) -> bool {
-    BUILT.get_or_init(|| scan(core));
-    if installed(core) {
-        return true;
-    }
-    let (Some(sbig), Some(ssmall), Some(gbig), Some(gsmall), Some(cbig), Some(csmall)) = (
-        big(core, &SURVIVAL_LETTERS),
-        small(core, &SURVIVAL_SMALL),
-        big(core, &GAUNTLET_LETTERS),
-        small(core, &GAUNTLET_SMALL),
-        big(core, &CONQUEST_LETTERS),
-        small(core, &CONQUEST_SMALL),
-    ) else {
-        return false;
-    };
-    core.raw_write_range(DATA_TABLE, -1, &TABLE);
-    // Help lines by position: the game's positions 0..3 (Battle Maps, Link, Design Room, Versus), Gauntlet's, Conquest's, the game's 4 and 5
-    // (Campaign, War Room), Survival's, then the Sound Room's and Hard Campaign's.
+/// The wheel's three tables for `n` entries (the table of item ids, the help lines by position, the open box's two lines by position), written where the patched wheel reads them. Positions: the game's 0..3
+/// (Battle Maps, Link, Design Room, Versus), Gauntlet, Conquest, CONTINUE (ten entries only), the game's 4 and 5 (Campaign, War Room), Survival, then the Sound Room's and Hard Campaign's lines.
+fn write_layout(core: &mut Core, n: usize, help_text: u16) {
+    let tb = crate::survival::TEXT_BASE;
+    let saved = n == N_SAVED;
+    core.raw_write_range(DATA_TABLE, -1, if saved { &TABLE_SAVED[..] } else { &TABLE[..] });
     let game = |core: &Core, i: u32| core.raw_read_16(HELP_TABLE + 2 * i, -1);
     let mut help = Vec::new();
     for i in 0..4 {
         help.push(game(core, i));
     }
     help.push(GAUNTLET_HELP_ID);
-    help.push(crate::survival::TEXT_BASE + CONQUEST_HELP_K);
+    help.push(tb + CONQUEST_HELP_K);
+    if saved {
+        help.push(tb + CONQUEST_CONTINUE_K);
+    }
     help.push(game(core, 4));
     help.push(game(core, 5));
     help.push(help_text);
@@ -548,16 +632,19 @@ fn install(core: &mut Core, help_text: u16) -> bool {
     for (i, h) in help.iter().enumerate() {
         core.raw_write_16(DATA_HELP + 2 * i as u32, -1, *h);
     }
-    // Choices' lines (two a position), the same order: none for ours.
+    // Choices' lines (two a position), the same order: none for Survival's or CONTINUE's.
     let opt = |core: &Core, i: u32| core.raw_read_16(OPTIONS_TABLE + 2 * i, -1);
     let mut options = Vec::new();
     for i in 0..8 {
         options.push(opt(core, i));
     }
     // (Gauntlet's, at position 4: Continue, New)
-    options.extend([crate::survival::TEXT_BASE + GAUNTLET_CONTINUE_K, crate::survival::TEXT_BASE + GAUNTLET_NEW_K]);
+    options.extend([tb + GAUNTLET_CONTINUE_K, tb + GAUNTLET_NEW_K]);
     // (Conquest's, at position 5)
-    options.extend([crate::survival::TEXT_BASE + CONQUEST_CONTINUE_K, crate::survival::TEXT_BASE + CONQUEST_NEW_K]);
+    options.extend([tb + CONQUEST_CONTINUE_K, tb + CONQUEST_NEW_K]);
+    if saved {
+        options.extend([0, 0]);
+    }
     for i in 8..12 {
         options.push(opt(core, i));
     }
@@ -568,11 +655,34 @@ fn install(core: &mut Core, help_text: u16) -> bool {
     for (i, h) in options.iter().enumerate() {
         core.raw_write_16(DATA_OPTIONS + 2 * i as u32, -1, *h);
     }
-    // Survival's teal, Gauntlet's orange and Conquest's purple.
+}
+
+fn install(core: &mut Core, help_text: u16) -> bool {
+    BUILT.get_or_init(|| scan(core));
+    if installed(core) {
+        return true;
+    }
+    let (Some(sbig), Some(ssmall), Some(gbig), Some(gsmall), Some(cbig), Some(csmall), Some(kbig), Some(ksmall)) = (
+        big(core, &SURVIVAL_LETTERS),
+        small(core, &SURVIVAL_SMALL),
+        big(core, &GAUNTLET_LETTERS),
+        small(core, &GAUNTLET_SMALL),
+        big(core, &CONQUEST_LETTERS),
+        small(core, &CONQUEST_SMALL),
+        big(core, &CONTINUE_LETTERS),
+        small(core, &CONTINUE_SMALL),
+    ) else {
+        return false;
+    };
+    let mut ksmall = ksmall;
+    recolour(&mut ksmall, &CONTINUE_LENT);
+    write_layout(core, N, help_text);
+    // Survival's teal, Gauntlet's orange, Conquest's purple and CONTINUE's rose.
     for (e, big, small, pal, hi) in [
         (&EXTRAS[0], &sbig, &ssmall, palette(core, 0, 4, teal), palette(core, 6, 10, teal)),
         (&EXTRAS[1], &gbig, &gsmall, palette(core, 1, 2, orange), palette(core, 7, 8, orange)),
         (&EXTRAS[2], &cbig, &csmall, palette(core, 0, 1, purple), palette(core, 6, 7, purple)),
+        (&EXTRAS[3], &kbig, &ksmall, palette(core, 0, 1, rose), palette(core, 6, 7, rose)),
     ] {
         core.raw_write_range(e.pal(), -1, &pal);
         core.raw_write_range(e.highlight(), -1, &hi);
@@ -602,20 +712,61 @@ fn install(core: &mut Core, help_text: u16) -> bool {
     true
 }
 
+/// The wheel's layout in the ROM image now: ten entries with CONTINUE, nine without (item 8 of the table: CONTINUE or Campaign).
+fn layout(core: &Core) -> usize {
+    if core.raw_read_8(DATA_TABLE + 8, -1) == CONTINUE {
+        N_SAVED
+    } else {
+        N
+    }
+}
+
+fn table(core: &Core) -> &'static [u8] {
+    if layout(core) == N_SAVED {
+        &TABLE_SAVED
+    } else {
+        &TABLE
+    }
+}
+
+/// Whether CONTINUE belongs on the wheel now: a Conquest run is saved halfway (any run: Conquest Run or Harbor Run).
+pub fn continue_wanted(core: &Core) -> bool {
+    crate::conquest::run_saved(core)
+}
+
+/// The wheel's layout changes to `n` entries (only while the wheel is not up): the tables are rewritten and the remembered position, which the wheel reads as it starts, keeps its entry (what is above
+/// CONQUEST moves one position).
+fn change_layout(core: &mut Core, n: usize, help_text: u16) {
+    let from = layout(core);
+    write_layout(core, n, help_text);
+    let at = crate::gauntlet::WHEEL_LAST;
+    let p = core.raw_read_32(at, -1);
+    let to = match (from, n) {
+        (N, N_SAVED) if p >= 6 => p + 1,
+        (N_SAVED, N) if p == 6 => 5,
+        (N_SAVED, N) if p > 6 => p - 1,
+        _ => p,
+    };
+    if to != p {
+        core.raw_write_32(at, -1, to);
+    }
+}
+
 /// The item at a wheel position (the game reads `table[(position + 2) %
 /// n]`, n = 6, or 8 with the extra entries).
 pub fn item(core: &Core, position: u32) -> u8 {
     if active(core) {
-        TABLE[(position as usize + 2) % N]
+        let t = table(core);
+        t[(position as usize + 2) % t.len()]
     } else {
         core.raw_read_8(GAME_TABLE + (position + 2) % 6, -1)
     }
 }
 
-/// The entries on the wheel now: nine with the pack (offline), AW2's six otherwise.
+/// The entries on the wheel now: nine with the pack (offline; ten with a Conquest run saved), AW2's six otherwise.
 pub fn count(core: &Core) -> u32 {
     if active(core) {
-        N as u32
+        layout(core) as u32
     } else {
         6
     }
@@ -623,11 +774,11 @@ pub fn count(core: &Core) -> u32 {
 
 /// The wheel's position of an item (None: not on this wheel).
 pub fn position_of(core: &Core, item_id: u8) -> Option<u32> {
-    let n = if active(core) { N as u32 } else { 6 };
+    let n = count(core);
     (0..n).find(|&p| item(core, p) == item_id)
 }
 
-/// Whether the wheel has nine entries now (the patches are in).
+/// Whether the wheel has the pack's entries now (the patches are in).
 pub fn active(core: &Core) -> bool {
     BUILT.get().is_some_and(|b| {
         b.table_pools
@@ -650,6 +801,15 @@ pub fn tick(core: &mut Core, on: bool, help_text: u16) {
     if !on && !installed(core) {
         return;
     }
+    // CONTINUE is on the wheel while a Conquest run is saved: the layout follows the save whenever the wheel is not up (the save only changes in battle and at the run's end, and the layout is
+    // right again by the time Select Mode comes back, in the same session).
+    if on && !running(core) {
+        let want = if continue_wanted(core) { N_SAVED } else { N };
+        if layout(core) != want {
+            change_layout(core, want, help_text);
+        }
+    }
+    let n = layout(core);
     let w16 = |core: &mut Core, at: u32, v: u16| {
         if core.raw_read_16(at, -1) != v {
             core.raw_write_16(at, -1, v);
@@ -661,12 +821,12 @@ pub fn tick(core: &mut Core, on: bool, help_text: u16) {
         }
     };
     for &at in &built.divrem_sites {
-        w16(core, at, if on { 0x2100 + N as u16 } else { 0x2106 });
+        w16(core, at, if on { 0x2100 + n as u16 } else { 0x2106 });
     }
-    for &(at, old, new) in &HALVES {
+    for &(at, old) in &HALVES {
         let now = core.raw_read_16(at, -1);
-        if now == old || now == new {
-            w16(core, at, if on { new } else { old });
+        if now == old || now == halve(at, old, N) || now == halve(at, old, N_SAVED) {
+            w16(core, at, if on { halve(at, old, n) } else { old });
         }
     }
     for &at in &built.table_pools {
@@ -676,14 +836,19 @@ pub fn tick(core: &mut Core, on: bool, help_text: u16) {
     w32(core, OPTIONS_POOL, if on { DATA_OPTIONS } else { OPTIONS_TABLE });
     if on && running(core) {
         for e in &EXTRAS {
-            // The small label and its palette (the game never loads these items').
+            if e.optional() && n != N_SAVED {
+                continue;
+            }
+            // The small label (in each sprite's tiles) and its palette (the game never loads these items').
             let mut small = vec![0u8; 1024];
             core.raw_read_range(e.small(), -1, &mut small);
-            let at = OBJ_VRAM + 32 * e.tile;
-            let mut now = vec![0u8; 1024];
-            core.raw_read_range(at, -1, &mut now);
-            if now != small {
-                core.raw_write_range(at, -1, &small);
+            for (k, &first) in e.sprite_tiles().iter().enumerate() {
+                let at = OBJ_VRAM + 32 * first;
+                let mut now = vec![0u8; 256];
+                core.raw_read_range(at, -1, &mut now);
+                if now[..] != small[256 * k..256 * k + 256] {
+                    core.raw_write_range(at, -1, &small[256 * k..256 * k + 256]);
+                }
             }
             let mut pal = [0u8; 32];
             core.raw_read_range(e.pal(), -1, &mut pal);
@@ -691,10 +856,17 @@ pub fn tick(core: &mut Core, on: bool, help_text: u16) {
                 let at = base + 0x200 + 32 * e.palette;
                 let mut now = [0u8; 32];
                 core.raw_read_range(at, -1, &mut now);
-                // (only the entry's own colours: an entry on the badge's bank leaves the badge's)
+                // (only the entry's own colours: an entry on the badge's bank leaves the badge's; CONQUEST also leaves the four colours of its bank CONTINUE's label is drawn with)
                 let mut want = pal;
-                for &i in e.others {
+                let mut keep: Vec<u8> = e.others.to_vec();
+                if e.item == CONQUEST && n == N_SAVED {
+                    keep.extend(CONTINUE_LENT.iter().map(|l| l.1));
+                }
+                for &i in &keep {
                     want[2 * i as usize..2 * i as usize + 2].copy_from_slice(&now[2 * i as usize..2 * i as usize + 2]);
+                }
+                for &(from, to) in e.lent {
+                    want[2 * to as usize..2 * to as usize + 2].copy_from_slice(&pal[2 * from as usize..2 * from as usize + 2]);
                 }
                 if now != want {
                     core.raw_write_range(at, -1, &want);
@@ -714,17 +886,19 @@ pub fn remap(core: &mut Core, start: u32, end: u32) {
     while at + 8 <= end {
         let a2 = core.raw_read_16(at + 4, -1) as u32;
         let (tile, pal) = (a2 & 0x3FF, a2 >> 12);
-        if let Some(e) = EXTRAS.iter().find(|e| e.game_palette() == pal) {
+        if let Some(e) = EXTRAS.iter().find(|e| e.game_palette() == pal && !(e.optional() && layout(core) != N_SAVED)) {
             let game = e.game_tile();
             let new = if (game..game + 32).contains(&tile) {
-                Some(tile - game + e.tile)
+                Some(e.side_tile(tile))
             } else if (CENTRE_TILES.0..CENTRE_TILES.1).contains(&tile) {
                 Some(tile)
             } else {
                 None
             };
             if let Some(t) = new {
-                core.raw_write_16(at + 4, -1, ((e.palette << 12) | (a2 & 0x0C00) | t) as u16);
+                // (the big label on its way to the centre is drawn with the centre's own bank 8 when bank 15's colours 9..12 are CONTINUE's)
+                let bank = if t >= CENTRE_TILES.0 && t < CENTRE_TILES.1 && e.palette == 15 && layout(core) == N_SAVED { 8 } else { e.palette };
+                core.raw_write_16(at + 4, -1, ((bank << 12) | (a2 & 0x0C00) | t) as u16);
             }
         }
         at += 8;
@@ -832,6 +1006,9 @@ fn picked(core: &mut Core) {
             crate::gauntlet::picked(core, false);
         } else if e.item == CONQUEST {
             crate::conquest::picked(core, false);
+        } else if e.item == CONTINUE {
+            // (straight back into the saved run, as CONQUEST's box does on Continue)
+            crate::conquest::picked(core, true);
         } else {
             core.raw_write_8(crate::survival::MENU_PICKED, -1, 1);
         }
@@ -893,8 +1070,23 @@ fn war_room_save_flag(core: &mut Core) {
     }
 }
 
+/// `bne` after the item search of `SetMainMenuCarouselPosition` (`0x08080F54`: for each table index i, `cmp table[i], item`; on a match the position is `(i + 4) % 6`, which the pack's patch makes `adds r0, r1, #7`
+/// then `DivRem(.., n)` for nine entries). With ten entries the wrap is `(i + 8) % 10`, which has no three-bit immediate: on the match r1 (i, dead from there: the code loads r1 again after the division) is made
+/// one more, so `#7` adds 8. (A trap replaces the instruction at its address in the ROM image, so it sits on the branch and the `adds` stays patchable.)
+const BIAS: u32 = 0x0808_0F66;
+fn bias(core: &mut Core) {
+    if active(core) && layout(core) == N_SAVED {
+        let cpu = core.gba_mut().cpu_mut();
+        if cpu.gpr(0) == cpu.gpr(2) {
+            let r1 = cpu.gpr(1);
+            cpu.set_gpr(1, r1 + 1);
+        }
+    }
+}
+
 pub fn traps() -> Vec<(u32, Box<dyn Fn(&mut Core)>)> {
     vec![
+        (BIAS, Box::new(bias)),
         (BOX_COMMIT, Box::new(box_commit)),
         (DRAW_IS_WAR_ROOM, Box::new(draw_like_war_room)),
         (WAR_ROOM_SAVE_FLAG, Box::new(war_room_save_flag)),
@@ -947,26 +1139,78 @@ mod tests {
     }
 
     #[test]
+    fn with_a_saved_run_continue_is_one_position_above_conquest_and_nothing_below_it_moves() {
+        let plain: Vec<u8> = (0..N).map(|p| TABLE[(p + 2) % N]).collect();
+        let saved: Vec<u8> = (0..N_SAVED).map(|p| TABLE_SAVED[(p + 2) % N_SAVED]).collect();
+        assert_eq!(saved, [2, 4, 3, 1, GAUNTLET, CONQUEST, CONTINUE, 0, 5, ITEM]);
+        // positions 0..=5 are the same entries with and without CONTINUE; what is above CONQUEST is one higher
+        assert_eq!(saved[..6], plain[..6]);
+        assert_eq!(saved[7..], plain[6..]);
+        let at = |t: &[u8], i: u8| t.iter().position(|&x| x == i).unwrap();
+        assert_eq!(at(&saved, CONTINUE), at(&saved, CONQUEST) + 1);
+        // the wraps and the position's bounds follow the count, the others stay what they were for nine
+        for &(at, old) in &HALVES {
+            assert_eq!(halve(at, old, 9) & 0xFF, if at == 0x0808_0F68 { 0xC8 } else { halve(at, old, 9) & 0xFF });
+        }
+        assert_eq!(halve(0x0808_1DF0, 0x2805, 9), 0x2808);
+        assert_eq!(halve(0x0808_1DF0, 0x2805, 10), 0x2809);
+        assert_eq!(halve(0x0808_1E2C, 0x2005, 10), 0x2009);
+        assert_eq!(halve(0x0808_0F7E, 0x2905, 10), 0x2909);
+        assert_eq!(halve(0x0808_4630, 0x2506, 10), 0x250A);
+        assert_eq!(halve(0x0808_464E, 0x2507, 10), 0x250B);
+        assert_eq!(halve(0x0808_464A, 0x2800, 10), 0x2809);
+        // CONTINUE's side tiles would be the game's 0x338.. on palette 13, which no sprite of the game draws
+        assert_eq!(EXTRAS[3].game_palette(), 13);
+        assert_eq!(EXTRAS[3].game_tile(), 0x338);
+    }
+
+    #[test]
     fn the_extras_resources_do_not_overlap_and_stay_off_the_games() {
         // OBJ tiles: Gauntlet's 0x2E0..0x2FF, Survival's 0x320..0x33F and Conquest's 0x3B0..0x3CF are 32 tiles each, clear of the game's (up to 734 = 0x2DE, and 0x300..0x303 of palette 9), the Campaign
-        // chooser's 0x340..0x3AB and the badge's 0x3E0.
-        let (s, g, c) = (&EXTRAS[0], &EXTRAS[1], &EXTRAS[2]);
+        // chooser's 0x340..0x3AB and the badge's 0x3E0. CONTINUE's four sprites are in the free 0x304..0x31F and 0x3D0..0x3DF.
+        let (s, g, c, k) = (&EXTRAS[0], &EXTRAS[1], &EXTRAS[2], &EXTRAS[3]);
         assert!(g.tile > 734 && g.tile + 32 <= 0x300 && 0x304 <= s.tile && s.tile + 32 <= 0x340);
         assert!(c.tile >= 0x3AC && c.tile + 32 <= 0x3E0);
-        // Palettes: Survival's and Gauntlet's are banks of their own (13, 14); Conquest shares the badge's 15 (every other bank is the game's: `gauntlet_mode_wheel_obj_resources_are_free`
+        let mut taken = Vec::new();
+        for e in &EXTRAS {
+            for t in e.sprite_tiles() {
+                taken.extend(t..t + 8);
+            }
+        }
+        let mut sorted = taken.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), taken.len(), "no two small labels share a tile");
+        for t in k.sprite_tiles() {
+            assert!((0x304..=0x31F).contains(&t) && t + 8 <= 0x320 || (0x3D0..=0x3D8).contains(&t) && t + 8 <= 0x3E0, "CONTINUE's sprite at {t:#x} is in free tiles");
+        }
+        // Palettes: Survival's and Gauntlet's are banks of their own (13, 14); Conquest and CONTINUE share the badge's 15 (every other bank is the game's: `gauntlet_mode_wheel_obj_resources_are_free`
         // surveys them): the label art uses the colours 1, 2, 3, 5..=12 and 15 (a label's white is colour 1 and the badge's white is the same 0x7FFF), the badge 4, 13 and 14.
-        assert!(s.palette == 13 && g.palette == 14 && c.palette == 15 && c.palette == crate::branding::BANK);
+        assert!(s.palette == 13 && g.palette == 14 && c.palette == 15 && c.palette == crate::branding::BANK && k.palette == 15);
         let badge: Vec<u8> = crate::branding::COLOURS.iter().map(|b| b.0).filter(|&i| i != 1).collect();
         assert_eq!(c.others, &badge[..], "Conquest leaves exactly the badge's own colours alone");
         assert!(crate::branding::COLOURS.iter().any(|&(i, v)| i == 1 && v == 0x7FFF), "the badge's white is a label's colour 1");
         for art in [1u8, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 15] {
             assert!(!badge.contains(&art), "label colour {art} is not the badge's");
         }
+        // CONTINUE's small label draws the indices 0, 1, 2, 3, 5 and 15 of the game's small labels: 0 and 1 stay (clear, the white), the other four move to bank colours the small labels never draw
+        // (and the badge never owns), so CONQUEST's small label beside it keeps its own.
+        let lent: Vec<u8> = k.lent.iter().map(|l| l.1).collect();
+        assert_eq!(k.lent.iter().map(|l| l.0).collect::<Vec<_>>(), [2, 3, 5, 15]);
+        for t in &lent {
+            assert!(!badge.contains(t) && ![0u8, 1, 2, 3, 5, 15].contains(t) && (6..=12).contains(t), "bank colour {t} is free of the small labels and the badge");
+        }
+        for i in 0..16u8 {
+            assert_eq!(k.others.contains(&i), !lent.contains(&i), "CONTINUE writes only the lent colours ({i})");
+        }
         // ROM: each entry's data fits its page, the sentinel is past them.
         assert!(SURVIVAL_AT + 0x8C0 + 0x400 <= GAUNTLET_AT);
         assert!(GAUNTLET_AT + 0x8C0 + 0x400 <= CONQUEST_AT);
-        assert!(CONQUEST_AT + 0x8C0 + 0x400 <= SENTINEL);
-        assert!(DATA_OPTIONS >= SURVIVAL_AT + 0x40 && DATA_OPTIONS + 44 <= SURVIVAL_AT + 0xC0);
-        assert!(DATA_HELP + 22 <= DATA_OPTIONS);
+        assert!(CONQUEST_AT + 0x8C0 + 0x400 <= CONTINUE_AT);
+        assert!(CONTINUE_AT + 0x8C0 + 0x400 <= SENTINEL);
+        // the table, help lines and box lines are rewritten per layout: ten entries fit where nine did
+        assert!(DATA_TABLE + N_SAVED as u32 <= DATA_HELP);
+        assert!(DATA_OPTIONS >= SURVIVAL_AT + 0x40 && DATA_OPTIONS + 48 <= SURVIVAL_AT + 0xC0);
+        assert!(DATA_HELP + 24 <= DATA_OPTIONS);
     }
 }

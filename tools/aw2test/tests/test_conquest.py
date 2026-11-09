@@ -903,6 +903,273 @@ def conquest_new_run_drops_only_its_own_save(ctx):
     e.close()
 
 
+# -- CONTINUE: the wheel's tenth entry, on it only while a Conquest run is saved halfway (crate::mode_menu::TABLE_SAVED) ------------------------------------------------------------------
+
+CONTINUE_AT = 0x08E43000            # crate::mode_menu::CONTINUE_AT: its palette (32 bytes), highlight, big label (+0xC0), small label (+0x8C0)
+CONTINUE_TILES = (0x304, 0x30C, 0x314, 0x3D0)   # crate::mode_menu::CONTINUE_SMALL_TILES: its four small-label sprites (eight tiles each)
+CONTINUE_LENT = ((2, 9), (3, 10), (5, 11), (15, 12))   # crate::mode_menu::CONTINUE_LENT: its colours in bank 15
+OBJ_VRAM, OBJ_PALETTES = 0x06010000, 0x05000200
+NINE = [2, 4, 3, 1, 9, 10, 0, 5, 8]
+TEN = [2, 4, 3, 1, 9, 10, 11, 0, 5, 8]
+CONTINUE_HELP = "Continue your saved Conquest run."
+
+
+def on_wheel(ctx, e, items, what):
+    ctx.eq(ga.wheel_items(e), items, what)
+    ctx.eq(saves.wheel_size(e), len(items), "the harness knows the wheel's size")
+
+
+def wheel_round(ctx, e, n):
+    """Every position of the wheel is reached in turn (UP from 0 to n-1, as the harness turns it) and one more UP from the last wraps to 0: the wheel has exactly n positions."""
+    for p in range(n):
+        saves.wheel_to(e, p)
+        ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), p, f"position {p} reached")
+    e.press("UP", 8)
+    e.wait(80)
+    ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), 0, f"UP from position {n - 1} wraps to 0")
+
+
+def saved_on_map_three(ctx, run=0, name="saved_three"):
+    """Run `run` (0-based) played to map 3 and saved from the map menu: (the Flash image, the draw, both armies, the funds, the enemy CO on the field)."""
+    e, g, d = start(ctx, 5, run=run)
+    cos, _ = draw_of(e)
+    d.win_map(ctx, 0, reward=cq.CHEST)
+    d.win_map(ctx, 1, reward=cq.REINFORCE, unit=1)
+    ctx.eq(cq.stage(e), 2, "on map 3")
+    d.wait_control()
+    g._units_base = g._players_base = None
+    mine, theirs, money = d.units_by_type(1), d.units_by_type(2), (d.funds(1), d.funds(2))
+    enemy = enemy_co(e, g)
+    cells = g.empty_cells
+    g.empty_cells = lambda: sorted(cells(), key=lambda c: abs(c[0] - 6) + abs(c[1] - 6))
+    saves.suspend(g)
+    saved = saves.flash(e, os.path.join(ctx.out, name))
+    ctx.check(not saved.problems(), f"every slot passes its check ({saved.problems()})")
+    e.close()
+    return saved, cos, mine, theirs, money, enemy
+
+
+@test(name="conquest_continue_is_not_on_the_wheel_without_a_save", modes=("ds",))
+def conquest_continue_is_not_on_the_wheel_without_a_save(ctx):
+    """With no Conquest run saved the wheel is exactly the nine entries it was: no CONTINUE in the item table, the help or box tables, the wraps are the nine-entry ones and the cursor goes round in nine UP steps (CONQUEST is position 5, Campaign 6). Pictures of the wheel on CONQUEST and on Campaign."""
+    e = Emu(save=paths.base_save(), ds=ctx.ds)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    saves.to_select_mode(e)
+    on_wheel(ctx, e, NINE, "the nine entries")
+    ctx.check(not saves.with_continue(e), "no CONTINUE")
+    try:
+        saves.position(e, "continue")
+        ctx.check(False, "the harness finds no CONTINUE position")
+    except Exception:
+        pass
+    ctx.eq([saves.position(e, n) for n in ("gauntlet", "conquest", "campaign", "war_room", "survival")], [4, 5, 6, 7, 8], "the entries' positions")
+    ctx.eq(e.u16(0x08080F7E), 0x2908, "the position bound is the nine-entry one")
+    ctx.eq(e.u16(0x08081DF0), 0x2808, "UP wraps 8 -> 0")
+    ctx.eq(e.u8(0x08080F6A), 0x09, "DivRem(x, 9) in SetMainMenuCarouselPosition")
+    ctx.check(text_of(e, e.u16(HELP + 2 * 6)) != CONTINUE_HELP, "position 6's help line is Campaign's")
+    ctx.eq((e.u8(saves.SELECT_MODE_CURSOR), ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)]), (6, 0), "the wheel opens on Campaign (position 6) as it always did")
+    wheel_round(ctx, e, 9)
+    saves.wheel_to(e, "conquest")
+    e.wait(40)
+    png(ctx, e, "wheel_nosave_conquest")
+    saves.wheel_to(e, "campaign")
+    e.wait(40)
+    png(ctx, e, "wheel_nosave_campaign")
+    e.close()
+
+
+@test(name="conquest_continue_is_on_the_wheel_over_a_conquest_save", modes=("ds",))
+def conquest_continue_is_on_the_wheel_over_a_conquest_save(ctx):
+    """With a Conquest run saved halfway the wheel has ten entries: CONTINUE (item 11) at position 6, directly above CONQUEST (5); Campaign, War Room and Survival are one higher; its help line is 'Continue your
+    saved Conquest run.', its label is in the OBJ tiles and the bank-15 colours the game draws it with, and CONQUEST's box is still there (A on CONQUEST opens Continue / New). Ten UP steps go once round."""
+    saved = saved_run_of(ctx, cq.Conquest, "conquest_saved")
+    e, g = select_mode_on(ctx, saved.path)
+    d = cq.Conquest(g)
+    on_wheel(ctx, e, TEN, "ten entries: CONTINUE directly above CONQUEST")
+    ctx.eq([saves.position(e, n) for n in ("gauntlet", "conquest", "continue", "campaign", "war_room", "survival")], [4, 5, 6, 7, 8, 9], "the entries' positions")
+    ctx.eq((e.u8(saves.SELECT_MODE_CURSOR), ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)]), (7, 0), "the wheel opens on Campaign, which is position 7 with CONTINUE below it")
+    ctx.eq(text_of(e, e.u16(HELP + 2 * 6)), CONTINUE_HELP, "CONTINUE's help line")
+    ctx.eq(text_of(e, e.u16(HELP + 2 * 5)), "Win every map in a row. One loss ends the run.", "CONQUEST's is still its own")
+    ctx.eq([text_of(e, e.u16(OPTIONS + 2 * (2 * 5 + k))) for k in (0, 1)], ["Continue your saved Conquest run.", "Start a new run. The saved run is dropped."], "CONQUEST's box lines")
+    ctx.eq([e.u16(OPTIONS + 2 * (2 * 6 + k)) for k in (0, 1)], [0, 0], "CONTINUE has no box")
+    wheel_round(ctx, e, 10)
+    # the label: on the wheel the small label's sprites hold CONTINUE's art, the bank holds its colours beside CONQUEST's
+    saves.wheel_to(e, "continue")
+    e.wait(40)
+    ctx.eq(ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)], 11, "the cursor is on CONTINUE")
+    art = e.read(CONTINUE_AT + 0x8C0, 1024)
+    for k, first in enumerate(CONTINUE_TILES):
+        ctx.check(e.read(OBJ_VRAM + 32 * first, 256) == art[256 * k:256 * k + 256], f"small label sprite {k} is in tiles {first:#x}..")
+    pal = e.read(CONTINUE_AT, 32)
+    bank = e.read(OBJ_PALETTES + 32 * 15, 32)
+    for frm, to in CONTINUE_LENT:
+        ctx.eq(bank[2 * to:2 * to + 2], pal[2 * frm:2 * frm + 2], f"bank 15 colour {to} is CONTINUE's {frm}")
+    conquest_pal = e.read(0x08E42000, 32)
+    for i in (1, 2, 3, 5, 15):
+        ctx.eq(bank[2 * i:2 * i + 2], conquest_pal[2 * i:2 * i + 2], f"bank 15 colour {i} is still CONQUEST's")
+    png(ctx, e, "wheel_on_continue")
+    saves.wheel_to(e, "conquest")
+    e.wait(40)
+    png(ctx, e, "wheel_on_conquest_with_a_save")
+    e.press("A", 8)
+    ctx.require(e.wait_until(d.box_open, 120, step=4), "A on CONQUEST still opens its Continue / New box")
+    e.wait(45)
+    png(ctx, e, "box_conquest_beside_continue")
+    e.close()
+
+
+def resume_by_continue(ctx, path, run=0):
+    """The saved run brought back by CONTINUE on the wheel (no box): the battle is on again."""
+    e = Emu(save=path, ds=ctx.ds)
+    g = Game(e, ctx.image)
+    ctx.games.append(g)
+    d = cq.Conquest(g, run=run)
+    d.open_continue()
+    ctx.require(e.wait_until(lambda: e.u32(0x03000000) == 0x08022049, 1800, step=10), "CONTINUE brings the battle back at once")
+    ctx.check(not d.box_open(), "no box")
+    g._units_base = g._players_base = None
+    g.wait_for_input()
+    return e, g, d
+
+
+def continue_resumes(ctx, run, name):
+    saved, cos, mine, theirs, money, enemy = saved_on_map_three(ctx, run, name)
+    e, g, d = resume_by_continue(ctx, saved.path, run)
+    maps = cq.RUNS[run]["maps"]
+    ctx.eq(cq.stage(e), 2, "continued on map 3")
+    ctx.eq(d.session()["mission"], cq.RUNS[run]["mission"], f"run {run + 1}'s mission")
+    ctx.eq(d.size(), maps[2]["size"], maps[2]["name"])
+    ctx.eq(draw_of(e)[0], cos, "the same enemy draw came back with the run")
+    ctx.eq(enemy_co(e, g), enemy, "the enemy on the field is still map 3's")
+    ctx.eq((d.units_by_type(1), d.units_by_type(2)), (mine, theirs), "both armies as saved")
+    ctx.eq((d.funds(1), d.funds(2)), money, "the funds as saved")
+    d.win_map(ctx, 2, reward=cq.CHEST)
+    ctx.eq(cq.stage(e), 3, "map 4 after the continue")
+    ctx.eq(enemy_co(e, g), cos[3], "map 4's enemy is the draw's fourth CO")
+    e.close()
+
+
+@test(name="conquest_continue_resumes_run_one_on_a_later_map", modes=("ds",))
+def conquest_continue_resumes_run_one_on_a_later_map(ctx):
+    """CONTINUE on the wheel over a Conquest Run saved on map 3: A goes straight back into the battle (no box): map 3, the enemy draw, both armies, the funds; the win of map 3 brings map 4 with the draw's fourth CO."""
+    continue_resumes(ctx, 0, "saved_three")
+
+
+@test(name="conquest_continue_resumes_run_two_on_a_later_map", modes=("ds",))
+def conquest_continue_resumes_run_two_on_a_later_map(ctx):
+    """The same over a Harbor Run (run 2) saved on map 3: it is run 2 again (mission 13, its maps), CONTINUE is the same entry for both runs."""
+    continue_resumes(ctx, 1, "saved_three_run2")
+
+
+@test(name="conquest_continue_is_not_on_the_wheel_over_a_gauntlet_save", modes=("ds",))
+def conquest_continue_is_not_on_the_wheel_over_a_gauntlet_save(ctx):
+    """The shared slot holds a Gauntlet run: that is not a Conquest save, so the wheel is the nine entries (CONQUEST goes straight to its selector, GAUNTLET offers its own box)."""
+    ga_save = saved_run_of(ctx, ga.Gauntlet, "gauntlet_saved")
+    e, g = select_mode_on(ctx, ga_save.path)
+    on_wheel(ctx, e, NINE, "no CONTINUE over a Gauntlet save")
+    ctx.eq(saves.position(e, "campaign"), 6, "Campaign is where it is without a save")
+    png(ctx, e, "wheel_gauntlet_save")
+    e.close()
+
+
+@test(name="conquest_continue_is_gone_after_a_new_run_drops_the_save", modes=("ds",))
+def conquest_continue_is_gone_after_a_new_run_drops_the_save(ctx):
+    """Over a Conquest save CONQUEST's box -> New starts a new run, which drops the save: in the same session, when the run ends and Select Mode comes back, the wheel is the nine entries again (no reboot),
+    CONQUEST is selected (the wheel's remembered position follows the run), and Campaign is position 6."""
+    saved = saved_run_of(ctx, cq.Conquest, "conquest_saved")
+    e, g = select_mode_on(ctx, saved.path)
+    d = cq.Conquest(g)
+    on_wheel(ctx, e, TEN, "CONTINUE is there before the new run")
+    saves.wheel_to(e, "conquest")
+    e.press("A", 8)
+    d.choose_in_box("new")
+    d.wait_step(ga.SELECTOR)
+    e.press("A", 6)
+    d.pick_army(ga.ANDY)
+    d.into_battle()
+    ctx.check(not mid_in_directory(e), "the new run dropped the save")
+    d.wait_control()
+    ctx.eq(d.lose(ctx), 2, "the run is lost")
+    ctx.check(d.select_mode_up(), "back on Select Mode in the same session")
+    e.wait(60)
+    on_wheel(ctx, e, NINE, "CONTINUE is gone in the same session")
+    ctx.eq(ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)], 10, "the wheel is on CONQUEST")
+    ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), 5, "position 5")
+    png(ctx, e, "wheel_after_the_save_went")
+    e.close()
+
+
+@test(name="conquest_the_wheel_keeps_its_position_through_a_run_with_a_save", modes=("ds",))
+def conquest_the_wheel_keeps_its_position_through_a_run_with_a_save(ctx):
+    """The remembered position with and without CONTINUE. Over a Conquest save the wheel opens on the entry last left (CONTINUE at 6, Campaign at 7 in its ten); B from CONQUEST's selector goes back to
+    CONQUEST (5). A run resumed with CONTINUE and then lost comes back to Select Mode on CONQUEST (5) with the nine-entry wheel; Campaign is 6 again, not 7."""
+    saved = saved_run_of(ctx, cq.Conquest, "conquest_saved")
+    # B from the selector over the save is not possible (CONQUEST opens its box first): on Campaign, then the Gauntlet selector and back on the wheel
+    e, g = select_mode_on(ctx, saved.path)
+    saves.wheel_to(e, "gauntlet")
+    e.press("A", 8)
+    gd = ga.Gauntlet(g)
+    gd.wait_step(ga.SELECTOR)
+    e.press("B", 8)
+    ctx.require(e.wait_until(lambda: gd.select_mode_up() and e.u8(dc.ACTIVE) == 0, 900, step=10), "B: back on Select Mode")
+    e.wait(60)
+    ctx.eq(ga.wheel_items(e)[e.u8(saves.SELECT_MODE_CURSOR)], 9, "back on GAUNTLET (position 4)")
+    ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), 4, "position 4 with CONTINUE on the wheel")
+    ctx.check(saves.with_continue(e), "CONTINUE is still on the wheel")
+    e.close()
+    # the wheel on CAMPAIGN (7) with CONTINUE, a trip to Gauntlet's selector is not needed: the remembered position is kept by the layout
+    e, g, d = resume_by_continue(ctx, saved.path)
+    d.wait_control()
+    ctx.eq(d.lose(ctx), 2, "the resumed run is lost")
+    ctx.check(d.select_mode_up(), "back on Select Mode")
+    e.wait(60)
+    on_wheel(ctx, e, NINE, "the run ended: the save is gone, nine entries")
+    ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), 5, "the wheel is on CONQUEST, position 5")
+    ctx.eq(saves.position(e, "campaign"), 6, "Campaign is 6 again")
+    e.close()
+
+
+@test(name="conquest_continue_follows_the_save_within_one_session", modes=("ds",))
+def conquest_continue_follows_the_save_within_one_session(ctx):
+    """No reboot between: a Conquest run saved from the map menu puts CONTINUE on the wheel at once (the layout follows the save while the wheel is not up; the wheel's remembered position keeps its entry:
+    Campaign 6 becomes 7), and when the run ends (the save dropped) it is gone again, the wheel back on CONQUEST with nine entries."""
+    e, g, d = start(ctx)
+    on_wheel(ctx, e, NINE, "no CONTINUE while no run is saved")
+    e.w32(ga.WHEEL_LAST, 6)
+    d.wait_control()
+    g._units_base = g._players_base = None
+    saves.suspend(g)
+    on_wheel(ctx, e, TEN, "CONTINUE is on the wheel right after the save")
+    ctx.eq(e.u32(ga.WHEEL_LAST), 7, "the remembered Campaign (6) is 7 with CONTINUE below it")
+    e.w32(ga.WHEEL_LAST, 6)
+    ctx.eq(d.lose(ctx), 2, "the run is lost (its save dropped)")
+    ctx.check(d.select_mode_up(), "back on Select Mode in the same session")
+    e.wait(60)
+    on_wheel(ctx, e, NINE, "CONTINUE is gone with the save")
+    ctx.eq(e.u8(saves.SELECT_MODE_CURSOR), 5, "the wheel is on CONQUEST")
+    e.close()
+
+
+@test(name="conquest_continue_goes_when_a_gauntlet_save_takes_the_slot", modes=("ds",))
+def conquest_continue_goes_when_a_gauntlet_save_takes_the_slot(ctx):
+    """Over a Conquest save (CONTINUE on the wheel) a new Gauntlet run is started and saved from the map menu: the slot is the Gauntlet's now, so CONTINUE is gone in the same session and after the run's
+    end the wheel has nine entries."""
+    saved = saved_run_of(ctx, cq.Conquest, "conquest_saved")
+    e, g = select_mode_on(ctx, saved.path)
+    on_wheel(ctx, e, TEN, "CONTINUE over the Conquest save")
+    gd = ga.Gauntlet(g)
+    gd.open(from_title=False, map=0)
+    gd.pick_army(ga.ANDY)
+    gd.into_battle()
+    gd.wait_control()
+    on_wheel(ctx, e, TEN, "a Gauntlet run in play does not take the slot yet")
+    g._units_base = g._players_base = None
+    saves.suspend(g)
+    on_wheel(ctx, e, NINE, "the Gauntlet's save replaced the Conquest save: no CONTINUE")
+    e.close()
+
+
 # -- the kit's commands: `aw2dev conquest start` and `aw2dev conquest sheet` --------------------------------------------------------------------------------------------
 
 _TOOL_CO = int(os.environ.get("AW2TEST_CONQUEST_CO", "0") or 0)

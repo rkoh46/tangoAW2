@@ -4,6 +4,7 @@ driver (`Gauntlet`) does the selector, the army screen and the end; this adds th
 
 from . import dscampaign as dc
 from . import gauntlet as ga
+from . import saves
 from .game import NavError
 
 MISSION = ga.CONQUEST_MISSION      # crate::gauntlet_mode::def(): run 1's mission, the first of the runs' missions at the end of the campaign's list (the Gauntlet's selector does not list them)
@@ -69,6 +70,14 @@ class Conquest(ga.Gauntlet):
     def open(self, from_title=True, pick=True, map=None, box=None):
         """CONQUEST, A (the box over a saved Conquest run: `box="continue"` / `"new"`), the selector's A on the row of this run (DOWN from the first)."""
         return super().open(from_title, pick, self.mission if map is None else map, box)
+
+    def open_continue(self, from_title=True):
+        """Select Mode's CONTINUE entry (on the wheel only over a saved Conquest run, directly above CONQUEST): A brings the saved battle back at once (no box, no selector)."""
+        e = self.e
+        if from_title:
+            saves.to_select_mode(e)
+        saves.wheel_to(e, "continue")
+        e.press("A", 8)
 
     def begin(self, co=ga.ANDY, colour=None, from_title=True, box=None):
         """From the title: CONQUEST, this run's row, the army screen's CO and colour, the battle on day 1 of the first map with the player in control."""

@@ -482,9 +482,10 @@ def with_record(save_path, out_path, region):
 
 
 def wheel_items(e):
-    """The wheel's item ids by position: the pack's nine-entry table or AW2's six (read from the ROM image the console runs)."""
+    """The wheel's item ids by position: the pack's nine-entry table (ten with CONTINUE over a saved Conquest run) or AW2's six (read from the ROM image the console runs)."""
     if e.ds:
-        t = list(e.read(PACK_TABLE, 9))
-        return [t[(p + 2) % 9] for p in range(9)]
+        n = 10 if e.u8(PACK_TABLE + 8) == 11 else 9      # (ten with CONTINUE, item 11, over a saved Conquest run)
+        t = list(e.read(PACK_TABLE, n))
+        return [t[(p + 2) % n] for p in range(n)]
     t = list(e.read(GAME_TABLE, 6))
     return [t[(p + 2) % 6] for p in range(6)]

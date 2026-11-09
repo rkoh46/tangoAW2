@@ -38,7 +38,7 @@ pub const SAVE_OFFSET: u32 = 0x240;
 pub const PICKED: u32 = 0x0203_FD54;
 const RETURNING: u8 = 2;
 /// The wheel's remembered position (the cursor Select Mode opens on) and the Select Mode wheel's procs.
-const WHEEL_LAST: u32 = 0x0300_5934;
+pub(crate) const WHEEL_LAST: u32 = 0x0300_5934;
 /// The pick asked for a new run (0) or to continue the saved one (1), kept for [`start_script`]'s callers (the tests).
 pub const CONTINUING: u32 = 0x0203_FD55;
 

@@ -1125,7 +1125,9 @@ def conquest_reward_pick(rec):
 @scene("conquest", "wheel_and_box", pack=True)
 def conquest_wheel_and_box(rec):
     """Select Mode's CONQUEST entry (directly above GAUNTLET): the wheel on CONQUEST and its neighbours (the label, the side labels, the help line), then, over a Conquest run saved halfway, the item box
-    (Continue / New, each row under the cursor, its two lines under the wheel) and GAUNTLET beside it with no box."""
+    (Continue / New, each row under the cursor, its two lines under the wheel) and GAUNTLET beside it with no box. With the run saved the wheel has CONTINUE directly above CONQUEST:
+    `wheel_continue` (selected: the big label and the help line), `wheel_saved_run` (CONQUEST selected with CONTINUE's small label above it) and `wheel_continue_beside_campaign`; the first three pictures are the wheel
+    without a save (no CONTINUE)."""
     from . import conquest as cq
     from . import gauntlet as ga
     e, g = rec.emu()
@@ -1159,6 +1161,13 @@ def conquest_wheel_and_box(rec):
     saves.wheel_to(e, "gauntlet")
     e.wait(40)
     rec.snap(e, "gauntlet_beside_the_box", ["menu", "wheel"])
+    # CONTINUE, the wheel's tenth entry over the saved run (directly above CONQUEST): selected, and its neighbours Campaign above it
+    saves.wheel_to(e, "continue")
+    e.wait(100)      # (the help strip scrolls the new line in: a picture mid-scroll shows two lines run together)
+    rec.snap(e, "wheel_continue", ["menu", "wheel"])
+    saves.wheel_to(e, "campaign")
+    e.wait(100)
+    rec.snap(e, "wheel_continue_beside_campaign", ["menu", "wheel"])
 
 
 @scene("conquest", "selector_and_army", pack=True)
