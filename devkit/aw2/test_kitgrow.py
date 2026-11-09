@@ -182,17 +182,20 @@ class SaveExp(unittest.TestCase):
 
 
 class Conquest(unittest.TestCase):
-    """`aw2dev conquest` (docs/dev/conquest.md): parses, and the Rust source's nine maps are readable (the ROM check itself is `aw2dev conquest maps`)."""
+    """`aw2dev conquest` (docs/dev/conquest.md): parses, and the Rust source's runs' maps are readable (the ROM check itself is `aw2dev conquest maps`)."""
 
     def test_the_commands_parse(self):
-        for argv in (["conquest", "start"], ["conquest", "start", "--co", "93", "--out", "x"], ["conquest", "sheet", "--out", "x.png"], ["conquest", "maps"], ["conquest", "maps", "--all"], ["conquest", "test"]):
+        for argv in (["conquest", "start"], ["conquest", "start", "--co", "93", "--out", "x"], ["conquest", "sheet", "--out", "x.png"], ["conquest", "sheet", "--run", "2"], ["conquest", "maps"], ["conquest", "maps", "--all"], ["conquest", "maps", "--draft", "0x80,0x70"], ["conquest", "test"]):
             self.assertTrue(callable(parse(*argv).fn), argv)
 
-    def test_the_rust_stages_are_nine_maps_with_far_hqs(self):
+    def test_the_rust_stages_are_every_runs_maps_with_far_hqs(self):
         from .commands import conquest
         stages = conquest.rust_stages()
-        self.assertEqual(len(stages), 9)
-        self.assertEqual([s["name"] for s in stages], ["Sabre Range", "Asphalt Maze", "Switchback", "Piston Dam", "Hourglass Isle", "Ruby Keys", "Vision Bridge", "Cube Keys", "Mial's Hope"])
+        run1 = [s for s in stages if s["run"] == 1]
+        self.assertEqual(len(run1), 9)
+        self.assertEqual([s["name"] for s in run1], ["Sabre Range", "Asphalt Maze", "Switchback", "Piston Dam", "Hourglass Isle", "Ruby Keys", "Vision Bridge", "Cube Keys", "Mial's Hope"])
+        self.assertEqual({s["run"] for s in stages}, {1, 2})
         for s in stages:
             d = abs(s["player"][0] - s["enemy"][0]) + abs(s["player"][1] - s["enemy"][1])
             self.assertGreaterEqual(d, 20, s["name"])
+        self.assertTrue(set(s["id"] for s in run1).isdisjoint(s["id"] for s in stages if s["run"] == 2))

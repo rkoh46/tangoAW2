@@ -20,12 +20,12 @@ const PLATE: (i32, i32, i32, i32) = (8, 114, 224, 40);
 const CARD_TEXT: i32 = CARD_W - 10;
 
 /// What a reward page says of each reward after map `k`: (heading, lines).
-fn rewards(k: u8) -> [(String, Vec<String>); 3] {
+fn rewards(run: &cq::Run, k: u8) -> [(String, Vec<String>); 3] {
     [
         (
             "War chest".to_string(),
             vec![
-                format!("+{}", cq::chest_funds(k)),
+                format!("+{}", run.chest_funds(k)),
                 "funds for the".to_string(),
                 "next map".to_string(),
             ],
@@ -116,9 +116,11 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
     if rgba.len() != online::W * online::H * 4 || cq::page(core) == 0 || !cq::session(core) {
         return false;
     }
+    let Some(run) = cq::current(core) else { return false };
     paint(
         core,
         rgba,
+        run,
         cq::won_map(core),
         cq::page(core),
         cq::cursor(core) as usize % 3,
@@ -127,12 +129,12 @@ pub fn draw(core: &Core, rgba: &mut [u8]) -> bool {
     true
 }
 
-/// The page for map `k` just won: `page` 1 (the rewards) or 2 (the units `offer`), the card under `cursor` marked. Also the text audit's page (`aw2dev audit text`).
-pub fn paint(core: &Core, rgba: &mut [u8], k: u8, page: u8, cursor: usize, offer: [u8; 3]) {
+/// The page for map `k` of `run` just won: `page` 1 (the rewards) or 2 (the units `offer`), the card under `cursor` marked. Also the text audit's page (`aw2dev audit text`).
+pub fn paint(core: &Core, rgba: &mut [u8], run: &cq::Run, k: u8, page: u8, cursor: usize, offer: [u8; 3]) {
     let cv = &mut Rgba(rgba);
     // (the banner: the map cleared and what to do)
     cv.window(BANNER.0, BANNER.1, BANNER.2, BANNER.3);
-    let name = cq::MAPS.get(k as usize).map_or("Map", |m| m.name);
+    let name = run.maps.get(k as usize).map_or("Map", |m| m.name);
     let title = if page == 1 {
         format!("{name} cleared: choose a reward")
     } else {
@@ -141,7 +143,7 @@ pub fn paint(core: &Core, rgba: &mut [u8], k: u8, page: u8, cursor: usize, offer
     centred(core, cv, BANNER, BANNER.1 + 3, &title, INK, GRAY_INK);
     let help;
     if page == 1 {
-        let r = rewards(k);
+        let r = rewards(run, k);
         for (slot, (heading, lines)) in r.iter().enumerate() {
             card(core, cv, slot, slot == cursor, heading, lines);
         }
@@ -182,9 +184,11 @@ mod tests {
 
     #[test]
     fn every_offered_unit_has_a_name() {
-        for k in 0..4 {
-            for u in cq::offered(k) {
-                assert_ne!(unit_name(u), "Unit", "kind {u}");
+        for run in cq::RUNS {
+            for k in 0..run.len() as u8 - 1 {
+                for u in run.offered(k) {
+                    assert_ne!(unit_name(u), "Unit", "kind {u}");
+                }
             }
         }
     }

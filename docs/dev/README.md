@@ -20,7 +20,7 @@ session scratchpad.
 ./aw2dev release 0.8.6 --notes notes.txt --dry-run       # never pushes without --yes (needs the user's approval)
 ./aw2dev clean                       # dry run: what would free disk
 ./aw2dev profiles                    # (re)create the test profiles; ./aw2dev runs lists the newest live runs
-./aw2dev conquest start              # boot into a Conquest Run with a picture of each screen (also: sheet, maps, test)
+./aw2dev conquest start              # boot into a Conquest Run with a picture of each screen (also: sheet [--run N], maps [--draft ids], test)
 ./aw2dev gauntlet cos                # the Gauntlet's enemy COs per map, reuse, unused COs (also: new-map, army-sheet, faces)
 ./aw2dev campaign scene-check        # arrival boxes and face palettes of every Gauntlet map and BH2 M31; campaign text-lint for the dialogue
 ./aw2dev bh2 waves --mission 32      # a mission's day waves, pictured in the AW2 and DS-tilt looks
@@ -48,7 +48,7 @@ Config: `devkit/config.toml` (override in `devkit/config.local.toml` or `AW2DEV_
 | [stages.md](stages.md) | a custom campaign's mission that moves on, in the same battle, to another map (`Action::NextStage`, `MissionDef::stages`): carry-over, five-army, suspend, determinism; `aw2dev stage next / show` |
 | [gauntlet.md](gauntlet.md) | the gauntlet engine: armies that come one after another in one battle (`MissionDef::hidden / sleepers / cut_off`, `Action::Reveal`, `Cond::LineFallen`); BH2 M31, and the base for a game mode of its own; `aw2dev campaign playthrough ... --waves` |
 | [gauntlet-mode.md](gauntlet-mode.md) | the Gauntlet game mode's plumbing: the nine-entry Select Mode wheel (GAUNTLET above Versus, CONQUEST above it; adding an entry), the campaign source that is not in the Campaign menu, the CO pick, the end, the record in slot 13 +0x240, Save/Continue; `aw2dev gauntlet start / test` |
-| [conquest.md](conquest.md) | Conquest Run, Select Mode's CONQUEST entry (a mode of its own on the Gauntlet's engine): five AW2 Versus maps in a row with survivors and funds carried over, a reward between maps (war chest / free unit / field repair), a random enemy CO a map kept with the run, Save / Continue; `aw2dev conquest start / sheet / maps / test` |
+| [conquest.md](conquest.md) | Conquest, Select Mode's CONQUEST entry (a mode of its own on the Gauntlet's engine; a table of runs, one selector row each, "Adding a run"): AW2 Versus maps in a row with survivors and funds carried over, a reward between maps (war chest / free unit / field repair), a random enemy CO a map kept with the run, Save / Continue; `aw2dev conquest start / sheet / maps / test` |
 | [cpu-unit-use.md](cpu-unit-use.md) | the CPU's Black Boats, Landers and Carriers: why they sat on their ports, `cpu_units.rs`'s rules (repair, retreat, never block a port), the tests |
 | [five-suspend.md](five-suspend.md) | a five-army battle saved from the map menu and continued: the record after AW2's block, the Flash and RAM cost; `aw2dev save inspect` |
 | [playthrough.md](playthrough.md) | `aw2dev campaign playthrough bh2 N`: a mission played to its end in the harness, a report and a contact sheet |

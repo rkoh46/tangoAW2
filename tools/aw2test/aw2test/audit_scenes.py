@@ -1163,8 +1163,8 @@ def conquest_wheel_and_box(rec):
 
 @scene("conquest", "selector_and_army", pack=True)
 def conquest_selector(rec):
-    """CONQUEST's one-row map selector ("Conquest Run *" alone), SELECT stepping through its nine maps' pictures (the faces: one blank slot, the enemies are drawn when the run starts), the star's hint, and the
-    army screen (one CPU card with no CO yet), in the three looks."""
+    """CONQUEST's map selector with a row for each run ("Conquest Run *" and the PROVISIONAL "Long Conquest *"), SELECT stepping through each highlighted run's maps' pictures (the faces: one blank slot, the
+    enemies are drawn when the run starts), the star's hint, and each run's army screen (one CPU card with no CO yet, the help line naming the run and its map count), in the three looks."""
     from . import conquest as cq
     from . import gauntlet as ga
     e, g = rec.emu()
@@ -1176,7 +1176,7 @@ def conquest_selector(rec):
     d.wait_step(ga.SELECTOR)
     e.wait(60)
     rec.snap(e, "map1", ["menu", "maplist"])
-    for k in range(1, cq.STAGES):
+    for k in range(1, len(cq.RUNS[0]["maps"])):
         d.flip(90)
         rec.snap(e, f"map{k + 1}", ["menu", "maplist"])
     d.flip(90)
@@ -1188,6 +1188,28 @@ def conquest_selector(rec):
     e.press("R", 4)
     e.wait(40)
     rec.snap(e, "army_colour", ["menu", "army"])
+    e.close()
+    # the second row: its picture, its own maps' pictures, its army screen
+    e, g = rec.emu()
+    d = ga.Gauntlet(g)
+    saves.to_select_mode(e)
+    saves.wheel_to(e, "conquest")
+    e.press("A", 8)
+    d.wait_step(ga.SELECTOR)
+    e.wait(60)
+    e.press("DOWN", 4)
+    e.wait(80)
+    rec.snap(e, "run2_map1", ["menu", "maplist"])
+    for k in range(1, len(cq.RUNS[1]["maps"])):
+        d.flip(90)
+        rec.snap(e, f"run2_map{k + 1}", ["menu", "maplist"])
+    d.flip(90)
+    rec.snap(e, "run2_map1_again", ["menu", "maplist"])
+    e.press("A", 6)
+    d.wait_army()
+    e.wait(60)
+    rec.snap(e, "army_run2", ["menu", "army"])
+    e.close()
 
 
 @scene("gauntlet", "mission_card", pack=True)
@@ -1213,6 +1235,14 @@ def conquest_card(rec):
     d.wait_army()
     e.press("A", 6)
     card_shots(rec, e, "conquest_card", press_a=False)
+    e.close()
+    # (the second run's card: its own first map's name)
+    e, g = rec.emu()
+    d = cq.Conquest(g, run=1)
+    d.open(True)
+    d.wait_army()
+    e.press("A", 6)
+    card_shots(rec, e, "conquest2_card", press_a=False)
     e.close()
 
 
